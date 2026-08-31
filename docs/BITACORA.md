@@ -72,7 +72,9 @@ reemplazado por el de G-Nexo. Verificación en banco (Node v22, no la máquina d
 `node --check` limpio · sin bytes de control · ningún `require` fuera de comentarios ·
 `settings.json` válido con el matcher `Write|Edit|Bash`.
 
-⛔ **Falta correrlo en la máquina real.** En G-Vento este script salió mudo la primera vez y
+✅ **Ya no falta: corre en la máquina real.** Ver *"El hook corre en la máquina real"* más abajo, en
+los hallazgos de esta misma sesión. Se conserva esta línea porque la advertencia sigue siendo
+cierta como razón: en G-Vento este script salió mudo la primera vez y
 leyéndolo se veía perfecto. Verificación en banco no es verificación en el entorno (R4).
 
 ### Línea base del repo copiado
@@ -152,6 +154,21 @@ funciona en una máquina y asumir que existe en todas. Pasa a deuda.
 suelta: es **cadena de marca heredada**, y la pregunta correcta (R3) es "¿tiene hermanas?" en todo
 el repo —`gvento`, `GVento`, `G-Vento`—, no "¿arreglo esta línea?". Pasa a deuda, y se ejecuta
 junto con el rename de `restaurant_id` para no hacer dos pasadas sobre los mismos archivos.
+
+**El hook corre en la máquina real — y la prueba fue accidental.** No hizo falta un test: durante
+la sesión de documentación del 2026-08-31 el hook **disparó 3 veces**, inyectando su texto en el
+contexto. Eso cierra la deuda #1 con evidencia más fuerte que el pipe-test, porque prueba la
+**cadena entera** —`settings.json` leído por el harness, matcher `Write|Edit|Bash` activo, Node
+encontrado, script no mudo—, y el eslabón que falló en G-Vento era justamente ese: en un pipe-test
+el script lo invocás vos; acá lo invoca el harness. Un mecanismo se verifica en el camino por el
+que va a correr, no en uno parecido (R4).
+
+**Pero las 3 veces fueron falsos positivos, y eso es un hallazgo aparte.** Ninguna sesión escribió
+SQL: alcanzó con **nombrar** `supabase/*.sql` en prosa dentro de un comando. El matcheo por
+contenido está haciendo lo que se le pidió; la pregunta abierta es cuánto ruido tolera el diseño
+antes de entrenar a ignorarlo, que es la única forma en que este hook puede morir. **No se corrige
+todavía** — ver deuda #22: la corrección obvia es enumerar excepciones, y eso es exactamente lo que
+R2 prohíbe. Primero se mide.
 
 ### Decisiones
 

@@ -481,8 +481,10 @@ pipe-test — Write, Edit, Bash-heredoc, ruta Windows, `update roles set permiss
 fuera de `supabase/` y `SYSTEM_ROLES` en un `.ts` **disparan**; Bash sin SQL, `settings.json`,
 payload vacío y un `.tsx` **callan**.
 
-⛔ **Falta correrlo en la máquina real.** En G-Vento el script salió mudo la primera vez y
-leyéndolo se veía perfecto. Verificar `command -v node` y repetir los 4 casos allá.
+✅ **Corre en la máquina real (2026-08-31).** No por un test: disparó 3 veces dentro de una sesión
+real, lo que prueba la cadena entera —settings leído por el harness, matcher activo, Node
+encontrado, script no mudo—. En G-Vento el script salió mudo la primera vez y
+leyéndolo se veía perfecto — y esa advertencia se conserva como razón, no como pendiente.
 ⛔ **Falta el tripwire** `tests/roles.spec.ts` que clave el tamaño del catálogo.
 
 ---
@@ -582,10 +584,10 @@ Todo lo de esta sección caduca. Preferí siempre el comando sobre el dato.
 | Sentry | No existe. Proyecto propio, con el filtro de PII ya corregido. |
 | Origen de la copia | G-Vento rama `develop`, `d848852`. También `docs/reglas-de-clase` en origin, viva hasta terminar de copiar. |
 | Conteo de errores repetidos en G-Vento | **Discrepante:** el traspaso dice 9, su `CLAUDE.md` dice 11, el cierre dice 13 y numera los casos #11–#14. Resolver contra `docs/BITACORA.md` antes de citarlo. |
-| Staging | **Decisión pendiente.** Recomendación: stack separado del servidor Ubuntu que hoy sirve a G-Vento con ciclo nocturno de backup. En producción son proyectos distintos; un staging que los mezcle deja de reflejar la realidad. |
+| `settings.json` + hooks | Copiados, verificados en banco y **corriendo en la máquina real** (2026-08-31): disparó 3 veces en sesión. ⛔ Las 3 fueron falsos positivos — tasa de ruido sin medir (deuda 22). |
 | G-Centro | Ya nació multi-producto. Enumerar qué falta para que G-Nexo entre como tercer producto — **en su propio hilo**. |
 | `settings.json` + hooks | Copiados y verificados en banco. ⛔ Falta correrlos en la máquina real. |
-| Generador de RBAC | Hecho y aplicado en G-Vento. ⛔ Falta copiarlo acá con el catálogo propio. |
+| Generador de RBAC | **Ya viajó** (2026-08-31). Existen `scripts/gen-rbac-sql.mjs` y `supabase/seed-system-roles.sql`; `pnpm gen:rbac:check` da **exit 0**. ⛔ Falta que ese check corra en **CI** (deuda 5) y ⛔ falta el **catálogo propio**: las 23 claves de `SYSTEM_ROLES` siguen siendo las de G-Vento (`cocina.*`, `mesas.*`, `delivery.*`). Viajó el mecanismo, no el contenido. Reconfirmar con `grep -oE "'[a-z_]+\.[a-z_]+'" src/lib/permissions.ts \| sort -u \| wc -l`. |
 | Design system | ⛔ Pendiente. |
 | Tripwire del catálogo (`tests/roles.spec.ts`) | ⛔ Pendiente. |
 | Regla nueva sin número | ⛔ Numerarla en G-Vento primero. |
