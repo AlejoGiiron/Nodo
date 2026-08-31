@@ -415,12 +415,28 @@ RLS, RBAC, auth, hooks, patrones de RPC.
 
 ### Orden de poda
 
+*Corregido el 2026-08-31 contra el SQL real. La versión anterior ponía turnos en la poda; ver
+abajo y `docs/BITACORA.md`.*
+
 ```
 cocina  → ya tiene interruptor (uses_kitchen / routes_to_kitchen)
 mesas   → el POS ya está desacoplado (DEFAULT_ORDER_TYPE='takeaway')
-turnos  → cuidado con la FK de debt_payments
+turnos  → NO SE PODAN. Se renombran a jornada/caja. Ver abajo.
 extras  → AL FINAL, y renombrando en vez de borrando
 ```
+
+🔴 **Turnos NO se podan — DECIDIDO el 2026-08-31, contra lo que decía el documento de traspaso.**
+La evidencia mandó. Tres cosas medidas en el SQL: `cash_movements.shift_id` es **`not null` con
+`on delete cascade`**, así que borrar turnos borra los movimientos y **deja los abonos de cartera
+sin su rastro de caja, en silencio**; **tres** RPC leen el turno abierto —`register_sale_void`,
+`register_debt_payment` y `register_purchase`—, y compras es un módulo que G-Nexo **necesita**.
+
+**El concepto también cambia, no solo el nombre.** Un turno de bar es un cambio de mesero; acá es
+**el cierre de caja del día**. Por eso se renombra a **jornada/caja** en vez de borrarse: el
+mecanismo sirve, la palabra no.
+
+Es el mismo patrón que "extras" y que `waiter_performance`: **suena a bar y sostiene peso.** Antes
+de podar algo por su nombre, mirá qué cuelga de él.
 
 ### Dónde está el peligro
 

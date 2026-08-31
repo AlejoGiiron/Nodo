@@ -184,3 +184,82 @@ R2 prohíbe. Primero se mide.
   invocarlo — la misma propiedad que hizo fallar a las skills y a los recordatorios. El esfuerzo
   va a checks de árbol en CI, que sí detectan omisiones. Reevaluar cuando aparezca una tarea que
   inunde el contexto (candidato: la auditoría por mutación de R10).
+
+---
+
+## 2026-08-31 · Inventario del SQL heredado y plan de esquema base
+
+Segunda sesión. Produjo `docs/plan-esquema-base.md` (48 archivos, 9.280 líneas de `supabase/`
+inventariadas y clasificadas). Acá van solo las **decisiones** y lo que **cambió de opinión**; el
+inventario vive en ese documento.
+
+### Decisiones
+
+**🔴 1 · Los turnos de caja SE QUEDAN, renombrados a jornada/caja. El documento de traspaso decía
+lo contrario, y se revirtió.**
+
+El traspaso y el orden de poda de `CLAUDE.md` los ponían en la lista de lo que se borra, con la
+nota *"cuidado con la FK de `debt_payments`"*. Al mirar el SQL, esa nota se quedaba corta en tres
+puntos y cada uno solo agrava:
+
+1. `cash_movements.shift_id` es **`not null` con `on delete cascade`**. La cadena real tiene dos
+   saltos: `debt_payments.cash_movement_id → cash_movements → cash_shifts`. Borrar turnos
+   **cascadea a los movimientos** y deja el `cash_movement_id` de los abonos en **null**. Los
+   abonos sobreviven; su rastro de caja no. **No falla, no avisa.**
+2. **Tres** RPC leen el turno abierto, no una: `register_sale_void`, `register_debt_payment` y
+   `register_purchase`. La premisa heredada decía que fiado era el único módulo con dependencia
+   estructural; es el único con **FK**, pero los tres tienen dependencia de **comportamiento** y
+   los tres sobreviven en G-Nexo. Compras, además, es módulo del alcance firmado.
+3. `payments` sigue sin `shift_id` — eso de la premisa **sí** era cierto. La premisa no era falsa;
+   era **incompleta**, que es peor de detectar.
+
+**El concepto cambia, no solo el nombre.** Un turno de bar es un cambio de mesero. Acá es **el
+cierre de caja del día**. Por eso se renombra a jornada/caja: el mecanismo sirve, la palabra no.
+
+**Por qué se anota como reversión y no como corrección silenciosa:** es la última línea de la
+convención de notas —*si no podés verificar una afirmación, no la escribas como hecho*— aplicada
+al revés. El traspaso afirmó un plan de poda sin haber medido las FK. Dejar el cambio sin registro
+haría que dentro de tres meses alguien "descubra" que los turnos siguen ahí y proponga podarlos
+otra vez. **Tercer caso del mismo patrón en dos sesiones:** `extras`, `waiter_performance` y ahora
+turnos. Suena a bar, sostiene peso. Se está volviendo la regla, no la excepción.
+
+**🔴 2 · El costo unitario congelado entra en `order_items` desde el día uno.**
+
+Y la razón **no** es que ahora sea barato agregar la columna. Eso era mi argumento y estaba mal
+enfocado: es un argumento de costo, y un costo se paga. El real es que **no se puede pagar
+después**. Si la tabla nace sin la columna, las ventas ya registradas **no se pueden rellenar**:
+el costo del producto al momento de vender es irrecuperable, y cualquier backfill sería un número
+**inventado**. Las utilidades de ese período quedarían mal **para siempre**, con la forma de fallo
+de R7: plausibles, estables, y equivocadas.
+
+Es la diferencia entre una decisión cara y una **irreversible**. La primera se posterga; la
+segunda, no. Ver R1 punto 8 y la deuda #18.
+
+### Hallazgos
+
+Los nueve del inventario están en `docs/plan-esquema-base.md` §3.3. Los dos que cambian cómo se
+trabaja de acá en adelante:
+
+**Ocho funciones están definidas en dos archivos cada una**, y hoy gana la que se aplica última.
+Al consolidar, ese orden desaparece. Elegir mal no da error: da un `has_permission` que no
+verifica `is_active`, o un `enforce_profile_organization` sin `SECURITY DEFINER` — el fallo de R6,
+ya pagado una vez en G-Vento. Pasa a ser un **paso propio del prompt 3, antes de escribir el
+esquema**, con diff escrito para cada par.
+
+**Verificado contra el SQL, no contra la pista** (R4) — y las dos veces la pista se quedaba corta:
+
+- `enforce_profile_organization`: la versión de `profiles-organization-invariant.sql` **no** es
+  `SECURITY DEFINER`; la de `fix-enforce-profile-organization-definer.sql` sí, **y además agrega
+  los `revoke execute`**. ⚠️ Trampa real: el primer archivo **sí contiene** un `security definer`,
+  pero pertenece a `handle_new_user`, otra función del mismo archivo. Grepear el modificador sin
+  mirar de quién es habría dado la respuesta contraria.
+- `has_permission`: la v2 agrega **dos** cosas, no una. `p.is_active`, sí — y también
+  `r.permissions ? '*'`. Con la v1, un owner cuyo rol tiene el comodín `'*'` **se queda sin
+  permisos**. Elegir por "la que verifica `is_active`" acierta por la razón incompleta.
+
+### Nota de terreno — disparos del hook
+
+Esta sesión escribió cero SQL y el hook disparó del orden de 20 veces, todas falsos positivos.
+⚠️ **El conteo es aproximado a propósito de anotarlo así:** lo llevé a mano y perdí precisión a
+mitad de sesión. Eso **es** el hallazgo — el instrumento de la deuda #22 no existe, y una tasa
+medida a ojo no sirve para decidir sobre el hook. Ver deuda #22 y su punto pendiente del ledger.

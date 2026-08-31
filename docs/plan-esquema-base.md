@@ -112,14 +112,19 @@ necesita el mismo consecutivo por sede que un restaurante.
 
 **B — DOMINIO DE BAR (se borra).**
 `cocina-por-sede` · `sent-to-kitchen` · `tables-waiting-bill` · `orders-waiter-name` ·
-`delivery-couriers` · `shift-closed-at-server-time` · `shift-reconciliation` ·
-`caja-cierre-cuadre`.
+`delivery-couriers`.
+
+⚠️ **Corregido el 2026-08-31 (decisión 1 de 4.4):** `shift-closed-at-server-time`,
+`shift-reconciliation` y `caja-cierre-cuadre` **salieron de B y pasaron a C**. No se borran: los
+turnos se quedan renombrados a jornada/caja. Son 101 líneas que cambiaron de clase por evidencia,
+no por criterio.
 
 **C — ZONA GRIS (sirve, necesita cambios).**
 `compras-proveedores` · `compra-no-toca-caja` · `fiado-clientes` · `inventory-recipes` ·
 `inventory-min-stock` · `products-allow-negative-stock` · `order-extras-rpc` ·
 `order-items-stock-recipes` · `product-extras` · `register-sale-payment` · `register-sale-void` ·
-`sale-void` · `orders-discount-vale` · `reports-views` · `cash-movements`.
+`sale-void` · `orders-discount-vale` · `reports-views` · `cash-movements` ·
+`shift-closed-at-server-time` · `shift-reconciliation` · `caja-cierre-cuadre`.
 
 **D — SEED (se reescribe).**
 `demo-seed` · `demo-seed-cafeteria` · `lab-seed` · `labcentro-org` · `onboard-org` ·
@@ -137,7 +142,8 @@ nombre de archivo:
 | `order_type`, `order_status`, `payment_method` | 5 | C |
 | `restaurants`, `profiles`, funciones auxiliares, `handle_new_user`, sus policies y triggers | 211 | A |
 | `categories`, `products`, `orders`, `order_items`, `payments` + índices, triggers y policies | 266 | C |
-| `tables` y `cash_shifts`: tablas, FK `orders.table_id`, `chk_dine_in_has_table`, 5 índices, 2 triggers, 7 policies | 105 | **B** |
+| `tables`: tabla, FK `orders.table_id`, `chk_dine_in_has_table`, 2 índices, trigger, 4 policies | 49 | **B** |
+| `cash_shifts`: tabla, 2 índices, trigger, 3 policies | 56 | **C** (era B; ver 4.4) |
 
 **`sale-void.sql` (97) cae en tres a la vez**: las columnas de anulación y su índice son **C** (la
 anulación sobrevive en G-Nexo), el `idx_one_open_shift_per_store` es **B** (turnos), y el
@@ -158,8 +164,8 @@ rename** — ver H7.
 | Clase | Líneas | % de `supabase/` | Diagnóstico |
 |---|---:|---:|---:|
 | A · base técnica | 2.642 | 28,5% | 21,7% |
-| B · dominio de bar | 364 | **3,9%** | 24,6% |
-| C · zona gris | 2.604 | 28,1% | 43,3% |
+| B · dominio de bar | 207 | **2,2%** | 24,6% |
+| C · zona gris | 2.761 | 29,8% | 43,3% |
 | D · seed | 3.670 | **39,5%** | 9,5% |
 | | **9.280** | 100% | |
 
@@ -171,7 +177,8 @@ el denominador, no por un fork que trajo algo que el diagnóstico no vio:
 
 - **D salta a 39,5%** porque `demo-seed` + `demo-seed-cafeteria` + `lab-seed` son 2.897 líneas
   ellos solos, el 31% de `supabase/`. Diluidos en el repo entero pesan mucho menos.
-- **B cae a 3,9%** porque el dominio de bar vive sobre todo en `src/` —pantallas de mesas, KDS,
+- **B cae a 2,2%** —y bajó de 3,9% cuando los turnos pasaron a C (4.4)— porque el dominio de bar
+  vive sobre todo en `src/` —pantallas de mesas, KDS,
   comanda—, no en SQL. En la base, mesas y cocina son **columnas y policies, no módulos**.
 
 **Lo que esto sí significa para el plan:** borrar bar del SQL es barato (364 líneas). El trabajo
@@ -196,11 +203,14 @@ debt_payments.cash_movement_id  →  cash_movements   (on delete SET NULL)
 cash_movements.shift_id         →  cash_shifts      (NOT NULL, on delete CASCADE)
 ```
 
-🔴 **Consecuencia:** borrar `cash_shifts` **borra en cascada sus `cash_movements`**, y eso **pone
-en null el `cash_movement_id` de los abonos de cartera**. No falla y no avisa: la cartera queda
-con los abonos intactos y **sin su rastro de caja**. Es el perfil de fallo silencioso de R7
-—número plausible, historia perdida— y ocurre **durante la poda**, no en producción. El plan tiene
-que romper esta cadena **antes** de tocar turnos, no después.
+🔴 **Consecuencia:** borrar `cash_shifts` **borraría en cascada sus `cash_movements`**, y eso
+**pondría en null el `cash_movement_id` de los abonos de cartera**. No falla y no avisa: la
+cartera quedaría con los abonos intactos y **sin su rastro de caja**. Es el perfil de fallo
+silencioso de R7 —número plausible, historia perdida— y ocurriría **durante la poda**, no en
+producción.
+
+✅ **Este hallazgo es el que revirtió la decisión: los turnos NO se podan** (4.4, decisión 1). La
+cadena no se rompe — se conserva entera, y la FK `not null` pasa a ser una garantía deseada.
 
 **3 · `add_order_items_with_extras` — REFUTADO PARCIALMENTE. No es "el único camino": es el único
 camino *usado*.** La diferencia es la que importa:
@@ -230,7 +240,7 @@ pantalla nueva rompe el inventario **sin un solo error**.
 | `tables` | enum `table_status`, extendido por `tables-waiting-bill.sql` | tipo |
 | `tables` | `demo-seed`, `lab-seed` | seeds |
 | `cash_shifts` | `cash_movements.shift_id` | **FK not null, on delete cascade** |
-| `cash_shifts` | `register_sale_void`, `register_debt_payment`, `register_purchase` | 3 RPC leen el turno abierto |
+| `cash_shifts` | `register_sale_void`, `register_debt_payment`, `register_purchase` | 3 RPC leen el turno abierto — **la razón por la que no se poda** (4.4) |
 | `cash_shifts` | `idx_cash_shifts_one_open` **y** `idx_one_open_shift_per_store` | 2 índices duplicados (H3) |
 | `cash_shifts` | `set_shift_closed_at` + `trg_shift_closed_at` | trigger |
 | `cash_shifts` | `caja-cierre-cuadre`, `shift-reconciliation` | columnas agregadas |
@@ -319,16 +329,16 @@ igual (clase D), pero el plan deja dicho que **llamen a la RPC en vez de copiarl
 | 3 | `03-perfiles-y-auth.sql` | `profiles` (+`is_active`), `handle_new_user` **v2**, `enforce_profile_organization` **v2 (`SECURITY DEFINER`)**, `protect_owner_role`, `protect_profile_self_escalation` |
 | 4 | `04-funciones-auxiliares.sql` | `has_permission`, `get_my_role`, `get_my_sede_id`, `get_my_organization_id` — **todas v2, las que exigen `is_active`**; `revoke execute from public` en cada `SECURITY DEFINER` |
 | 5 | `05-catalogo.sql` | `categories`, `products` (+`min_stock`, stock negativo permitido, **sin** `routes_to_kitchen`) |
-| 6 | `06-ventas.sql` | `orders` (sin `table_id`, sin `chk_dine_in_has_table`, sin `waiter_name`, con anulación), `order_items` (sin `sent_to_kitchen`, **con costo unitario congelado**), `payments`, `store_sequences`, `next_order_number` |
+| 6 | `06-ventas.sql` | `orders` (sin `table_id`, sin `chk_dine_in_has_table`, sin `waiter_name`, con anulación), `order_items` (sin `sent_to_kitchen`, **con costo unitario congelado — DECIDIDO, ver 4.4**), `payments`, `store_sequences`, `next_order_number` |
 | 7 | `07-inventario.sql` | `stock_movements`, `adjust_stock`. **Sin `product_components`** |
 | 8 | `08-compras.sql` | `suppliers`, `purchase_invoices`, `purchase_invoice_items`, `register_purchase` **v2** |
-| 9 | `09-clientes-y-cartera.sql` | `customers`, `debt_payments`, `register_debt_payment` **sin dependencia de turno** |
-| 10 | `10-caja.sql` | `cash_movements` con `shift_id` **eliminado o nullable** — ver 4.4 |
+| 9 | `09-clientes-y-cartera.sql` | `customers`, `debt_payments`, `register_debt_payment` **conservando** su búsqueda de jornada abierta (4.4, decisión 1) |
+| 10 | `10-caja.sql` | **`jornadas`** (ex `cash_shifts`, renombrada) y `cash_movements` con su FK **not null** intacta — ver 4.4, decisión 1 |
 | 11 | `11-rls.sql` | todas las policies, en un solo lugar |
 | 12 | `12-vistas.sql` | `daily_sales_summary`, `product_performance`, `hourly_sales`, `user_performance` (ex-`waiter_performance`) |
 
-**Se descarta entero:** `tables`, `couriers`, `product_components`, `cash_shifts` y todo lo de
-cocina; los 7 seeds de clase D; y los `fix-*` y `*-rls.sql`, cuyo contenido **no se pierde: se
+**Se descarta entero:** `tables`, `couriers`, `product_components` y todo lo de cocina
+(**`cash_shifts` NO** — se renombra, ver 4.4); los 7 seeds de clase D; y los `fix-*` y `*-rls.sql`, cuyo contenido **no se pierde: se
 absorbe** como v2 en los archivos 3 y 4.
 
 ### 4.2 · Qué pasa con los que en G-Vento son registro histórico
@@ -369,27 +379,57 @@ conceder desde la UI (le pasó a `ventas.anular`); y `admin` sigue siendo `ALL_P
 
 🔴 **El `update roles set permissions` de `sale-void.sql` (H4) no viaja.**
 
-### 4.4 · Las dos decisiones que este plan deja abiertas — son humanas
+### 4.4 · Las dos decisiones que este plan dejaba abiertas — RESUELTAS el 2026-08-31
 
-⛔ **1 · ¿G-Nexo tiene turnos de caja?** El orden de poda de `CLAUDE.md` dice sacarlos, pero
-`cash_movements.shift_id` es `not null` y tres RPC leen el turno abierto (H2). Las opciones son
-**quitar `shift_id`** (caja sin turnos: los movimientos cuelgan de la sede y la fecha) o
-**conservar `cash_shifts`** como apertura/cierre de mostrador. **No la tomo yo**: cambia los
-archivos 6, 9 y 10. Hasta que se responda, el plan asume la primera y lo declara.
+✅ **1 · G-Nexo SÍ tiene turnos de caja. Se quedan, renombrados a jornada/caja.** Contradice el
+documento de traspaso y el orden de poda original; **la evidencia mandó**. Las razones están
+medidas en 3.1.2 y H2: `cash_movements.shift_id` es `not null` con `on delete cascade`, tres RPC
+leen el turno abierto —incluida `register_purchase`, y compras está en el alcance firmado—, y
+borrarlos deja los abonos de cartera **sin rastro de caja, en silencio**.
 
-⛔ **2 · ¿El costo unitario congelado entra en `order_items` desde el día uno?** La decisión de
-fondo ya está tomada (R1 punto 8, deuda #18) y **el momento barato para agregar la columna es
-ahora**, por lo mismo que H8. Queda marcado en el archivo 6 y sin escribir, porque este prompt no
-escribe SQL.
+**Un turno de bar es un cambio de mesero; acá es el cierre de caja del día.** El mecanismo sirve,
+la palabra no. Mismo patrón que `extras` y `waiter_performance`: suena a bar y sostiene peso.
 
-### 4.5 · Orden de ejecución propuesto para el prompt 3
+**Consecuencia para el plan:** el archivo 10 deja de ser "caja sin turnos". `cash_shifts` viaja
+renombrada, `cash_movements` conserva su FK **not null** —que ahora es una garantía deseada, no un
+estorbo—, y `register_debt_payment` **mantiene** su búsqueda de jornada abierta en vez de
+desacoplarse. El punto 1 de 4.5 (romper la cadena antes de tocar turnos) **queda sin objeto**: la
+cadena se conserva entera.
 
-1. Romper la cadena `debt_payments → cash_movements → cash_shifts` (3.1.2) **antes** de tocar turnos.
-2. Escribir los 12 archivos tomando **v2** de cada función redefinida (H5), y anotando la versión.
-3. Renombrar `restaurant_id` → `sede_id` y la marca heredada **en la misma pasada** (deudas #3 y #21).
-4. Regenerar el catálogo (deuda #23) y correr `pnpm gen:rbac:check`.
-5. Recién ahí, el primer `db push`. **Desde ese momento R5 aplica con todo su peso.**
+✅ **2 · El costo unitario congelado entra en `order_items` desde el día uno.** Y la razón no es
+que ahora sea barato: **es que después no se puede.** Si la tabla nace sin la columna, las ventas
+ya registradas **no se pueden rellenar** —el costo al momento de vender es irrecuperable y
+cualquier backfill sería inventado—, y las utilidades de ese período quedan mal **para siempre**,
+con la forma de fallo de R7: plausibles, estables y equivocadas. No es una decisión cara, es una
+**irreversible**. Ver R1 punto 8 y la deuda #18.
 
+### 4.5 · Orden de ejecución para el prompt 3
+
+**Paso 0 — RESOLVER LAS OCHO FUNCIONES DUPLICADAS, ANTES DE ESCRIBIR UNA LÍNEA DE ESQUEMA.**
+Para cada par de H5: **diff de las dos definiciones, cuál gana, y por qué — escrito**. No se elige
+por fecha ni por archivo: **por lo que hace el cuerpo**. Un `create or replace` posterior no es
+evidencia de que sea el bueno, es evidencia de que se aplicó después.
+
+Dos ya están verificadas contra el SQL, y las dos muestran por qué el criterio corto no alcanza:
+
+| Función | Gana | Verificado |
+|---|---|---|
+| `enforce_profile_organization` | `fix-enforce-profile-organization-definer` | Es la única con `security definer`, **y además agrega los `revoke execute`**. ⚠️ `profiles-organization-invariant.sql` **sí contiene** un `security definer`, pero es de `handle_new_user`, otra función del mismo archivo: grepear el modificador sin mirar de quién es da la respuesta **contraria**. Es la evidencia de R6, ya pagada una vez en G-Vento. |
+| `has_permission` | `profiles-is-active-enforced` | Agrega **dos** cosas, no una: `p.is_active` **y** `r.permissions ? '*'`. Con la v1, un owner cuyo rol tiene el comodín `'*'` **se queda sin permisos**. Elegir por "la que verifica `is_active`" acierta por la razón incompleta. |
+
+Las otras seis —`add_order_items_with_extras`, `get_my_role`, `get_my_restaurant_id`,
+`get_my_organization_id`, `handle_new_user`, `register_purchase`— siguen **sin diff hecho**. La
+presunción es que gana la v2 de la tabla de H5, pero **presunción no es verificación** (R4): las
+dos que sí se miraron tenían algo que la presunción no veía.
+
+Después de eso:
+
+1. Escribir los 12 archivos, tomando la versión decidida en el paso 0 y **anotando cuál es y qué
+   le agregaba a la otra**.
+2. Renombrar `restaurant_id` → `sede_id`, `cash_shifts` → jornada/caja, y la marca heredada
+   **en la misma pasada** (deudas #3 y #21).
+3. Regenerar el catálogo (deuda #23) y correr `pnpm gen:rbac:check`.
+4. Recién ahí, el primer `db push`. **Desde ese momento R5 aplica con todo su peso.**
 ---
 
 ## 5 · Lo que NO pude verificar — pendiente, no hecho
