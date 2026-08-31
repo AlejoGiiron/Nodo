@@ -274,3 +274,37 @@ mismo error de proxy que el ledger vino a evitar.
 
 ⚠️ **Y es la primera divergencia deliberada entre los hooks de los dos repos** (R1 punto 9).
 Se aceptó con un criterio que conviene retener: **instrumentar puede divergir; corregir, no.**
+
+**El denominador se agregó el mismo día**, después de que la objeción se escribiera sola: un ledger
+de disparos sin invocaciones totales produce exactamente la garantía falsa que describe la regla
+sin número — *"40 disparos"* leído como *"40 de 40"*, y en el lugar donde se decide. Se hizo como
+**contador agregado** (`hook-ledger.stats.json`), no como una línea por invocación, para que el
+archivo no crezca sin control: detalle solo donde aporta, que son los disparos. ⚠️ El contador es
+read-modify-write y **no es atómico**: `invocaciones` es un **piso**. Subestimar el denominador
+**infla** la tasa de ruido, así que un número alto es real y uno bajo hay que desconfiarlo — el
+sesgo queda declarado en el código, no descubierto seis meses después.
+
+### 🔴 El modo de fallo nº1 del hook, observado en vivo
+
+**Evidencia que no se va a volver a tener a pedido, así que se anota.** Verificando el ledger
+escribí un caso de prueba con la ruta Windows mal escapada: una barra invertida seguida de `x`
+dentro de un JSON no es un escape válido. El hook **no** se comió el payload roto ni siguió como si
+nada: escribió `no pude parsear el payload del hook` por stderr y salió con código 1.
+
+Es el **modo de fallo nº1 de su propio docblock, funcionando en vivo** —*"el script revienta →
+RUIDOSO ✔"*— y el complemento exacto del bug que lo originó en G-Vento, donde un `catch` devolvía
+la cadena vacía con exit 0 y el hook quedaba mudo, exitoso e invisible. Acá el contrato roto se
+anunció. **La diferencia entre los dos comportamientos son tres líneas de diseño**, y ésta es la
+primera vez que se la ve actuar contra un payload realmente malformado en vez de uno fabricado para
+el test.
+
+Dos cosas más, porque la primera se lee mejor cuando las otras no se esconden:
+
+- **El fallo era de mi caso de prueba, no del hook.** Repetido con el JSON bien formado, la ruta
+  Windows da 811 bytes.
+- **La misma clase de error volvió a morder minutos después**, al escribir *esta misma nota*: el
+  script que la insertaba llevaba esa barra invertida dentro de un literal de JavaScript y no
+  compiló. También falló ruidoso y no dejó el archivo a medias. Es el argumento de R3 en pequeño:
+  no era una instancia, era una **clase** —"secuencia de escape inválida en un literal"— y aparece
+  en cualquier lenguaje que se le ponga adelante. Se evita no escribiendo el texto dentro de un
+  literal: se escribe a un archivo y se inserta desde ahí.

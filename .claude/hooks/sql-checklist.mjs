@@ -201,11 +201,20 @@ import { fileURLToPath } from 'node:url'
 //    no una mejora del mecanismo. Medir en un repo alcanza. Cuando la deuda #22
 //    se resuelva, el ARREGLO sí tiene que ir a los dos.
 //
-// ⚠️ QUÉ MIDE Y QUÉ NO: registra los DISPAROS, no las invocaciones. O sea da
-//    volumen y mezcla de clases, NO una tasa — para la tasa falta el
-//    denominador (cuántas veces corrió el hook sin disparar). Serían dos líneas
-//    más; no se hicieron porque no se pidieron. Dicho acá para que nadie lea
-//    "12 disparos" como "12 de 12".
+// QUÉ MIDE — DOS ARCHIVOS, A PROPÓSITO:
+//   · hook-ledger.jsonl        una línea POR DISPARO (fecha, herramienta, regla)
+//   · hook-ledger.stats.json   contadores AGREGADOS: invocaciones y disparos
+//
+// POR QUÉ AGREGADO Y NO UNA LÍNEA POR INVOCACIÓN: el denominador hace falta
+// —sin él "40 disparos" se lee como "40 de 40", que es una garantía falsa en el
+// lugar donde se decide—, pero una línea por cada Write/Edit/Bash de cada sesión
+// hace crecer el archivo sin control. El detalle solo se guarda donde aporta:
+// en los disparos. El resto es un contador.
+//
+// ⚠️ LÍMITE DEL CONTADOR: es read-modify-write, no atómico. Dos invocaciones
+//    simultáneas pueden perder un incremento, así que `invocaciones` es un piso,
+//    no un número exacto. Subestimar el denominador **infla** la tasa de ruido:
+//    si el número ya se ve alto, es real; si se ve bajo, desconfiá.
 //
 // POR QUÉ EL catch NO ES EL fail-open QUE R2 PROHÍBE: acá el error que se traga
 // es el del LEDGER, y el checklist se emite igual unas líneas más abajo. Un
@@ -218,6 +227,8 @@ const LEDGER = path.join(
   'hook-ledger.jsonl',
 )
 
+const STATS = LEDGER.replace(/\.jsonl$/, '.stats.json')
+
 function anotarDisparo(herramienta, reglas) {
   try {
     fs.appendFileSync(
@@ -226,6 +237,31 @@ function anotarDisparo(herramienta, reglas) {
     )
   } catch (e) {
     process.stderr.write(`sql-checklist: no pude escribir el ledger: ${e.message}\n`)
+  }
+}
+
+/** El denominador. Corre SIEMPRE, dispare o no: sin esto no hay tasa. */
+function contarInvocacion(reglas) {
+  try {
+    let s = { desde: new Date().toISOString(), invocaciones: 0, disparos: 0, porRegla: {} }
+    try {
+      const previo = JSON.parse(fs.readFileSync(STATS, 'utf8'))
+      if (previo && typeof previo.invocaciones === 'number') s = previo
+      s.porRegla ??= {}
+    } catch {
+      // Archivo ausente o corrupto: se arranca de cero. Es el único caso donde
+      // perder el dato es aceptable — un contador vacío se nota, uno mal sumado no.
+    }
+    s.invocaciones++
+    if (reglas.length > 0) {
+      s.disparos++
+      const clave = reglas.join('+')
+      s.porRegla[clave] = (s.porRegla[clave] ?? 0) + 1
+    }
+    s.hasta = new Date().toISOString()
+    fs.writeFileSync(STATS, JSON.stringify(s, null, 2) + '\n')
+  } catch (e) {
+    process.stderr.write(`sql-checklist: no pude actualizar el contador: ${e.message}\n`)
   }
 }
 
@@ -273,6 +309,10 @@ const avisos = []
 const reglas = []
 if (OBJETIVO.test(rutas)) { avisos.push(CHECKLIST); reglas.push('sql') }
 if (tocaCatalogoDePermisos(contenido)) { avisos.push(CHECKLIST_PERMISOS); reglas.push('permisos') }
+
+// El contador va ANTES del early-exit a propósito: si se contara después, solo
+// se contarían los disparos y el denominador volvería a no existir.
+contarInvocacion(reglas)
 
 if (avisos.length === 0) process.exit(0)
 

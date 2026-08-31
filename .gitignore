@@ -26,6 +26,7 @@ supabase/.temp/
 .claude/settings.local.json
 # instrumento de medicion local de la deuda 22 (disparos del hook), no se versiona
 .claude/hook-ledger.jsonl
+.claude/hook-ledger.stats.json
 
 # Editores
 .vscode/settings.json
