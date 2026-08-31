@@ -357,3 +357,47 @@ veces que salió mal.
 ⚠️ **Falsable, como toda regla que valga:** si aparece un candidato donde la enumeración vuelve
 vacía y el borrado sale limpio, este historial pasa a 4 de 5 y la regla sigue en pie — lo que la
 tiraría abajo es que enumerar resulte **caro**, no que alguna vez dé permiso para borrar.
+
+---
+
+## 2026-08-31 · Límite del método: un plan no ve sus propios huecos hasta que se escribe
+
+El plan de consolidación de `docs/plan-esquema-base.md` se hizo sobre un inventario completo de los
+48 archivos, clasificados uno por uno. Aun así, **al escribir los archivos aparecieron dos defectos
+que el plan no podía haber visto**, y los dos son de la misma familia.
+
+**1 · El hueco de extras.** El plan asignó 12 archivos y `add_order_items_with_extras` a uno de
+ellos, pero **ninguno contenía las tres tablas de extras** que esa RPC necesita. Se descubrió al
+intentar escribirla: no antes.
+
+**2 · El archivo 09 bloqueado por transitividad.** Los archivos 08 y 10 estaban bloqueados por una
+decisión de negocio abierta. El 09 (cartera) **no** estaba bloqueado en el plan — pero
+`register_debt_payment` escribe `cash_movements`, que vive en el 10. El bloqueo se propaga por una
+dependencia que el plan sí había documentado (la cadena de dos saltos) sin sacar la consecuencia.
+
+**Por qué es un límite del método y no un descuido.** Un plan de consolidación razona sobre
+**pertenencia** —a qué archivo va cada cosa— y eso se puede hacer leyendo. Los dos defectos son de
+**orden de dependencias**, y el orden solo se manifiesta cuando algo tiene que compilar contra lo
+anterior. Es la misma distancia que R4 marca entre el proxy y la cosa: el plan es un proxy
+excelente del esquema, y sigue sin ser el esquema.
+
+**Consecuencia práctica, que es lo que hay que retener:** un plan de consolidación no se valida
+leyéndolo de nuevo. Se valida escribiendo el primer archivo que dependa de otros tres. Cuando el
+plan 3 tenga un sucesor, conviene ordenar los archivos por **profundidad de dependencia** y escribir
+primero el más profundo, porque es el que revela los huecos más temprano y más barato.
+
+⚠️ **No se anota como error del plan** — se anota porque el próximo plan va a tener huecos también,
+y saberlo cambia cuándo se los busca, no si existen.
+
+### El corolario que sí es accionable: la fecha límite es el primer `db push`
+
+Todo lo que hoy está "pendiente" en estos archivos —enumeraciones sin hacer, columnas sin decidir,
+el nombre de una tabla— tiene **una sola fecha límite, y es el primer `supabase db push`**. Hasta
+ahí son archivos y editarlos es gratis. Después son migraciones aplicadas y R5 manda: lo que
+falte se arregla con una migración nueva, no editando.
+
+Esto **no se agrega al texto de R5** a propósito. La numeración y la redacción de las once reglas
+son idénticas a las de G-Vento porque las skills citan por número (ver R1); tocar el cuerpo de R5
+acá crearía un contrato divergente, que es exactamente el criterio con el que se acepto la
+divergencia del ledger: **instrumentar puede divergir; el texto de la regla, no.** El corolario
+vive acá y en `docs/plan-esquema-base.md`.
