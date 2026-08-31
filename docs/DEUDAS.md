@@ -20,9 +20,10 @@ Toda afirmación de estado va fechada. *Última revisión: 2026-08-31.*
 | # | Deuda | Consecuencia si no se paga |
 |---|---|---|
 | 1 | **Correr el hook en la máquina real.** La verificación de los 10 casos es en banco, con Node v22, no en el entorno de trabajo. | En G-Vento el script salió mudo la primera vez y leyéndolo se veía perfecto. Un hook mudo es silencio, no error. |
-| 2 | **Verificar que el CLI de Supabase no dé 403** de management, **antes** de la primera migración. | En G-Vento dio 403 y `database.types.ts` terminó escrito a mano, divergiendo del esquema sin que `tsc` lo notara. |
+| 2 | ~~Verificar que el CLI de Supabase no dé 403~~ **RESUELTO 2026-08-31: responde, sin 403.** `supabase` v2.90.0 contra el proyecto de G-Nexo, base vacía. | Queda el hábito, no la deuda: regenerar `database.types.ts` después de **cada** migración. En G-Vento ese 403 es lo que dejó los tipos escritos a mano, divergiendo del esquema sin que `tsc` lo notara (R1 punto 5). |
 | 3 | ~~Decidir el nombre de la entidad sede~~ **RESUELTO 2026-08-31: `sede_id`.** Queda la ejecución: renombrar `restaurant_id`, **después de podar**, en un commit solo. | El repo ya usa "sede" en el permiso `sedes.gestionar` y en R6. Criterio de éxito: el conteo del término viejo llega a cero. Reversible con `git revert`. |
 | 4 | **Confirmar el nombre del producto**: whois de `gnexo.co` / `.com` y marca en el SIC, clases 9 y 42. | Hay al menos tres empresas de software colombianas con la raíz "Nexo". Cambiarlo después toca todo. |
+| 21 | **Renombrar la marca heredada** — `gvento`, `GVento`, `G-Vento` — en todo el repo. Se detectó por el `mkdtemp` `gvento-rbac-*` de `scripts/gen-rbac-sql.mjs`, pero es **defecto de clase, no instancia** (R3). ⛔ **Falta el conteo.** | Va en el **mismo paso 5** que el rename de `restaurant_id` (deuda 3), para no hacer dos pasadas sobre los mismos archivos. Sin conteo previo no hay criterio de éxito; con él, el criterio es el mismo: llega a cero. ⚠️ Excepción: las menciones a G-Vento en `docs/` son historia y atribución — **no se renombran**. |
 
 ### Contratos y verificación
 
@@ -30,8 +31,9 @@ Toda afirmación de estado va fechada. *Última revisión: 2026-08-31.*
 |---|---|---|
 | 5 | **Los cuatro checks de árbol en CI.** `gen:rbac:check` (copiar de G-Vento) · `database.types.ts` regenerado vs commiteado · columnas de `sentry.test.ts` contra `information_schema` · el enum `subscription_status` en sus seis lados. | Un hook dispara cuando tocás un archivo; el fallo real de G-Vento fue un seed congelado **porque nadie lo tocó**. Los hooks no ven omisiones; el check de árbol sí. |
 | 6 | **Tripwire del catálogo de permisos** — un `toBe(N)` en `tests/roles.spec.ts` que clave el tamaño. | Sin él, un cambio silencioso del catálogo no sale rojo. |
-| 7 | **Copiar el generador de RBAC** con el catálogo propio de G-Nexo. Ya está hecho y aplicado en G-Vento (7 lados → 2). | `admin = ALL_PERMISSION_KEYS` derivado, no enumerado. No `SECURITY DEFINER`. Revoca a `authenticated`. Dos guards fail-closed. |
+| 7 | ~~Copiar el generador de RBAC~~ **RESUELTO 2026-08-31: ya viajó en `d848852`.** Existen `scripts/gen-rbac-sql.mjs` y `supabase/seed-system-roles.sql`, y `node scripts/gen-rbac-sql.mjs --check` da exit 0. | `admin = ALL_PERMISSION_KEYS` derivado, no enumerado. No `SECURITY DEFINER`. Revoca a `authenticated`. Dos guards fail-closed. ⚠️ Lo que **no** cierra: que el check corra en CI — eso sigue siendo la deuda #5. Y el script arrastra dos defectos propios, #20 y #21. |
 | 8 | **Los hooks son ahora un contrato en dos repos** sin nada que los sincronice. | Si arreglás el matcheo de permisos en un repo, no llega solo al otro. Está en el inventario de R1 como punto 9. |
+| 20 | **Resolver el binario de `tsc` en `scripts/gen-rbac-sql.mjs`** en vez de armar la ruta `node_modules/typescript/bin/tsc` a mano — resolverlo y **fallar ruidoso** si no está. | Frágil con pnpm, que no aplana `node_modules`, y en CI. Es el **mismo patrón que el `jq` del hook** (R4): un camino que anda en una máquina, asumido universal. Si el check de árbol del punto 5 se apoya en este script, un `tsc` no encontrado convierte el check en silencio en vez de en rojo. |
 
 ### Documentación
 

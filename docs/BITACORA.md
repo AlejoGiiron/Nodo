@@ -75,6 +75,30 @@ reemplazado por el de G-Nexo. Verificación en banco (Node v22, no la máquina d
 ⛔ **Falta correrlo en la máquina real.** En G-Vento este script salió mudo la primera vez y
 leyéndolo se veía perfecto. Verificación en banco no es verificación en el entorno (R4).
 
+### Línea base del repo copiado
+
+*Pasos 1 y 2 del runbook, ejecutados a mano el 2026-08-31. Repo en `develop`, base copiada de
+G-Vento `d848852`. Para reconfirmar cualquier fila, los comandos del **paso 3** de
+`docs/RUNBOOK-arranque.md`.*
+
+| Qué | Medido | Diagnóstico | Δ |
+|---|---|---|---|
+| archivos en `src` + `supabase` + `tests` | 187 | 179 | +4,5% |
+| líneas totales | 40.272 | 39.351 | +2,3% |
+| ocurrencias de `restaurant_id` | 1.017 | ~1.010 | +0,7% |
+| archivos con `shift` | 37 ⚠️ **conteo contaminado** | — | — |
+| archivos con `kitchen` | 19 | — | — |
+| ocurrencias de `add_order_items_with_extras` | 17 | — | — |
+
+**La desviación está explicada, no es sorpresa.** `d848852` es posterior al diagnóstico e incluye
+el generador de RBAC. Verificado: `supabase/seed-system-roles.sql` y `scripts/gen-rbac-sql.mjs`
+existen, y `node scripts/gen-rbac-sql.mjs --check` da **exit 0**. El criterio del paso 3 —el
+conteo de `restaurant_id` "cerca de 1.010"— se cumple, así que el diagnóstico sigue vigente y la
+poda arranca sobre terreno conocido.
+
+Estos números son la **referencia contra la que se mide la poda**. No se vuelven a tomar para
+citarlos: se vuelven a tomar para compararlos.
+
 ### Hallazgos
 
 **El índice de reglas del documento de traspaso estaba mal en cuatro de diez entradas.** Se detectó
@@ -100,6 +124,34 @@ viajado. **Acción abierta en G-Vento.**
 **El conteo de errores repetidos no cierra entre documentos:** el traspaso dice 9, el `CLAUDE.md`
 de G-Vento dice 11, el cierre dice 13 y numera los casos #11 a #14. Los tres son incompatibles.
 Sin resolver — ver `docs/DEUDAS.md`.
+
+**El conteo de `shift` está contaminado por `Array.prototype.shift()`.** 37 archivos es la palabra,
+no el módulo. Al podar turnos hay que contar por **símbolo real** —`shift_id`, `isShiftOpen`,
+`shifts`—, no por la cadena. Es R4 en su forma más barata: el proxy no es la cosa. Si la poda se
+planifica sobre 37, se dimensiona mal un trabajo que además tiene la dependencia estructural de
+cartera colgando (`debt_payments.cash_movement_id`).
+
+**El hook sobrevive al checkout con `core.autocrlf=true` en Windows.** Verificado en un clon
+limpio: `node --check` OK, **811 bytes** en los casos que deben disparar y **0** en los que deben
+callar. Esto cierra el límite de R4 sobre artefactos generados —"el archivo que acabás de escribir
+no es el que git materializa"— porque la prueba se corrió **después de un checkout**, no en la
+sesión que escribió el archivo. El commit `chore: forzar LF en los hooks` es lo que lo sostiene.
+
+**El remote quedó apuntando a G-Vento por error y no se subió nada.** `git remote add` **falla en
+vez de sobrescribir**, así que el push nunca salió. Es fail-closed (R2) operando en un lugar donde
+nadie lo estaba buscando: si el comando hubiera sido idempotente y "amable", la historia nueva de
+G-Nexo terminaba empujada contra el repo del producto hermano. Vale anotarlo como precedente
+positivo de la clase, no solo como anécdota.
+
+**`scripts/gen-rbac-sql.mjs` arma la ruta de `tsc` a mano** (`node_modules/typescript/bin/tsc`) en
+vez de resolver el binario y verificar que existe. Frágil con pnpm —que no aplana
+`node_modules`— y en CI. Es **el mismo patrón que el `jq` del hook** (R4): copiar un camino que
+funciona en una máquina y asumir que existe en todas. Pasa a deuda.
+
+**El directorio temporal de ese script todavía se llama `gvento-rbac-*`.** No es una instancia
+suelta: es **cadena de marca heredada**, y la pregunta correcta (R3) es "¿tiene hermanas?" en todo
+el repo —`gvento`, `GVento`, `G-Vento`—, no "¿arreglo esta línea?". Pasa a deuda, y se ejecuta
+junto con el rename de `restaurant_id` para no hacer dos pasadas sobre los mismos archivos.
 
 ### Decisiones
 
