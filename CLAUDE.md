@@ -587,7 +587,7 @@ Todo lo de esta sección caduca. Preferí siempre el comando sobre el dato.
 | `settings.json` + hooks | Copiados, verificados en banco y **corriendo en la máquina real** (2026-08-31): disparó 3 veces en sesión. ⛔ Las 3 fueron falsos positivos — tasa de ruido sin medir (deuda 22). |
 | G-Centro | Ya nació multi-producto. Enumerar qué falta para que G-Nexo entre como tercer producto — **en su propio hilo**. |
 | `settings.json` + hooks | Copiados y verificados en banco. ⛔ Falta correrlos en la máquina real. |
-| Generador de RBAC | **Ya viajó** (2026-08-31). Existen `scripts/gen-rbac-sql.mjs` y `supabase/seed-system-roles.sql`; `pnpm gen:rbac:check` da **exit 0**. ⛔ Falta que ese check corra en **CI** (deuda 5) y ⛔ falta el **catálogo propio**: las 23 claves de `SYSTEM_ROLES` siguen siendo las de G-Vento (`cocina.*`, `mesas.*`, `delivery.*`). Viajó el mecanismo, no el contenido. Reconfirmar con `grep -oE "'[a-z_]+\.[a-z_]+'" src/lib/permissions.ts \| sort -u \| wc -l`. |
+| Generador de RBAC | **Ya viajó** (2026-08-31). Existen `scripts/gen-rbac-sql.mjs` y `supabase/seed-system-roles.sql`; `pnpm gen:rbac:check` da **exit 0**. ⛔ Falta que ese check corra en **CI** (deuda 5) y ⛔ falta el **catálogo propio** (deuda 23): las 23 claves de `SYSTEM_ROLES` siguen siendo las de G-Vento (`cocina.*`, `mesas.*`, `delivery.*`). Viajó el mecanismo, no el contenido. Reconfirmar con `grep -oE "'[a-z_]+\.[a-z_]+'" src/lib/permissions.ts \| sort -u \| wc -l`. |
 | Design system | ⛔ Pendiente. |
 | Tripwire del catálogo (`tests/roles.spec.ts`) | ⛔ Pendiente. |
 | Regla nueva sin número | ⛔ Numerarla en G-Vento primero. |
