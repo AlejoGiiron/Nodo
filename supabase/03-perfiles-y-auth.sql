@@ -30,21 +30,26 @@ begin;
 -- ------------------------------------------------------------
 -- profiles
 --
--- ⚠️ CAMBIO FORZADO POR EL RECORTE DEL ENUM, y vale la pena leerlo:
--- el default de `role` era 'waiter', que ya no existe (archivo 01). Pasa a
--- 'cashier', que es el menos privilegiado de los que quedan — pero el default
--- seguro se volvio MAS privilegiado que antes como efecto colateral de podar.
--- Se anota porque es un deslizamiento hacia fail-open, aunque acotado: los
--- permisos EFECTIVOS salen de role_id (RBAC), que handle_new_user NO setea, y
--- has_permission con role_id nulo devuelve false. O sea que un perfil recien
--- creado queda SIN permisos finos aunque su enum diga 'cashier'. El riesgo real
--- se limita a las policies que miren el enum directo.
+-- 🔴 `role` NO TIENE DEFAULT, Y ESO ES EL ARREGLO DE UN DEFECTO.
+-- El default heredado era 'waiter', el rol MENOS privilegiado. Al podar ese
+-- valor del enum (archivo 01), el default habria pasado a 'cashier' — o sea que
+-- un borrado, por si solo, habria vuelto el default MAS PRIVILEGIADO. Nadie
+-- eligio eso: fue el efecto colateral de otra decision, y es fail-open, que R2
+-- prohibe.
+--
+-- Que hoy quede acotado —los permisos efectivos salen de role_id, que nace nulo,
+-- y has_permission con role_id nulo devuelve false— es SUERTE, no diseño: basta
+-- una policy que mire el enum directo para que deje de estarlo.
+--
+-- Sin default, todo insert TIENE QUE declarar el rol. Lo que no se declara, no
+-- pasa: fail-closed. handle_new_user, mas abajo, tampoco inventa un fallback —
+-- exige el rol igual que exige la sede.
 -- ------------------------------------------------------------
 create table public.profiles (
   id              uuid             primary key references auth.users on delete cascade,
   email           text             not null,
   full_name       text             not null,
-  role            public.user_role not null default 'cashier',
+  role            public.user_role not null,
   role_id         uuid             references public.roles,
   sede_id         uuid             not null references public.sedes         on delete cascade,
   organization_id uuid             not null references public.organizations on delete cascade,
@@ -96,8 +101,22 @@ set search_path = public
 as $$
 declare
   v_sede_id uuid := (new.raw_user_meta_data->>'sede_id')::uuid;
+  v_role    text := nullif(trim(new.raw_user_meta_data->>'role'), '');
   v_org     uuid;
 begin
+  -- El rol se EXIGE, no se rellena. La v1 heredada hacia
+  -- `coalesce(..., 'waiter')`, y con 'waiter' podado ese fallback habria pasado
+  -- a 'cashier': un default mas privilegiado nacido de un borrado. Un fallback
+  -- que inventa autorizacion es fail-open (R2), asi que este guard va con los
+  -- otros tres.
+  if v_role is null then
+    raise exception using
+      errcode = 'check_violation',
+      message = 'No se puede crear el perfil: falta role en user_metadata',
+      hint    = 'Valores validos: admin | cashier. No hay default a proposito: '
+                'un rol implicito es una autorizacion que nadie decidio.';
+  end if;
+
   if v_sede_id is null then
     raise exception using
       errcode = 'check_violation',
@@ -132,7 +151,7 @@ begin
       nullif(trim(new.raw_user_meta_data->>'full_name'), ''),
       split_part(new.email, '@', 1)
     ),
-    coalesce(new.raw_user_meta_data->>'role', 'cashier')::public.user_role,
+    v_role::public.user_role,   -- exigido arriba, nunca inventado
     v_sede_id,
     v_org  -- derivado, no recibido: la sede es la fuente de verdad.
   );
