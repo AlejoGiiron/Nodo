@@ -1,0 +1,55 @@
+# Entornos
+.env
+.env.local
+.env.*.local
+.env.test
+!.env.example
+!.env.test.example
+
+# Node
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+*.tsbuildinfo
+.next/
+out/
+build/
+.expo/
+
+# Supabase local
+supabase/.branches/
+supabase/.temp/
+
+# Claude Code
+.claude/settings.local.json
+
+# Editores
+.vscode/settings.json
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Testing
+coverage/
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Claude Design handoff — vive en Claude Design, no en el repo
+design_handoff_*/
+
+# Misc
+*.pem
+.vercel
+
+# Temporal que genera vite al cargar vite.config.ts
+vite.config.ts.timestamp-*.mjs
