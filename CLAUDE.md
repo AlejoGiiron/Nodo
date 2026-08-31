@@ -220,6 +220,13 @@ en G-Vento.
    en dos repos con la misma lógica y nada que los sincronice. No estaba en el inventario de
    G-Vento porque allá era un solo lado. Si arreglás el matcheo de permisos en un repo, **no
    llega solo al otro**.
+   🔴 **YA DIVERGEN — decisión tomada el 2026-08-31, no un descuido.** G-Nexo le agregó al hook un
+   **ledger de disparos** (`.claude/hook-ledger.jsonl`, ignorado por git) y G-Vento **no lo tiene**.
+   Se aceptó la divergencia porque el ledger es un **instrumento de medición** de la deuda #22, no
+   una mejora del mecanismo: medir en un repo alcanza, y el volumen de disparos de G-Vento no es
+   comparable con el de G-Nexo. ⚠️ **El corolario es la parte que importa:** cuando la deuda #22 se
+   resuelva y el cambio sea al **matcheo**, ese sí va a los dos repos. La regla práctica que queda:
+   **instrumentar puede divergir; corregir, no.**
 
 → **Evidencia:** repo de G-Vento, `docs/BITACORA.md` → *"FASE 1 — estado de suscripción"*.
 
@@ -491,6 +498,11 @@ real.
 `settings.json` y `sql-checklist.mjs` copiados de G-Vento el 2026-08-31 (rama `develop`,
 `d848852`). El **mecanismo** viaja literal; el **estado** de G-Vento (conteos del catálogo, los
 6 permisos inertes, sus deudas) fue reemplazado por el de G-Nexo.
+
+✅ **Ledger de disparos activo desde el 2026-08-31** (`.claude/hook-ledger.jsonl`, fuera de git):
+cada disparo anota fecha, herramienta y qué regla matcheó. Es el instrumento de la deuda #22.
+⚠️ Registra **disparos, no invocaciones**: da volumen y mezcla de clases, **no una tasa** — para eso
+falta el denominador. Y **diverge de G-Vento a propósito** (R1 punto 9).
 
 Verificado en banco: `node --check` limpio, sin bytes de control, ningún `require`; 10 casos de
 pipe-test — Write, Edit, Bash-heredoc, ruta Windows, `update roles set permissions` en un `.txt`

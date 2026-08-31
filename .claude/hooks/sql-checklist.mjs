@@ -184,6 +184,50 @@ LO QUE ESTO **NO** ARREGLA, dicho explícitamente:
    suyo. Ponerlo con el primer catálogo real.`
 
 import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+// ============================================================
+// LEDGER DE DISPAROS — instrumento de la deuda #22, no una mejora del hook
+//
+// POR QUÉ EXISTE: en dos sesiones de documentación el hook disparó ~20 veces y
+// las ~20 fueron falsos positivos, pero el conteo se llevaba A MANO y se perdió
+// a mitad de sesión. Una tasa medida de memoria no sirve para decidir sobre el
+// hook. Esto la mide sola.
+//
+// 🔴 DIVERGENCIA DELIBERADA CON G-VENTO (decisión tomada el 2026-08-31).
+//    El hook es contrato en dos repos (R1 punto 9) y esto lo rompe A PROPÓSITO:
+//    el ledger es un INSTRUMENTO DE MEDICIÓN temporal para decidir la deuda #22,
+//    no una mejora del mecanismo. Medir en un repo alcanza. Cuando la deuda #22
+//    se resuelva, el ARREGLO sí tiene que ir a los dos.
+//
+// ⚠️ QUÉ MIDE Y QUÉ NO: registra los DISPAROS, no las invocaciones. O sea da
+//    volumen y mezcla de clases, NO una tasa — para la tasa falta el
+//    denominador (cuántas veces corrió el hook sin disparar). Serían dos líneas
+//    más; no se hicieron porque no se pidieron. Dicho acá para que nadie lea
+//    "12 disparos" como "12 de 12".
+//
+// POR QUÉ EL catch NO ES EL fail-open QUE R2 PROHÍBE: acá el error que se traga
+// es el del LEDGER, y el checklist se emite igual unas líneas más abajo. Un
+// instrumento no puede tumbar lo que mide. Pero el fallo NO queda callado: sale
+// por stderr, que es visible y no rompe el hook. Silenciarlo del todo sería
+// exactamente el bug del `catch` que devolvía '' con exit 0.
+// ============================================================
+const LEDGER = path.join(
+  path.dirname(path.dirname(fileURLToPath(import.meta.url))),
+  'hook-ledger.jsonl',
+)
+
+function anotarDisparo(herramienta, reglas) {
+  try {
+    fs.appendFileSync(
+      LEDGER,
+      JSON.stringify({ ts: new Date().toISOString(), tool: herramienta, reglas }) + '\n',
+    )
+  } catch (e) {
+    process.stderr.write(`sql-checklist: no pude escribir el ledger: ${e.message}\n`)
+  }
+}
 
 let crudo
 try {
@@ -226,10 +270,15 @@ const contenido = [
 ].filter(v => typeof v === 'string').join('\n')
 
 const avisos = []
-if (OBJETIVO.test(rutas)) avisos.push(CHECKLIST)
-if (tocaCatalogoDePermisos(contenido)) avisos.push(CHECKLIST_PERMISOS)
+const reglas = []
+if (OBJETIVO.test(rutas)) { avisos.push(CHECKLIST); reglas.push('sql') }
+if (tocaCatalogoDePermisos(contenido)) { avisos.push(CHECKLIST_PERMISOS); reglas.push('permisos') }
 
 if (avisos.length === 0) process.exit(0)
+
+// Se anota DESPUÉS de decidir y ANTES de emitir: si el ledger falla, el
+// checklist sale igual (ver el bloque LEDGER arriba).
+anotarDisparo(typeof payload?.tool_name === 'string' ? payload.tool_name : '?', reglas)
 
 process.stdout.write(JSON.stringify({
   hookSpecificOutput: {

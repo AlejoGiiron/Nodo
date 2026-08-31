@@ -262,4 +262,15 @@ esquema**, con diff escrito para cada par.
 Esta sesión escribió cero SQL y el hook disparó del orden de 20 veces, todas falsos positivos.
 ⚠️ **El conteo es aproximado a propósito de anotarlo así:** lo llevé a mano y perdí precisión a
 mitad de sesión. Eso **es** el hallazgo — el instrumento de la deuda #22 no existe, y una tasa
-medida a ojo no sirve para decidir sobre el hook. Ver deuda #22 y su punto pendiente del ledger.
+medida a ojo no sirve para decidir sobre el hook.
+
+✅ **Resuelto en la misma sesión: el hook ahora lleva el ledger solo** (`.claude/hook-ledger.jsonl`,
+fuera de git). Dos cosas que quedaron dichas y no son obvias. **Una:** el `catch` que traga el
+error del ledger **no** es el fail-open que R2 prohíbe —lo que se traga es el fallo del
+instrumento, el checklist se emite igual, y el error sale por stderr en vez de callarse—; un
+instrumento no puede tumbar lo que mide. **Dos:** registra **disparos, no invocaciones**, así que
+da volumen y mezcla de clases pero **no una tasa**. Leer "12 disparos" como "12 de 12" sería el
+mismo error de proxy que el ledger vino a evitar.
+
+⚠️ **Y es la primera divergencia deliberada entre los hooks de los dos repos** (R1 punto 9).
+Se aceptó con un criterio que conviene retener: **instrumentar puede divergir; corregir, no.**
