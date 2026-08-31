@@ -420,30 +420,46 @@ Reglas duras traídas de los hermanos — aplican a todo el trabajo en este repo
 La base técnica medida en el diagnóstico: **21,7%** de 39.351 líneas en 179 archivos. Multi-tenant,
 RLS, RBAC, auth, hooks, patrones de RPC.
 
-### Orden de poda
+### Orden de poda — 🔴 LA CARGA DE LA PRUEBA ESTÁ INVERTIDA
 
-*Corregido el 2026-08-31 contra el SQL real. La versión anterior ponía turnos en la poda; ver
-abajo y `docs/BITACORA.md`.*
+*Invertida el 2026-08-31 tras 4 de 4 aciertos en contra. Evidencia en `docs/BITACORA.md`.*
+
+**La regla, en una línea: no se borra salvo que se demuestre que no sostiene nada.** Al revés de
+como estaba, que era enumerar qué borrar y confiar en el nombre.
+
+**Por qué.** El fork heredó **un sistema que funciona**. En un sistema que funciona, lo que sobra
+suele ser **la etiqueta, no la pieza**: el nombre viene del vertical de origen, el mecanismo viene
+del problema, y el problema muchas veces es el mismo. Cuatro de cuatro veces que algo sonó a bar,
+sostenía peso. No es racha: es **sesgo sistemático del método**, porque el nombre es lo primero
+que se ve y lo único que no se verificó.
+
+**El procedimiento, antes de borrar cualquier cosa** — enumerar qué cuelga de ella:
 
 ```
-cocina  → ya tiene interruptor (uses_kitchen / routes_to_kitchen)
+FKs            → grep 'references public.<tabla>'
+funciones      → ¿qué RPC la consulta, aunque no tenga FK?
+policies RLS   → ¿alguna la nombra?
+triggers       → ¿alguno la escucha?
+vistas         → ¿alguna la lee?
+imports        → en src/: ¿quién importa el helper, el hook, el tipo?
+seeds y tests  → ¿quién la puebla?
+```
+
+Si algo aparece: **no se borra — se renombra**, y el nombre nuevo sale de lo que la pieza *hace* en
+G-Nexo, no de lo que se llamaba en G-Vento.
+
+```
+cocina  → tiene interruptor (uses_kitchen / routes_to_kitchen). Verificar qué cuelga igual.
 mesas   → el POS ya está desacoplado (DEFAULT_ORDER_TYPE='takeaway')
-turnos  → NO SE PODAN. Se renombran a jornada/caja. Ver abajo.
-extras  → AL FINAL, y renombrando en vez de borrando
+turnos  → NO se podan. Renombrados a jornada/caja.  ← sostenía peso
+extras  → NO se borran. Se renombran.               ← sostenía peso
+recetas → NO se borran. product_components pasa a bulto→unidad.  ← sostenía peso
 ```
 
-🔴 **Turnos NO se podan — DECIDIDO el 2026-08-31, contra lo que decía el documento de traspaso.**
-La evidencia mandó. Tres cosas medidas en el SQL: `cash_movements.shift_id` es **`not null` con
-`on delete cascade`**, así que borrar turnos borra los movimientos y **deja los abonos de cartera
-sin su rastro de caja, en silencio**; **tres** RPC leen el turno abierto —`register_sale_void`,
-`register_debt_payment` y `register_purchase`—, y compras es un módulo que G-Nexo **necesita**.
-
-**El concepto también cambia, no solo el nombre.** Un turno de bar es un cambio de mesero; acá es
-**el cierre de caja del día**. Por eso se renombra a **jornada/caja** en vez de borrarse: el
-mecanismo sirve, la palabra no.
-
-Es el mismo patrón que "extras" y que `waiter_performance`: **suena a bar y sostiene peso.** Antes
-de podar algo por su nombre, mirá qué cuelga de él.
+⚠️ **Lo que esta regla NO dice.** No dice "no borres nada": dice que **el que borra tiene que
+mostrar la enumeración**. Un `grep` que vuelve vacío es una demostración válida y barata. Lo que
+deja de valer es *"esto suena a restaurante"*, que es la única evidencia que se usó las cuatro
+veces que salió mal.
 
 ### Dónde está el peligro
 

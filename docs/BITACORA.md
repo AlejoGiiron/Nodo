@@ -308,3 +308,52 @@ Dos cosas más, porque la primera se lee mejor cuando las otras no se esconden:
   no era una instancia, era una **clase** —"secuencia de escape inválida en un literal"— y aparece
   en cualquier lenguaje que se le ponga adelante. Se evita no escribiendo el texto dentro de un
   literal: se escribe a un archivo y se inserta desde ahí.
+
+---
+
+## 2026-08-31 · Evidencia: por qué se invirtió la carga de la prueba en la poda
+
+El orden de poda de `CLAUDE.md` decía **qué borrar**. Ahora dice: **no se borra salvo que se
+demuestre que no sostiene nada**. Esto es la evidencia que hace la regla defendible, porque una
+regla sin su historial se discute como opinión.
+
+### El historial: 4 de 4 en contra
+
+| # | Candidato a poda | Por qué parecía podable | Qué sostenía en realidad | Cómo terminó |
+|---|---|---|---|---|
+| 1 | **extras** | suena a bar (aderezos, toppings) | `add_order_items_with_extras` es el **único camino de alta de ítems** del repo y donde se descuenta stock | **se renombra** — borrarlo rompía vender |
+| 2 | **`waiter_performance`** | "waiter" = mozo | une por `o.created_by` contra `profiles`: mide **usuarios**, no mozos. De mesas no tiene nada | **se renombra** a `user_performance` |
+| 3 | **turnos** | turno = cambio de mesero | `cash_movements.shift_id` es `not null` con `on delete cascade`; **3 RPC** leen el turno abierto; borrarlos deja los abonos de cartera **sin rastro de caja, en silencio** | **se renombran** a jornada/caja |
+| 4 | **recetas** (`product_components`) | G-Nexo no tiene recetas | es la relación "un producto que al moverse descuenta N de otro" — o sea **bulto→unidad**, que G-Nexo **sí** necesita: se compra por bulto, se vende por unidad | **se renombra** |
+
+**Cuatro de cuatro.** En los cuatro casos la evidencia a favor de podar era **el nombre**, y en los
+cuatro el nombre venía del vertical de origen mientras el mecanismo venía del problema — y el
+problema es el mismo en un mostrador que en un bar.
+
+### Por qué es sesgo y no racha
+
+Una racha se corrige sola; un sesgo no. Éste es sesgo por dos razones:
+
+1. **El fork heredó un sistema que funciona.** En un sistema que funciona, las piezas que sobran ya
+   fueron borradas por quien lo mantenía. Lo que queda, sostiene algo. Lo único que no fue filtrado
+   por el uso es **cómo se llaman las cosas**, porque un nombre desactualizado no rompe nada y por
+   eso nadie lo arregla.
+2. **El nombre es lo primero que se ve y lo único que no se verificó.** Es un proxy, y R4 dice
+   exactamente qué hacer con un proxy: no confundirlo con la cosa. La poda por nombre es R4
+   aplicada al revés — decidir por el rótulo en vez de por el dato.
+
+**El costo asimétrico cierra el argumento.** Verificar de más cuesta un `grep` que vuelve vacío.
+Borrar de más cuesta un flujo roto que aparece meses después, sin error, y que nadie asocia con la
+poda — el perfil de R7 y de R3 juntos. Con costos así de desparejos, la carga de la prueba va del
+lado del que borra.
+
+### Lo que la regla NO dice
+
+No dice "no borres nada". Dice que **el que borra muestra la enumeración** —FKs, funciones,
+policies, triggers, vistas, imports, seeds y tests—. Un `grep` vacío es prueba válida y barata. Lo
+que dejó de valer es *"esto suena a restaurante"*, que es la única evidencia que se usó las cuatro
+veces que salió mal.
+
+⚠️ **Falsable, como toda regla que valga:** si aparece un candidato donde la enumeración vuelve
+vacía y el borrado sale limpio, este historial pasa a 4 de 5 y la regla sigue en pie — lo que la
+tiraría abajo es que enumerar resulte **caro**, no que alguna vez dé permiso para borrar.
