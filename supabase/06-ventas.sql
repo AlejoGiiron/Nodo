@@ -35,6 +35,9 @@ create table public.orders (
   customer_phone text,
   notes          text,
   total          numeric(12, 2)      not null default 0 check (total >= 0),
+  discount_amount numeric(12, 2)     not null default 0 check (discount_amount >= 0),
+  discount_type   text               check (discount_type in ('pct', 'fixed')),
+  discount_reason text,
   cancelled_at   timestamptz,
   cancelled_by   uuid                references public.profiles on delete set null,
   cancel_reason  text,
@@ -63,15 +66,37 @@ create trigger trg_orders_updated_at
   before update on public.orders
   for each row execute function public.handle_updated_at();
 
--- ⏳ PENDIENTES DECLARADOS, no olvidados:
---   · orders.payment_status y orders.customer_id (cartera) se agregan en el
---     archivo 09, cuando exista la tabla customers. Mismo patron que la FK de
---     user_stores en el 03.
---   · Las columnas de vale/descuento de orders-discount-vale.sql NO se
---     incluyeron: son una mecanica promocional de G-Vento y todavia NO hice la
---     enumeracion de que cuelga de ellas. La regla de poda exige demostrar
---     antes de borrar, y no puedo demostrarlo todavia — asi que queda como
---     PENDIENTE, no como decision. No es lo mismo, y por eso se escribe.
+comment on column public.orders.discount_amount is
+  'Descuento aplicado en COP, ya reflejado en orders.total. 0 = sin descuento. '
+  'Persiste el descuento REAL: derivarlo como subtotal - total es una '
+  'estimacion, y esa deuda ya se pago una vez en G-Vento.';
+comment on column public.orders.discount_type is
+  'Como se ingreso: pct | fixed. null si no hubo descuento.';
+
+-- ── ENUMERACION DE vale/descuento — hecha el 2026-08-31 ────────────────────
+-- En el commit anterior estas columnas quedaron como PENDIENTE DE ENUMERAR, no
+-- como descartadas. Enumerado, el grupo se parte en dos y por eso no se trataba
+-- como un bloque:
+--
+--   VIAJAN (neutras y sostienen peso): discount_amount, discount_type,
+--   discount_reason. Una distribuidora hace descuentos como cualquier negocio.
+--   Consumidores: supabase-helpers (applyDiscount, idempotente), SalesHistory,
+--   y 4 filas de la tabla de 74 columnas de sentry.test.ts (R1 punto 6).
+--
+--   NO VIAJAN (mecanica promocional de G-Vento): discount_kind con su valor
+--   'vale' (el "ruletazo"), la constraint chk_vale_is_fixed y el indice parcial
+--   idx_orders_vale. Sus consumidores —getVouchersTotal en shiftCalc, el KPI
+--   "total regalado" de useReports y CloseShiftModal— son TODOS features del
+--   vale, no del descuento. Cuelgan de la mecanica, no del mecanismo.
+--
+-- ⚠️ Asimetria que hace barata esta decision, al reves que con los enums:
+--    discount_kind se restringia con un CHECK, no con un tipo enumerado. Un
+--    CHECK se amplia con un `alter table` trivial. Si aparece una promocion en
+--    G-Nexo, la columna vuelve sin recrear nada.
+--
+-- ⏳ PENDIENTE QUE SIGUE ABIERTO: orders.payment_status y orders.customer_id
+--    (cartera) se agregan en el archivo 09, cuando exista la tabla customers.
+--    Mismo patron que la FK de user_stores en el 03.
 
 
 -- ------------------------------------------------------------
