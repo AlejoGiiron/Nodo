@@ -149,9 +149,11 @@ nombre de archivo:
 anulación sobrevive en G-Nexo), el `idx_one_open_shift_per_store` es **B** (turnos), y el
 `update roles set permissions` no va a ninguna clase porque es un **defecto** — ver H4.
 
-**`inventory-recipes.sql` (219) se parte en dos**: `stock_movements` y `adjust_stock` son **C** y
-son la base del inventario de G-Nexo; `product_components` (recetas) es **B**, porque G-Nexo no
-tiene recetas. Es la advertencia de la deuda #17 hecha archivo.
+**`inventory-recipes.sql` (219) es C entero — corregido el 2026-08-31.** `stock_movements` y
+`adjust_stock` son la base del inventario de G-Nexo. Y `product_components`, que estaba anotado
+como **B** por sonar a recetas, **pasa a C**: se conserva renombrado a la relación **bulto→unidad**
+(paso 0, par 8). La unidad de compra difiere de la de venta y es estructuralmente el mismo
+mecanismo. ⚠️ Los totales de 2.3 **no cambian**: el archivo ya estaba contado entero en C.
 
 **`compras-proveedores.sql` (399)**: las tres tablas viajan como **C**, pero `register_purchase`
 mezcla compra con caja y turno; `compra-no-toca-caja.sql` (150) ya lo redefine para desacoplarlo.
@@ -330,14 +332,14 @@ igual (clase D), pero el plan deja dicho que **llamen a la RPC en vez de copiarl
 | 4 | `04-funciones-auxiliares.sql` | `has_permission`, `get_my_role`, `get_my_sede_id`, `get_my_organization_id` — **todas v2, las que exigen `is_active`**; `revoke execute from public` en cada `SECURITY DEFINER` |
 | 5 | `05-catalogo.sql` | `categories`, `products` (+`min_stock`, stock negativo permitido, **sin** `routes_to_kitchen`) |
 | 6 | `06-ventas.sql` | `orders` (sin `table_id`, sin `chk_dine_in_has_table`, sin `waiter_name`, con anulación), `order_items` (sin `sent_to_kitchen`, **con costo unitario congelado — DECIDIDO, ver 4.4**), `payments`, `store_sequences`, `next_order_number` |
-| 7 | `07-inventario.sql` | `stock_movements`, `adjust_stock`. **Sin `product_components`** |
+| 7 | `07-inventario.sql` | `stock_movements`, `adjust_stock`, y **`product_components` renombrado a bulto→unidad** (paso 0, par 8) |
 | 8 | `08-compras.sql` | `suppliers`, `purchase_invoices`, `purchase_invoice_items`, `register_purchase` **v2** |
 | 9 | `09-clientes-y-cartera.sql` | `customers`, `debt_payments`, `register_debt_payment` **conservando** su búsqueda de jornada abierta (4.4, decisión 1) |
 | 10 | `10-caja.sql` | **`jornadas`** (ex `cash_shifts`, renombrada) y `cash_movements` con su FK **not null** intacta — ver 4.4, decisión 1 |
 | 11 | `11-rls.sql` | todas las policies, en un solo lugar |
 | 12 | `12-vistas.sql` | `daily_sales_summary`, `product_performance`, `hourly_sales`, `user_performance` (ex-`waiter_performance`) |
 
-**Se descarta entero:** `tables`, `couriers`, `product_components` y todo lo de cocina
+**Se descarta entero:** `tables`, `couriers` y todo lo de cocina
 (**`cash_shifts` NO** — se renombra, ver 4.4); los 7 seeds de clase D; y los `fix-*` y `*-rls.sql`, cuyo contenido **no se pierde: se
 absorbe** como v2 en los archivos 3 y 4.
 
@@ -405,7 +407,10 @@ con la forma de fallo de R7: plausibles, estables y equivocadas. No es una decis
 
 ### 4.5 · Orden de ejecución para el prompt 3
 
-**Paso 0 — RESOLVER LAS OCHO FUNCIONES DUPLICADAS, ANTES DE ESCRIBIR UNA LÍNEA DE ESQUEMA.**
+✅ **Paso 0 — HECHO el 2026-08-31: `docs/paso-0-funciones-duplicadas.md`** (commit propio, antes
+del esquema). Las ocho decididas: seis por evidencia técnica y **dos preguntadas**, porque la
+diferencia era de negocio y de modelo de datos, no un defecto. Lo que sigue vale como criterio
+para la novena que aparezca:
 Para cada par de H5: **diff de las dos definiciones, cuál gana, y por qué — escrito**. No se elige
 por fecha ni por archivo: **por lo que hace el cuerpo**. Un `create or replace` posterior no es
 evidencia de que sea el bueno, es evidencia de que se aplicó después.
