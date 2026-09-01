@@ -35,7 +35,7 @@ const ANON = () => process.env.VITE_NODO_SUPABASE_ANON_KEY!
 const FN = () => process.env.E2E_CREATE_USER_FN ?? 'create-user'
 
 const SUFFIX = Date.now().toString().slice(-6)
-const NUEVO_EMAIL = `e2e-cu-${SUFFIX}@gvento.test`
+const NUEVO_EMAIL = `e2e-cu-${SUFFIX}@nodo.test`
 const NUEVO_PASS = 'e2e-Passw0rd!'
 
 const anon = () => createClient(URL(), ANON(), { auth: { persistSession: false } })
@@ -127,7 +127,7 @@ test.beforeAll(async () => {
 
 test('cajero SIN usuarios.gestionar → 403', async () => {
   const { status, body } = await llamar(await tokenDe(cajero), {
-    email: `e2e-nope-${SUFFIX}@gvento.test`,
+    email: `e2e-nope-${SUFFIX}@nodo.test`,
     password: NUEVO_PASS,
     full_name: 'No Debe Existir',
     role: 'cashier',
@@ -151,7 +151,7 @@ test('llamante DESACTIVADO → 403 con el mensaje de is_active', async () => {
   try {
     const desactivado = await signIn(cashierCreds())   // auth.users sigue vivo
     const { status, body } = await llamar(await tokenDe(desactivado), {
-      email: `e2e-nope2-${SUFFIX}@gvento.test`,
+      email: `e2e-nope2-${SUFFIX}@nodo.test`,
       password: NUEVO_PASS,
       full_name: 'No Debe Existir 2',
       role: 'cashier',
@@ -167,7 +167,7 @@ test('llamante DESACTIVADO → 403 con el mensaje de is_active', async () => {
 })
 
 test('role_id inexistente → 400 y NO queda cuenta colgada', async () => {
-  const email = `e2e-cu-bad-${SUFFIX}@gvento.test`
+  const email = `e2e-cu-bad-${SUFFIX}@nodo.test`
   const { status, body } = await llamar(await tokenDe(owner), {
     email,
     password: NUEVO_PASS,

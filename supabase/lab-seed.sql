@@ -10,8 +10,14 @@
 --
 -- ⚠️ NO crea cuentas de Auth. Los usuarios se crean por el panel de Supabase (o
 --    por la Edge Function `create-user`) y este script los RECONCILIA: descubre
---    el UID por email y les arma el profile dentro de LAB. Si una cuenta no
---    existe todavía, su bloque se omite y el script lo DICE — no falla callado.
+--    el UID por email y les arma el profile dentro de LAB.
+--
+-- 🔴 SI FALTA UNA CUENTA, ESTE SEED FALLA EN ROJO Y REVIERTE TODO. No avisa y
+--    sigue. La razón es que el SQL Editor muestra su banner de "Success" cuando
+--    la transacción commitea, así que un `raise notice` de advertencia queda
+--    enterrado en el panel de mensajes y el resultado se LEE COMO ÉXITO — la
+--    clase "indistinguible de", en el único lugar donde ya sabemos que va a
+--    pasar si se corre el seed antes de crear las cuentas.
 --
 -- ── 🔴 RESPUESTA A "¿ESTO VA A DIVERGIR DEL ESQUEMA?" ───────────────────────
 --    SÍ. Es SQL escrito a mano que nombra tablas y columnas, y nada lo
@@ -44,7 +50,14 @@ begin;
 -- ⚠️ Estos nombres están HARDCODEADOS en los specs (`Lab Coctel` ×6,
 --    `Lab Vaso` ×2, `Lab Cerveza` ×1). Cambiar uno acá obliga a tocar los 30
 --    specs, así que NO se renombran por gusto: son etiquetas de laboratorio, no
---    copy de producto. Mismo criterio que las cuentas `@gvento.com`.
+--    copy de producto.
+--
+--    ⚠️ Las CUENTAS sí cambiaron de dominio: `@nodo.test`, no `@gvento.com`. El
+--    corolario del renombre protege lo que existe AFUERA y no controlamos —
+--    estas cuentas **no existen todavía** y se crean acá. Reusar el dominio de
+--    Vento en un proyecto que no es de Vento crea justo la ambigüedad que ese
+--    corolario evita: dentro de un año, `owner.test@gvento.com` en la base de
+--    Nodo no se distingue de una cuenta ajena mal nombrada.
 -- ════════════════════════════════════════════════════════════════════════════
 create temporary table _lab_datos on commit drop as
 select * from (values
@@ -52,8 +65,8 @@ select * from (values
   ('org',               'LAB'),
   ('sede',              'LAB Principal'),
   ('categoria',         'Lab'),
-  ('email_owner',       'owner.test@gvento.com'),
-  ('email_cajero',      'cajero.test@gvento.com'),
+  ('email_owner',       'owner.test@nodo.test'),
+  ('email_cajero',      'cajero.test@nodo.test'),
   ('nombre_owner',      'Owner Lab'),
   ('nombre_cajero',     'Cajero Lab')
 ) as t(clave, valor);
@@ -183,7 +196,7 @@ begin
   end if;
 
   -- ── Purga de los usuarios que crean los specs ────────────────────────────
-  -- `create-user.spec.ts` crea cuentas `e2e-*@gvento.test` y no siempre puede
+  -- `create-user.spec.ts` crea cuentas `e2e-*@nodo.test` y no siempre puede
   -- borrarlas (necesita service role). Se limpian acá.
   -- 🔴 Allowlist por PREFIJO y acotada a la org LAB: NO se borra por "todo lo
   --    que no reconozco". Y el delete va sobre `profiles`, nunca sobre
@@ -191,16 +204,25 @@ begin
   --    tipo de objetivo destructivo resuelto por nombre que R2 prohíbe.
   delete from public.profiles
    where organization_id = v_org
-     and email like 'e2e-%@gvento.test';
+     and email like 'e2e-%@nodo.test';
 
+  -- 🔴 FALLA, no avisa. Un `raise notice` dejaria la transaccion en COMMIT y el
+  --    SQL Editor mostraria su banner verde de "Success" igual: el aviso queda
+  --    enterrado en el panel de mensajes y el resultado se lee como exito.
+  --    Eso es la clase "indistinguible de" —el estado defectuoso emitiendo la
+  --    senal del sano— en el unico lugar donde ya sabemos que va a pasar.
+  --    Con `raise exception` el resultado es ROJO y la transaccion se revierte:
+  --    no queda un LAB a medias, que la cabecera de este archivo dice que es
+  --    peor que ninguno.
   if v_faltan <> '' then
-    raise notice ' ';
-    raise notice '⚠️  CUENTAS DE AUTH QUE FALTAN: %', v_faltan;
-    raise notice '    Crealas en Supabase Studio > Authentication > Users y volve';
-    raise notice '    a correr este seed. Sin ellas la suite E2E no puede loguear.';
-  else
-    raise notice 'LAB listo: org=% sede=%', v_org, v_sede;
+    raise exception
+      'SEED INCOMPLETO — faltan cuentas de Auth: %'
+      '  Crealas en Supabase Studio > Authentication > Users (con Auto Confirm)'
+      '  y volve a correr este seed. NADA se sembro: la transaccion se revirtio'
+      '  entera, a proposito, para que no quede un LAB a medias.', v_faltan;
   end if;
+
+  raise notice 'LAB listo: org=% sede=%', v_org, v_sede;
 end
 $seed$;
 

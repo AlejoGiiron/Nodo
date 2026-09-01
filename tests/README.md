@@ -10,14 +10,22 @@ separado. Vive en el **mismo** Supabase que la app, aislado de los datos reales
 (org `G-10`) por la arquitectura multi-tenant: LAB tiene sus propias sedes,
 roles, usuarios y catálogo.
 
-- **Sedes:** `Sede Lab Norte` y `Sede Lab Sur`.
-- **Usuarios de prueba** (sede activa = Norte):
-  - `owner.test@gvento.com` → rol `owner` (acceso a Norte y Sur).
-  - `cajero.test@gvento.com` → rol `cajero` (acceso solo a Norte).
-- **Datos mínimos** en Norte: categorías Lab Cocteles/Lab Insumos, productos
-  Lab Cerveza/Lab Agua (simple, sin tracking), insumo Lab Vaso (con stock),
-  compuesto Lab Coctel (receta: 1 Lab Vaso) y extra Lab Doble; mesas y
-  `store_sequences` en 0.
+- **Sede:** `LAB Principal`. **Una sola** — ningún spec necesita una segunda;
+  se verificó grepeando los 30.
+- **Usuarios de prueba:**
+  - `owner.test@nodo.test` → rol `owner` (comodín `*`).
+  - `cajero.test@nodo.test` → rol `cajero` (8 de 21 permisos). Es el sujeto del
+    **gating negativo**: no ve Productos, Inventario, Compras, Reportes ni
+    Configuración, y sí ve Turnos, Gastos e Historial.
+- **Datos mínimos:** categoría `Lab` y los **tres** productos que los specs
+  nombran literalmente — `Lab Coctel` (compuesto, receta: 1 `Lab Vaso`),
+  `Lab Vaso` (insumo **con** tracking) y `Lab Cerveza` (simple, **sin**
+  tracking). Nada más: los specs **crean sus propias** categorías, productos y
+  extras con sufijo `E2E …`.
+
+⚠️ **Ya no hay mesas, ni cocina, ni el rol `mozo`** — se podaron. Y el dominio de
+las cuentas es `@nodo.test`, no `@gvento.com`: éstas se crean para Nodo, así que
+reusar el dominio de Vento solo crearía ambigüedad sobre a quién pertenecen.
 
 La semilla está en **`supabase/lab-seed.sql`** (idempotente: se puede re-aplicar
 sin duplicar). **Ventaja de usar una org en vez de un proyecto separado:** cada
@@ -98,21 +106,27 @@ cp .env.test.example .env.test
 
 | Variable               | Cuenta (org LAB)              |
 |------------------------|-------------------------------|
-| `E2E_OWNER_EMAIL`      | `owner.test@gvento.com`       |
+| `E2E_OWNER_EMAIL`      | `owner.test@nodo.test`        |
 | `E2E_OWNER_PASSWORD`   |                               |
-| `E2E_CASHIER_EMAIL`    | `cajero.test@gvento.com`      |
+| `E2E_CASHIER_EMAIL`    | `cajero.test@nodo.test`       |
 | `E2E_CASHIER_PASSWORD` |                               |
 
 ## Montar / sembrar el laboratorio
 
-Las cuentas auth `owner.test@gvento.com` y `cajero.test@gvento.com` **ya existen
-en Auth**. Lo que faltaba eran sus `profiles` y el resto del ecosistema LAB, que
-crea la semilla:
+🔴 **El orden importa, y el seed lo hace cumplir.** Las cuentas de Auth se crean
+PRIMERO; el seed no las crea, las **descubre por email**.
 
-1. Aplica **`supabase/lab-seed.sql`** (Dashboard → SQL Editor). Es idempotente:
-   crea (o reconcilia) la org LAB, sus 2 sedes, los 4 roles de sistema, los
-   profiles de `owner.test`/`cajero.test`, sus `user_stores`, y los datos mínimos
-   de Sede Lab Norte. Al final imprime una verificación.
+1. **Crear las cuentas** en Studio → Authentication → Users → *Add user*, con
+   **Auto Confirm User** activado (sin eso no pueden loguear):
+   `owner.test@nodo.test` y `cajero.test@nodo.test`.
+2. Aplicar **`supabase/lab-seed.sql`** (Studio → SQL Editor). Es idempotente:
+   crea o reconcilia la org `LAB`, su sede, los roles de sistema
+   —vía `seed_system_roles`, sin enumerar permisos—, los profiles con sus
+   `user_stores`, la categoría y los tres productos.
+
+⚠️ **Si falta una cuenta, el seed FALLA en rojo y revierte todo.** No avisa y
+sigue: un aviso debajo de un banner verde de "Success" se lee como éxito, y un
+LAB a medias es peor que ninguno.
 2. Pon las contraseñas de ambas cuentas en `.env.test` (`E2E_OWNER_PASSWORD` /
    `E2E_CASHIER_PASSWORD`). Si no recuerdas las contraseñas, resetéalas desde
    Supabase Auth.
