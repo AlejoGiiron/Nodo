@@ -78,10 +78,31 @@ create trigger trg_jornadas_updated_at
 
 -- ------------------------------------------------------------
 -- set_jornada_closed_at — el reloj del cierre es el del SERVIDOR.
--- VALIDA/FUERZA: acá si fuerza, y es correcto, porque no valida un invariante
--- de negocio sino que sustituye un dato que el cliente no debe elegir. Si la
--- hora de cierre viniera del navegador, el corte del dia dependeria del reloj
--- de cada maquina — R7 en su version mas barata de evitar.
+--
+-- 🔴 ESTE TRIGGER FUERZA UN DATO, Y R6 DICE QUE UN TRIGGER VALIDA, NO FUERZA.
+--    Es una excepcion aceptada (2026-08-31), y se escribe como CRITERIO —no
+--    como "el caso del closed_at"— porque una excepcion sin regla se cita
+--    despues para justificar cualquier cosa:
+--
+--    ── CUANDO UN TRIGGER PUEDE SUSTITUIR UN DATO ──────────────────────────
+--    Solo cuando se cumplen LAS DOS condiciones:
+--      1. El dato NO es del usuario: no expresa una decision suya.
+--      2. Su origen alternativo NO es confiable.
+--
+--    Acá: la hora de cierre no la decide el cajero (es un hecho, no una
+--    eleccion), y su unica alternativa es el reloj del navegador — que difiere
+--    por maquina y por zona horaria. R7 exige que TODA frontera de dia se
+--    calcule en America/Bogota; con la hora puesta por el cliente, el corte del
+--    dia dependeria de cada equipo y el arqueo daria distinto sin fallar.
+--
+--    ── LO QUE ESTA EXCEPCION NO HABILITA ──────────────────────────────────
+--    🔴 SIGUE PROHIBIDO forzar un dato que el usuario SI eligio. Ahi el trigger
+--    VALIDA y RECHAZA (ver enforce_profile_organization en el archivo 03):
+--    corregir en silencio una eleccion del usuario reescribe su intencion y
+--    hace que el resultado dependa del orden de disparo de los triggers.
+--
+--    Regla corta para grepear: si el dato tiene un dueño humano, se valida.
+--    Si es un hecho del sistema mal ubicado, se sustituye.
 -- ------------------------------------------------------------
 create or replace function public.set_jornada_closed_at()
 returns trigger
