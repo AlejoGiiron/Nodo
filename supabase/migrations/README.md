@@ -75,6 +75,12 @@ supabase db push
 supabase gen types typescript --linked > src/types/database.types.ts
 ```
 
+🔴 **EL PRIMER PUSH NO VA AL PROYECTO EN LA NUBE: VA A STAGING** (decidido el 2026-08-31). Ver
+`docs/staging/README.md` — incluye el **criterio de aceptación**, que es lo que separa un push
+verde de un esquema que funciona: Postgres **no valida los cuerpos plpgsql al crear la función**,
+así que una RPC puede nombrar una tabla inexistente y crearse igual. El push no se da por bueno
+hasta **ejecutar cada RPC al menos una vez**.
+
 ⛔ **Antes del primer `push`, verificar que la base destino esté VACÍA.** Aplicar quince `create
 table` sobre datos ajenos es el modo de fallo que R0 llama "borra datos ajenos".
 

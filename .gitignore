@@ -5,6 +5,8 @@
 .env.test
 !.env.example
 !.env.test.example
+# staging: la plantilla se versiona, el archivo con secretos NO
+docs/staging/.env.staging
 
 # Node
 node_modules/
