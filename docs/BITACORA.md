@@ -1663,3 +1663,43 @@ modelo de Nodo, incluido el test de rechazo **con su contraste** (el stock no se
 De paso, séptima aparición de los strings muertos: la lista de compras pedía
 `purchase_invoices.payment_method`, columna que la deuda 26 dejó afuera. La consulta fallaba entera
 y **la lista se veía vacía**. Nadie leía esa clave: era solo el select.
+
+
+## 2026-09-01 · Primera corrida COMPLETA de la suite — el estado real, con la cuenta cerrada
+
+Cuatro grupos, cada uno con su exit code leído de adentro del archivo (R9):
+
+| Grupo | Specs | Resultado | Exit |
+|---|---|---|---|
+| 1 | anular-venta … create-user (9) | 50 passed · 1 skipped | **0** |
+| 2 | descuento … inventario (6) | 39 passed | **0** |
+| 3 | numeracion … stock-bajo-pos (6) | 33 passed | **0** |
+| 4 | rbac … ventas-historial (9) | 34 passed · 4 failed · 16 skipped · 5 did not run | **1** |
+
+**Totales: 156 pasados · 4 fallados · 17 saltados · 5 sin correr — 182 en total.**
+
+✅ **La aritmética cierra con predicción:** el `--list` decía 183 y se borró exactamente 1 test (la
+lista configurable) → 182 esperados, **182 contabilizados**. Ningún test se perdió en el conteo.
+
+**Los 30 specs ejecutaron.** Los 5 "sin correr" son tests dentro de `rbac-escalada` (serial abortado
+tras su fallo), no archivos enteros.
+
+### Los 4 fallos, y ninguno es nuevo
+
+| Fallo | Qué es |
+|---|---|
+| `rbac.spec` ×3 | asertan `Mesas`/`Delivery` en el nav — **specs del catálogo viejo, pendientes de reescritura** (la predicción #3, conocida desde la primera corrida de los diez) |
+| `rbac-escalada` ×1 | **la pregunta de diseño abierta**: la auto-reactivación la frena la RLS con 0 filas, no el trigger con mensaje. El test distingue los dos a propósito |
+
+### Los 17 saltados, clasificados (no son un número opaco)
+
+- **16** de `suscripcion-*`: falta el secreto HMAC y la Edge Function `aplicar-estado` en el
+  proyecto de Nodo. Se saltan **con su motivo impreso** — skip declarado, no silencioso.
+- **1** de `create-user`: la purga del usuario creado exige service role; la hace `lab-seed-b`.
+
+### De dónde venimos
+
+La primera corrida (parcial, hace unas horas): **59 pasados / 15 fallados / 43 saltados**, cortada
+en el test 117, con el lab sucio y sin extras. Ésta: **156 / 4 / 17**, completa, con la cuenta
+cerrada. La diferencia no fue arreglar 15 tests: fue el seed, la purga, dos columnas muertas, un
+contrato jsonb, los testids del modal nuevo, y dos specs cuyo modelo estaba invertido.
