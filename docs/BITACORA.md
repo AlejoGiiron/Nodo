@@ -891,3 +891,140 @@ siempre.**
 **El criterio quedó por LISTA:** cero en el código **ejecutable** (`src/`, `tests/`,
 `supabase/functions/`) — ✅ cumplido — y todo lo demás enumerado como mención histórica legítima.
 Segunda vez que un criterio de "conteo a cero" se cae por la misma razón; ya es la forma, no el caso.
+
+
+---
+
+## 2026-09-01 · R4 aplicada al verificador: dos firmas mal, cazadas antes de ejecutar
+
+Al escribir `supabase/verificar-rpcs.sql` —el script que ejecuta cada RPC contra la base— redacté
+las llamadas **de memoria** y después las contrasté una por una contra `supabase/migrations/`.
+El contraste encontró **dos errores**:
+
+| Escribí | Es |
+|---|---|
+| `register_purchase(v_prov, 'VERIF-001', current_date, jsonb[...])` | `register_purchase(p_invoice jsonb, p_items jsonb)` — **dos** jsonb |
+| `products.stock` | `products.stock_qty` |
+
+### Por qué vale escribirlo: el diagnóstico que evitó
+
+Si se hubieran ido así, el script habría fallado con **`function ... does not exist`** o
+**`column ... does not exist`** — que son **exactamente los dos mensajes que el script existe para
+detectar**. Su propia cabecera dice que esos dos significan "la migración creó una función rota".
+
+**El verificador habría acusado al esquema de su propio defecto.** Y el diagnóstico habría arrancado
+por revisar las migraciones —el lugar equivocado—, con toda la confianza que da un mensaje de error
+específico. Mismo perfil que R6 y que la regex de `global-setup`: **un guard que rechaza señalando
+la causa que no es.**
+
+🔴 **Lo accionable, y es la regla en una línea: un verificador se verifica antes de correrlo.** No
+alcanza con que su lógica sea correcta: sus **llamadas** son un contrato con otra cosa, y ese
+contrato se comprueba contra la definición, no contra el recuerdo. Cuesta un `grep -A6 "function
+public.<nombre>"`.
+
+⚠️ Y quedó escrito **en el script**, no solo acá, el discriminador que hace usable el fallo:
+`relation/column does not exist` → esquema roto; **cualquier otro error** → el script, o un guard
+haciendo su trabajo.
+
+---
+
+## 2026-09-01 · R5 empieza a regir de verdad, y es la primera vez en el proyecto
+
+Hasta hoy, **todo cambio de esquema fue editar un archivo**. Las 15 migraciones se escribieron,
+se reordenaron, se les cambiaron nombres de columna y se les revirtieron decisiones —`orders.canal`
+volvió después de estar documentado como "no viaja"— **sin violar nada**, porque nada estaba
+aplicado. R5 estaba escrita y no mordía.
+
+**Con el primer `db push`, eso terminó.** Desde ahora todo cambio de esquema es un archivo nuevo, y
+la regla dejó de ser una advertencia para ser una restricción.
+
+Se nota inmediatamente en cómo se resuelven los desajustes: al aparecer `suppliers.contact_name` vs
+`suppliers.contact`, **la pregunta ya no es "cuál nombre me gusta más"** — es "cuál lado puedo
+mover". La base está aplicada, así que **el que se mueve es `src`**. La decisión la tomó la regla,
+no el gusto. (Y de paso el esquema tenía razón de fondo: `nit` es el documento tributario
+colombiano, más preciso que `document`.)
+
+⚠️ **Corolario práctico que conviene tener presente:** el costo de una decisión de esquema acaba de
+subir de golpe. Las que se tomaron "porque el archivo estaba abierto" ya no son gratis.
+
+---
+
+## 2026-09-01 · Migrar un test entre dos UIs distintas cuela aserciones falsas
+
+**Defecto propio, encontrado al podar el vale.**
+
+En la sesión anterior migré el test `VENTA GRATIS` de la caja de Mesas al POS, con el argumento
+—correcto— de que su sujeto era el **clamp del descuento**, no el flujo de dos fases. Pero moví la
+aserción tal cual:
+
+```ts
+await expect(page.getByTestId('discount-amount')).toHaveValue('18.000')
+```
+
+**Eso es falso en el POS.** El input del POS renderiza `value={discount ? String(discount) : ''}`:
+sin formato de miles y **sin clamp**. El clamp existe, pero en el CÁLCULO —
+`discountAmt = Math.min(discount, subtotal)`— no en el campo. Tecleando 25000 el input muestra
+`25000` y el total va a 0. La aserción venía de la caja de Mesas, que sí formateaba.
+
+### La clase
+
+> **Migrar un test entre dos UIs distintas conserva el SUJETO pero no las ASERCIONES.**
+
+El corolario de la propiedad me dijo bien **qué** migrar; no dice **cómo**. Al mover un test de una
+pantalla a otra, cada aserción sobre el DOM hay que re-derivarla de la pantalla nueva — las que
+miran la **base** (`order.total`, `discount_amount`, `paymentCount`) sí viajan, porque el sujeto es
+el mismo.
+
+⚠️ **Y no lo cazó nada**, porque los E2E no se pueden correr acá: sin `.env` ni servidor. Apareció
+**leyendo el código del input** mientras se podaba el vale — es decir, por casualidad. La lección no
+es "leé más": es que **una migración de test entre pantallas es código nuevo y no verificado**, y
+conviene marcarla como tal hasta que la suite corra.
+
+---
+
+## 2026-09-01 · La poda del vale, y el test que sostenía peso (otra vez en `tests/`)
+
+`orders.discount_kind` **no era un hueco del esquema**: la migración `ventas` documenta, con
+enumeración, que la mecánica del vale (el "ruletazo") **no viaja** y que sus consumidores
+—`getVouchersTotal`, el KPI "total regalado", `CloseShiftModal`— *"son TODOS features del vale, no
+del descuento. Cuelgan de la mecánica, no del mecanismo."*
+
+⚠️ **Yo lo había clasificado como hueco leyendo el error de `tsc`, sin abrir la migración.** Quinto
+caso del corolario *"clasificar leyendo el nombre o el plan NO es clasificar"* — acá el "plan" fue
+un mensaje del compilador, que se lee todavía más autoritativo que un documento.
+
+### Lo que sostenía peso
+
+`anular-venta.spec.ts` tenía un test *"exclusión: vale/venta gratis anulada sale del conteo y de
+vouchers"*. **Es un test de ANULACIÓN**, módulo que se queda, y usaba el vale solo de fixture. Se
+partió en dos:
+
+| Mitad | Destino |
+|---|---|
+| `vouchers_total` | muere con la mecánica del vale |
+| **`sales_count`** — *una venta anulada no cuenta en el cierre* | **se conserva**: es un invariante de anulación + arqueo, y los dos módulos siguen |
+
+Y la venta gratis se consigue igual sin el vale: el camino de `POSPage` es **`total > 0`**, no
+`kind === 'vale'`. Un descuento del 100% llega al mismo lugar.
+
+**Segundo caso seguido en que lo que sostiene peso vive en `tests/` y no en el producto.** Ya es
+patrón: cuando se poda una mecánica, los tests de OTROS módulos que la usaban de atajo son el lugar
+donde primero se rompe algo que importa.
+
+### Lo que se conservó por la razón inversa
+
+El input de **motivo del descuento** estaba gateado por `isVale`. Se **desgateó** en vez de
+borrarse: `discount_reason` **sí viajó** al esquema base, y una columna que ninguna pantalla puede
+llenar es exactamente el residuo inerte que la deuda 23.1 prohíbe.
+
+Y en `sentry.ts` se sacó `discount_kind` del allowlist de claves conocidas — al revés que
+`waiter|mozo` en el regex de redacción. La asimetría es la que decide: **en el regex, un patrón de
+más REDACTA de más y falla cerrado; en el allowlist, una clave de más DEJA PASAR de más.** Se
+conserva lo que endurece y se saca lo que afloja.
+
+### De paso: cuatro specs seguían consultando `cash_shifts`
+
+La tabla es `jornadas` desde el esquema base. `anular-venta`, `arqueo`, `descuento` y
+`helpers/shift` la nombraban en strings de `.from(...)`. **Quinta aparición** de la clase "lo que no
+es una referencia de código, ningún verificador lo mira" — y esta vez fueron 9 ocurrencias que
+habrían fallado todas en tiempo de ejecución.

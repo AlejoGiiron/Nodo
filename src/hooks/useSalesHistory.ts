@@ -135,7 +135,7 @@ export function useSaleDetail(orderId: string | null) {
 
 /**
  * Anula una venta del turno actual vía la RPC register_sale_void (atómica).
- * Tras el éxito invalida historial + cartera + caja (ventas/vales) + inventario
+ * Tras el éxito invalida historial + cartera + caja (ventas) + inventario
  * para que la venta salga del cuadre y el stock devuelto se refleje sin recargar.
  * El detalle abierto (['sale_detail']) también se refresca para pintar el badge
  * "Anulada" en el modal sin cerrarlo. Si una guarda server-side rechaza, el
@@ -153,7 +153,7 @@ export function useVoidSale() {
     onSuccess: (res) => {
       for (const key of [
         ['sales_history'], ['sales_history_cancelled'], ['sale_detail'], ['debts'],
-        ['shift_payments'], ['shift_vouchers'], ['stock_movements'], ['products'],
+        ['shift_payments'], ['stock_movements'], ['products'],
       ]) {
         queryClient.invalidateQueries({ queryKey: key })
       }

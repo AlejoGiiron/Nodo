@@ -289,34 +289,16 @@ export const updateOrderStatus = (orderId: string, status: Tables<'orders'>['sta
 export const updateOrderTotal = (orderId: string, total: number) =>
   supabase.from('orders').update({ total }).eq('id', orderId)
 
-// Aplica un descuento/vale a una orden. IDEMPOTENTE: el caller pasa `total` ya
+// Aplica un descuento a una orden. IDEMPOTENTE: el caller pasa `total` ya
 // recalculado desde el SUBTOTAL INVARIANTE (order.total + order.discount_amount),
 // no desde el total crudo → reintentar no doble-descuenta. Persiste el descuento
 // REAL (monto + tipo + kind + razón). Escribir ANTES de registerSalePayment para
 // que la RPC valide Σ pagos contra el total ya descontado.
-// Total REGALADO en vales en un rango (por sede). Suma discount_amount de las
-// órdenes con discount_kind='vale' y created_at en [fromISO, toISO]. RLS ya
-// limita a la sede; se filtra por sede_id de todas formas. Para el KPI
-// "Regalado en vales" de Reportes. from/to = límites ISO de día (Bogotá).
-export const getVouchersTotal = async (
-  sedeId: string, fromISO: string, toISO: string,
-): Promise<number> => {
-  const { data, error } = await supabase
-    .from('orders')
-    .select('discount_amount')
-    .eq('sede_id', sedeId)
-    .eq('discount_kind', 'vale')
-    .gte('created_at', fromISO)
-    .lte('created_at', toISO)
-  if (error) throw error
-  return (data ?? []).reduce((s, o) => s + (o.discount_amount ?? 0), 0)
-}
-
 export const applyOrderDiscount = (
   orderId: string,
   data: Pick<
     TablesUpdate<'orders'>,
-    'total' | 'discount_amount' | 'discount_type' | 'discount_kind' | 'discount_reason'
+    'total' | 'discount_amount' | 'discount_type' | 'discount_reason'
   >,
 ) => supabase.from('orders').update(data).eq('id', orderId).select().single()
 
@@ -355,7 +337,7 @@ export const setOrderNumber = (orderId: string, orderNumber: number) =>
  *    es problema a escala de un sede.
  *
  * Falta cubrir los dos caminos que NO pasan por `register_sale_payment`:
- * el fiado (no hay pago) y la venta gratis por vale del 100% (total 0).
+ * el fiado (no hay pago) y la venta gratis por descuento del 100% (total 0).
  * ─────────────────────────────────────────────────────────────────────────────
  */
 export interface AssignOrderNumberResult {
@@ -650,7 +632,7 @@ export const getShiftPayments = (sedeId: string, from: string) =>
     .gte('created_at', from)
 
 // Nº de VENTAS (órdenes distintas) del turno. Una venta mixta = varias filas
-// payments pero UNA orden → order_id distintos. Incluye las ventas GRATIS (vale
+// payments pero UNA orden → order_id distintos. Incluye las ventas GRATIS (descuento
 // 100%, total 0, sin payment): se anclan por total=0 + order_number asignado
 // (marca de venta completada) + created_at en
 // la ventana. Fiado (total>0, sin payment) NO cuenta (igual que antes).
@@ -674,47 +656,6 @@ export const getShiftSalesCount = async (sedeId: string, from: string): Promise<
   if (e2) throw e2
   for (const o of free ?? []) ids.add(o.id as string)
   return ids.size
-}
-
-// Total de VALES (ruletazo) entregados en el turno: suma discount_amount con
-// kind='vale' de las órdenes con pago en la ventana (mismo criterio que
-// sales_count). INFORMATIVO para el arqueo; no entra al cuadre. Las órdenes a
-// fiado (sin fila en payments) no cuentan acá — igual que en sales_count.
-export const getShiftVouchersTotal = async (sedeId: string, from: string): Promise<number> => {
-  const { data: pays, error: e1 } = await supabase
-    .from('payments')
-    .select('order_id')
-    .eq('sede_id', sedeId)
-    .gte('created_at', from)
-  if (e1) throw e1
-  const orderIds = [...new Set((pays ?? []).map((p) => p.order_id))]
-
-  let sum = 0
-  // Vales de órdenes COBRADAS en la ventana (con pago).
-  if (orderIds.length > 0) {
-    const { data: orders, error: e2 } = await supabase
-      .from('orders')
-      .select('discount_amount')
-      .eq('discount_kind', 'vale')
-      .in('id', orderIds)
-    if (e2) throw e2
-    sum += (orders ?? []).reduce((s, o) => s + (o.discount_amount ?? 0), 0)
-  }
-  // + Vales de ventas GRATIS (vale 100%, total 0, sin pago): se anclan por
-  // total=0 + order_number asignado + created_at en la ventana. Así el regalo se
-  // cuenta aunque no haya entrado dinero.
-  const { data: free, error: e3 } = await supabase
-    .from('orders')
-    .select('discount_amount')
-    .eq('sede_id', sedeId)
-    .eq('discount_kind', 'vale')
-    .eq('total', 0)
-    .not('order_number', 'is', null)
-    .is('cancelled_at', null)   // un vale gratis anulado NO cuenta
-    .gte('created_at', from)
-  if (e3) throw e3
-  sum += (free ?? []).reduce((s, o) => s + (o.discount_amount ?? 0), 0)
-  return sum
 }
 
 // --- Cash Movements ---

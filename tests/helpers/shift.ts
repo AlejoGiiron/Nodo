@@ -14,7 +14,7 @@ import { type Page, expect } from '@playwright/test'
  * Deja ASENTAR el estado del turno (useCashShift) tras la carga inicial. Ese
  * estado puede PARPADEAR (currentShift null → real) y mostrar por un instante el
  * banner equivocado. Decidir sobre ese transitorio hacía intentar abrir un turno
- * YA abierto → POST cash_shifts 409 → el modal quedaba bloqueando la UI. Esperar
+ * YA abierto → POST jornadas 409 → el modal quedaba bloqueando la UI. Esperar
  * a que la red quede inactiva evita actuar sobre el parpadeo.
  */
 async function settleShift(page: Page): Promise<void> {

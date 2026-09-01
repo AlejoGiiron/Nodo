@@ -1,14 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
-import { getVouchersTotal } from '@/lib/supabase-helpers'
 // El generador nuevo NO exporta `Views`: su `Tables<>` ya resuelve sobre
 // `Tables & Views`, asi que una vista se pide igual que una tabla.
 import type { Tables } from '@/types/database.types'
-
-// 'YYYY-MM-DD' (Bogotá) → límites ISO del día en UTC. Bogotá = UTC-5 fijo.
-const dayStartISO = (day: string) => new Date(`${day}T00:00:00-05:00`).toISOString()
-const dayEndISO = (day: string) => new Date(`${day}T23:59:59.999-05:00`).toISOString()
 
 export type DailySalesRow        = Tables<'daily_sales_summary'>
 export type ProductPerformanceRow = Tables<'product_performance'>
@@ -91,20 +86,11 @@ export function useReports({ from, to }: ReportParams) {
     staleTime: 5 * 60_000,
   })
 
-  // Total regalado en vales (ruletazo) en el rango — KPI de Reportes.
-  const vouchers = useQuery({
-    queryKey: ['reports_vouchers', sedeId, from, to],
-    queryFn: () => getVouchersTotal(sedeId!, dayStartISO(from), dayEndISO(to)),
-    enabled,
-    staleTime: 5 * 60_000,
-  })
-
   return {
     dailySales:         dailySales.data         ?? [],
     productPerformance: productPerformance.data ?? [],
     hourlySales:        hourlySales.data        ?? [],
     userPerformance:    userPerformance.data    ?? [],
-    vouchersTotal:      vouchers.data           ?? 0,
     isLoading:
       dailySales.isLoading        ||
       productPerformance.isLoading ||

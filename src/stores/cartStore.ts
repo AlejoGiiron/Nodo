@@ -27,9 +27,6 @@ export interface CartItem {
 }
 
 export type DiscountType = 'pct' | 'fixed'
-// Clase de descuento: normal vs vale (ruletazo), para contabilizar los vales
-// aparte. El vale es siempre monto fijo (discountType='fixed').
-export type DiscountKind = 'normal' | 'vale'
 
 /** Suma de extras de UNA unidad del ítem. */
 export function cartItemExtrasUnit(item: Pick<CartItem, 'extras'>): number {
@@ -51,7 +48,6 @@ export interface HeldOrder {
   items: CartItem[]
   discount: number
   discountType: DiscountType
-  discountKind: DiscountKind
   discountReason: string
   customer: string | null
   label: string
@@ -75,7 +71,6 @@ interface CartStore {
   items: CartItem[]
   discount: number
   discountType: DiscountType
-  discountKind: DiscountKind
   discountReason: string
   heldOrders: HeldOrder[]
   add: (product: ProductWithCategory) => void
@@ -86,7 +81,6 @@ interface CartStore {
   remove: (index: number) => void
   clear: () => void
   setDiscount: (discount: number, type?: DiscountType) => void
-  setDiscountKind: (kind: DiscountKind) => void
   setDiscountReason: (reason: string) => void
   holdCurrentOrder: (label: string) => void
   resumeHeldOrder: (id: string) => void
@@ -101,7 +95,6 @@ export const useCartStore = create<CartStore>((set) => ({
   items: [],
   discount: 0,
   discountType: 'pct',
-  discountKind: 'normal',
   discountReason: '',
   heldOrders: [],
 
@@ -160,7 +153,7 @@ export const useCartStore = create<CartStore>((set) => ({
   remove: (index) =>
     set((state) => ({ items: state.items.filter((_, i) => i !== index) })),
 
-  clear: () => set({ items: [], discount: 0, discountType: 'pct', discountKind: 'normal', discountReason: '' }),
+  clear: () => set({ items: [], discount: 0, discountType: 'pct', discountReason: '' }),
 
   setDiscount: (discount, type) =>
     set((state) => {
@@ -174,12 +167,6 @@ export const useCartStore = create<CartStore>((set) => ({
       return { discount: value, discountType: nextType }
     }),
 
-  // El vale (ruletazo) es siempre monto FIJO → al activarlo se fuerza el tipo.
-  setDiscountKind: (kind) =>
-    set(kind === 'vale'
-      ? { discountKind: kind, discountType: 'fixed' as DiscountType }
-      : { discountKind: kind }),
-
   setDiscountReason: (reason) => set({ discountReason: reason }),
 
   // Guarda el carrito activo en espera y lo limpia. No-op si está vacío.
@@ -191,7 +178,6 @@ export const useCartStore = create<CartStore>((set) => ({
         items: state.items,
         discount: state.discount,
         discountType: state.discountType,
-        discountKind: state.discountKind,
         discountReason: state.discountReason,
         customer: null,
         label: label.trim() || fallbackLabel(),
@@ -202,8 +188,7 @@ export const useCartStore = create<CartStore>((set) => ({
         items: [],
         discount: 0,
         discountType: 'pct',
-        discountKind: 'normal',
-        discountReason: '',
+              discountReason: '',
       }
     }),
 
@@ -217,7 +202,6 @@ export const useCartStore = create<CartStore>((set) => ({
         items: held.items,
         discount: held.discount,
         discountType: held.discountType,
-        discountKind: held.discountKind,
         discountReason: held.discountReason,
         heldOrders: state.heldOrders.filter((h) => h.id !== id),
       }
@@ -232,5 +216,5 @@ export const useCartStore = create<CartStore>((set) => ({
   // espera son del cajero actual: no deben sobrevivir a un cambio de usuario en
   // la misma pestaña (POS compartido). Se llama al cerrar sesión.
   resetSession: () =>
-    set({ items: [], discount: 0, discountType: 'pct', discountKind: 'normal', discountReason: '', heldOrders: [] }),
+    set({ items: [], discount: 0, discountType: 'pct', discountReason: '', heldOrders: [] }),
 }))

@@ -265,7 +265,7 @@ const CLAVE_PERMITIDA: Record<string, Forma> = {
   difference: 'decimal', difference_total: 'decimal', diferencia: 'decimal',
 
   // ── Banderas de flujo. Dicen por qué rama pasó el cobro.
-  esFiado: 'booleano', esVale: 'booleano', pagoDividido: 'booleano',
+  esFiado: 'booleano', pagoDividido: 'booleano',
   conDescuento: 'booleano', shift_open: 'booleano',
   cash_movement_created: 'booleano', ok: 'booleano', success: 'booleano',
 
@@ -276,7 +276,7 @@ const CLAVE_PERMITIDA: Record<string, Forma> = {
   errno: 'codigo', constraint: 'codigo', severity: 'codigo',
   area: 'codigo', paso: 'codigo', origen: 'codigo', tipoDeDato: 'codigo',
   method: 'codigo', payment_method: 'codigo', payment_status: 'codigo',
-  discount_type: 'codigo', discount_kind: 'codigo', kind: 'codigo',
+  discount_type: 'codigo', kind: 'codigo',
   // `type` es enum en DOS tablas (cash_movements.movement_type,
   // stock_movements.type). En el sobre ya era intocable; acá se declara explícito.
   type: 'codigo',

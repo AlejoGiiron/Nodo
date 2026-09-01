@@ -1,0 +1,42 @@
+# ============================================================================
+# Configuración del CLI de Supabase — MÍNIMA A PROPÓSITO.
+#
+# El template de `supabase init` trae ~400 líneas de ajustes del entorno LOCAL
+# (puertos, auth, storage, analytics). Nada de eso se usa acá: Nodo trabaja
+# contra el proyecto remoto. Se declara **solo** lo que cambia el comportamiento
+# de `db push`, y todo lo demás queda en los defaults del CLI.
+#
+# 🔴 POR QUÉ EXISTE ESTE ARCHIVO, en una línea:
+#    `supabase db push` aplica **solo migraciones**. `seed-system-roles.sql` es
+#    un artefacto GENERADO que vive fuera de `migrations/`, así que el push NO
+#    lo veía: la base quedó con las 10 RPC de las migraciones y **sin**
+#    `seed_system_roles` — o sea, con el RBAC sin sembrar.
+#
+# ⚠️ SOBRE `project_id`: NO es el project-ref del proyecto remoto. Es un
+#    identificador LOCAL (el CLI lo usa para distinguir proyectos en la misma
+#    máquina; por defecto toma el nombre del directorio). El ref del proyecto
+#    vive en `supabase/.temp/project-ref`, que está en `.gitignore`.
+#
+# 🔴 REGLA PARA ESTE ARCHIVO — leer antes de agregarle algo:
+#    **está en git, así que acá NO va ningún secreto.** Ni claves, ni tokens, ni
+#    contraseñas, ni el `service_role`. El CLI soporta `env(NOMBRE)` justamente
+#    para eso: el valor se resuelve del entorno y el archivo solo nombra la
+#    variable. Si alguna vez hace falta un secreto, va por `env(...)`.
+#    Anotado también en DEUDAS para que no dependa de que alguien lea esto.
+# ============================================================================
+
+project_id = "nodo"
+
+# ── Seeds ───────────────────────────────────────────────────────────────────
+# `supabase db push --include-seed` aplica estos archivos DESPUÉS de las
+# migraciones. Se usa para artefactos GENERADOS que no pueden ser migraciones.
+#
+# 🔴 POR QUÉ `seed-system-roles.sql` NO ES UNA MIGRACIÓN, y es la razón de fondo:
+#    el archivo se REGENERA (`pnpm gen:rbac`) cada vez que cambia el catálogo de
+#    permisos. Congelarlo como migración haría que el generador **reescriba una
+#    migración ya aplicada**, que es exactamente lo que R5 prohíbe — y R5 rige de
+#    verdad desde el primer push. La función es `create or replace` e idempotente
+#    POR DISEÑO: está pensada para re-aplicarse, no para congelarse.
+[db.seed]
+enabled = true
+sql_paths = ["./seed-system-roles.sql"]

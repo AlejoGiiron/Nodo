@@ -59,15 +59,15 @@ async function ctx() {
 // Abre turno si no hay; devuelve { id, opened_at }. Idempotente (índice único).
 async function ensureShift(): Promise<{ id: string; opened_at: string }> {
   const c = await ctx()
-  const open = (await c.from('cash_shifts').select('id, opened_at').eq('sede_id', SEDE).is('closed_at', null).maybeSingle()).data
+  const open = (await c.from('jornadas').select('id, opened_at').eq('sede_id', SEDE).is('closed_at', null).maybeSingle()).data
   if (open) return open as { id: string; opened_at: string }
-  const ins = await c.from('cash_shifts').insert({ sede_id: SEDE, opened_by: OWNER_ID, opening_amount: 0 }).select('id, opened_at').single()
+  const ins = await c.from('jornadas').insert({ sede_id: SEDE, opened_by: OWNER_ID, opening_amount: 0 }).select('id, opened_at').single()
   if (ins.error) throw ins.error
   return ins.data as { id: string; opened_at: string }
 }
 async function closeShifts(): Promise<void> {
   const c = await ctx()
-  await c.from('cash_shifts').update({ closed_at: new Date().toISOString(), closed_by: OWNER_ID, closing_amount: 0 }).eq('sede_id', SEDE).is('closed_at', null)
+  await c.from('jornadas').update({ closed_at: new Date().toISOString(), closed_by: OWNER_ID, closing_amount: 0 }).eq('sede_id', SEDE).is('closed_at', null)
 }
 
 async function prodByName(name: string): Promise<{ id: string; kind: string; stock_tracking: boolean }> {
@@ -106,7 +106,7 @@ type Item = { product_id: string; qty: number; unit_price: number; extras?: { ex
 async function createSale(opts: {
   items: Item[]; total: number; paid?: boolean
   payments?: { method: string; amount: number }[]
-  discount?: { amount: number; kind: 'vale' | 'normal'; type: 'fixed' | 'pct' }
+  discount?: { amount: number; type: 'fixed' | 'pct' }
   customerId?: string; customerName?: string
 }): Promise<{ id: string; number: number }> {
   const c = await ctx()
@@ -118,7 +118,6 @@ async function createSale(opts: {
   }
   if (opts.discount) {
     insert.discount_amount = opts.discount.amount
-    insert.discount_kind = opts.discount.kind
     insert.discount_type = opts.discount.type
   }
   if (opts.customerId) { insert.customer_id = opts.customerId; insert.customer_name = opts.customerName }
@@ -377,31 +376,35 @@ test.describe.serial('Anulación de ventas', () => {
     await expect(page.getByTestId('customer-row').filter({ hasText: cliente })).toHaveCount(0)
   })
 
-  test('exclusión: vale/venta gratis anulada sale del conteo y de vouchers (arqueo)', async ({ page }) => {
+  // ⚠️ REESCRITO el 2026-09-01 al podar el vale, y la mitad que se conservó es
+  //    la que importa: la mitad de `vouchers_total` murió con la mecánica del
+  //    vale, pero **"una venta anulada no cuenta en el cierre" es un invariante
+  //    de anulación + arqueo, y los dos módulos se quedan**. La venta gratis se
+  //    consigue igual con un descuento del 100%: el camino de POSPage es
+  //    `total > 0`, no `kind === 'vale'`.
+  test('exclusión: una venta gratis ANULADA no cuenta en el cierre (arqueo)', async ({ page }) => {
     // Turno fresco y determinista para el snapshot.
     await loginAsOwner(page)
     await page.goto('/ventas')
     await closeShiftIfOpen(page)
     await openShiftIfClosed(page, 0)
     await ctx()
-    const fresh = (await (await db()).from('cash_shifts').select('id').eq('sede_id', SEDE).is('closed_at', null).order('opened_at', { ascending: false }).limit(1).single()).data
+    const fresh = (await (await db()).from('jornadas').select('id').eq('sede_id', SEDE).is('closed_at', null).order('opened_at', { ascending: false }).limit(1).single()).data
     const shiftId = fresh!.id as string
 
-    // Una venta gratis (vale 100%) VIVA y otra ANULADA, ambas en el turno.
-    await createSale({ items: [{ product_id: P_SIMPLE, qty: 1, unit_price: 3000 }], total: 0, paid: true, discount: { amount: 3000, kind: 'vale', type: 'fixed' } })   // viva
-    const anulada = await createSale({ items: [{ product_id: P_SIMPLE, qty: 1, unit_price: 5000 }], total: 0, paid: true, discount: { amount: 5000, kind: 'vale', type: 'fixed' } })
+    // Una venta gratis (descuento 100%) VIVA y otra ANULADA, ambas en el turno.
+    await createSale({ items: [{ product_id: P_SIMPLE, qty: 1, unit_price: 3000 }], total: 0, paid: true, discount: { amount: 3000, type: 'fixed' } })   // viva
+    const anulada = await createSale({ items: [{ product_id: P_SIMPLE, qty: 1, unit_price: 5000 }], total: 0, paid: true, discount: { amount: 5000, type: 'fixed' } })
     expect((await voidRpc(await db(), anulada.id)).error).toBeNull()
 
-    // Cerrar turno (la mutación calcula sales_count + vouchers con los filtros F3).
+    // Cerrar turno (la mutación calcula sales_count con los filtros F3).
     await page.goto('/ventas')
     await closeShiftIfOpen(page)
 
-    const { data, error } = await (await db()).from('cash_shifts').select('close_reconciliation').eq('id', shiftId).single()
+    const { data, error } = await (await db()).from('jornadas').select('close_reconciliation').eq('id', shiftId).single()
     expect(error).toBeNull()
-    const rec = data!.close_reconciliation as { vouchers_total: number; sales_count: number }
-    // Solo el vale VIVO cuenta: vouchers_total = 3000 (no 8000), y la gratis
-    // anulada no suma al conteo de ventas.
-    expect(rec.vouchers_total).toBe(3000)
+    const rec = data!.close_reconciliation as { sales_count: number }
+    // De las DOS ventas gratis del turno, solo la VIVA cuenta.
     expect(rec.sales_count).toBe(1)
   })
 

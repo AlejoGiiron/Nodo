@@ -13,7 +13,7 @@
     "typecheck": "tsc --noEmit",
     "gen:rbac": "node scripts/gen-rbac-sql.mjs",
     "gen:rbac:check": "node scripts/gen-rbac-sql.mjs --check",
-    "db:push": "supabase db push",
+    "db:push": "supabase db push --include-seed",
     "db:types": "supabase gen types typescript --linked > src/types/database.types.ts",
     "db:verificar-vacia": "supabase db dump --schema public",
     "test:unit": "vitest run",

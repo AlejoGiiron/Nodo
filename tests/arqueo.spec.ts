@@ -42,7 +42,7 @@ async function db(): Promise<SupabaseClient> {
 async function openShiftId(): Promise<string> {
   const c = await db()
   const { data, error } = await c
-    .from('cash_shifts').select('id').is('closed_at', null)
+    .from('jornadas').select('id').is('closed_at', null)
     .order('opened_at', { ascending: false }).limit(1).single()
   if (error) throw error
   return data.id as string
@@ -56,7 +56,7 @@ type Reconciliation = {
 async function reconciliationOf(shiftId: string): Promise<{ rec: Reconciliation; comment: string | null }> {
   const c = await db()
   const { data, error } = await c
-    .from('cash_shifts').select('close_reconciliation, close_comment').eq('id', shiftId).single()
+    .from('jornadas').select('close_reconciliation, close_comment').eq('id', shiftId).single()
   if (error) throw error
   return { rec: data.close_reconciliation as Reconciliation, comment: data.close_comment as string | null }
 }

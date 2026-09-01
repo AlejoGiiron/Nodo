@@ -80,7 +80,7 @@ const COLUMNAS_DEL_ESQUEMA: ColumnaEsquema[] = [
 
   // ── tables (esquema base)
 
-  // ── orders (schema.sql + delivery/numbering/vale/void/fiado)
+  // ── orders (numbering/void/fiado)
   { tabla: 'orders', columna: 'customer_name', ejemplo: 'Juan Perez' },
   { tabla: 'orders', columna: 'customer_phone', ejemplo: '3009876543' },
   { tabla: 'orders', columna: 'notes', ejemplo: 'Sin cebolla, para Pedro' },
@@ -450,7 +450,7 @@ describe('error REAL de Nodo — el evento completo', () => {
   it('un cobro fallido con la fila cruda adjunta no filtra al cliente', () => {
     const out = scrubEvent({
       extra: {
-        origen: 'Mostrador', esFiado: false, pagoDividido: true, conDescuento: true, esVale: false,
+        origen: 'Mostrador', esFiado: false, pagoDividido: true, conDescuento: true,
         orden: {
           id: '3f2b1c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d',
           customer_name: 'Juan Perez', customer_phone: '3001234567',

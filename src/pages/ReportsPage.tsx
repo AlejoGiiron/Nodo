@@ -9,7 +9,7 @@ import {
   LineChart, Line,
   PieChart, Pie, Cell,
 } from 'recharts'
-import { Download, TrendingUp, TrendingDown, ShoppingBag, DollarSign, Package, Wallet, Boxes, Gift } from 'lucide-react'
+import { Download, TrendingUp, TrendingDown, ShoppingBag, DollarSign, Package, Wallet, Boxes } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { useReports } from '@/hooks/useReports'
 
@@ -129,7 +129,7 @@ export function ReportsPage() {
   const prevFrom = useMemo(() => format(subDays(parseISO(from), periodLen), 'yyyy-MM-dd'), [from, periodLen])
 
   // ─── Data ─────────────────────────────────────────────────────────────────
-  const { dailySales, productPerformance, hourlySales, vouchersTotal, isLoading } = useReports({ from, to })
+  const { dailySales, productPerformance, hourlySales, isLoading } = useReports({ from, to })
   const { dailySales: prevDailySales } = useReports({ from: prevFrom, to: prevTo })
 
   // ─── KPI aggregates ───────────────────────────────────────────────────────
@@ -486,14 +486,6 @@ export function ReportsPage() {
               icon={<TrendingUp size={15} />}
               change={pctChange(avgTicket, prevTicket)}
               isLoading={isLoading}
-            />
-            <KPICard
-              label="Regalado en vales"
-              value={COP(vouchersTotal)}
-              icon={<Gift size={15} />}
-              change={null}
-              isLoading={isLoading}
-              testid="report-vouchers"
             />
           </div>
 
