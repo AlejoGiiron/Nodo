@@ -274,7 +274,7 @@ const CLAVE_PERMITIDA: Record<string, Forma> = {
   area: 'codigo', paso: 'codigo', origen: 'codigo', tipoDeDato: 'codigo',
   method: 'codigo', payment_method: 'codigo', payment_status: 'codigo',
   discount_type: 'codigo', discount_kind: 'codigo', kind: 'codigo',
-  // `type` es enum en TRES tablas (orders.order_type, cash_movements.movement_type,
+  // `type` es enum en DOS tablas (cash_movements.movement_type,
   // stock_movements.type). En el sobre ya era intocable; acá se declara explícito.
   type: 'codigo',
   mutationKey: 'codigo', queryKey: 'codigo', rpc: 'codigo', tabla: 'codigo',

@@ -502,7 +502,7 @@ export type Database = {
           status: Database["public"]["Enums"]["order_status"]
           table_id: string | null
           total: number
-          type: Database["public"]["Enums"]["order_type"]
+          canal: string
           updated_at: string
           waiter_name: string | null
         }
@@ -530,7 +530,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["order_status"]
           table_id?: string | null
           total?: number
-          type: Database["public"]["Enums"]["order_type"]
+          canal: string
           updated_at?: string
           waiter_name?: string | null
         }
@@ -558,7 +558,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["order_status"]
           table_id?: string | null
           total?: number
-          type?: Database["public"]["Enums"]["order_type"]
+          canal?: string
           updated_at?: string
           waiter_name?: string | null
         }
@@ -1310,7 +1310,7 @@ export type Database = {
           day: string | null
           nequi_total: number | null
           order_count: number | null
-          order_type: Database["public"]["Enums"]["order_type"] | null
+          canal: string | null
           sede_id: string | null
           total_revenue: number | null
           transfer_total: number | null
@@ -1441,7 +1441,6 @@ export type Database = {
         | "ready"
         | "delivered"
         | "cancelled"
-      order_type: "dine_in" | "takeaway" | "delivery"
       payment_method: "cash" | "card" | "transfer" | "nequi"
       table_status: "free" | "occupied" | "reserved" | "waiting_bill"
       user_role: "admin" | "cashier"
@@ -1601,7 +1600,6 @@ export const Constants = {
     Enums: {
       movement_type: ["in", "out"],
       order_status: ["pending", "preparing", "ready", "delivered", "cancelled"],
-      order_type: ["dine_in", "takeaway", "delivery"],
       payment_method: ["cash", "card", "transfer", "nequi"],
       table_status: ["free", "occupied", "reserved", "waiting_bill"],
       user_role: ["admin", "cashier"],

@@ -488,7 +488,7 @@ export interface SalesHistoryRow {
   id: string
   order_number: number | null
   created_at: string
-  type: Enums<'order_type'>
+  canal: string
   customer_name: string | null
   total: number
   payment_status: string   // 'paid' | 'pending' | 'partial' — el fiado no tiene fila en payments
@@ -527,7 +527,7 @@ export interface SaleDetailRow {
   id: string
   order_number: number | null
   created_at: string
-  type: Enums<'order_type'>
+  canal: string
   customer_name: string | null
   customer_phone: string | null
   notes: string | null

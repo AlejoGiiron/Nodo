@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import {
   Search, X, ChevronLeft, ChevronRight, Printer, Receipt,
-  Store, Bike, UtensilsCrossed, Calendar, Ban, AlertTriangle,
+  Store, MessageCircle, Phone, Calendar, Ban, AlertTriangle,
 } from 'lucide-react'
 import { useSedeConfig } from '@/hooks/useSedeConfig'
 import { usePermissions } from '@/hooks/usePermissions'
@@ -44,15 +44,15 @@ function daysAgoBogota(days: number): string {
 }
 
 // Unión concreta (no el conditional perezoso Enums<...>) para poder indexar
-// ORDER_TYPE sin TS7053. sale.type/row.type (Enums<'order_type'>) se castean
+// CANAL sin TS7053. sale.canal/row.canal (text en BD) se castean
 // a este alias en el punto de indexado: resuelven a la misma unión.
-type OrderType = 'dine_in' | 'takeaway' | 'delivery'
+type Canal = 'mostrador' | 'whatsapp' | 'telefono'
 type PayMethod = Enums<'payment_method'>
 
-const ORDER_TYPE: Record<OrderType, { label: string; icon: React.ReactNode; bg: string; fg: string }> = {
-  dine_in:  { label: 'Mesa',        icon: <UtensilsCrossed size={12} />, bg: '#ecfdf5', fg: '#065f46' },
-  takeaway: { label: 'Mostrador',   icon: <Store size={12} />,           bg: '#fef3c7', fg: '#854d0e' },
-  delivery: { label: 'Delivery',    icon: <Bike size={12} />,            bg: '#dbeafe', fg: '#1e40af' },
+const CANAL: Record<Canal, { label: string; icon: React.ReactNode; bg: string; fg: string }> = {
+  mostrador: { label: 'Mostrador',  icon: <Store size={12} />,           bg: '#fef3c7', fg: '#854d0e' },
+  whatsapp:  { label: 'WhatsApp',   icon: <MessageCircle size={12} />,   bg: '#dcfce7', fg: '#166534' },
+  telefono:  { label: 'Teléfono',   icon: <Phone size={12} />,           bg: '#dbeafe', fg: '#1e40af' },
 }
 
 const METHOD_LABEL: Record<PayMethod, string> = {
@@ -147,7 +147,7 @@ function SaleDetailModal({ orderId, onClose }: { orderId: string; onClose: () =>
       sedeAddress: sede?.address,
       orderNumber: sale.order_number,
       orderId: sale.id,
-      type: sale.type,
+      canal: sale.canal,
       method,
       createdAt: sale.created_at,
       total: sale.total,
@@ -184,7 +184,7 @@ function SaleDetailModal({ orderId, onClose }: { orderId: string; onClose: () =>
             </div>
             {sale && (
               <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 2 }}>
-                {formatDateTime(sale.created_at)} · {ORDER_TYPE[sale.type as OrderType].label}
+                {formatDateTime(sale.created_at)} · {CANAL[sale.canal as Canal].label}
               </div>
             )}
             {isVoided && sale && (
@@ -583,7 +583,7 @@ export function SalesHistoryPage() {
             </div>
             {/* Rows */}
             {rows.map((row: SalesHistoryRow) => {
-              const ot = ORDER_TYPE[row.type as OrderType]
+              const ot = CANAL[row.canal as Canal]
               return (
                 <button
                   key={row.id}

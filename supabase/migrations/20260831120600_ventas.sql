@@ -9,8 +9,9 @@
 -- R5: no aplicado en Nodo (base vacia). Desde el primer `db push`, R5 manda.
 --
 -- ── LO QUE NO VIAJA, Y POR QUE ─────────────────────────────────────────────
---   · orders.type (order_type)  → el eje dine_in/takeaway/delivery es de
---     restaurante. Nodo vende sobre mostrador y no tiene rutas ni despacho.
+--   · orders.type (order_type)  → NO viaja el NOMBRE ni los VALORES; el eje si.
+--     Se reemplaza por `orders.canal` (mas abajo). `type` no decia nada y ya
+--     habia tres columnas `type` en el esquema.
 --   · orders.table_id y chk_dine_in_has_table → mesas.
 --   · orders.waiter_name        → mozos.
 --   · el `update roles set permissions` de sale-void.sql → hallazgo H4: el
@@ -31,6 +32,20 @@ create table public.orders (
   created_by     uuid                not null references public.profiles on delete restrict,
   order_number   integer,
   status         public.order_status not null default 'pending',
+  -- ── canal: por donde ENTRO el pedido ──────────────────────────────────
+  -- Allowlist POSITIVA de tres valores. Lo prohibido no se enumera (R2).
+  -- `not null` y SIN DEFAULT a proposito: un default —'mostrador'— convierte un
+  -- insert que se olvido del canal en un dato PLAUSIBLE Y FALSO, justo en la
+  -- columna que existe para medir canales. No revienta: ensucia el reporte y el
+  -- cliente lo nota antes que nosotros (perfil de R7). Hay UN solo escritor
+  -- (POSPage), asi que exigirlo cuesta una linea y convierte la omision en un
+  -- error ruidoso. Mismo criterio que dejo profiles.role sin default.
+  -- Sin 'otro': en cash_movements.categoria si lo pusimos porque el universo era
+  -- abierto; aca son tres y ampliar es trivial, asi que 'otro' solo seria un
+  -- balde donde se esconderian los canales reales en vez de nombrarlos.
+  canal          text                not null
+                 constraint chk_canal_permitido
+                 check (canal in ('mostrador', 'whatsapp', 'telefono')),
   customer_name  text,
   customer_phone text,
   notes          text,
@@ -45,6 +60,11 @@ create table public.orders (
   updated_at     timestamptz         not null default now()
 );
 
+comment on column public.orders.canal is
+  'Por donde ENTRO el pedido: mostrador | whatsapp | telefono. Es UN SOLO EJE. '
+  'preventa NO es un valor de esta columna: responde QUIEN lo origino, no por '
+  'donde entro, y esa punta ya existe en created_by. Ver DEUDAS, ideas pospuestas.';
+
 comment on column public.orders.total is
   'Calculado en el cliente y persistido. Verificar contra sum(order_items) si '
   'se necesita auditoria.';
@@ -57,6 +77,8 @@ comment on column public.orders.cancelled_at is
 create index idx_orders_sede_id      on public.orders (sede_id);
 create index idx_orders_status       on public.orders (sede_id, status);
 create index idx_orders_created_at   on public.orders (created_at desc);
+-- El desglose por canal del reporte Financiero agrupa por (sede, canal, dia).
+create index idx_orders_canal        on public.orders (sede_id, canal);
 create unique index idx_orders_sede_order_number
   on public.orders (sede_id, order_number) where order_number is not null;
 create index idx_orders_cancelled

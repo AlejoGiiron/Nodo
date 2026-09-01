@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import {
   Search, X, Plus, Trash, Minus, ShoppingCart, Percent,
-  ChevronRight, Store, Bike, StickyNote,
+  ChevronRight, Store, MessageCircle,
+  Phone, StickyNote,
   Banknote, CreditCard, Smartphone, Check, Building2, Printer,
   Pause, Play, Clock, AlertTriangle, HandCoins, SplitSquareHorizontal,
 } from 'lucide-react'
@@ -28,10 +29,14 @@ import { stockStatus, esAlertaDeStock } from '@/lib/stockStatus'
 import type { ProductWithCategory, CartItem, DiscountType, DiscountKind, HeldOrder } from '@/stores/cartStore'
 import type { Enums } from '@/types/database.types'
 
-type OrderType = 'dine_in' | 'takeaway' | 'delivery'
+// Canal: por donde ENTRO el pedido. Espeja el CHECK de orders.canal — si acá
+// se agrega un valor sin ampliar el CHECK, el insert falla RUIDOSO, que es lo
+// que queremos. Al revés (CHECK ampliado y esto no) el valor simplemente no se
+// puede elegir. Ninguna de las dos direcciones falla callada.
+type Canal = 'mostrador' | 'whatsapp' | 'telefono'
 
-// Tipo por defecto del POS: se aplica al montar Y al terminar cada venta.
-const DEFAULT_ORDER_TYPE: OrderType = 'takeaway'
+// Canal por defecto del POS: se aplica al montar Y al terminar cada venta.
+const DEFAULT_CANAL: Canal = 'mostrador'
 
 type PaymentMethodUI = 'efectivo' | 'tarjeta' | 'transferencia' | 'nequi' | 'fiado'
 
@@ -86,7 +91,7 @@ function PrintTicket({
   iva,
   total,
   method,
-  orderType,
+  canal,
   orderId,
   orderNumber,
   receivedAmt,
@@ -101,7 +106,7 @@ function PrintTicket({
   iva: number
   total: number
   method: PaymentMethodUI
-  orderType: OrderType
+  canal: Canal
   orderId: string
   orderNumber: number | null
   receivedAmt?: number
@@ -120,7 +125,7 @@ function PrintTicket({
   const ventaLabel = orderNumber != null
     ? `Venta #${orderNumber}`
     : `#${orderId.slice(-8).toUpperCase()}`
-  const orderTypeLabel = { dine_in: 'Mesa', takeaway: 'Para llevar', delivery: 'Delivery' }[orderType]
+  const canalLabel = { mostrador: 'Mostrador', whatsapp: 'WhatsApp', telefono: 'Teléfono' }[canal]
   const methodLabel = {
     efectivo: 'Efectivo', tarjeta: 'Tarjeta',
     transferencia: 'Transferencia', nequi: 'Nequi', fiado: 'Fiado',
@@ -132,7 +137,7 @@ function PrintTicket({
         <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: 3 }}>{sedeName.toUpperCase()}</div>
         {sedeAddress && <div style={{ fontSize: 11 }}>{sedeAddress}</div>}
         <div style={{ fontSize: 13, fontWeight: 700, marginTop: 4 }}>{ventaLabel}</div>
-        <div style={{ fontSize: 10, marginTop: 2 }}>{dateStr}  {timeStr} · {orderTypeLabel}</div>
+        <div style={{ fontSize: 10, marginTop: 2 }}>{dateStr}  {timeStr} · {canalLabel}</div>
       </div>
 
       <div style={{ borderTop: '1px dashed #000', margin: '6px 0' }} />
@@ -445,8 +450,8 @@ function CartPanel({
   discountAmt,
   iva,
   total,
-  orderType,
-  setOrderType,
+  canal,
+  setCanal,
   notingIdx,
   setNotingIdx,
   onCheckout,
@@ -460,8 +465,8 @@ function CartPanel({
   discountAmt: number
   iva: number
   total: number
-  orderType: OrderType
-  setOrderType: (t: OrderType) => void
+  canal: Canal
+  setCanal: (c: Canal) => void
   notingIdx: number | null
   setNotingIdx: (i: number | null) => void
   onCheckout: () => void
@@ -483,12 +488,12 @@ function CartPanel({
   const isVale = discountKind === 'vale'
   const { can } = usePermissions()
 
-  // dine_in requires a table_id (DB constraint) — that's handled by TablesPage, not the POS quick-sale flow
-  const orderTypes = [
-    { id: 'takeaway' as OrderType, label: 'Para llevar', icon: <Store size={17} />,    bg: '#fef3c7', fg: '#854d0e' },
-    { id: 'delivery' as OrderType, label: 'Delivery',    icon: <Bike size={17} />,     bg: '#dbeafe', fg: '#1e40af' },
+  const canales = [
+    { id: 'mostrador' as Canal, label: 'Mostrador', icon: <Store size={17} />,          bg: '#fef3c7', fg: '#854d0e' },
+    { id: 'whatsapp'  as Canal, label: 'WhatsApp',  icon: <MessageCircle size={17} />,  bg: '#dcfce7', fg: '#166534' },
+    { id: 'telefono'  as Canal, label: 'Teléfono',  icon: <Phone size={17} />,          bg: '#dbeafe', fg: '#1e40af' },
   ]
-  const current = orderTypes.find((t) => t.id === orderType)!
+  const current = canales.find((t) => t.id === canal)!
 
   return (
     <div style={{
@@ -500,23 +505,23 @@ function CartPanel({
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div
-              data-testid="order-type-toggle"
+              data-testid="canal-toggle"
               style={{
                 width: 36, height: 36, borderRadius: 10,
                 background: current.bg, color: current.fg,
                 display: 'grid', placeItems: 'center', cursor: 'pointer',
               }}
               onClick={() => {
-                const ids = orderTypes.map((t) => t.id)
-                setOrderType(ids[(ids.indexOf(orderType) + 1) % ids.length])
+                const ids = canales.map((t) => t.id)
+                setCanal(ids[(ids.indexOf(canal) + 1) % ids.length])
               }}
-              title="Cambiar tipo de orden"
+              title="Cambiar canal de la venta"
             >
               {current.icon}
             </div>
             <div>
-              {/* testid: el texto solo ("Delivery") colisiona con el nav del sidebar. */}
-              <div data-testid="order-type-label" style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', letterSpacing: -0.2 }}>
+              {/* testid: el texto solo colisionaba con el nav del sidebar. */}
+              <div data-testid="canal-label" style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', letterSpacing: -0.2 }}>
                 {current.label}
               </div>
               <div style={{ fontSize: 11.5, color: '#64748b', fontFamily: 'monospace', marginTop: 1 }}>
@@ -823,7 +828,7 @@ function CheckoutModal({
   discountKind,
   discountReason,
   iva,
-  orderType,
+  canal,
   onClose,
   onComplete,
 }: {
@@ -836,7 +841,7 @@ function CheckoutModal({
   discountKind: DiscountKind
   discountReason: string
   iva: number
-  orderType: OrderType
+  canal: Canal
   onClose: () => void
   onComplete: () => void
 }) {
@@ -897,7 +902,7 @@ function CheckoutModal({
       // El stock SÍ se descuenta igual (la mercancía salió). Copiamos el nombre
       // del cliente a customer_name para que tickets/historial sigan leyéndolo.
       const { data: order, error: orderErr } = await createOrder({
-        type: orderType,
+        canal,
         status: 'pending',
         total,
         sede_id: profile.sede_id,
@@ -1335,7 +1340,7 @@ function CheckoutModal({
               iva={iva}
               total={total}
               method={method}
-              orderType={orderType}
+              canal={canal}
               orderId={orderId}
               orderNumber={orderNumber}
               receivedAmt={method === 'efectivo' ? receivedNum : undefined}
@@ -1563,7 +1568,7 @@ function ResumeConflictDialog({ onKeep, onDiscardCurrent, onCancel }: {
 export function POSPage() {
   const [activeCat, setActiveCat] = useState<string | null>(null)
   const [query, setQuery] = useState('')
-  const [orderType, setOrderType] = useState<OrderType>(DEFAULT_ORDER_TYPE)
+  const [canal, setCanal] = useState<Canal>(DEFAULT_CANAL)
   const [checkout, setCheckout] = useState(false)
   const [showOpenShift, setShowOpenShift] = useState(false)
   const [notingIdx, setNotingIdx] = useState<number | null>(null)
@@ -1857,8 +1862,8 @@ export function POSPage() {
         discountAmt={discountAmt}
         iva={iva}
         total={total}
-        orderType={orderType}
-        setOrderType={setOrderType}
+        canal={canal}
+        setCanal={setCanal}
         notingIdx={notingIdx}
         setNotingIdx={setNotingIdx}
         onCheckout={handleCheckout}
@@ -1931,16 +1936,18 @@ export function POSPage() {
           discountKind={discountKind}
           discountReason={discountReason}
           iva={iva}
-          orderType={orderType}
+          canal={canal}
           onClose={() => setCheckout(false)}
-          // El tipo de venta vuelve al default tras CUALQUIER venta, no solo tras
-          // delivery. `orderType` es estado local de la página y `clear()` (del
-          // cartStore) no lo tocaba, así que quedaba pegado: la siguiente venta de
-          // mostrador se grababa como delivery y ensuciaba el desglose por canal
-          // del reporte Financiero. Un dato mal clasificado pesa más que el clic
-          // de más para quien hace varios domicilios seguidos (el selector cicla
-          // entre solo dos opciones, así que es exactamente un clic).
-          onComplete={() => { setCheckout(false); clear(); setOrderType(DEFAULT_ORDER_TYPE) }}
+          // El canal vuelve al default tras CUALQUIER venta. `canal` es estado local
+          // de la página y `clear()` (del cartStore) no lo tocaba, así que quedaba
+          // pegado: la siguiente venta de mostrador se grababa con el canal anterior
+          // y ensuciaba el desglose del reporte Financiero. Un dato mal clasificado
+          // pesa más que el clic de más para quien toma varios pedidos seguidos por
+          // el mismo canal.
+          // ⚠️ Con TRES canales el ciclo ya no es "exactamente un clic" como cuando
+          //    eran dos. Si el reset molesta en uso real, la respuesta NO es sacarlo:
+          //    es que el selector deje de ser cíclico.
+          onComplete={() => { setCheckout(false); clear(); setCanal(DEFAULT_CANAL) }}
         />
       )}
     </div>

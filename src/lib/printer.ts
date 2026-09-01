@@ -67,8 +67,8 @@ function printThermal(contentHtml: string, opts: ThermalPrintOptions): void {
 // tiene su propio componente PrintTicket en pantalla; esta función imprime un
 // recibo equivalente desde datos ya persistidos (sin React).
 
-const ORDER_TYPE_LABEL: Record<string, string> = {
-  dine_in: 'Mesa', takeaway: 'Para llevar', delivery: 'Delivery',
+const CANAL_LABEL: Record<string, string> = {
+  mostrador: 'Mostrador', whatsapp: 'WhatsApp', telefono: 'Teléfono',
 }
 const METHOD_LABEL: Record<string, string> = {
   cash: 'Efectivo', card: 'Tarjeta', transfer: 'Transferencia', nequi: 'Nequi / QR',
@@ -85,7 +85,7 @@ export interface SaleTicketData {
   sedeAddress?: string | null
   orderNumber: number | null
   orderId: string
-  type: string
+  canal: string
   method?: string | null
   createdAt: string
   items: {
@@ -109,7 +109,7 @@ export function printSaleTicket(data: SaleTicketData): void {
   const ventaLabel = data.orderNumber != null
     ? `Venta #${data.orderNumber}`
     : `#${data.orderId.slice(-8).toUpperCase()}`
-  const typeLabel = ORDER_TYPE_LABEL[data.type] ?? data.type
+  const canalLabel = CANAL_LABEL[data.canal] ?? data.canal
   const methodLabel = data.method ? (METHOD_LABEL[data.method] ?? data.method) : null
   const iva = Math.round(data.total - data.total / 1.19)
 
@@ -118,7 +118,7 @@ export function printSaleTicket(data: SaleTicketData): void {
       ${data.sedeName ? `<div style="font-size:16px;font-weight:700;letter-spacing:3px">${data.sedeName.toUpperCase()}</div>` : ''}
       ${data.sedeAddress ? `<div style="font-size:11px">${data.sedeAddress}</div>` : ''}
       <div style="font-size:13px;font-weight:700;margin-top:4px">${ventaLabel}</div>
-      <div style="font-size:10px;margin-top:2px">${dateStr}  ${timeStr} · ${typeLabel}</div>
+      <div style="font-size:10px;margin-top:2px">${dateStr}  ${timeStr} · ${canalLabel}</div>
     </div>
     <div style="border-top:1px dashed #000;margin:6px 0"></div>
     ${data.items.map(item => `

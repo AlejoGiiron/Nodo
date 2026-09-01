@@ -113,7 +113,7 @@ async function createSale(opts: {
   const c = await ctx()
   const paid = opts.paid ?? true
   const insert: Record<string, unknown> = {
-    type: 'takeaway', status: 'preparing', total: opts.total,
+    canal: 'mostrador', status: 'pending', total: opts.total,
     sede_id: SEDE, created_by: OWNER_ID,
     payment_status: paid ? 'paid' : 'pending',
   }

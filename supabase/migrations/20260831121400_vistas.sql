@@ -28,8 +28,10 @@ begin;
 -- ------------------------------------------------------------
 -- 1 · daily_sales_summary — ventas por dia y metodo de pago
 --
--- CAMBIO: se cae la dimension `order_type`. El eje dine_in/takeaway/delivery no
--- existe en Nodo (migracion `extensiones_y_tipos`).
+-- La dimension por CANAL se conserva (una fila por dia, sede y canal). No es
+-- herencia: con `orders.canal` vivo, "cuanto entra por mostrador contra cuanto
+-- por WhatsApp" es la pregunta que el negocio va a hacer. Lo que cambio son los
+-- VALORES, no el eje.
 --
 -- 🔴 CAMBIO DE FONDO: la exclusion de anuladas pasa de `status != 'cancelled'`
 --    a `cancelled_at is null`. Las dos marcan el mismo hecho, y tener DOS
@@ -51,6 +53,7 @@ as
 select
   (o.created_at at time zone 'America/Bogota')::date               as day,
   o.sede_id,
+  o.canal,
   count(distinct o.id)                                             as order_count,
   coalesce(sum(p.amount), 0)                                       as total_revenue,
   round(coalesce(sum(p.amount), 0) / nullif(count(distinct o.id), 0), 2)
@@ -64,7 +67,8 @@ join public.payments p on p.order_id = o.id
 where o.cancelled_at is null
 group by
   (o.created_at at time zone 'America/Bogota')::date,
-  o.sede_id;
+  o.sede_id,
+  o.canal;
 
 
 -- ------------------------------------------------------------

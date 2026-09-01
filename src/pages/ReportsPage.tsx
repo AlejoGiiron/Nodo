@@ -28,10 +28,10 @@ function pctChange(current: number, prev: number): number | null {
 // ─── Design tokens ────────────────────────────────────────────────────────────
 
 const CH_COLOR: Record<string, string> = {
-  dine_in: '#10b981', takeaway: '#f59e0b', delivery: '#3b82f6',
+  mostrador: '#f59e0b', whatsapp: '#10b981', telefono: '#3b82f6',
 }
 const CH_LABEL: Record<string, string> = {
-  dine_in: 'Mesa', takeaway: 'Para llevar', delivery: 'Delivery',
+  mostrador: 'Mostrador', whatsapp: 'WhatsApp', telefono: 'Teléfono',
 }
 const PAY_COLORS = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b']
 
@@ -142,11 +142,11 @@ export function ReportsPage() {
 
   // ─── Bar chart: pivot daily sales by day × channel ────────────────────────
   const barData = useMemo(() => {
-    const map: Record<string, { day: string; dine_in: number; takeaway: number; delivery: number }> = {}
+    const map: Record<string, { day: string; mostrador: number; whatsapp: number; telefono: number }> = {}
     for (const r of dailySales) {
-      if (r.day == null || r.order_type == null) continue
-      if (!map[r.day]) map[r.day] = { day: r.day, dine_in: 0, takeaway: 0, delivery: 0 }
-      const key = r.order_type as 'dine_in' | 'takeaway' | 'delivery'
+      if (r.day == null || r.canal == null) continue
+      if (!map[r.day]) map[r.day] = { day: r.day, mostrador: 0, whatsapp: 0, telefono: 0 }
+      const key = r.canal as 'mostrador' | 'whatsapp' | 'telefono'
       map[r.day][key] += r.total_revenue ?? 0
     }
     return Object.values(map).sort((a, b) => a.day.localeCompare(b.day))
@@ -289,7 +289,7 @@ export function ReportsPage() {
       const ws2 = wb.addWorksheet('Ventas por día')
       ws2.columns = [
         { header: 'Fecha',         key: 'day',         width: 14 },
-        { header: 'Canal',         key: 'order_type',  width: 14 },
+        { header: 'Canal',         key: 'canal',       width: 14 },
         { header: 'Órdenes',       key: 'order_count', width: 10 },
         { header: 'Efectivo',      key: 'cash',        width: 16 },
         { header: 'Tarjeta',       key: 'card',        width: 16 },
@@ -299,7 +299,7 @@ export function ReportsPage() {
       ]
       for (const r of dailySales) {
         ws2.addRow({
-          day: r.day, order_type: r.order_type, order_count: r.order_count,
+          day: r.day, canal: r.canal, order_count: r.order_count,
           cash: r.cash_total, card: r.card_total,
           transfer: r.transfer_total, nequi: r.nequi_total, total: r.total_revenue,
         })
@@ -517,7 +517,7 @@ export function ReportsPage() {
 
                 <ChartCard
                   title="Ventas por día y canal"
-                  subtitle="Mesa · Para llevar · Delivery"
+                  subtitle="Mostrador · WhatsApp · Teléfono"
                   isLoading={isLoading}
                 >
                   <ResponsiveContainer width="100%" height={220}>
@@ -547,9 +547,9 @@ export function ReportsPage() {
                         iconSize={8}
                         wrapperStyle={{ fontSize: 11.5, paddingTop: 8 }}
                       />
-                      <Bar dataKey="dine_in"  stackId="a" fill={CH_COLOR.dine_in}  radius={[0, 0, 0, 0]} />
-                      <Bar dataKey="takeaway" stackId="a" fill={CH_COLOR.takeaway} radius={[0, 0, 0, 0]} />
-                      <Bar dataKey="delivery" stackId="a" fill={CH_COLOR.delivery} radius={[3, 3, 0, 0]} />
+                      <Bar dataKey="mostrador" stackId="a" fill={CH_COLOR.mostrador} radius={[0, 0, 0, 0]} />
+                      <Bar dataKey="whatsapp"  stackId="a" fill={CH_COLOR.whatsapp}  radius={[0, 0, 0, 0]} />
+                      <Bar dataKey="telefono" stackId="a" fill={CH_COLOR.telefono} radius={[3, 3, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </ChartCard>

@@ -345,3 +345,49 @@ Borrado limpio: `DeliveryPage.tsx` (872) · `useDelivery.ts` (209) · `useDelive
 `supabase-helpers.ts`, `useSedeConfig.ts`.
 `tsc --noEmit` exit **0** · `pnpm test:unit` **280 passed, exit 0**.
 ⚠️ Con la advertencia del bloque de arriba puesta: **ese verde no valida el esquema.**
+
+
+---
+
+## 10 · Commit (c) — el canal, y la segunda vez que el corolario cambio una decision
+
+*2026-09-01.*
+
+**`orders.canal` entra al esquema base**: `text` + CHECK con allowlist de tres —`mostrador`,
+`whatsapp`, `telefono`—, `not null` y **sin default**, sin `'otro'`. Se revirtieron las **tres**
+notas que documentaban haber sacado el eje (`extensiones_y_tipos`, `ventas`, `vistas`) y la vista
+`daily_sales_summary` recupero la dimension. Indice `idx_orders_canal (sede_id, canal)`.
+
+⚠️ La distincion que quedo escrita en las tres notas: **lo que era de restaurante eran los VALORES,
+no la pregunta.** "Por donde entro el pedido" es igual de real en una distribuidora.
+
+### `tipo-venta-reset.spec.ts` NO se borro — la enumeracion decia que si
+
+Este documento lo listaba en la tabla de specs con la decision **"borrar — prueba el reset de
+`orderType`"**. Al aplicar la segunda pregunta del corolario —**de que propiedad depende**— resulto
+que no dependia ni de mesas ni de los valores de bar: depende de que **exista un selector de canal
+en el POS**. El canal sobrevivio, asi que el invariante sobrevive con el.
+
+Y lo que ese spec protege no es cosmetico: el bug original era que el canal **quedaba pegado** entre
+ventas, asi que una venta de mostrador se grababa con el canal anterior. **Es exactamente el modo de
+fallo de R7** —no revienta, ensucia el reporte— sobre la columna que existe para medir canales.
+
+🔴 **Segunda vez en dos dias que la segunda pregunta cambia una decision ya tomada.** La primera fue
+VENTA GRATIS, que se salvo del borrado; esta es la simetrica: un spec que la enumeracion daba por
+muerto y estaba vivo. **La primera pregunta produce una lista; la segunda produce la decision.**
+
+⚠️ Un detalle del helper migrado, que es una trampa de fixture: el bucle que cicla el selector
+tenia limite 3 con **dos** canales. Con tres canales, un limite igual al numero de canales **no
+distingue "el canal no existe" de "no llegue a el"** —con exactamente N clicks se vuelve al punto de
+partida—. Quedo en `CANALES + 1`.
+
+### Estado
+
+`tsc` exit 0 · `eslint src/` exit 0 · `test:unit` 280 passed · residuo de
+`order_type|orderType|dine_in|takeaway|preparing|ready` en `src/` y `tests/`: **cero**.
+
+⛔ **Lo que NO se toco y sale con la regeneracion de tipos:** `database.types.ts` sigue declarando
+`tables`, `couriers`, `orders.table_id`, `orders.waiter_name` y `courier_id`. Se movio **solo** lo
+que `src/` consume (`canal`, y el enum `order_type` que se elimino). El resto **no se edita a mano
+otra vez**: sale del `supabase gen types` posterior al push. Editarlo mas seria repetir el
+anti-patron de R1 punto 5, que es la razon por la que este archivo miente hoy.

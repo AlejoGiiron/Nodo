@@ -77,10 +77,17 @@ create type public.payment_method as enum ('cash', 'card', 'transfer', 'nequi');
 -- `table_status` ('free','occupied','reserved') — mesas. Nodo no tiene.
 --    Enumerado en la clase B del plan; nada fuera de mesas lo referencia.
 --
--- `order_type` ('dine_in','takeaway','delivery') — el eje entero es de
---    restaurante: comer aca / llevar / domicilio. Nodo vende sobre mostrador
---    y NO tiene rutas ni despacho (ver CLAUDE.md, Alcance). La columna
---    orders.type desaparece con el tipo; se documenta en la migracion `ventas`.
+-- `order_type` ('dine_in','takeaway','delivery') — el TIPO no se crea, pero
+--    OJO: el EJE SI SOBREVIVE. Lo que era de restaurante eran los VALORES
+--    (comer aca / llevar / domicilio), no la pregunta: "por donde entro el
+--    pedido" es igual de real en una distribuidora. Vuelve como
+--    `orders.canal`, y NO como enum: `text` + CHECK.
+--    Por que no enum, y esta razon ya la pagamos una vez (R1 punto 3):
+--    Postgres NO tiene `ALTER TYPE ... DROP VALUE`. Ampliar un CHECK es un
+--    drop/add constraint trivial; sacar un valor de un enum, no. Los canales
+--    van a crecer (el alcance firmado ya nombra WhatsApp y telefono), asi que
+--    la asimetria apunta directo a CHECK. La allowlist vive en la migracion
+--    `ventas`, al lado de la columna, no aca.
 --
 -- Se anotan en NEGATIVO porque un tipo ausente no deja rastro: sin esta nota,
 -- el proximo que compare este esquema con el de Vento no sabe si falta por

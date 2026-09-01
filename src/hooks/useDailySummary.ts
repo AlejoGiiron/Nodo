@@ -27,7 +27,7 @@ export function useDailySummary(date: string) {
         .from('daily_sales_summary')
         .select('*')
         .eq('day', date)
-        .order('order_type')
+        .order('canal')
       if (error) throw error
       const rows = (data ?? []) as DailySalesRow[]
 

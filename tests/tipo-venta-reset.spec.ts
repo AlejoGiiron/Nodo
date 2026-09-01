@@ -3,10 +3,15 @@ import { loginAsOwner } from './helpers/auth'
 import { waitPosReady } from './helpers/pos'
 import { openShiftIfClosed } from './helpers/shift'
 
-// El tipo de venta del POS debe volver al default ("Para llevar") tras CUALQUIER
-// venta. Antes quedaba pegado: `orderType` es estado local de POSPage y `clear()`
-// (del cartStore) no lo tocaba → la siguiente venta de mostrador se grababa como
-// delivery y ensuciaba el desglose por canal del reporte Financiero.
+// El CANAL del POS debe volver al default ("Mostrador") tras CUALQUIER venta.
+// Antes quedaba pegado: `canal` es estado local de POSPage y `clear()` (del
+// cartStore) no lo tocaba → la siguiente venta de mostrador se grababa con el
+// canal anterior y ensuciaba el desglose por canal del reporte Financiero.
+//
+// ⚠️ ESTE SPEC NO SE BORRO CON LA PODA DE MESAS, y la distincion es la del
+//    corolario nuevo: no dependia de mesas ni de los valores de bar, dependia de
+//    que EXISTA un selector de canal en el POS. El canal sobrevivio (mostrador /
+//    whatsapp / telefono), asi que el invariante sobrevive con el.
 
 const PRODUCT = 'Lab Coctel'
 const PRICE = 18000
@@ -17,25 +22,27 @@ async function addProductPOS(page: Page) {
   await page.getByTestId('item-config-confirm').click()
 }
 
-// El selector de tipo cicla entre las DOS opciones del POS (takeaway/delivery);
-// dine_in lo maneja Mesas por la constraint de table_id.
-async function setTipo(page: Page, label: 'Para llevar' | 'Delivery') {
-  for (let i = 0; i < 3; i++) {
-    if ((await page.getByTestId('order-type-label').textContent()) === label) return
-    await page.getByTestId('order-type-toggle').click()
+// El selector cicla entre los TRES canales. El limite del bucle es
+// CANALES + 1: con exactamente CANALES clicks se vuelve al punto de partida, asi
+// que un limite igual al numero de canales no distingue "no esta" de "no llegue".
+const CANALES = 3
+async function setCanal(page: Page, label: 'Mostrador' | 'WhatsApp' | 'Teléfono') {
+  for (let i = 0; i <= CANALES; i++) {
+    if ((await page.getByTestId('canal-label').textContent()) === label) return
+    await page.getByTestId('canal-toggle').click()
   }
-  throw new Error(`No se pudo seleccionar el tipo "${label}"`)
+  throw new Error(`No se pudo seleccionar el canal "${label}"`)
 }
 
-test.describe.serial('Reset del tipo de venta', () => {
-  test('tras cobrar una venta de DELIVERY vuelve al tipo por defecto', async ({ page }) => {
+test.describe.serial('Reset del canal de venta', () => {
+  test('tras cobrar una venta por WHATSAPP vuelve al canal por defecto', async ({ page }) => {
     await loginAsOwner(page)
     await page.goto('/ventas')
     await waitPosReady(page)
     await openShiftIfClosed(page, 50000)
 
-    await setTipo(page, 'Delivery')
-    await expect(page.getByTestId('order-type-label')).toHaveText('Delivery')
+    await setCanal(page, 'WhatsApp')
+    await expect(page.getByTestId('canal-label')).toHaveText('WhatsApp')
 
     await addProductPOS(page)
     await page.getByRole('button', { name: 'Cobrar' }).click()
@@ -46,20 +53,20 @@ test.describe.serial('Reset del tipo de venta', () => {
     await expect(page.getByText(/Venta #\d+ registrada/)).toBeVisible({ timeout: 15_000 })
     await page.getByRole('button', { name: 'Nueva venta' }).click()
 
-    // EL ASSERT DEL BUG: el tipo volvió solo, sin recargar la página.
-    await expect(page.getByTestId('order-type-label')).toHaveText('Para llevar')
+    // EL ASSERT DEL BUG: el canal volvió solo, sin recargar la página.
+    await expect(page.getByTestId('canal-label')).toHaveText('Mostrador')
   })
 
-  test('tras cobrar una venta NORMAL el tipo sigue siendo el default', async ({ page }) => {
-    // Contraste: el reset es incondicional, así que una venta que ya era del tipo
+  test('tras cobrar una venta de MOSTRADOR el canal sigue siendo el default', async ({ page }) => {
+    // Contraste: el reset es incondicional, así que una venta que ya era del canal
     // por defecto tiene que terminar igual. Sin este caso, un reset que rompiera
-    // el tipo en otras condiciones pasaría desapercibido.
+    // el canal en otras condiciones pasaría desapercibido.
     await loginAsOwner(page)
     await page.goto('/ventas')
     await waitPosReady(page)
     await openShiftIfClosed(page, 50000)
 
-    await setTipo(page, 'Para llevar')
+    await setCanal(page, 'Mostrador')
     await addProductPOS(page)
     await page.getByRole('button', { name: 'Cobrar' }).click()
     await page.getByTestId('pay-method-efectivo').click()
@@ -69,6 +76,6 @@ test.describe.serial('Reset del tipo de venta', () => {
     await expect(page.getByText(/Venta #\d+ registrada/)).toBeVisible({ timeout: 15_000 })
     await page.getByRole('button', { name: 'Nueva venta' }).click()
 
-    await expect(page.getByTestId('order-type-label')).toHaveText('Para llevar')
+    await expect(page.getByTestId('canal-label')).toHaveText('Mostrador')
   })
 })
