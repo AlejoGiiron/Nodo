@@ -131,7 +131,7 @@ test.describe.serial('Arqueo multi-método', () => {
       ;(window as unknown as { __arqueoPrinted: string | null }).__arqueoPrinted = null
       window.print = () => {
         ;(window as unknown as { __arqueoPrinted: string | null }).__arqueoPrinted =
-          document.getElementById('gvento-cash-report-content')?.innerHTML ?? null
+          document.getElementById('gnexo-cash-report-content')?.innerHTML ?? null
       }
     })
   })

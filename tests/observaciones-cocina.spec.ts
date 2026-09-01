@@ -24,7 +24,7 @@ async function stubPrint(page: Page) {
     ;(window as unknown as { __comandaPrinted: string | null }).__comandaPrinted = null
     window.print = () => {
       ;(window as unknown as { __comandaPrinted: string | null }).__comandaPrinted =
-        document.getElementById('gvento-comanda-content')?.innerHTML ?? null
+        document.getElementById('gnexo-comanda-content')?.innerHTML ?? null
     }
   })
 }

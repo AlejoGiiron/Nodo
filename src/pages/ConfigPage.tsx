@@ -345,7 +345,7 @@ function SectionSede() {
       <div style={{ display: 'grid', gap: 16, gridTemplateColumns: '1fr 1fr', maxWidth: 560 }}>
         <div style={{ gridColumn: '1 / -1' }}>
           <FieldLabel>Nombre del sede</FieldLabel>
-          <TextInput value={name} onChange={setName} placeholder="G-Vento Resto" testId="config-sede-name" />
+          <TextInput value={name} onChange={setName} placeholder="G-Nexo Resto" testId="config-sede-name" />
         </div>
         <div style={{ gridColumn: '1 / -1' }}>
           <FieldLabel>Dirección</FieldLabel>

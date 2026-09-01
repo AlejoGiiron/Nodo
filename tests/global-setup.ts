@@ -2,7 +2,7 @@ import { request, type FullConfig } from '@playwright/test'
 import { createClient } from '@supabase/supabase-js'
 import { readFileSync, existsSync } from 'node:fs'
 
-// Puerto dedicado de G-Vento (debe coincidir con E2E_PORT de playwright.config.ts).
+// Puerto dedicado de G-Nexo (debe coincidir con E2E_PORT de playwright.config.ts).
 const BASE_URL = 'http://localhost:5180'
 
 // Organización del LABORATORIO. Los tests SOLO deben correr contra esta org.
@@ -24,23 +24,23 @@ function loadEnvFile(file: string): void {
 }
 
 /**
- * Health check #1 — la app servida es G-Vento (no otra app en el puerto).
+ * Health check #1 — la app servida es G-Nexo (no otra app en el puerto).
  */
-async function checkServedAppIsGvento(): Promise<void> {
+async function checkServedAppIsGnexo(): Promise<void> {
   const ctx = await request.newContext()
   try {
     const res = await ctx.get(BASE_URL)
     const html = await res.text()
     if (!/G-?Vento/i.test(html)) {
       throw new Error(
-        `[E2E health check] El servidor en ${BASE_URL} NO es G-Vento ` +
-        `(marcador "G-Vento" no encontrado en el HTML servido). ¿Hay otra app ` +
+        `[E2E health check] El servidor en ${BASE_URL} NO es G-Nexo ` +
+        `(marcador "G-Nexo" no encontrado en el HTML servido). ¿Hay otra app ` +
         `(p. ej. G-Mura) ocupando el puerto? Se aborta la suite para no correr ` +
         `contra el proyecto equivocado.`,
       )
     }
     // eslint-disable-next-line no-console
-    console.log('[E2E health check] OK — la app servida es G-Vento.')
+    console.log('[E2E health check] OK — la app servida es G-Nexo.')
   } finally {
     await ctx.dispose()
   }
@@ -117,11 +117,11 @@ async function checkCredentialsAreLab(): Promise<void> {
 
 /**
  * Health check previo a la suite (defensa en profundidad):
- *  1. La app servida en BASE_URL es G-Vento (no otra app en el puerto).
+ *  1. La app servida en BASE_URL es G-Nexo (no otra app en el puerto).
  *  2. Las credenciales de prueba pertenecen a la organización LAB (no a datos
  *     reales). Aborta la corrida si cualquiera falla.
  */
 export default async function globalSetup(_config: FullConfig): Promise<void> {
-  await checkServedAppIsGvento()
+  await checkServedAppIsGnexo()
   await checkCredentialsAreLab()
 }

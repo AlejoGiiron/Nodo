@@ -4,7 +4,7 @@ import { scrubEvent, scrubEstricto, scrubSobre } from './sentry'
 /**
  * Estos tests SON la política de privacidad, no su documentación.
  *
- * G-Vento maneja PII de los clientes de nuestros clientes. Si alguien afloja el
+ * G-Nexo maneja PII de los clientes de nuestros clientes. Si alguien afloja el
  * redactor, acá se cae — y se entera antes de mandarle datos de un tercero a un
  * servicio externo.
  *
@@ -428,7 +428,7 @@ describe('scrubString — el redactor de PROSA (donde no hay clave que mirar)', 
   })
 })
 
-describe('error REAL de G-Vento — el evento completo', () => {
+describe('error REAL de G-Nexo — el evento completo', () => {
   it('el correlativo perdido llega diagnosticable y sin PII', () => {
     // supabase-helpers.ts:496 — `captureIssue('Venta cobrada sin número: falló
     // el UPDATE del correlativo', 'numeracion', {...})`.

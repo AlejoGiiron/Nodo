@@ -21,7 +21,7 @@ export const updateSede = (sedeId: string, data: TablesUpdate<'sedes'>) =>
 // --- Organization / suscripcion ---
 
 /**
- * Lee la bandera de suscripcion que escribe G-Centro. SOLO LECTURA: G-Vento
+ * Lee la bandera de suscripcion que escribe G-Centro. SOLO LECTURA: G-Nexo
  * nunca escribe estas columnas (el privilegio de UPDATE esta en allowlist y no
  * las incluye; ver supabase/organization-subscription.sql).
  *

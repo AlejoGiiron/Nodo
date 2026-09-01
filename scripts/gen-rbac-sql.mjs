@@ -49,7 +49,7 @@ const check = process.argv.includes('--check')
 const preflight = process.argv.includes('--preflight')
 
 // ── 1. permissions.ts → JS temporal → import ───────────────────────────────
-const tmp = mkdtempSync(join(tmpdir(), 'gvento-rbac-'))
+const tmp = mkdtempSync(join(tmpdir(), 'gnexo-rbac-'))
 let mod
 try {
   execFileSync(process.execPath,

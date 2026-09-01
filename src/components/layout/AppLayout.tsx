@@ -103,7 +103,7 @@ export function AppLayout() {
   const { isOpen, isLoadingShift } = useCashShift()
 
   // Branding de la SEDE activa (sedes): nombre + logo capturados en Config.
-  const brandName = sede?.name ?? 'G-Vento'
+  const brandName = sede?.name ?? 'G-Nexo'
   const brandLogo = sede?.logo_url ?? null
   const deliveryCount = useDeliveryCount()
   const navigate = useNavigate()

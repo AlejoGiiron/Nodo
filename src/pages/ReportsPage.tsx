@@ -256,7 +256,7 @@ export function ReportsPage() {
     const url  = URL.createObjectURL(blob)
     const a    = document.createElement('a')
     a.href = url
-    a.download = `gvento_${suffix}_${format(new Date(), 'yyyy-MM-dd')}.xlsx`
+    a.download = `gnexo_${suffix}_${format(new Date(), 'yyyy-MM-dd')}.xlsx`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -268,7 +268,7 @@ export function ReportsPage() {
     try {
       const { default: ExcelJS } = await import('exceljs')
       const wb = new ExcelJS.Workbook()
-      wb.creator = 'G-Vento POS'
+      wb.creator = 'G-Nexo'
 
       const ws1 = wb.addWorksheet('Resumen')
       ws1.columns = [
@@ -318,7 +318,7 @@ export function ReportsPage() {
     try {
       const { default: ExcelJS } = await import('exceljs')
       const wb = new ExcelJS.Workbook()
-      wb.creator = 'G-Vento POS'
+      wb.creator = 'G-Nexo'
 
       const ws1 = wb.addWorksheet('Detalle de productos')
       ws1.columns = [

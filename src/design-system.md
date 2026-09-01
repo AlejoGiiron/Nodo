@@ -1,4 +1,4 @@
-# G-Vento Design System
+# G-Nexo Design System
 Valores exactos extraídos del handoff de Claude Design (Login V1 + POS V2 aprobados).
 Usar estos valores en cualquier pantalla nueva para mantener coherencia visual.
 

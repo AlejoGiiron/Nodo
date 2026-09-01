@@ -99,12 +99,12 @@ export function printComanda(data: ComandaData): void {
       </div>
     `).join('')}
     <div style="border-top:1px dashed #000;margin:8px 0"></div>
-    <div style="text-align:center;font-size:11px">— Cocina G-Vento —</div>
+    <div style="text-align:center;font-size:11px">— Cocina G-Nexo —</div>
   `
 
   printThermal(html, {
-    styleId: 'gvento-printer-css',
-    contentId: 'gvento-comanda-content',
+    styleId: 'gnexo-printer-css',
+    contentId: 'gnexo-comanda-content',
     className: 'comanda-print',
     fontSize: 13,
     lineHeight: 1.5,
@@ -201,8 +201,8 @@ export function printSaleTicket(data: SaleTicketData): void {
   `
 
   printThermal(html, {
-    styleId: 'gvento-sale-ticket-css',
-    contentId: 'gvento-sale-ticket-content',
+    styleId: 'gnexo-sale-ticket-css',
+    contentId: 'gnexo-sale-ticket-content',
     className: 'sale-ticket-print',
   })
 }
@@ -310,7 +310,7 @@ function buildCashReportHtml(data: CashReportData): string {
     ${(rec.vouchers_total ?? 0) > 0 ? `${dash}${line('Vales entregados', money(rec.vouchers_total))}` : ''}
     ${data.comment ? `${dash}<div style="font-size:10.5px"><span style="font-weight:600">Comentario:</span> ${data.comment}</div>` : ''}
     ${dash}
-    <div style="text-align:center;font-size:11px">— Arqueo G-Vento —</div>
+    <div style="text-align:center;font-size:11px">— Arqueo G-Nexo —</div>
   `
 }
 
@@ -352,8 +352,8 @@ export function buildCashReportData(
 
 export function printCashReport(data: CashReportData): void {
   printThermal(buildCashReportHtml(data), {
-    styleId: 'gvento-cash-report-css',
-    contentId: 'gvento-cash-report-content',
+    styleId: 'gnexo-cash-report-css',
+    contentId: 'gnexo-cash-report-content',
     className: 'cash-report-print',
   })
 }
