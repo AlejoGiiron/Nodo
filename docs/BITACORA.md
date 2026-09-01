@@ -401,3 +401,42 @@ son idénticas a las de G-Vento porque las skills citan por número (ver R1); to
 acá crearía un contrato divergente, que es exactamente el criterio con el que se acepto la
 divergencia del ledger: **instrumentar puede divergir; el texto de la regla, no.** El corolario
 vive acá y en `docs/plan-esquema-base.md`.
+
+---
+
+## 2026-08-31 · El inventario de R1 tenía un dato falso — y eso confirma la tesis
+
+`R1 punto 3` decía **"Enum `subscription_status`"**. Al escribir el archivo `02b` se leyó el SQL:
+es `text` con `CHECK`. Nunca fue un enum.
+
+**Por qué se anota como hallazgo y no solo como corrección.** R1 es *la regla que existe para que
+los contratos compartidos no se pudran*, y su propio inventario se había podrido. Pero mirando de
+cerca, **la regla no falló: falló su inventario** — y el inventario es lo que R1 misma marca como
+**estado**, con su comando de reconfirmación al lado, justamente porque caduca.
+
+Es la confirmación de la tesis que ordena estos tres archivos —*"de 36 afirmaciones auditadas, las
+8 falsas eran todas de ESTADO"*— **ocurriendo dentro del mecanismo que la enuncia**. El mecanismo
+se aplica a sí mismo y da el mismo resultado: lo que se pudre es el estado, no la regla.
+
+**El error importaba, no era trivial.** La asimetría enum/CHECK es exactamente la que decide si
+sumar un estado es barato o caro, y esa asimetría se aplicó **tres veces** en el esquema base
+(`user_role`, `discount_kind`, `cash_movements.categoria`) razonando desde la nota equivocada. Si
+alguien hubiera planificado "bajar `subscription_status` de enum a CHECK", habría planificado un
+trabajo que no existe.
+
+⚠️ **Ironía útil:** la decisión de usar `CHECK` ya estaba tomada en G-Vento **y por nuestro mismo
+argumento**, escrito en el archivo heredado: *"es una bandera compartida entre dos repos: ampliar
+un CHECK es un drop/add trivial, ampliar un enum es ALTER TYPE"*. O sea que redescubrimos un
+razonamiento que ya estaba, porque la nota de estado nos decía lo contrario del código.
+
+### Un quinto lado que no estaba contado
+
+El inventario decía "6 lados". Enumerando los de **este repo** aparece uno que no figuraba:
+
+**`src/types/database.types.ts` tipa `subscription_status` como `string`**, no como una unión de
+los cinco valores. O sea que **`tsc` NO atrapa un valor inválido**: `subscription_status: 'activo'`
+compila igual y revienta recién contra el `CHECK`, en runtime, en producción.
+
+Es un lado **débil pero real**: participa del contrato y no lo protege. Y encaja con R1 punto 5
+—`database.types.ts` escrito a mano diverge del esquema sin que `tsc` lo note—: acá no diverge,
+simplemente **no dice nada**, que a los efectos del contrato es lo mismo.

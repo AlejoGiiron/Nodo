@@ -466,6 +466,33 @@ mostrar la enumeración**. Un `grep` que vuelve vacío es una demostración vál
 deja de valer es *"esto suena a restaurante"*, que es la única evidencia que se usó las cuatro
 veces que salió mal.
 
+#### 🔴 Corolario — clasificar leyendo el nombre o el plan NO es clasificar
+
+*Agregado el 2026-08-31, con cuatro casos medidos.*
+
+La regla de arriba dice que **no se borra** sin enumerar. Este corolario dice lo mismo un paso
+antes: **no se CLASIFICA sin abrir el archivo.** Una clasificación hecha sobre el nombre —o sobre
+un plan que a su vez se hizo leyendo nombres— no es un dato: es una hipótesis.
+
+**Cuatro casos, y en los cuatro la clasificación previa era falsa:**
+
+| Se creía que era | Resultó ser |
+|---|---|
+| `_t_priv`, una tabla del esquema | **Andamiaje**: una sonda de verificación con `set local role authenticated`. No viaja. |
+| `product_components`, algo a renombrar | Ya tenía nombres neutros. Lo específico de bar estaba **en los comentarios**. |
+| `extras`, con columnas de bar | **Cero** columnas de bar. Ni nota a cocina ni orden de preparación. |
+| `subscription_status`, un enum | `text` con `CHECK` — y la asimetría que eso implica es la que decide el costo. |
+
+**Es R4 aplicada al inventario propio.** R4 dice verificar contra la cosa real y no contra un
+proxy; un plan de clasificación **es un proxy**, y uno bueno — por eso engaña. Los cuatro errores
+no vinieron de clasificar mal: vinieron de clasificar **sin abrir el archivo**, que es rápido y da
+un resultado que se ve igual de bien.
+
+**Lo accionable, que es barato:** antes de tratar una clasificación como decisión, abrir el
+archivo y confirmar **qué es la cosa** —tabla o andamiaje, enum o CHECK, nombre o comentario—.
+Cuesta un `sed -n`. Los cuatro casos se detectaron así, y siempre al escribir el código que
+dependía de ellos: **nunca releyendo el plan.**
+
 ### Dónde está el peligro
 
 No en el 24,6% que se borra. En el **43,3% de zona gris** que parece viajar tal cual y necesita
