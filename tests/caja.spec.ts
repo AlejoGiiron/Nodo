@@ -33,29 +33,19 @@ test.describe.serial('Caja', () => {
     await expect(page.getByText('Ingreso de prueba E2E')).toBeVisible()
   })
 
-  test('registrar egreso con motivo de la lista configurable', async ({ page }) => {
-    await openShiftIfClosed(page, 100000)
-
-    await page.getByRole('button', { name: 'Movimientos' }).click()
-    await expect(page.getByText('Movimientos manuales', { exact: true })).toBeVisible()
-
-    await page.getByRole('button', { name: 'Egreso', exact: true }).click()
-
-    // El motivo ahora es un SELECT poblado con config.cash_out_reasons.
-    const select = page.getByTestId('movement-categoria')
-    await expect(select).toBeVisible()
-    await select.selectOption({ index: 1 }) // primer motivo real (índice 0 = placeholder)
-    const chosen = (await select.locator('option:checked').textContent())?.trim() ?? ''
-    expect(chosen.length).toBeGreaterThan(0)
-
-    await page.getByTestId('movement-amount').fill('15000')
-    await page.getByTestId('movement-submit').click()
-
-    // El egreso aparece en la LISTA de movimientos con el motivo elegido. Se
-    // acota a movement-item: el mismo texto está también como <option> del
-    // select (oculto), así que getByText(chosen).first() resolvía a ese option.
-    await expect(page.getByTestId('movement-item').filter({ hasText: chosen })).toBeVisible()
-  })
+  // ⚠️ BORRADO el 2026-09-01: 'registrar egreso con motivo de la lista
+  //    configurable'. Probaba que la CATEGORIA del movimiento saliera de
+  //    `sedes.config.cash_out_reasons` — una funcion que se elimino a proposito
+  //    al pasar a la allowlist FIJA de `categoria` (in: base|otro;
+  //    out: gasto|retiro|otro), decidida en el esquema y no por config de sede.
+  //    Un test que prueba algo que ya no existe no es cobertura: es un rojo
+  //    permanente esperando, y un rojo permanente esconde a los rojos nuevos.
+  //
+  //    🔴 `cash_out_reasons` NO murio: cambio de ROL. Ahora son SUGERENCIAS de
+  //    DETALLE —el texto libre que acompaña a la categoria— no la categoria en
+  //    si. Ver MovementsModal y ConfigPage. Si ese rol merece cobertura, es OTRO
+  //    test (que las sugerencias configuradas aparezcan como tales), no este
+  //    reescrito: el sujeto cambio, no el selector.
 
   test('egreso que supera el efectivo disponible advierte sobregiro y permite confirmar', async ({ page }) => {
     // Estado limpio: turno nuevo con apertura 0 → cualquier egreso grande sobregira.

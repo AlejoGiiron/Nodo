@@ -12,6 +12,17 @@ import { availableCash } from '@/lib/shiftCalc'
 // en la base, pero las escriben register_purchase y register_debt_payment: si
 // el cajero pudiera elegirlas a mano, habría movimientos de compra sin factura
 // y abonos sin deuda — plata sin su hecho de negocio detrás.
+/** Etiqueta legible de una categoria. Deriva de CATEGORIAS: la lista de valores
+ *  validos vive en UN solo lugar y esto la lee, no la repite (R1). */
+export function etiquetaCategoria(valor: string | null | undefined): string {
+  if (!valor) return ''
+  for (const grupo of Object.values(CATEGORIAS)) {
+    const hit = grupo.find((c) => c.valor === valor)
+    if (hit) return hit.label
+  }
+  return valor
+}
+
 const CATEGORIAS = {
   in: [
     { valor: 'base', label: 'Base / inyección de efectivo' },
@@ -365,7 +376,17 @@ export function MovementsModal({ onClose }: MovementsModalProps) {
                         : <ArrowUpRight size={14} color="#dc2626" />
                       }
                       <div>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}>{m.reason}</div>
+                        {/* 🔴 La CATEGORIA primero, el detalle despues. Antes se
+                            mostraba solo `reason`, asi que un movimiento sin
+                            detalle libre —un 'gasto', p.ej.— salia con la
+                            descripcion EN BLANCO. Y `categoria` es justamente el
+                            dato que decidimos que fuera la fuente de los
+                            reportes: no mostrarlo dejaba la lista diciendo menos
+                            que la base. Lo destapo un test E2E. */}
+                        <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}>
+                          {etiquetaCategoria(m.categoria)}
+                          {m.reason ? ` · ${m.reason}` : ''}
+                        </div>
                         <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>
                           {formatTime(m.created_at)}
                         </div>

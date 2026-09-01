@@ -1187,40 +1187,61 @@ Y el `rollback` no dejó nada: `select count(*) from products where name like 'V
 
 ---
 
-## 2026-09-01 · La suite corrió por primera vez, y la predicción salió mal de un modo instructivo
+## 2026-09-01 · La predicción, con el scorecard CORREGIDO — y por qué el primero estaba mal
 
-**La lectura honesta primero, sin suavizarla.** De las siete causas predichas y fechadas:
+⚠️ **Esta entrada reemplaza una anterior cuya conclusión se apoyaba en una clasificación
+equivocada.** Se deja el porqué al final, porque el error de método vale más que el resultado.
 
-| # | Predicción | Confianza | Resultado |
+### El scorecard, reclasificado POR CAUSA
+
+| # | Predicción | Confianza | Resultado real |
 |---|---|---|---|
-| 1 | Aserciones de DOM en tests migrados | **alta** | ❌ **NO ocurrió.** `VENTA GRATIS` migrado **pasa** |
-| 2 | Más strings de `.from()`/`select()` viejos | **alta** | ❌ **NO ocurrió.** Cero |
-| 3 | Specs de módulos podados | alta | ✅ `rbac.spec.ts` ×3, por `getByRole('link', {name:'Mesas'})` |
-| 4 | `create-user` (función sin re-desplegar) | alta | ⏳ sin medir |
-| 5 | Policies RLS | media | ✅ pero **de otra forma** (ver abajo) |
-| 6 | `suscripcion-*` | media | ⚠️ **se SALTARON, no fallaron** |
-| 7 | Timeouts / flakes | **baja** | ✅ **6 de 15** — la más acertada |
+| 1 | Aserciones de DOM en tests migrados | alta | ❌ no ocurrió — el test migrado **pasa** |
+| 2 | Más strings de `.from()`/`select()` viejos | alta | ⚠️ **ocurrió, tarde**: `getCancelledSales` pedía `orders.type` |
+| 3 | Specs de módulos podados / cambiados | alta | ✅ **la causa DOMINANTE**: `config`, `caja`, `compras`, `historiales`, `rbac` ×3 |
+| 4 | `create-user` sin re-desplegar | alta | ⏳ sin medir |
+| 5 | Policies RLS | media | ✅ `rbac-escalada` (frena la RLS, no el trigger) y el fixture de `debt_payments` |
+| 6 | `suscripcion-*` | media | ⚠️ **se saltaron**, no fallaron |
+| 7 | Timeouts / flakes de entorno | baja | ❌ **CERO**. Lo que conté como aciertos era la #3 disfrazada |
 
-**Y cuatro fallos vinieron de una causa que NO estaba en la lista.**
+**Y dos causas grandes que no estaban en la lista** — las dos del **estado del laboratorio**, no del
+código: el **seed sin extras** (5 specs) y el **residuo acumulado** (6 fallos).
 
-### 🔴 La conclusión, que es sobre el método y no sobre los tests
+### 🔴 La conclusión, corregida
 
-> **Enumerar sirvió para PODAR SIN ROMPER. No sirvió para ANTICIPAR QUÉ SE ROMPE AL EJECUTAR.
-> Son dos capacidades distintas y las habíamos tratado como una.**
+La anterior decía *"enumerar sirvió para podar sin romper y no sirvió para anticipar qué se rompe al
+ejecutar"*. **Con los números bien clasificados, es falsa.** La correcta es más útil:
 
-La enumeración fue excelente en lo suyo: la predicción #2 —"quedan strings de consulta viejos"— era
-la que más confianza tenía y **dio cero**, precisamente porque enumerar los encontró antes. Lo mismo
-la #1. **Las dos predicciones de confianza alta que fallaron, fallaron porque la enumeración ya
-había hecho su trabajo.**
+> **Enumerar el CÓDIGO anticipó bien los fallos del código.** La #3 —confianza alta— fue la causa
+> dominante de todos los fallos genuinos.
+> **Lo que no anticipó fue el ESTADO DEL ENTORNO**: el seed incompleto y la basura acumulada.
+> Y es coherente: **nunca enumeramos el laboratorio.** Enumeramos `src/`, `tests/` y el esquema.
 
-Lo que la enumeración no puede ver es lo que solo existe **en ejecución**: un modal que no abre
-porque falta un dato, un `.first()` que cae en un producto distinto, un navegador que se cae. Para
-eso no hay lista: hay que correr.
+Las dos de confianza alta que no ocurrieron (#1 y #2 en su primera pasada) tampoco desmienten el
+método: **no ocurrieron porque la enumeración ya las había limpiado.** Una predicción que se cumple
+porque el trabajo previo la evitó se lee como fallo y es lo contrario.
 
-⚠️ **Y la de menor confianza fue la que más acertó.** Eso no es suerte: los timeouts eran la única
-predicción sobre el **entorno**, no sobre el **código**. Enumerar código no dice nada del entorno.
+⚠️ **Lo accionable, entonces, no es "enumerar sirve poco": es que la lista de qué enumerar estaba
+incompleta.** Faltaba el entorno de pruebas — sus fixtures y su estado acumulado — que es tan
+"código del que algo cuelga" como `src/`.
 
----
+### 🔴 Y el error de método, que es lo que hay que retener
+
+El primer scorecard clasificó los fallos **por SÍNTOMA** (*"falló por timeout"* → predicción #7,
+que hablaba de timeouts) en vez de **por CAUSA** (*"falló porque el DOM cambió"* → #3). Y el síntoma
+es precisamente lo que la predicción **no** decía.
+
+> **Una predicción se evalúa contra la CAUSA. Contra el síntoma se la premia o se la castiga por
+> azar.**
+
+Es la misma familia que *"clasificar leyendo el nombre no es clasificar"*, **pero aplicada a nuestro
+propio instrumento de medición** — y eso es peor: un instrumento mal calibrado no produce un dato
+equivocado, produce una **conclusión equivocada sobre el método**. Estuvimos a punto de guardar
+"enumerar no anticipa" como lección, que habría desalentado justo la práctica que mejor funcionó.
+
+⚠️ La contramedida es barata y es la misma de siempre: **antes de puntuar una predicción, abrir el
+artefacto y nombrar la causa.** El mensaje de error es un síntoma, y ya sabemos que el síntoma
+señala mal.
 
 ## 2026-09-01 · Los 43 saltados son tests SIN INFORMACIÓN, no aprobados
 
@@ -1566,3 +1587,23 @@ cuatro specs juntos. Queda `caja: registrar egreso con motivo de la lista config
 una **lista de motivos configurable por sede** — reemplazada a propósito por la allowlist fija de
 `categoria`. Ese test verifica una función que se decidió eliminar; es decisión de producto, no un
 arreglo.
+
+
+## 2026-09-01 · Un test que sobraba destapó un hueco de UI antes de morir
+
+Al borrar el test de la lista configurable, el OTRO test de `caja` —el de sobregiro— siguió
+fallando: asertaba que el movimiento registrado apareciera en la lista con su categoría, y la lista
+**mostraba solo `m.reason`**.
+
+🔴 **Era un hueco real, no una aserción vieja.** Un movimiento sin detalle libre —un `gasto`, por
+ejemplo— salía en la lista con **la descripción en blanco**: solo un monto y una hora. Y `categoria`
+es justamente el campo que decidimos que fuera **la fuente de los reportes**; no mostrarlo dejaba la
+pantalla **diciendo menos que la base**.
+
+**Arreglado:** la lista muestra `categoría · detalle`, con el detalle solo si existe. La etiqueta se
+deriva de `CATEGORIAS` con un helper —no se enumera la lista dos veces (R1)—.
+
+⚠️ **Lo que vale del caso:** el test estaba escrito contra el modelo viejo y **aun así encontró un
+defecto del nuevo**. Si lo hubiera borrado junto con el otro por "prueba el modelo anterior", el
+hueco seguía. **Antes de borrar un test por obsoleto, mirar si su aserción sigue siendo verdadera
+bajo el modelo nuevo** — el sujeto puede haber cambiado y la expectativa seguir valiendo.

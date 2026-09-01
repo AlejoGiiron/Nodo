@@ -1074,6 +1074,25 @@ pantalla nueva**.
 - Los tests corren en serie (`workers: 1`) por compartir backend.
 - Leer R8, R9 y R10 antes de interpretar cualquier resultado de suite.
 
+**⚠️ EN PLAYWRIGHT, UN TIMEOUT NO ES LENTITUD.**
+*Medido el 2026-09-01: tres fallos de DOM disfrazados de problema de rendimiento.*
+
+`fill()`, `selectOption()`, `click()` y las demás acciones tienen **auto-waiting**: esperan al
+locator hasta agotar el timeout **del test**. Entonces `Test timeout of 30000ms exceeded` casi
+siempre significa **"no encontré el elemento"**, no "el sistema está lento".
+
+🔴 **Y el mensaje NO nombra el locator.** Hay que abrir el `Test source` del artefacto
+(`test-results/**/error-context.md`), que marca con `>` la línea exacta donde se colgó.
+
+**Caso:** `arqueo`, `compras` e `historiales` fallaban con timeout de 30s. Los tres esperaban un
+control de formulario que ya no existía. La pista estaba a la vista y casi se pasa por alto: **dos
+specs operaban el MISMO campo con acciones incompatibles** —uno `fill` de input, otro
+`selectOption` de select—, y eso es imposible contra un mismo DOM.
+
+⚠️ **Consecuencia al interpretar una suite:** un timeout **no** justifica subir el timeout. Antes de
+tocar `timeout`, abrir el artefacto y ver qué locator se esperaba. Subirlo convierte un fallo de 30s
+en uno de 60s.
+
 **🔴 UN ROJO QUE NO NOMBRA QUÉ CAMBIÓ CUESTA EL DIAGNÓSTICO ENTERO DE NUEVO.**
 *Medido el 2026-08-31, escribiendo el tripwire del catálogo de permisos.*
 
