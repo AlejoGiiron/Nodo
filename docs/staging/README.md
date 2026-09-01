@@ -160,7 +160,6 @@ negar. Eso son los specs E2E, no el push.
 - [ ] Correr `./verificar-servicios.sh <compose real>` y que dé **exit 0**.
 - [ ] 🔴 **Leer el script de backup del Ubuntu** y confirmar con qué patrón toma volúmenes (§4).
 - [ ] Generar los secretos de `.env.staging` — **ninguno reutilizado**.
-- [ ] Verificar el **script de backup** y confirmar que no toma `gnexo_staging_db`.
 - [ ] Desplegar las **edge functions** (`create-user`, `aplicar-estado`) en el stack: el esquema
       **presupone** que G-Centro escribe `subscription_status` por ahí (ver `02b`/`suscripcion`).
 - [ ] Decidir si staging tiene **dominio y TLS** o se accede por IP:puerto.
