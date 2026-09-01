@@ -750,3 +750,45 @@ que otra cosa arma su estado inicial. La dependencia no está en un `import` de 
 ⚠️ Y el corolario operativo, que ya estaba decidido antes de encontrarlo: el **fixture nuevo va en
 el mismo commit** que borra la pantalla. Dejarlo para después deja la suite roja en el medio, y
 *un rojo permanente esconde a los rojos nuevos* — la lección del día anterior, aplicada.
+
+
+---
+
+## 2026-09-01 · Tres greps buscaron el nombre del TIPO y no el de la COLUMNA
+
+Al enumerar `order_type` para proponer el allowlist, apareció que **la columna no se llama así**:
+
+```sql
+-- el TIPO
+create type public.order_type as enum ('dine_in', 'takeaway', 'delivery');
+-- la COLUMNA
+orders.type
+```
+
+**Tres greps de `order_type` seguidos** —en `src/`, en `tests/`, en `supabase/`— y ninguno estaba
+encontrando la columna. Encontraban las **anotaciones de tipo** (`Enums<'order_type'>`), que existen
+y se leen como si fueran la cosa. El único lugar donde el valor **se escribe** es
+`POSPage.tsx:900`, y ahí dice `type: orderType` — sin la cadena `order_type` por ningún lado.
+
+### La clase, que ya tiene un hermano
+
+> **El grep encuentra lo que nombraste, no lo que buscabas.**
+
+Es la misma familia que la regex de `tests/global-setup.ts`: allá el archivo decía `/G-?Vento/i` y
+la cadena literal `G-Vento` **no estaba**, así que tres pasadas de reemplazo pasaron por encima sin
+verla. Acá la cadena `order_type` **sí está** — pero designa **otra cosa** (el tipo, no la columna),
+y por eso los resultados se leían como éxito.
+
+Las dos variantes del mismo defecto:
+
+| Variante | Qué pasa | Caso |
+|---|---|---|
+| El grep no encuentra nada y **parece que no hay nada** | el objeto está escrito de otra forma | `/G-?Vento/i` |
+| El grep encuentra bastante y **parece que ya está** | lo que encontró es un homónimo | `order_type` vs `orders.type` |
+
+⚠️ **La segunda es peor**, porque el resultado no vacío **cierra la búsqueda**. Un grep vacío al
+menos incomoda; uno con 46 líneas se lee como trabajo terminado.
+
+**Lo accionable:** cuando enumeres una columna, buscá **la escritura**, no el nombre —`insert`,
+`update`, el objeto que se manda— porque ahí aparece el identificador real. Fue exactamente lo que
+lo destapó: buscar dónde se ESCRIBE el valor, no dónde se NOMBRA.

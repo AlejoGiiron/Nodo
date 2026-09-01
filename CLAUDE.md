@@ -433,6 +433,37 @@ de planificación — **y ganó**. Una nota que tranquiliza mal es peor que una 
 
 ---
 
+### ⚠️ CRITERIO SIN NÚMERO · UN VALOR QUE SIGNIFICA DOS COSAS NO ES UN DATO
+
+⛔ **Sin número por la misma razón que la regla de arriba:** las skills citan por número y
+renumerar rompe las referencias cruzadas con Vento. Es un **criterio de diseño**, y se aplica igual.
+
+Cuando una sola columna, campo o valor carga **dos preguntas distintas**, no guarda las dos: guarda
+una mezcla de la que **ninguna se puede recuperar después**. El costo no se paga al escribirlo — se
+paga el día que alguien quiere cruzar los dos ejes y descubre que el dato nunca existió.
+
+**Modo de fallo:** no hay error, no hay `null`, no hay test rojo. Hay una consulta que devuelve algo
+plausible y una pregunta que **ya no tiene respuesta posible**, ni siquiera reprocesando.
+
+**Tres casos medidos en este proyecto, en tres capas distintas:**
+
+| Caso | Las dos cosas que significaba | Cómo se separó |
+|---|---|---|
+| `cash_movements.reason` | **clasificación** del movimiento **+ detalle** libre | Se agregó `categoria` con allowlist; `reason` quedó **solo** como detalle |
+| `debt_payments.cash_movement_id` nulo | "el abono **no tocó caja**" **+** "la jornada estaba cerrada" | Se agregó `requiere_conciliacion`, `not null default false` |
+| `orders.canal` (propuesto) | **por dónde entró** el pedido **+ quién lo originó** (`preventa`) | `preventa` queda afuera; el originador ya vive en `created_by` |
+
+**Lo accionable, y es una pregunta sola:** antes de agregar un valor a un allowlist o una columna,
+preguntá **cuántas preguntas contesta**. Si son dos, son dos columnas — aunque hoy parezca que una
+alcanza, y **sobre todo** si el valor nuevo se lee natural al lado de los otros. `preventa` se leía
+perfecto al lado de `whatsapp`; eso es justamente lo que hace peligrosa a la mezcla.
+
+⚠️ Es primo del corolario de R4 —**la coincidencia entre dos declaraciones no es evidencia**— por el
+otro lado: allá dos fuentes distintas dicen lo mismo y parece confirmación; acá una sola fuente dice
+dos cosas y parece economía.
+
+---
+
 ## Aprendizajes de proyectos hermanos (Quota, Vento)
 
 Reglas duras traídas de los hermanos — aplican a todo el trabajo en este repo:

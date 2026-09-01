@@ -106,6 +106,22 @@ que hay un incidente.
 
 ## Ideas pospuestas — decisiones de NO hacer
 
+**`preventa` NO es un valor de `canal` — decidido el 2026-09-01.** Estuvo en la lista de candidatos
+del allowlist y se dejó afuera **a propósito**, no por olvido. La razón es de modelado y no de
+alcance: **no es el mismo eje.**
+
+> `mostrador` / `whatsapp` / `telefono` responden **por dónde ENTRÓ** el pedido.
+> `preventa` responde **quién lo ORIGINÓ**.
+
+Un preventista que toma el pedido por WhatsApp obliga a elegir uno de los dos, y **cualquiera de las
+dos respuestas pierde información**: el día que quieras cruzar canal contra originador, el dato ya
+no está. Y la otra punta **ya existe**: `orders.created_by` dice quién cargó el pedido. Si preventa
+necesita distinguirse, es atributo del **usuario o del rol**, no del canal.
+
+⚠️ Si algún día entra igual, entonces la columna **deja de ser "canal" y pasa a ser "origen"**, y el
+nombre tiene que decirlo. Lo que no es opción es meterla en `canal` y dejar el nombre como está.
+
+
 **~~Inventario y compras~~ — REACTIVADO el 2026-08-31.** Estuvo pospuesto hasta que hubiera cliente
 firmado. **El cliente firmó**, así que la condición se cumplió y entra al alcance: ≈30.000 líneas
 en vez de ≈14.000. Se conserva la nota para que quede el registro de por qué estuvo afuera y qué la
