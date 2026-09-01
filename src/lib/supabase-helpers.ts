@@ -503,7 +503,7 @@ export const getSalesHistory = ({
 }: SalesHistoryFilters) => {
   const paymentsSel = method ? 'payments!inner(method, amount)' : 'payments(method, amount)'
   const select =
-    `id, order_number, created_at, type, customer_name, total, payment_status, cancelled_at, cancel_reason, ` +
+    `id, order_number, created_at, canal, customer_name, total, payment_status, cancelled_at, cancel_reason, ` +
     `${paymentsSel}, profiles!orders_created_by_fkey(full_name)`
 
   let q = supabase
@@ -531,7 +531,6 @@ export interface SaleDetailRow {
   customer_name: string | null
   customer_phone: string | null
   notes: string | null
-  waiter_name: string | null
   total: number
   payment_status: string
   cancelled_at: string | null
@@ -558,7 +557,7 @@ export const getSaleDetail = (orderId: string) =>
   supabase
     .from('orders')
     .select(`
-      id, order_number, created_at, type, customer_name, customer_phone, notes, waiter_name, total, payment_status,
+      id, order_number, created_at, canal, customer_name, customer_phone, notes, total, payment_status,
       cancelled_at, cancel_reason,
       payments(method, amount),
       profiles!orders_created_by_fkey(full_name),

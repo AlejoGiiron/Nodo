@@ -222,7 +222,6 @@ function SaleDetailModal({ orderId, onClose }: { orderId: string; onClose: () =>
               {/* Meta */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 16, fontSize: 12.5, color: '#475569' }}>
                 {sale.customer_name && <div>Cliente: <span style={{ fontWeight: 600, color: '#0f172a' }}>{sale.customer_name}</span>{sale.customer_phone ? ` · ${sale.customer_phone}` : ''}</div>}
-                {sale.waiter_name && <div>Responsable: <span style={{ fontWeight: 600, color: '#0f172a' }}>{sale.waiter_name}</span></div>}
                 <div>Atendió: <span style={{ fontWeight: 600, color: '#0f172a' }}>{sale.profiles?.full_name ?? '—'}</span></div>
                 <div>Pago: <span data-testid="sale-detail-method" style={{ fontWeight: 600, color: '#0f172a' }}>{methodDisplay(sale)}</span></div>
                 {sale.payments.length > 1 && (

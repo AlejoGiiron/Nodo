@@ -56,7 +56,6 @@ const COLUMNAS_DEL_ESQUEMA: ColumnaEsquema[] = [
   { tabla: 'sedes', columna: 'phone', ejemplo: '3001234567' },
   { tabla: 'sedes', columna: 'logo_url', ejemplo: 'https://x.co/logo-juan-perez.png' },
   { tabla: 'sedes', columna: 'slug', ejemplo: 'salchimelo-norte' },
-  { tabla: 'sedes', columna: 'kitchen_pin', ejemplo: 1234 },
   { tabla: 'sedes', columna: 'nequi_qr_url', ejemplo: 'https://x.co/qr.png' },
 
   // ── profiles / roles (schema.sql, config-profile-active.sql)
@@ -84,13 +83,11 @@ const COLUMNAS_DEL_ESQUEMA: ColumnaEsquema[] = [
   // ── orders (schema.sql + delivery/numbering/vale/void/fiado)
   { tabla: 'orders', columna: 'customer_name', ejemplo: 'Juan Perez' },
   { tabla: 'orders', columna: 'customer_phone', ejemplo: '3009876543' },
-  { tabla: 'orders', columna: 'delivery_address', ejemplo: 'Carrera 7 #45-12 apto 302' },
   { tabla: 'orders', columna: 'notes', ejemplo: 'Sin cebolla, para Pedro' },
   { tabla: 'orders', columna: 'total', ejemplo: 150000 },
   { tabla: 'orders', columna: 'discount_amount', ejemplo: 10000 },
   { tabla: 'orders', columna: 'discount_reason', ejemplo: 'Ruletazo de Ana' },
   { tabla: 'orders', columna: 'cancel_reason', ejemplo: 'Cliente se arrepintio' },
-  { tabla: 'orders', columna: 'estimated_delivery_minutes', ejemplo: 30 },
   { tabla: 'orders', columna: 'order_number', ejemplo: 1247, permitida: true },
   { tabla: 'orders', columna: 'payment_status', ejemplo: 'partial', permitida: true },
   { tabla: 'orders', columna: 'discount_type', ejemplo: 'fixed', permitida: true },
@@ -136,7 +133,7 @@ const COLUMNAS_DEL_ESQUEMA: ColumnaEsquema[] = [
   { tabla: 'purchase_invoice_items', columna: 'unit_cost', ejemplo: 8000 },
   { tabla: 'purchase_invoice_items', columna: 'subtotal', ejemplo: 96000 },
 
-  // ── couriers / stock_movements / store_sequences
+  // ── stock_movements / store_sequences
   { tabla: 'stock_movements', columna: 'notes', ejemplo: 'Ajuste hecho por Ana' },
   { tabla: 'stock_movements', columna: 'reference_id', ejemplo: '3f2b1c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d', permitida: true },
   { tabla: 'store_sequences', columna: 'last_order_number', ejemplo: 1247 },
@@ -269,8 +266,10 @@ describe('el agujero estructural que cerró el allowlist', () => {
     expect(cash.declared).toBe('[Filtrado:number]')
     expect(cr.expected_total).toBe('[Filtrado:number]')
     expect(cr.sales_count).toBe(37)
-    // config: el PIN de cocina es una credencial, no un monto.
-    expect(JSON.stringify(est({ config: { kitchen_pin: 1234 } }))).not.toContain('1234')
+    // config: un PIN es una credencial, no un monto. `kitchen_pin` se fue con
+    // cocina, pero el CASO se conserva con otro nombre: lo que se prueba es que
+    // un campo *_pin dentro de `config` no se trate como importe.
+    expect(JSON.stringify(est({ config: { acceso_pin: 1234 } }))).not.toContain('1234')
   })
 })
 
@@ -451,7 +450,7 @@ describe('error REAL de Nodo — el evento completo', () => {
   it('un cobro fallido con la fila cruda adjunta no filtra al cliente', () => {
     const out = scrubEvent({
       extra: {
-        origen: 'Mesa', esFiado: false, pagoDividido: true, conDescuento: true, esVale: false,
+        origen: 'Mostrador', esFiado: false, pagoDividido: true, conDescuento: true, esVale: false,
         orden: {
           id: '3f2b1c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d',
           customer_name: 'Juan Perez', customer_phone: '3001234567',
@@ -469,7 +468,7 @@ describe('error REAL de Nodo — el evento completo', () => {
     expect(json).not.toContain('150000')
     // Pero sí la rama del flujo y la orden a mirar en la BD.
     expect(json).toContain('3f2b1c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d')
-    expect(json).toContain('Mesa')
+    expect(json).toContain('Mostrador')
     expect(json).toContain('1247')
     expect(json).toContain('paid')
   })

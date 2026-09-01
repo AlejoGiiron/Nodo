@@ -391,3 +391,57 @@ partida—. Quedo en `CANALES + 1`.
 que `src/` consume (`canal`, y el enum `order_type` que se elimino). El resto **no se edita a mano
 otra vez**: sale del `supabase gen types` posterior al push. Editarlo mas seria repetir el
 anti-patron de R1 punto 5, que es la razon por la que este archivo miente hoy.
+
+
+---
+
+## 11 · Commit (d) — el catalogo de columnas, y los SELECT que `tsc` no ve
+
+*2026-09-01. Ultimo commit del orden aprobado.*
+
+### Lo que la enumeracion llamaba "revisar sentry.test.ts" era la mitad
+
+Salieron del catalogo tres columnas que el esquema base no tiene: `sedes.kitchen_pin`,
+`orders.delivery_address`, `orders.estimated_delivery_minutes`.
+
+🔴 **Pero el hallazgo del commit no fue ese: fueron los `select` en crudo.** `getSalesHistory` y
+`getSaleDetail` pedian **`type`** —columna que dejo de existir en el commit (c)— y `waiter_name`,
+que nunca viajo al esquema base. **`tsc` no valida un string de `select`**: los dos habrian fallado
+**en tiempo de ejecucion**, contra el backend, con un error de PostgREST hablando de una columna
+desconocida.
+
+Y uno de ellos alimentaba una fila de UI: `SalesHistoryPage` mostraba *"Responsable: …"* desde
+`waiter_name`. Un campo de mozos, en una pantalla que se queda.
+
+⚠️ **Es la tercera forma del mismo defecto en esta poda** —despues de `courier` y de
+`ORDER_ITEMS_WITH_EXTRAS`—: **lo que no es una referencia de codigo, ningun verificador lo mira.**
+Ni `tsc`, ni ESLint, ni los tests unitarios. Un string de consulta es texto hasta que se ejecuta.
+
+### Dos decisiones de conservacion, no de borrado
+
+1. **El regex de PII conserva `waiter|mozo` y `address|direccion`** aunque esas columnas ya no
+   existan. Es un filtro que **REDACTA**: un patron de mas redacta de mas —**falla cerrado**— y
+   sacarlo solo puede destapar un dato. Mismo criterio con el que se conservo la deny-list al
+   invertir el filtro a allowlist.
+2. **El caso del PIN se conserva con otro nombre.** El test decia *"el PIN de cocina es una
+   credencial, no un monto"* con `kitchen_pin`. Cocina se fue; **la clase no**: un campo `*_pin`
+   dentro de `config` no debe tratarse como importe. Quedo como `acceso_pin`.
+
+### La aritmetica del verde, porque un verde sin explicar no vale
+
+`pnpm test:unit` paso de **280 a 269**. Ese −11 esta explicado entero, y verificarlo era
+obligatorio: *un test que no corre es indistinguible de uno que pasa*.
+
+| Bloque | Iteracion | Columnas quitadas | Tests |
+|---|---|---|---|
+| 3 × `it.each(PROHIBIDAS)` | las 3 columnas | 3 | **9** |
+| 1 × `it.each(PROHIBIDAS.filter(ejemplo numerico))` | `kitchen_pin` (1234) y `estimated_delivery_minutes` (30) | 2 | **2** |
+| | | | **11 ✓** |
+
+`delivery_address` tenia ejemplo de texto, por eso aporta 3 y no 4. **El cuarto bloque no estaba en
+mi primera cuenta** —predije 9— y la diferencia aparecio al comparar el numero medido con el
+esperado, no al leer el archivo.
+
+### Estado final de la poda
+
+`tsc` exit 0 · `eslint src/` exit 0 · `test:unit` 269 passed, 5 archivos.

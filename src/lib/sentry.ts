@@ -68,13 +68,12 @@ import * as Sentry from '@sentry/react'
 
 /** Áreas funcionales — el tag que permite priorizar qué se rompe primero. */
 export type SentryArea =
-  | 'cobro'        // registrar el pago de una venta (POS y Mesas)
+  | 'cobro'        // registrar el pago de una venta
   | 'caja'         // abrir/cerrar turno, movimientos de caja
   | 'numeracion'   // asignación del número correlativo de venta
   | 'venta'        // crear la orden y sus ítems
-  | 'mesas'        // abrir/cerrar mesa, enviar a cocina
   | 'fiado'        // cartera, abonos
-  | 'inventario'   // ajustes de stock, recetas
+  | 'inventario'   // ajustes de stock, componentes bulto→unidad
   | 'compras'      // facturas de proveedor
   | 'productos'    // catálogo, extras
   | 'auth'         // sesión, perfil, permisos
@@ -165,6 +164,10 @@ export const sentryEnabled =
  * ficha de una persona. Si algún día hace falta, se mira contra la BD.
  */
 const CLAVE_SENSIBLE =
+  // ⚠️ `waiter|mozo` y `address|direccion` se CONSERVAN aunque sus columnas ya
+  //    no existan: esto REDACTA, así que un patrón de más redacta de más —falla
+  //    CERRADO— y sacarlo solo puede destapar un dato. Mismo criterio con el que
+  //    se conservó la deny-list al invertir el filtro a allowlist.
   /(nombre|name|phone|telefono|tel|email|correo|address|direccion|customer|cliente|waiter|mozo|note|nota|reason|motivo|comment|coment|password|token|apikey|authorization)/i
 
 /**
