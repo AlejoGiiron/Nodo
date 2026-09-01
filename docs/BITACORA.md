@@ -1607,3 +1607,59 @@ deriva de `CATEGORIAS` con un helper —no se enumera la lista dos veces (R1)—
 defecto del nuevo**. Si lo hubiera borrado junto con el otro por "prueba el modelo anterior", el
 hueco seguía. **Antes de borrar un test por obsoleto, mirar si su aserción sigue siendo verdadera
 bajo el modelo nuevo** — el sujeto puede haber cambiado y la expectativa seguir valiendo.
+
+
+## 2026-09-01 · Los guards hablaban y la UI los silenciaba — y mi primera verificación fue un proxy
+
+**El síntoma:** el test del rechazo de compra no veía el toast *"Abri la jornada de caja"*. El dato
+lo acotó rápido: la compra rechazada **no existía en la base** (el guard rechazó bien), así que el
+problema era solo el mensaje.
+
+### La verificación que salió mal, y vale más que el hallazgo
+
+Hipótesis: `err instanceof Error` da falso para un `PostgrestError` y el `onError` cae al genérico.
+**Primera prueba:** instancié la clase exportada del paquete real —
+
+```
+new PostgrestError({...}) instanceof Error  →  true
+```
+
+— y di la hipótesis por **descartada**. **Segunda prueba, end-to-end:** login como el owner, RPC
+real sin jornada, el error tal como lo ve `onError`:
+
+```
+error instanceof Error: false
+error.message: "Abri la jornada de caja antes de registrar una compra"
+```
+
+**Las dos pruebas se contradicen porque la primera era un PROXY**: probé la clase que el paquete
+exporta, no el objeto que el cliente construye en el camino real. R4 con su enunciado exacto —
+verificar contra la cosa real— y la trampa fue que la primera prueba *parecía* empírica: código
+corriendo, no una lectura. **Un experimento sobre el objeto equivocado es una lectura con disfraz.**
+
+### El defecto, que es de CLASE
+
+```ts
+onError: (err) => toast.error(err instanceof Error ? err.message : 'Error al registrar la compra')
+```
+
+Todo error de negocio de una RPC caía al genérico: el guard decía *qué hacer* y el usuario leía
+*"Error al registrar la compra"*. Los guards de este esquema se escribieron accionables **a
+propósito** — la UI los tiraba a la basura.
+
+**11 copias del patrón. Y dos ya tenían el arreglo local** (`useSalesHistory`, `POSPage`): el
+defecto ya se había pagado dos veces sin barrer la clase — la evidencia de R3 en su forma más pura,
+porque las hermanas arregladas *prueban* que alguien ya lo conocía. Barrida completa a
+`mensajeDeError()` en `src/lib/errores.ts`, con el porqué en el helper.
+
+### `compras.spec`: las expectativas estaban INVERTIDAS, no viejas
+
+El spec venía de Vento afirmando *"la compra NUNCA genera un egreso de caja automático"* y *"sin
+turno se registra sin advertencia"*. La deuda 26 —decidida por el cliente— dice **lo contrario**:
+la compra SALE de la caja del día y **se rechaza sin jornada**. Correr el spec de Vento tal cual
+habría verificado exactamente el comportamiento que revertimos. Reescrito con las expectativas del
+modelo de Nodo, incluido el test de rechazo **con su contraste** (el stock no se movió — R10).
+
+De paso, séptima aparición de los strings muertos: la lista de compras pedía
+`purchase_invoices.payment_method`, columna que la deuda 26 dejó afuera. La consulta fallaba entera
+y **la lista se veía vacía**. Nadie leía esa clave: era solo el select.

@@ -963,7 +963,10 @@ export const getPurchaseInvoices = ({
   return supabase
     .from('purchase_invoices')
     .select(
-      'id, created_at, invoice_number, total, payment_method, ' +
+      // ⚠️ SIN payment_method: la columna no existe (deuda 26 — la compra sale
+      //    de caja, siempre). Pedirla hacia fallar la consulta ENTERA y la lista
+      //    de compras se veia vacia. Nadie la leia: era solo el select.
+      'id, created_at, invoice_number, total, ' +
         'suppliers(name), profiles!purchase_invoices_created_by_fkey(full_name)',
       { count: 'exact' },
     )
@@ -995,7 +998,7 @@ export const getPurchaseInvoiceDetail = (invoiceId: string) =>
   supabase
     .from('purchase_invoices')
     .select(
-      'id, created_at, invoice_number, total, payment_method, notes, ' +
+      'id, created_at, invoice_number, total, notes, ' +   // sin payment_method: no existe
         'suppliers(name, contact, phone), ' +
         'profiles!purchase_invoices_created_by_fkey(full_name), ' +
         'purchase_invoice_items(id, qty, unit_cost, subtotal, products(name))',

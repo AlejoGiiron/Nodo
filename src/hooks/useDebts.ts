@@ -6,6 +6,7 @@ import {
 } from '@/lib/supabase-helpers'
 import { useAuth } from '@/hooks/useAuth'
 import type { SentryArea } from '@/lib/sentry'
+import { mensajeDeError } from '@/lib/errores'
 
 export type { DebtPaymentRow }
 
@@ -129,7 +130,7 @@ export function useRegisterDebtPayment() {
         toast.success(`Abono registrado · saldo: ${saldoCOP}${extra}`)
       }
     },
-    onError: (err) => toast.error(err instanceof Error ? err.message : 'Error al registrar el abono'),
+    onError: (err) => toast.error(mensajeDeError(err, 'Error al registrar el abono')),
   })
 
   return { registerDebtPayment: mutation.mutateAsync, isRegistering: mutation.isPending }

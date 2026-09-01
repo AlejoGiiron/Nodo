@@ -1093,6 +1093,23 @@ specs operaban el MISMO campo con acciones incompatibles** —uno `fill` de inpu
 tocar `timeout`, abrir el artefacto y ver qué locator se esperaba. Subirlo convierte un fallo de 30s
 en uno de 60s.
 
+**🔴 ANTES DE BORRAR UN TEST POR OBSOLETO, VERIFICÁ SI SU ASERCIÓN SIGUE SIENDO VERDADERA BAJO EL
+MODELO NUEVO.** *El sujeto puede haber cambiado y la expectativa seguir valiendo.*
+
+*Caso completo, medido el 2026-09-01 — incluida la parte incómoda: la orden de borrar vino con un
+argumento CORRECTO.* El test probaba que la categoría del movimiento saliera de la lista
+configurable por sede, y esa función se eliminó a propósito al pasar a la allowlist fija: el
+argumento sobre el **sujeto** era exacto. Pero al borrarlo, el test vecino siguió rojo y destapó que
+**la expectativa vivía**: la pantalla mostraba solo `reason`, así que un gasto sin detalle libre
+salía **en blanco** — y `categoria` es justamente la fuente de los reportes. **La UI decía menos que
+la base.**
+
+Es la misma familia que la poda invertida —*lo que suena a viejo puede sostener peso*— pero en
+tests: **la cobertura obsoleta puede estar cubriendo algo que sigue vigente.** El procedimiento es
+el mismo de la poda: antes de borrar, separar el test en sujeto y expectativas, y preguntarle a cada
+expectativa si sobrevive al modelo nuevo. Las que sobreviven se re-alojan; lo que se borra es solo
+el sujeto muerto.
+
 **🔴 UN ROJO QUE NO NOMBRA QUÉ CAMBIÓ CUESTA EL DIAGNÓSTICO ENTERO DE NUEVO.**
 *Medido el 2026-08-31, escribiendo el tripwire del catálogo de permisos.*
 

@@ -31,17 +31,19 @@ async function createSupplier(page: Page, name: string) {
   await expect(page.getByTestId('supplier-row').filter({ hasText: name })).toBeVisible()
 }
 
-// Registra una compra de UN ítem. Deja el método de pago indicado.
+// Registra una compra de UN ítem.
+// ⚠️ Ya NO hay método de pago (`invoice-payment-method` no existe): la deuda 26
+//    decidió que la compra SALE de la caja del día, siempre. `payment_method`
+//    quedó fuera del alcance ("consumidor primero, después columna").
 async function registerPurchase(
   page: Page,
-  { supplier, method, product, qty, cost }:
-    { supplier: string; method: string; product: string; qty: number; cost: number },
+  { supplier, product, qty, cost }:
+    { supplier: string; product: string; qty: number; cost: number },
 ) {
   await page.goto('/compras')
   await page.getByTestId('new-invoice-btn').click()
   await expect(page.getByTestId('new-invoice-modal')).toBeVisible()
   await page.getByTestId('invoice-supplier').selectOption({ label: supplier })
-  await page.getByTestId('invoice-payment-method').selectOption(method)
   await page.getByTestId('invoice-item-product').first().selectOption({ label: product })
   await page.getByTestId('invoice-item-qty').first().fill(String(qty))
   await page.getByTestId('invoice-item-cost').first().fill(String(cost))
@@ -80,8 +82,11 @@ test.describe.serial('Compras / Proveedores', () => {
   test('registrar compra sube el stock del insumo y deja movimiento de compra', async ({ page }) => {
     await loginAsOwner(page)
 
-    // Pago por transferencia: aísla esta verificación de stock de la caja.
-    await registerPurchase(page, { supplier: PROVEEDOR, method: 'transfer', product: INSUMO, qty: 10, cost: 1500 })
+    // La compra EXIGE jornada abierta (register_purchase rechaza sin ella).
+    await page.goto('/ventas')
+    await openShiftIfClosed(page, 100000)
+
+    await registerPurchase(page, { supplier: PROVEEDOR, product: INSUMO, qty: 10, cost: 1500 })
     await expect(page.getByTestId('new-invoice-modal')).toHaveCount(0)
     await expect(page.getByText(/Compra registrada/)).toBeVisible()
 
@@ -100,36 +105,54 @@ test.describe.serial('Compras / Proveedores', () => {
     await expect(page.getByTestId('purchase-row').filter({ hasText: PROVEEDOR }).first()).toBeVisible()
   })
 
-  test('compra en efectivo NO toca la caja (con turno abierto, sin egreso automático)', async ({ page }) => {
-    // Regla de raíz: la compra NUNCA genera un egreso de caja automático. El
-    // efectivo que sale del cajón se registra como egreso MANUAL. Se prueba con
-    // turno ABIERTO (el escenario que antes creaba el egreso indebido).
+  // 🔴 REESCRITO el 2026-09-01, y la expectativa se INVIERTE. La versión
+  //    anterior afirmaba "la compra NUNCA genera un egreso de caja automático" —
+  //    la regla de VENTO. La deuda 26, decidida por el cliente, dice lo
+  //    contrario: la compra SALE de la caja del día, y register_purchase crea el
+  //    egreso con categoria='compra'. Copiar el spec de Vento habría verificado
+  //    exactamente el comportamiento que revertimos.
+  test('la compra SALE de la caja: egreso automático con categoria=compra', async ({ page }) => {
     await loginAsOwner(page)
     await page.goto('/ventas')
     await openShiftIfClosed(page, 100000)
 
-    await registerPurchase(page, { supplier: PROVEEDOR, method: 'cash', product: INSUMO, qty: 5, cost: 2000 })
+    await registerPurchase(page, { supplier: PROVEEDOR, product: INSUMO, qty: 5, cost: 2000 })
     await expect(page.getByTestId('new-invoice-modal')).toHaveCount(0)
-    // Toast de éxito normal; NADA de "Egreso de caja registrado".
-    await expect(page.getByText(/Compra registrada y stock actualizado/)).toBeVisible()
-    await expect(page.getByText(/Egreso de caja registrado/)).toHaveCount(0)
+    await expect(page.getByText(/Compra registrada/)).toBeVisible()
 
-    // Y en los movimientos del turno NO aparece ningún egreso de la compra.
+    // El egreso automático está en los movimientos de la jornada, con el
+    // detalle que escribe la RPC ('Compra a proveedor X (factura N)').
+    await page.goto('/ventas')
     await page.getByRole('button', { name: 'Movimientos' }).click()
-    await expect(page.getByText(`Compra a proveedor ${PROVEEDOR}`)).toHaveCount(0)
+    await expect(
+      page.getByTestId('movement-item').filter({ hasText: `Compra a proveedor ${PROVEEDOR}` }).first(),
+    ).toBeVisible()
+    // Y por el monto exacto: 5 × 2.000 = 10.000.
+    await expect(
+      page.getByTestId('movement-item').filter({ hasText: `Compra a proveedor ${PROVEEDOR}` }).first(),
+    ).toContainText('10.000')
   })
 
-  test('compra en efectivo SIN turno: se registra sin advertencia de caja', async ({ page }) => {
-    // Sin turno la compra ya no advierte nada de caja (nunca la tocó).
+  // 🔴 REESCRITO: antes era 'sin turno se registra sin advertencia' — Vento.
+  //    En Nodo la compra sin jornada se RECHAZA (fail-closed), con el mensaje
+  //    accionable de la RPC. Este es un test de AUSENCIA con su contraste: el
+  //    stock NO cambió, que es lo que hace falsable al rechazo (R10).
+  test('sin jornada abierta la compra se RECHAZA y el stock no se mueve', async ({ page }) => {
     await loginAsOwner(page)
     await page.goto('/ventas')
     await closeShiftIfOpen(page)
 
-    await registerPurchase(page, { supplier: PROVEEDOR, method: 'cash', product: INSUMO, qty: 3, cost: 1000 })
+    const antes = await readStock(page, INSUMO)   // 15 tras los dos tests previos
 
-    await expect(page.getByTestId('new-invoice-modal')).toHaveCount(0)
-    await expect(page.getByText(/Compra registrada y stock actualizado/)).toBeVisible()
-    await expect(page.getByText(/no se registró en caja/)).toHaveCount(0)
+    await registerPurchase(page, { supplier: PROVEEDOR, product: INSUMO, qty: 3, cost: 1000 })
+
+    // El toast trae el mensaje de la RPC, que dice QUE hacer, no solo que no.
+    await expect(page.getByText(/Abri la jornada de caja/)).toBeVisible()
+    // El modal NO se cierra: la compra no se registró.
+    await expect(page.getByTestId('new-invoice-modal')).toBeVisible()
+
+    // CONTRASTE del rechazo: el stock quedó exactamente igual.
+    expect(await readStock(page, INSUMO)).toBe(antes)
   })
 
   test('gating: el cajero NO ve Compras', async ({ page }) => {

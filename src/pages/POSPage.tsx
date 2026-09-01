@@ -28,6 +28,7 @@ import { cashQuickAmounts } from '@/lib/cashRounding'
 import { stockStatus, esAlertaDeStock } from '@/lib/stockStatus'
 import type { ProductWithCategory, CartItem, DiscountType, HeldOrder } from '@/stores/cartStore'
 import type { Enums } from '@/types/database.types'
+import { mensajeDeError } from '@/lib/errores'
 
 // Canal: por donde ENTRO el pedido. Espeja el CHECK de orders.canal — si acá
 // se agrega un valor sin ampliar el CHECK, el insert falla RUIDOSO, que es lo
@@ -940,7 +941,7 @@ function CheckoutModal({
       setOrderId(order.id)
       setStep('success')
     } catch (err) {
-      const msg = err instanceof Error ? err.message : (err as { message?: string })?.message ?? 'Error desconocido'
+      const msg = mensajeDeError(err, 'Error desconocido')
       toast.error(`Error al procesar el cobro: ${msg}`)
       console.error('[checkout]', err)
       // El toast le dice al cajero que falló, pero no nos dice a nosotros por
