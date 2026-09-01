@@ -579,8 +579,14 @@ export const getCancelledSales = (sedeId: string, from?: string, to?: string) =>
 
 // --- Anulación de venta (RPC atómica register_sale_void) ---
 
+// Retorno de register_sale_void. ⚠️ Interfaz a mano: ver la nota de
+// RegisterDebtPaymentResult — TS valida contra ESTO, no contra la funcion.
+// Las 4 claves se verificaron contra el jsonb_build_object de
+// `20260901120000_void_expone_was_fiado.sql` el 2026-09-01.
 export interface SaleVoidResult {
   order_id: string
+  /** La venta era a credito. La RPC la expone desde v2; antes la declaraba esta
+   *  interfaz y la funcion NO la mandaba — `undefined` silencioso. */
   was_fiado: boolean
   payments_deleted: number
   stock_returned: number

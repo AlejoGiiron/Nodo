@@ -506,10 +506,39 @@ dos cosas y parece economía.
 
 ---
 
+### ⚠️ CRITERIO SIN NÚMERO · LA URGENCIA DE UN DESAJUSTE LA DECIDE LA DIRECCIÓN DEL FALLO
+
+*Dos casos medidos el 2026-09-01, en capas distintas. Se escribe una vez porque es la misma forma.*
+
+Ante dos desajustes que **parecen simétricos** —falta algo de un lado, sobra del otro— la reacción
+natural es tratarlos igual, o priorizar por tamaño. **Las dos son erróneas.**
+
+> **Los desajustes simétricos no son simétricos: uno miente y el otro desperdicia.**
+> La urgencia la decide **hacia dónde falla**, no cuánto difiere.
+
+| Caso | Un lado | El otro |
+|---|---|---|
+| **Listas** (`sentry.ts`) | un patrón de más en el **regex de redacción** → **redacta de más**, falla **cerrado**: conservarlo es gratis | una clave de más en el **allowlist** → **deja pasar de más**, falla **abierto**: conservarla es una fuga |
+| **Contrato RPC↔TS** | **TS declara y la RPC no manda** → `undefined`, falsy, **rama equivocada en silencio**: MIENTE | **la RPC manda y TS no declara** → el dato existe y nadie lo usa: DESPERDICIA |
+
+En los dos, la mitad que **afloja o miente** es urgente y la que **endurece o desperdicia** puede
+esperar. Medido: `shift_open` declarado-y-no-enviado provocó una advertencia falsa en producción de
+la UI; `cash_movement_id` enviado-y-no-declarado no rompió nada en meses.
+
+**Lo accionable, en una pregunta:** ante un desajuste, no preguntes *cuánto* difieren los dos lados
+— preguntá **qué pasa si nadie lo arregla**. Si la respuesta es *"algo se comporta distinto sin
+avisar"*, es urgente. Si es *"algo no se puede usar"*, es una anotación.
+
+⚠️ Y el corolario que ahorra trabajo: **arreglar la mitad urgente NO obliga a arreglar la otra en la
+misma pasada.** Tratarlas como un solo ítem —"hay que sincronizar los contratos"— es lo que hace
+que una tarea de diez minutos parezca de un día y se posponga entera.
+
+---
+
 ### ⚠️ CRITERIO SIN NÚMERO · AL QUITAR UN TÉRMINO, DECIDE LA DIRECCIÓN DEL FALLO — NO LA CONSISTENCIA
 
 *Medido el 2026-09-01, podando el vale. Dos listas, el mismo término muerto, decisiones OPUESTAS y
-las dos correctas.*
+las dos correctas. Es el caso particular del criterio de arriba, aplicado al momento de BORRAR.*
 
 Cuando una poda deja un término huérfano en una lista, la pregunta **no** es "¿ya no existe, así que
 lo saco?". Es:

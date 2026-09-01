@@ -316,7 +316,12 @@ test.describe.serial('Anulación de ventas', () => {
     await closeShifts()
     await ensureShift()   // turno nuevo: la venta quedó antes de su opened_at
     const { error } = await voidRpc(await db(), id)
-    expect(error?.message ?? '').toContain('turno cerrado')
+    // ⚠️ La RPC dice "jornada", la UI dice "turno" (ver el tooltip mas abajo).
+    //    NO es un descuido de este test: es una divergencia REAL de vocabulario
+    //    —el renombre turnos->jornada llego al esquema y a los mensajes del
+    //    backend, y NO a la copy de la UI (24 archivos en src/)—. Este test la
+    //    DOCUMENTA en vez de esconderla. Ver DEUDAS #38.
+    expect(error?.message ?? '').toContain('jornada cerrada')
     // UI: botón visible pero DESHABILITADO con el tooltip = mensaje de la RPC
     await loginAsOwner(page)
     await openSaleDetail(page, number)
@@ -331,14 +336,25 @@ test.describe.serial('Anulación de ventas', () => {
     const { id } = await createSale({ items: [{ product_id: P_SIMPLE, qty: 1, unit_price: 5000 }], total: 5000 })
     expect((await voidRpc(await db(), id)).error).toBeNull()
     const { error } = await voidRpc(await db(), id)
-    expect(error?.message ?? '').toContain('ya está anulada')
+    // ⚠️ Tolerante a la tilde: los mensajes de las migraciones se escriben SIN
+    //    acentos (convencion del esquema base) y este spec venia de Vento, que
+    //    los tenia. Un `toContain` exacto convierte una diferencia ortografica
+    //    en un rojo que parece de logica. Se asierta la FRASE, no su grafia.
+    expect(error?.message ?? '').toMatch(/ya est[aá] anulada/)
   })
 
   test('rechazo: fiado con abono → niega', async () => {
     await ensureShift()
     const c = await ctx()
     const { id } = await createSale({ items: [{ product_id: P_SIMPLE, qty: 1, unit_price: 5000 }], total: 5000, paid: false })
-    const { error: ae } = await c.from('debt_payments').insert({ sede_id: SEDE, order_id: id, amount: 1000, payment_method: 'cash', created_by: OWNER_ID })
+    // 🔴 El abono se crea por la RPC, NO con un insert directo: sobre
+    //    `debt_payments` no hay policy de INSERT para `authenticated` —esas filas
+    //    las escribe `register_debt_payment`, que es SECURITY DEFINER—. El insert
+    //    directo daba 42501 y el test culpaba a la anulacion. El fixture saltaba
+    //    el unico camino que el sistema acepta; el sistema tenia razon.
+    const { error: ae } = await c.rpc('register_debt_payment', {
+      p_order_id: id, p_amount: 1000, p_payment_method: 'cash',
+    })
     expect(ae).toBeNull()
     const { error } = await voidRpc(await db(), id)
     expect(error?.message ?? '').toContain('ya tiene abonos')
@@ -349,7 +365,8 @@ test.describe.serial('Anulación de ventas', () => {
     const { id } = await createSale({ items: [{ product_id: P_SIMPLE, qty: 1, unit_price: 5000 }], total: 5000, paid: false })
     await closeShifts()
     const { error } = await voidRpc(await db(), id)
-    expect(error?.message ?? '').toContain('No hay un turno')
+    // La RPC dice "jornada" (ver DEUDAS #38): se asierta la frase del backend.
+    expect(error?.message ?? '').toMatch(/jornada de caja|No hay un turno/)
   })
 
   // ── EXCLUSIONES (Fase 3) ─────────────────────────────────────────────────────

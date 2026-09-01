@@ -1469,3 +1469,42 @@ El primero miente, el segundo desperdicia.
 Sospechábamos que un desajuste podía estar detrás de los timeouts de `arqueo`, `compras` e
 `historiales`. **No lo está:** las tres RPC que esos specs usan están limpias o sin interfaz.
 Descartar una hipótesis con un diff mecánico es barato y evita perseguirla tres veces.
+
+
+## 2026-09-01 · `anular-venta`: de 8 a 15 tests, y cuatro causas distintas en un solo spec
+
+`was_fiado` era la primera de cuatro. Vale enumerarlas porque **ninguna era un bug de la anulación**:
+
+| # | Síntoma | Causa real |
+|---|---|---|
+| 1 | `Expected: true, Received: undefined` | la RPC no exponía `was_fiado` (migración v2) |
+| 2 | `Expected "turno cerrado"` | **la RPC dice "jornada"** — renombre a medias (deuda #38) |
+| 3 | `Expected "ya está anulada"` | el SQL del esquema base **se escribe sin tildes**; el spec venía de Vento con ellas |
+| 4 | `42501 violates RLS on debt_payments` | el fixture hacía un **insert directo** de un abono |
+
+### La 4 es la más instructiva: el fixture saltaba el único camino permitido
+
+Sobre `debt_payments` **no hay policy de INSERT para `authenticated`** — esas filas las escribe
+`register_debt_payment`, que es `SECURITY DEFINER`. El test insertaba a mano, RLS lo negaba, y el
+error aparecía como si la anulación estuviera rota.
+
+> **Un fixture que escribe por un camino que el sistema no permite no está preparando el escenario:
+> está probando otra cosa.**
+
+Es la deuda #24 —*"cerrada por construcción: sin policies de escritura, nada puede saltarse la
+RPC"*— **verificada desde afuera y sin querer**. El diseño funcionó exactamente como se prometió;
+lo que no se había actualizado era el test.
+
+### Y la 3 deja una regla barata
+
+Los mensajes de las migraciones se escriben **sin acentos** por convención del esquema base. Un
+`toContain('ya está anulada')` convierte una diferencia **ortográfica** en un rojo que parece de
+lógica. La aserción pasó a `toMatch(/ya est[aá] anulada/)`: **se asierta la frase, no su grafía.**
+Grepeado: era la única aserción acentuada contra un mensaje de RPC en los 30 specs.
+
+### Lo que NO se tocó
+
+Queda 1 fallo (`UI: con filtro de método, la anulada sale de la lista`) y 1 sin correr. Y **no se
+hizo el renombre turno→jornada**: son 24 archivos, es una decisión de alcance, y hacerlo dentro de
+un turno dedicado a otra cosa es cómo se cuelan los renombres a medias — que es justo el defecto
+que este caso destapó.

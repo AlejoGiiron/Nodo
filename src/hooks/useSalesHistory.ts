@@ -159,6 +159,11 @@ export function useVoidSale() {
       }
       const parts = [`Stock devuelto: ${res.stock_returned}`]
       if (res.payments_deleted > 0) parts.push(`${res.payments_deleted} pago(s) revertido(s)`)
+      // Una venta a credito no tiene pagos que revertir: sin esto el mensaje
+      // diria solo "stock devuelto" y el cajero no sabria que la deuda salio de
+      // Cartera. La deuda ES la orden —getDebts filtra por cancelled_at— asi que
+      // sale sola; lo que faltaba era DECIRLO.
+      if (res.was_fiado) parts.push('salio de Cartera')
       toast.success(`Venta anulada · ${parts.join(' · ')}`)
     },
     onError: (err) => {
