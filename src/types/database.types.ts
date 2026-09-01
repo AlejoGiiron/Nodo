@@ -17,38 +17,35 @@ export type Database = {
       cash_movements: {
         Row: {
           amount: number
+          categoria: string
           created_at: string
           created_by: string
           id: string
-          categoria: string
-
+          jornada_id: string
           reason: string | null
           sede_id: string
-          jornada_id: string
           type: Database["public"]["Enums"]["movement_type"]
         }
         Insert: {
           amount: number
+          categoria: string
           created_at?: string
           created_by: string
           id?: string
-          categoria: string
-
-          reason: string | null
-          sede_id: string
           jornada_id: string
+          reason?: string | null
+          sede_id: string
           type: Database["public"]["Enums"]["movement_type"]
         }
         Update: {
           amount?: number
+          categoria?: string
           created_at?: string
           created_by?: string
           id?: string
-          categoria?: string
-
+          jornada_id?: string
           reason?: string | null
           sede_id?: string
-          jornada_id?: string
           type?: Database["public"]["Enums"]["movement_type"]
         }
         Relationships: [
@@ -60,84 +57,14 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "cash_movements_sede_id_fkey"
-            columns: ["sede_id"]
-            isOneToOne: false
-            referencedRelation: "sedes"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "cash_movements_jornada_id_fkey"
             columns: ["jornada_id"]
             isOneToOne: false
             referencedRelation: "jornadas"
             referencedColumns: ["id"]
           },
-        ]
-      }
-      jornadas: {
-        Row: {
-          close_comment: string | null
-          close_reconciliation: Json | null
-          closed_at: string | null
-          closed_by: string | null
-          closing_amount: number | null
-          difference: number | null
-          expected_amount: number | null
-          id: string
-          opened_at: string
-          opened_by: string
-          opening_amount: number
-          sede_id: string
-          updated_at: string
-        }
-        Insert: {
-          close_comment?: string | null
-          close_reconciliation?: Json | null
-          closed_at?: string | null
-          closed_by?: string | null
-          closing_amount?: number | null
-          difference?: number | null
-          expected_amount?: number | null
-          id?: string
-          opened_at?: string
-          opened_by: string
-          opening_amount: number
-          sede_id: string
-          updated_at?: string
-        }
-        Update: {
-          close_comment?: string | null
-          close_reconciliation?: Json | null
-          closed_at?: string | null
-          closed_by?: string | null
-          closing_amount?: number | null
-          difference?: number | null
-          expected_amount?: number | null
-          id?: string
-          opened_at?: string
-          opened_by?: string
-          opening_amount?: number
-          sede_id?: string
-          updated_at?: string
-        }
-        Relationships: [
           {
-            foreignKeyName: "jornadas_closed_by_fkey"
-            columns: ["closed_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "jornadas_opened_by_fkey"
-            columns: ["opened_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "jornadas_sede_id_fkey"
+            foreignKeyName: "cash_movements_sede_id_fkey"
             columns: ["sede_id"]
             isOneToOne: false
             referencedRelation: "sedes"
@@ -182,44 +109,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "categories_sede_id_fkey"
-            columns: ["sede_id"]
-            isOneToOne: false
-            referencedRelation: "sedes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      couriers: {
-        Row: {
-          created_at: string
-          id: string
-          is_active: boolean
-          name: string
-          phone: string | null
-          sede_id: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          name: string
-          phone?: string | null
-          sede_id: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          name?: string
-          phone?: string | null
-          sede_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "couriers_sede_id_fkey"
             columns: ["sede_id"]
             isOneToOne: false
             referencedRelation: "sedes"
@@ -279,7 +168,8 @@ export type Database = {
           created_by: string | null
           id: string
           order_id: string
-          payment_method: string
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          requiere_conciliacion: boolean
           sede_id: string
         }
         Insert: {
@@ -289,7 +179,8 @@ export type Database = {
           created_by?: string | null
           id?: string
           order_id: string
-          payment_method: string
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          requiere_conciliacion?: boolean
           sede_id: string
         }
         Update: {
@@ -299,7 +190,8 @@ export type Database = {
           created_by?: string | null
           id?: string
           order_id?: string
-          payment_method?: string
+          payment_method?: Database["public"]["Enums"]["payment_method"]
+          requiere_conciliacion?: boolean
           sede_id?: string
         }
         Relationships: [
@@ -381,6 +273,76 @@ export type Database = {
           },
         ]
       }
+      jornadas: {
+        Row: {
+          close_comment: string | null
+          close_reconciliation: Json | null
+          closed_at: string | null
+          closed_by: string | null
+          closing_amount: number | null
+          difference: number | null
+          expected_amount: number | null
+          id: string
+          opened_at: string
+          opened_by: string
+          opening_amount: number
+          sede_id: string
+          updated_at: string
+        }
+        Insert: {
+          close_comment?: string | null
+          close_reconciliation?: Json | null
+          closed_at?: string | null
+          closed_by?: string | null
+          closing_amount?: number | null
+          difference?: number | null
+          expected_amount?: number | null
+          id?: string
+          opened_at?: string
+          opened_by: string
+          opening_amount: number
+          sede_id: string
+          updated_at?: string
+        }
+        Update: {
+          close_comment?: string | null
+          close_reconciliation?: Json | null
+          closed_at?: string | null
+          closed_by?: string | null
+          closing_amount?: number | null
+          difference?: number | null
+          expected_amount?: number | null
+          id?: string
+          opened_at?: string
+          opened_by?: string
+          opening_amount?: number
+          sede_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jornadas_closed_by_fkey"
+            columns: ["closed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jornadas_opened_by_fkey"
+            columns: ["opened_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jornadas_sede_id_fkey"
+            columns: ["sede_id"]
+            isOneToOne: false
+            referencedRelation: "sedes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_item_extras: {
         Row: {
           created_at: string
@@ -432,7 +394,7 @@ export type Database = {
           order_id: string
           product_id: string
           qty: number
-          sent_to_kitchen: boolean
+          unit_cost: number | null
           unit_price: number
           updated_at: string
         }
@@ -444,7 +406,7 @@ export type Database = {
           order_id: string
           product_id: string
           qty: number
-          sent_to_kitchen?: boolean
+          unit_cost?: number | null
           unit_price: number
           updated_at?: string
         }
@@ -456,7 +418,7 @@ export type Database = {
           order_id?: string
           product_id?: string
           qty?: number
-          sent_to_kitchen?: boolean
+          unit_cost?: number | null
           unit_price?: number
           updated_at?: string
         }
@@ -479,88 +441,70 @@ export type Database = {
       }
       orders: {
         Row: {
+          canal: string
           cancel_reason: string | null
           cancelled_at: string | null
           cancelled_by: string | null
-          courier_id: string | null
           created_at: string
           created_by: string
           customer_id: string | null
           customer_name: string | null
           customer_phone: string | null
-          delivery_address: string | null
           discount_amount: number
-          discount_kind: string
           discount_reason: string | null
           discount_type: string | null
-          estimated_delivery_minutes: number | null
           id: string
           notes: string | null
           order_number: number | null
           payment_status: string
           sede_id: string
           status: Database["public"]["Enums"]["order_status"]
-          table_id: string | null
           total: number
-          canal: string
           updated_at: string
-          waiter_name: string | null
         }
         Insert: {
+          canal: string
           cancel_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
-          courier_id?: string | null
           created_at?: string
           created_by: string
           customer_id?: string | null
           customer_name?: string | null
           customer_phone?: string | null
-          delivery_address?: string | null
           discount_amount?: number
-          discount_kind?: string
           discount_reason?: string | null
           discount_type?: string | null
-          estimated_delivery_minutes?: number | null
           id?: string
           notes?: string | null
           order_number?: number | null
           payment_status?: string
           sede_id: string
           status?: Database["public"]["Enums"]["order_status"]
-          table_id?: string | null
           total?: number
-          canal: string
           updated_at?: string
-          waiter_name?: string | null
         }
         Update: {
+          canal?: string
           cancel_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
-          courier_id?: string | null
           created_at?: string
           created_by?: string
           customer_id?: string | null
           customer_name?: string | null
           customer_phone?: string | null
-          delivery_address?: string | null
           discount_amount?: number
-          discount_kind?: string
           discount_reason?: string | null
           discount_type?: string | null
-          estimated_delivery_minutes?: number | null
           id?: string
           notes?: string | null
           order_number?: number | null
           payment_status?: string
           sede_id?: string
           status?: Database["public"]["Enums"]["order_status"]
-          table_id?: string | null
           total?: number
-          canal?: string
           updated_at?: string
-          waiter_name?: string | null
         }
         Relationships: [
           {
@@ -568,13 +512,6 @@ export type Database = {
             columns: ["cancelled_by"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "orders_courier_id_fkey"
-            columns: ["courier_id"]
-            isOneToOne: false
-            referencedRelation: "couriers"
             referencedColumns: ["id"]
           },
           {
@@ -596,13 +533,6 @@ export type Database = {
             columns: ["sede_id"]
             isOneToOne: false
             referencedRelation: "sedes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "orders_table_id_fkey"
-            columns: ["table_id"]
-            isOneToOne: false
-            referencedRelation: "tables"
             referencedColumns: ["id"]
           },
         ]
@@ -784,7 +714,6 @@ export type Database = {
           name: string
           price: number
           sede_id: string
-          routes_to_kitchen: boolean
           stock_qty: number | null
           stock_tracking: boolean
           updated_at: string
@@ -802,7 +731,6 @@ export type Database = {
           name: string
           price: number
           sede_id: string
-          routes_to_kitchen?: boolean
           stock_qty?: number | null
           stock_tracking?: boolean
           updated_at?: string
@@ -820,7 +748,6 @@ export type Database = {
           name?: string
           price?: number
           sede_id?: string
-          routes_to_kitchen?: boolean
           stock_qty?: number | null
           stock_tracking?: boolean
           updated_at?: string
@@ -856,10 +783,10 @@ export type Database = {
           full_name: string
           id: string
           is_active: boolean
-          organization_id: string | null
-          sede_id: string
+          organization_id: string
           role: Database["public"]["Enums"]["user_role"]
           role_id: string | null
+          sede_id: string
           updated_at: string
         }
         Insert: {
@@ -868,10 +795,10 @@ export type Database = {
           full_name: string
           id: string
           is_active?: boolean
-          organization_id?: string | null
-          sede_id: string
-          role?: Database["public"]["Enums"]["user_role"]
+          organization_id: string
+          role: Database["public"]["Enums"]["user_role"]
           role_id?: string | null
+          sede_id: string
           updated_at?: string
         }
         Update: {
@@ -880,10 +807,10 @@ export type Database = {
           full_name?: string
           id?: string
           is_active?: boolean
-          organization_id?: string | null
-          sede_id?: string
+          organization_id?: string
           role?: Database["public"]["Enums"]["user_role"]
           role_id?: string | null
+          sede_id?: string
           updated_at?: string
         }
         Relationships: [
@@ -895,17 +822,17 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "profiles_sede_id_fkey"
-            columns: ["sede_id"]
-            isOneToOne: false
-            referencedRelation: "sedes"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "profiles_role_id_fkey"
             columns: ["role_id"]
             isOneToOne: false
             referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_sede_id_fkey"
+            columns: ["sede_id"]
+            isOneToOne: false
+            referencedRelation: "sedes"
             referencedColumns: ["id"]
           },
         ]
@@ -962,7 +889,6 @@ export type Database = {
           id: string
           invoice_number: string | null
           notes: string | null
-          payment_method: string
           sede_id: string
           supplier_id: string
           total: number
@@ -973,7 +899,6 @@ export type Database = {
           id?: string
           invoice_number?: string | null
           notes?: string | null
-          payment_method: string
           sede_id: string
           supplier_id: string
           total?: number
@@ -984,7 +909,6 @@ export type Database = {
           id?: string
           invoice_number?: string | null
           notes?: string | null
-          payment_method?: string
           sede_id?: string
           supplier_id?: string
           total?: number
@@ -1009,53 +933,6 @@ export type Database = {
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      sedes: {
-        Row: {
-          address: string | null
-          config: Json
-          created_at: string
-          id: string
-          logo_url: string | null
-          name: string
-          organization_id: string
-          phone: string | null
-          updated_at: string
-          uses_kitchen: boolean
-        }
-        Insert: {
-          address?: string | null
-          config?: Json
-          created_at?: string
-          id?: string
-          logo_url?: string | null
-          name: string
-          organization_id: string
-          phone?: string | null
-          updated_at?: string
-          uses_kitchen?: boolean
-        }
-        Update: {
-          address?: string | null
-          config?: Json
-          created_at?: string
-          id?: string
-          logo_url?: string | null
-          name?: string
-          organization_id?: string
-          phone?: string | null
-          updated_at?: string
-          uses_kitchen?: boolean
-        }
-        Relationships: [
-          {
-            foreignKeyName: "sedes_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -1091,6 +968,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "roles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sedes: {
+        Row: {
+          address: string | null
+          config: Json
+          created_at: string
+          id: string
+          logo_url: string | null
+          name: string
+          organization_id: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          config?: Json
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          name: string
+          organization_id: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          config?: Json
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          name?: string
+          organization_id?: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sedes_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -1181,36 +1102,36 @@ export type Database = {
       }
       suppliers: {
         Row: {
-          contact_name: string | null
+          contact: string | null
           created_at: string
-          document: string | null
           id: string
           is_active: boolean
           name: string
+          nit: string | null
           notes: string | null
           phone: string | null
           sede_id: string
           updated_at: string
         }
         Insert: {
-          contact_name?: string | null
+          contact?: string | null
           created_at?: string
-          document?: string | null
           id?: string
           is_active?: boolean
           name: string
+          nit?: string | null
           notes?: string | null
           phone?: string | null
           sede_id: string
           updated_at?: string
         }
         Update: {
-          contact_name?: string | null
+          contact?: string | null
           created_at?: string
-          document?: string | null
           id?: string
           is_active?: boolean
           name?: string
+          nit?: string | null
           notes?: string | null
           phone?: string | null
           sede_id?: string
@@ -1219,47 +1140,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "suppliers_sede_id_fkey"
-            columns: ["sede_id"]
-            isOneToOne: false
-            referencedRelation: "sedes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      tables: {
-        Row: {
-          capacity: number | null
-          created_at: string
-          id: string
-          name: string
-          sede_id: string
-          status: Database["public"]["Enums"]["table_status"]
-          updated_at: string
-          zone: string | null
-        }
-        Insert: {
-          capacity?: number | null
-          created_at?: string
-          id?: string
-          name: string
-          sede_id: string
-          status?: Database["public"]["Enums"]["table_status"]
-          updated_at?: string
-          zone?: string | null
-        }
-        Update: {
-          capacity?: number | null
-          created_at?: string
-          id?: string
-          name?: string
-          sede_id?: string
-          status?: Database["public"]["Enums"]["table_status"]
-          updated_at?: string
-          zone?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "tables_sede_id_fkey"
             columns: ["sede_id"]
             isOneToOne: false
             referencedRelation: "sedes"
@@ -1305,12 +1185,12 @@ export type Database = {
       daily_sales_summary: {
         Row: {
           avg_ticket: number | null
+          canal: string | null
           card_total: number | null
           cash_total: number | null
           day: string | null
           nequi_total: number | null
           order_count: number | null
-          canal: string | null
           sede_id: string | null
           total_revenue: number | null
           transfer_total: number | null
@@ -1371,20 +1251,20 @@ export type Database = {
           },
         ]
       }
-      waiter_performance: {
+      user_performance: {
         Row: {
           avg_ticket: number | null
           day: string | null
           order_count: number | null
           sede_id: string | null
           total_revenue: number | null
-          waiter_id: string | null
-          waiter_name: string | null
+          user_id: string | null
+          user_name: string | null
         }
         Relationships: [
           {
             foreignKeyName: "orders_created_by_fkey"
-            columns: ["waiter_id"]
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1409,11 +1289,11 @@ export type Database = {
         Returns: undefined
       }
       get_my_organization_id: { Args: never; Returns: string }
-      get_my_sede_id: { Args: never; Returns: string }
       get_my_role: {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
       }
+      get_my_sede_id: { Args: never; Returns: string }
       has_permission: { Args: { perm: string }; Returns: boolean }
       next_order_number: { Args: { p_sede_id: string }; Returns: number }
       register_debt_payment: {
@@ -1435,14 +1315,8 @@ export type Database = {
     }
     Enums: {
       movement_type: "in" | "out"
-      order_status:
-        | "pending"
-        | "preparing"
-        | "ready"
-        | "delivered"
-        | "cancelled"
+      order_status: "pending" | "delivered" | "cancelled"
       payment_method: "cash" | "card" | "transfer" | "nequi"
-      table_status: "free" | "occupied" | "reserved" | "waiting_bill"
       user_role: "admin" | "cashier"
     }
     CompositeTypes: {
@@ -1478,33 +1352,6 @@ export type Tables<
         DefaultSchema["Views"])
     ? (DefaultSchema["Tables"] &
         DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
-      }
-      ? R
-      : never
-    : never
-
-// Helper para tipar filas de vistas (reportes). Adición manual preservada
-// entre regeneraciones de `supabase gen types` (la CLI no emite este alias).
-export type Views<
-  PublicViewNameOrOptions extends
-    | keyof DefaultSchema["Views"]
-    | { schema: keyof DatabaseWithoutInternals },
-  ViewName extends PublicViewNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[PublicViewNameOrOptions["schema"]]["Views"]
-    : never = never,
-> = PublicViewNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[PublicViewNameOrOptions["schema"]]["Views"][ViewName] extends {
-      Row: infer R
-    }
-    ? R
-    : never
-  : PublicViewNameOrOptions extends keyof DefaultSchema["Views"]
-    ? DefaultSchema["Views"][PublicViewNameOrOptions] extends {
         Row: infer R
       }
       ? R
@@ -1599,9 +1446,8 @@ export const Constants = {
   public: {
     Enums: {
       movement_type: ["in", "out"],
-      order_status: ["pending", "preparing", "ready", "delivered", "cancelled"],
+      order_status: ["pending", "delivered", "cancelled"],
       payment_method: ["cash", "card", "transfer", "nequi"],
-      table_status: ["free", "occupied", "reserved", "waiting_bill"],
       user_role: ["admin", "cashier"],
     },
   },
