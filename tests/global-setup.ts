@@ -39,7 +39,6 @@ async function checkServedAppIsGnexo(): Promise<void> {
         `contra el proyecto equivocado.`,
       )
     }
-    // eslint-disable-next-line no-console
     console.log('[E2E health check] OK — la app servida es Nodo.')
   } finally {
     await ctx.dispose()
@@ -111,7 +110,6 @@ async function checkCredentialsAreLab(): Promise<void> {
     )
   }
 
-  // eslint-disable-next-line no-console
   console.log(`[E2E health check] OK — las credenciales pertenecen a la org "${LAB_ORG}".`)
 }
 

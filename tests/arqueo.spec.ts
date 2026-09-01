@@ -13,7 +13,6 @@ const PRODUCT = 'Lab Coctel'
 const PRICE = 18000
 
 const SUFFIX = Date.now().toString().slice(-6)
-const parseCOP = (t: string) => Number(t.replace(/[^\d]/g, ''))
 
 // ── Supabase directo (lectura del snapshot con RLS del owner) ──────────
 function loadEnv(path: string) {

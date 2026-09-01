@@ -14,7 +14,6 @@ import { closeShiftIfOpen, openShiftIfClosed } from './helpers/shift'
 // ============================================================================
 
 const SUFFIX = Date.now().toString().slice(-6)
-const parseCOP = (t: string) => Number(t.replace(/[^\d]/g, ''))
 
 // ── Supabase directo ────────────────────────────────────────────────────────
 function loadEnv(path: string) {
@@ -147,7 +146,6 @@ async function voidRpc(client: SupabaseClient, orderId: string, reason = 'error 
 
 // ── Fixtures (creados en el setup, reutilizados) ────────────────────────────
 let P_SIMPLE = ''   // simple + tracking, precio 5000
-let P_NOTRK = ''    // simple SIN tracking, precio 7000
 let P_INSUMO = ''   // insumo simple + tracking (para el extra vinculado)
 let EXTRA = ''      // extra vinculado a P_INSUMO, asignado a P_SIMPLE
 let COCTEL = ''     // seed: compuesto → 1 Lab Vaso
@@ -196,7 +194,6 @@ test.describe.serial('Anulación de ventas', () => {
       return data!.id as string
     }
     P_SIMPLE = await mk(`AV Simple ${SUFFIX}`, 5000, true, 60)
-    P_NOTRK = await mk(`AV NoTrack ${SUFFIX}`, 7000, false)
     P_INSUMO = await mk(`AV Insumo ${SUFFIX}`, 0, true, 60)
     EXTRA = (await c.from('extras').insert({ sede_id: SEDE, name: `AV ExtraLinked ${SUFFIX}`, price: 3000, linked_product_id: P_INSUMO, is_active: true }).select('id').single()).data!.id as string
     await c.from('product_extras').insert({ product_id: P_SIMPLE, extra_id: EXTRA })

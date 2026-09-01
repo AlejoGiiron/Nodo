@@ -52,8 +52,23 @@ async function tokenDe(c: SupabaseClient): Promise<string> {
   return data.session!.access_token
 }
 
+/**
+ * Forma de la respuesta de la Edge Function. Es la ÚNICA descripción tipada de
+ * ese contrato de este lado: la función corre en Deno, fuera de `tsc`, así que
+ * nada cruza los dos extremos automáticamente (ver el corolario de los strings
+ * en CLAUDE.md). Si la función cambia su cuerpo, esto NO se entera solo.
+ */
+interface RespuestaCrearUsuario {
+  error?: string
+  success?: boolean
+  user_id?: string
+}
+
 /** Invoca la Edge Function y devuelve status + cuerpo parseado. */
-async function llamar(token: string, body: unknown): Promise<{ status: number; body: any }> {
+async function llamar(
+  token: string,
+  body: unknown,
+): Promise<{ status: number; body: RespuestaCrearUsuario | null }> {
   const res = await fetch(`${URL()}/functions/v1/${FN()}`, {
     method: 'POST',
     headers: {
@@ -63,7 +78,7 @@ async function llamar(token: string, body: unknown): Promise<{ status: number; b
     },
     body: JSON.stringify(body),
   })
-  let parsed: any = null
+  let parsed: RespuestaCrearUsuario | null = null
   try { parsed = await res.json() } catch { /* sin cuerpo */ }
   return { status: res.status, body: parsed }
 }
@@ -195,7 +210,7 @@ test('alta completa en UN request: role_id Y organization_id correctos', async (
   const { data: perfil, error } = await owner
     .from('profiles')
     .select('id, email, role, role_id, organization_id, sede_id, is_active')
-    .eq('id', body.user_id)
+    .eq('id', body!.user_id!)
     .single()
   expect(error).toBeNull()
 
