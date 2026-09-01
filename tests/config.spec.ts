@@ -4,10 +4,12 @@ import { loginAsOwner } from './helpers/auth'
 const SUFFIX = Date.now().toString().slice(-6)
 const ROLE = `Rol E2E ${SUFFIX}`
 
-// Secciones visibles para owner (6 base + Sedes + Roles + Extras).
+// Secciones visibles para owner.
+// ⚠️ Salieron 'Cocina', 'Delivery' y 'Notificaciones' con la poda (2026-09-01):
+//    los dos primeros son modulos de bar; el tercero quedo VACIO al irse sus dos
+//    unicos toggles (aviso de delivery y de cocina), asi que se borro entero.
 const SECTIONS = [
-  'Sede', 'Usuarios', 'Sedes', 'Roles y permisos', 'Extras',
-  'Caja', 'Cocina', 'Delivery', 'Notificaciones',
+  'Sede', 'Usuarios', 'Sedes', 'Roles y permisos', 'Extras', 'Caja',
 ]
 
 test.describe('Configuración', () => {
@@ -16,7 +18,10 @@ test.describe('Configuración', () => {
     await page.goto('/configuracion')
 
     for (const label of SECTIONS) {
-      await page.getByRole('button', { name: label }).click()
+      // `exact` NO es opcional: sin el, 'Sede' matchea tambien 'Sedes' y
+      // Playwright aborta por strict mode. Un locator por nombre donde un nombre
+      // es PREFIJO de otro necesita exact, y aca los dos existen a proposito.
+      await page.getByRole('button', { name: label, exact: true }).click()
       // El SectionTitle (h2) de la sección debe renderizar (exact: evita h3 anidados).
       await expect(page.getByRole('heading', { name: label, exact: true })).toBeVisible()
     }

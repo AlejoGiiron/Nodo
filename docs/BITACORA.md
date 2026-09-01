@@ -1288,3 +1288,78 @@ corrida en vez de estabilizarse. **La limpieza no puede depender de que los test
 ⚠️ Y hay una lección de diseño de tests aparte: **`.first()` es un locator sin sujeto.** Funciona
 mientras el orden sea el esperado, y el orden depende de datos que otro spec crea. `pos.spec.ts`
 debería nombrar su producto como hacen los demás.
+
+
+---
+
+## 2026-09-01 · 🔴 El primer defecto del proyecto que SE REALIMENTA A SÍ MISMO
+
+Los defectos que veníamos midiendo eran estáticos: estaban, se encontraban, se arreglaban. **Éste
+crece solo.**
+
+```
+un test falla temprano en un describe.serial
+        ↓
+sus tests de LIMPIEZA (que son los últimos del bloque) se SALTAN
+        ↓
+el laboratorio queda con fixtures activos de esa corrida
+        ↓
+la basura rompe tests de OTROS specs
+        ↓
+que también se llevan puesta su limpieza
+```
+
+**Es realimentación positiva, y explica algo que no habíamos entendido: por qué una suite que "casi
+anda" se DEGRADA corrida a corrida en vez de estabilizarse.** Cada corrida deja el terreno peor que
+la anterior, así que la segunda falla más que la primera **sin que nadie haya tocado el código**.
+
+### Y la degradación se lee como bugs nuevos
+
+Ésta es la parte cara. `pos.spec.ts` fallaba con `expect(total).toBeGreaterThan(0)` → `Received: 0`.
+Eso **parece** un bug del carrito. No lo era: el primer `product-card` de la grilla era
+`AV Insumo 761791`, **precio 0**, residuo de `anular-venta.spec` cuya limpieza se había saltado.
+
+**Medido:** con la purga puesta, `pos.spec.ts` pasó de **5 fallos a 0**, y el `Target crashed` de
+`productos.spec.ts` tampoco se reprodujo. **Seis de los quince fallos originales eran residuo, no
+código.**
+
+### Lo accionable
+
+> **La limpieza de un entorno de pruebas no puede vivir en el camino feliz.**
+> Va al ARRANQUE, no al final: así el estado inicial no depende de que la corrida anterior haya
+> salido bien.
+
+Implementado en `tests/global-setup.ts`, que corre **siempre**: allowlist positiva de prefijos
+(`E2E %`, `AV %`) enumerados grepeando las constantes de los 30 specs, acotada por **UUID** a las
+sedes de LAB, **desactivando** en vez de borrando —lo mismo que hacen los tests de limpieza, sin
+pelear con las FK— y **después** del check de organización, para no tocar nada si las credenciales
+no son las del laboratorio.
+
+⚠️ **Y es RUIDOSA a propósito:** imprime cuántas filas tocó y por tabla, con un aviso extra si pasa
+de 50. *Una purga silenciosa es un objetivo destructivo del que nadie sabe el alcance.* Primera
+corrida real: `9 fixtures viejos desactivados — products=4 categories=2 extras=1 customers=1
+suppliers=1`.
+
+---
+
+## 2026-09-01 · `.first()` es un locator sin sujeto
+
+Aparte del residuo, `pos.spec.ts` tiene un defecto propio que **va a volver a morder aunque el lab
+esté limpio**:
+
+```ts
+await page.getByTestId('product-card').first().click()
+```
+
+**No nombra el producto.** Funciona mientras el orden de la grilla sea el esperado — y ese orden
+depende de datos que **otros specs** crean. Todos los demás specs nombran su producto
+(`filter({ hasText: PRODUCT })`); éste no.
+
+> **Un locator posicional convierte cualquier cambio de orden en un fallo que parece de otra cosa.**
+
+Y "de otra cosa" es literal: el síntoma fue *"el carrito calcula mal el total"*. Ni el mensaje ni el
+locator mencionan el orden, que era la causa. Es la misma familia que el guard de R6 y que la regex
+de `global-setup`: **el error señala un lugar que no es el del defecto.**
+
+⚠️ Queda anotado y **no corregido en esta pasada**: es del spec, no del laboratorio, y el orden
+acordado era residuo primero.
