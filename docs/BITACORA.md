@@ -707,3 +707,46 @@ corre `vite build`, no la suite. Así que nadie estuvo reportando verde sobre un
 **precondición de la deuda #5**: el día que se escriban los checks de árbol, el primero habría dado
 verde sobre un suite al que le faltaba un archivo entero — y ese verde habría sido la evidencia
 fundacional de que "los tests pasan".
+
+
+---
+
+## 2026-09-01 · Quinto caso de la poda, y la primera VARIANTE: lo que sostenía peso estaba en `tests/`
+
+Los cuatro anteriores —turnos, extras, recetas, `waiter_performance`— tenían la misma forma: algo
+**sonaba a bar**, y al enumerar resultó que sostenía peso **en el producto**. La regla se invirtió
+por eso: no se borra salvo que se demuestre que no sostiene nada.
+
+**El quinto es distinto, y por eso vale escribirlo aparte.** `TablesPage` **sí se poda** — esa parte
+de la clasificación era correcta. Lo que sostiene peso es `tests/helpers/tables.ts`, 25 líneas, y
+lo que sostiene son **tres specs de módulos que sobreviven**:
+
+| Spec | Módulo | Llama a `openTableAndAddItems` |
+|---|---|---|
+| `fiado.spec.ts` | **cartera** | :321 |
+| `pago-mixto.spec.ts` | **pagos** | :263 |
+| `vale-descuento.spec.ts` | **descuentos** | :112 |
+
+La mesa era **el camino más corto para dejar una venta armada**, así que specs que no tienen nada
+que ver con mesas la usaban de fixture.
+
+### Qué habría pasado
+
+No es un error de compilación: `tsc` no ve un locator. Los tres specs habrían fallado **al correr**,
+buscando un botón "Abrir mesa" que ya no existe, con un mensaje hablando de un selector — y el
+diagnóstico habría empezado por "se rompió cartera", que es falso.
+
+### 🔴 Lo que agrega a la checklist de poda
+
+La checklist ya tiene la línea `seeds y tests → ¿quién la puebla?`. **Se lee corta.** Este caso dice
+que va leída ancha:
+
+> **¿Quién la usa para LLEGAR a otra cosa?**
+
+Una pieza puede no tener **ningún** consumidor de producto y ser, aun así, el único camino por el
+que otra cosa arma su estado inicial. La dependencia no está en un `import` de `src/`: está en un
+`goto('/mesas')` dentro de un helper de tests.
+
+⚠️ Y el corolario operativo, que ya estaba decidido antes de encontrarlo: el **fixture nuevo va en
+el mismo commit** que borra la pantalla. Dejarlo para después deja la suite roja en el medio, y
+*un rojo permanente esconde a los rojos nuevos* — la lección del día anterior, aplicada.

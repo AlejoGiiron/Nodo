@@ -468,7 +468,8 @@ RLS, RBAC, auth, hooks, patrones de RPC.
 
 ### Orden de poda — 🔴 LA CARGA DE LA PRUEBA ESTÁ INVERTIDA
 
-*Invertida el 2026-08-31 tras 4 de 4 aciertos en contra. Evidencia en `docs/BITACORA.md`.*
+*Invertida el 2026-08-31 tras 4 de 4 aciertos en contra. **5 de 5 al 2026-09-01.** Evidencia en
+`docs/BITACORA.md`.*
 
 **La regla, en una línea: no se borra salvo que se demuestre que no sostiene nada.** Al revés de
 como estaba, que era enumerar qué borrar y confiar en el nombre.
@@ -501,6 +502,13 @@ turnos  → NO se podan. Renombrados a jornada/caja.  ← sostenía peso
 extras  → NO se borran. Se renombran.               ← sostenía peso
 recetas → NO se borran. product_components pasa a bulto→unidad.  ← sostenía peso
 ```
+
+🔴 **El quinto caso es una VARIANTE, y cambia cómo se lee la enumeración.** `TablesPage` sí se
+poda —la clasificación era correcta— pero `tests/helpers/tables.ts` es el **camino de fixture** de
+tres specs de módulos que **sobreviven** (cartera, pagos, descuentos): la mesa era la forma más
+corta de dejar una venta armada. La línea `seeds y tests → ¿quién la puebla?` de la checklist se
+lee corta. **Va leída ancha: ¿quién la usa para LLEGAR a otra cosa?** Una pieza sin consumidor de
+producto puede seguir siendo el único camino por el que otra cosa arma su estado inicial.
 
 ⚠️ **Lo que esta regla NO dice.** No dice "no borres nada": dice que **el que borra tiene que
 mostrar la enumeración**. Un `grep` que vuelve vacío es una demostración válida y barata. Lo que

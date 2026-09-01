@@ -8,8 +8,8 @@ prueba está invertida — no se borra salvo que se demuestre que no sostiene na
 
 ## 0 · Por qué esta poda NO es opcional
 
-Las tres podas anteriores que salieron mal (extras, turnos, recetas) se propusieron por **sonar a
-bar**. Ésta no. El esquema base ya está escrito y **no tiene las columnas**, así que los
+Las cuatro podas anteriores que salieron mal (extras, turnos, recetas, `waiter_performance`) se
+propusieron por **sonar a bar**. Ésta no. El esquema base ya está escrito y **no tiene las columnas**, así que los
 consumidores no están "de más": están **rotos**.
 
 Verificado leyendo `supabase/migrations/`, no el plan:
@@ -25,11 +25,17 @@ Verificado leyendo `supabase/migrations/`, no el plan:
 | `order_items.sent_to_kitchen` | **no existe** |
 | `daily_sales_summary.order_type` | **la vista no tiene esa columna** |
 
-⚠️ **`tsc` NO ve nada de esto.** `src/types/database.types.ts` está **escrito a mano** (R1 punto 5)
-y todavía declara `order_type`, `preparing`, `ready` y la tabla `tables`. El compilador está en
-verde contra un tipo que describe un esquema que ya no existe. **El rojo recién aparece al regenerar
-los tipos después del push** — que es exactamente el orden en que esto va a explotar si no se poda
-antes.
+> ## ⛔ NO LEAS EL VERDE DE ESTA PODA COMO VALIDACIÓN
+>
+> **`tsc` va a dar exit 0 durante toda esta tarea, y va a estar verde por una razón falsa.**
+> `src/types/database.types.ts` está **escrito a mano** (R1 punto 5) y todavía declara
+> `order_type`, `preparing`, `ready` y la tabla `tables`. El compilador no compara contra la base:
+> compara contra ese archivo. **Está validando `src/` contra un esquema que ya no existe.**
+>
+> El rojo real aparece **al regenerar los tipos después del push**, no antes. Cualquier "quedó
+> verde" que se diga en el medio de esta poda mide la coherencia de `src/` con una ficción — es
+> exactamente el corolario de R4: *una verificación que no podía haber salido mal no es una
+> verificación*.
 
 ---
 
@@ -77,8 +83,15 @@ más corto para dejar una venta armada.
 no existe.** No fallan al compilar: fallan al correr, buscando un botón "Abrir mesa" que ya no está
 — y el mensaje va a hablar de un locator, no de la poda.
 
-⚠️ Es literalmente el patrón de las cuatro podas anteriores: **la etiqueta era de bar, la pieza
-sostenía peso.** Acá la pieza no es la pantalla —esa sí se va— es el **camino de fixture**.
+🔴 **QUINTO CASO del patrón, y una VARIANTE que las cuatro anteriores no tenían.** En turnos,
+extras, recetas y `waiter_performance`, la pieza que sostenía peso estaba **en el producto**. Acá
+la pantalla **sí se va** —esa parte de la clasificación era correcta—: lo que sostiene peso es el
+**camino de fixture**, y vive en `tests/`.
+
+**Lo que agrega al procedimiento de poda:** la lista de "¿qué cuelga de esto?" incluye
+`seeds y tests`, pero se lee como *"¿quién la puebla?"*. Este caso dice que hay que leerla más
+ancha: **¿quién la usa para LLEGAR a otra cosa?** Una pantalla puede no tener ningún consumidor de
+producto y ser, aun así, el único camino por el que tres specs vivos arman su estado inicial.
 
 ### 2.2 · `src/lib/supabase-helpers.ts` — bloque `// --- Tables ---` (~281–335)
 
@@ -101,11 +114,17 @@ sostenía peso.** Acá la pieza no es la pantalla —esa sí se va— es el **ca
 
 ## 3 · 🔴 Lo que la lista original NO tenía — aparecido al enumerar
 
-Cuarto caso del patrón "aparece al ejecutar/enumerar, no al planificar". La lista de la que
+Sexto caso del patrón "aparece al ejecutar/enumerar, no al planificar/leer" — el quinto fue la
+regex de `global-setup`. La lista de la que
 veníamos era *"KitchenPage, DeliveryPage, mucho de TablesPage, más POSPage/routing/nav/3 hooks"*.
 Faltaba esto:
 
 ### 3.1 · Reportes rotos por `order_type`, no por mesas
+
+> ✅ **DECIDIDO: la dimensión "Canal" NO se saca — se RE-VALORIZA.** Con `order_type` vivo deja de
+> ser una etiqueta heredada y pasa a ser la pregunta que el cliente va a querer hacer: **cuánto
+> entra por mostrador contra cuánto por WhatsApp.** Sede y vendedor son dimensiones **distintas**,
+> no reemplazos. Lo que hay que arreglar es que la **vista** perdió la columna, no la pantalla.
 
 `daily_sales_summary` **ya no tiene `order_type`** en el esquema base. Rompe a:
 
@@ -163,7 +182,19 @@ que revisarla en la misma pasada, no después.
 
 ---
 
-## 6 · 🔴 Lo que NO decido solo — cuatro preguntas
+## 6 · ✅ DECIDIDO (2026-09-01) — las cuatro, resueltas
+
+1. **`order_type` SE QUEDA.** El argumento que ganó es el de `unit_cost`: *"pedido por
+   WhatsApp/teléfono"* está en el **alcance firmado**, y eso es un canal. Borrar la columna es
+   barato hoy; **un canal que no se registró es irrecuperable** — re-agregarla no rellena las
+   ventas anteriores. Se queda la **columna**; se van los **valores de bar**.
+   ⛔ El **allowlist de valores** es decisión de producto y está en revisión (ver §8).
+2. **"Canal" en Reportes se RE-VALORIZA**, no se saca. Ver 3.1.
+3. **El fixture nuevo va en el MISMO commit** que borra `TablesPage`. La suite no queda roja ni un
+   commit — *un rojo permanente esconde a los rojos nuevos*.
+4. **Orden de commits aprobado** tal como estaba propuesto.
+
+### Lo que era esto antes de decidirse
 
 1. **El fixture de los tres specs vivos.** ¿Se reemplaza `openTableAndAddItems` por un helper
    equivalente sobre el POS —`abrirVentaConItems()`— **en el mismo commit** que borra `TablesPage`?
@@ -195,3 +226,79 @@ que revisarla en la misma pasada, no después.
 - **`supabase/_heredado/`** no se toca: es registro de procedencia.
 - El **renombre `restaurant_id` → `sede_id`** en `src/` es otro trabajo, con su propia enumeración
   (R1 punto 7 dice que va **después** de podar, justamente para tener menos ocurrencias).
+
+
+---
+
+## 8 · ⛔ EN REVISIÓN — el allowlist de `order_type` para Nodo
+
+*Levantado el 2026-09-01, después de que la decisión "la columna se queda" quedara tomada. Esto es
+lo único de este documento que **no** está decidido.*
+
+### 8.1 · Qué hay hoy — enumerado, no recordado
+
+```sql
+-- supabase/_heredado/schema.sql:20
+create type public.order_type as enum ('dine_in', 'takeaway', 'delivery');
+```
+
+**Tres valores. Ni uno más.** Uso en todo el repo: `'delivery'` ×20 · `'takeaway'` ×19 ·
+`'dine_in'` ×14.
+
+Y hay **un solo lugar del producto que escribe el valor**: `POSPage.tsx:900` (`type: orderType`).
+Los otros dos escritores se van con la poda — `TablesPage.tsx:212` (`'dine_in'` fijo) y el seed de
+`anular-venta.spec.ts:116`.
+
+⚠️ **La columna se llama `orders.type`, no `orders.order_type`.** `order_type` es el nombre del
+*tipo*. Lo anoto porque los tres greps que hice buscando `order_type` **no encontraban la columna**.
+
+📋 **Estado en el esquema base: no existe nada.** Ni el tipo ni la columna. Y la decisión de
+sacarlo está escrita en **tres lugares** que hay que revertir en la misma pasada:
+`20260831120000_extensiones_y_tipos.sql:80` · `20260831120600_ventas.sql:12` ·
+`20260831121400_vistas.sql:31`. Las migraciones **no se aplicaron todavía**, así que se editan;
+R5 empieza a regir después del push.
+
+### 8.2 · Propuesta
+
+| Valor | Qué significa | Por qué |
+|---|---|---|
+| `mostrador` | el cliente está físicamente en el mostrador | el caso dominante; reemplaza a `takeaway` |
+| `whatsapp` | el pedido entra por WhatsApp | **está en el alcance firmado** |
+| `telefono` | el pedido entra por teléfono | **está en el alcance firmado** |
+
+**Tres valores, igual que hoy.** No es coincidencia buscada: es que el eje **no cambió de forma**,
+cambió de contenido. Sigue siendo *"¿por dónde entró el pedido?"*.
+
+### 8.3 · 🔴 `preventa` NO entra, y quiero que mires este argumento
+
+Estaba en la lista de candidatos y **lo dejo afuera a propósito**, porque no es del mismo eje:
+
+> `mostrador` / `whatsapp` / `telefono` responden **por dónde entró** el pedido.
+> `preventa` responde **quién lo originó**.
+
+Un preventista que toma el pedido **por WhatsApp** obliga a elegir uno de los dos, y cualquiera de
+las dos respuestas pierde información. Es la forma clásica de mezclar dos dimensiones en una
+columna: el día que quieras cruzarlas, el dato **ya no está**.
+
+Y la otra punta ya existe: **`orders.created_by`** dice quién cargó el pedido. Si preventa necesita
+distinguirse, es un atributo del **usuario o del rol**, no del canal.
+
+⚠️ Si preferís que entre igual, entra — pero entonces la columna deja de ser "canal" y pasa a ser
+"origen", y el nombre tiene que decirlo.
+
+### 8.4 · Tres decisiones de forma que van con el allowlist
+
+1. **`text` + `CHECK`, NO enum.** Es la lección de R1 punto 3, ya pagada: Postgres **no tiene
+   `ALTER TYPE ... DROP VALUE`**. Ampliar un CHECK es un `drop`/`add constraint` trivial; sacar un
+   valor de un enum, no. Los canales van a crecer. El esquema base ya eligió esto dos veces
+   (`subscription_status`, `cash_movements.categoria`).
+2. **Renombrar la columna `orders.type` → `orders.canal`.** `type` no dice nada y ya hay tres
+   columnas `type` en el esquema. Va en la misma pasada porque **todos sus consumidores se tocan
+   igual** en el commit (c): el costo marginal es cero, y hacerlo después es otra enumeración.
+3. **`not null` y SIN default.** Un default —`'mostrador'`— convierte un insert que se olvidó del
+   canal en un dato **plausible y falso**, justo en la columna que existe para medir canales.
+   Perfil de R7. Hay **un solo escritor**, así que exigirlo cuesta una línea y convierte la omisión
+   en un error ruidoso. Es el mismo criterio que dejó `profiles.role` sin default.
+4. **Sin `'otro'`.** En `cash_movements.categoria` sí lo pusimos, con detalle obligatorio, porque
+   ahí el universo era abierto. Acá son tres valores y ampliar es trivial: **`'otro'` solo crearía
+   un balde donde se esconderían los canales reales** en vez de nombrarlos.
