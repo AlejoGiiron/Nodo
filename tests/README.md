@@ -27,7 +27,7 @@ roles, usuarios y catálogo.
 las cuentas es `@nodo.test`, no `@gvento.com`: éstas se crean para Nodo, así que
 reusar el dominio de Vento solo crearía ambigüedad sobre a quién pertenecen.
 
-La semilla está en **`supabase/lab-seed.sql`** (idempotente: se puede re-aplicar
+La semilla está en **`supabase/lab-seed-a.sql`** y **`lab-seed-b.sql`** (idempotentes: se pueden re-aplicar
 sin duplicar). **Ventaja de usar una org en vez de un proyecto separado:** cada
 migración nueva se aplica a la misma BD, así que **LAB siempre está al día** con
 el esquema; no hay que mantener un segundo proyecto sincronizado.
@@ -116,13 +116,22 @@ cp .env.test.example .env.test
 🔴 **El orden importa, y el seed lo hace cumplir.** Las cuentas de Auth se crean
 PRIMERO; el seed no las crea, las **descubre por email**.
 
-1. **Crear las cuentas** en Studio → Authentication → Users → *Add user*, con
-   **Auto Confirm User** activado (sin eso no pueden loguear):
-   `owner.test@nodo.test` y `cajero.test@nodo.test`.
-2. Aplicar **`supabase/lab-seed.sql`** (Studio → SQL Editor). Es idempotente:
-   crea o reconcilia la org `LAB`, su sede, los roles de sistema
-   —vía `seed_system_roles`, sin enumerar permisos—, los profiles con sus
-   `user_stores`, la categoría y los tres productos.
+🔴 **Son TRES pasos, no dos, y el orden no es negociable — es un arranque en
+frío.** `handle_new_user` exige `sede_id` en el `user_metadata` de la cuenta, y
+la sede la crea el seed: no se puede crear la cuenta antes de la sede, ni los
+perfiles antes de la cuenta. Ver la deuda #36.
+
+1. **`supabase/lab-seed-a.sql`** (Studio → SQL Editor). Crea la org `LAB`, la
+   sede y los roles de sistema —vía `seed_system_roles`, sin enumerar permisos—
+   e **imprime el UUID de la sede** con el metadata exacto a pegar.
+2. **Crear las cuentas** en Studio → Authentication → Users → *Add user*, con
+   **Auto Confirm User** activado (sin eso no pueden loguear) y el
+   **User Metadata** que imprimió el paso 1:
+   `owner.test@nodo.test` (`role: admin`) y `cajero.test@nodo.test`
+   (`role: cashier`).
+3. **`supabase/lab-seed-b.sql`**. Reconcilia los `role_id` de RBAC —lo único
+   que el trigger no puede saber—, los `user_stores`, la categoría, los tres
+   productos y la receta.
 
 ⚠️ **Si falta una cuenta, el seed FALLA en rojo y revierte todo.** No avisa y
 sigue: un aviso debajo de un banner verde de "Success" se lee como éxito, y un
@@ -134,7 +143,7 @@ LAB a medias es peor que ninguno.
    credenciales son de la org `LAB` antes de empezar.
 
 > Si alguna vez necesitas cuentas de prueba nuevas, créalas en Auth (o desde la
-> app) y vuelve a ejecutar `lab-seed.sql` adaptando los UUIDs de la cabecera.
+> app) y vuelve a ejecutar `lab-seed-b.sql` (no hace falta tocar UUIDs: los descubre por email).
 
 ## Correr los tests
 

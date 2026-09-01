@@ -48,8 +48,9 @@ CLI y sin `psql`, no tengo ningún camino a la base.
 
 ## 3 · El seed del laboratorio — 🔴 esto es lo más caro de la lista
 
-`supabase/lab-seed.sql` **no existe**: está en `supabase/_heredado/lab-seed.sql`, **618 líneas**, y
-su README dice que nada de ahí aplica. Nombra el esquema viejo:
+✅ **RESUELTO el 2026-09-01** con `lab-seed-a.sql` + `lab-seed-b.sql`. Lo que sigue es el registro
+de por qué el heredado no servía. Estaba en `supabase/_heredado/lab-seed.sql`, **618 líneas**, y
+nombraba el esquema viejo:
 
 | Nombra | Ocurrencias |
 |---|---|
@@ -119,7 +120,7 @@ la lista de fallos.
 | 7 | **Timeouts / flakes en el primer arranque** | la base está vacía y fría; los `refetchInterval` y los `waitFor` se calibraron contra el lab de Vento, con datos | baja |
 
 ⚠️ **Lo que esta lista NO cubre, dicho para que no se lea como exhaustiva:** todo lo que dependa de
-que el seed del lab quedó bien. Si `lab-seed.sql` siembra algo distinto de lo que los specs
+que el seed del lab quedó bien. Si el seed siembra algo distinto de lo que los specs
 esperan, los fallos van a parecer bugs de la aplicación y van a ser del seed.
 
 ---
@@ -128,7 +129,7 @@ esperan, los fallos van a parecer bugs de la aplicación y van a ser del seed.
 
 1. `.env` y `.env.test` (los tenés vos; yo no los toco).
 2. Confirmar que las cuentas del lab sirven contra el proyecto de **Nodo**.
-3. **Reescribir `lab-seed.sql`** contra el esquema nuevo — el trabajo grande.
+3. ✅ **`lab-seed-a.sql` + `lab-seed-b.sql`** escritos contra el esquema nuevo. Van en DOS pasos con la creación de cuentas en el medio: arranque en frío, ver deuda #36.
 4. Correr la suite y **leer los artefactos antes de re-correr** (R8).
 5. Decidir el gating negativo sin `mozo`.
 

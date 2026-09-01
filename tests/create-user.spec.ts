@@ -237,7 +237,7 @@ test('limpieza: borrar el usuario de prueba', async () => {
   // Borrar de auth.users EXIGE service role: la anon key no puede, y profiles
   // no tiene policy de DELETE. Si E2E_SERVICE_ROLE_KEY está definida en
   // .env.test se usa; si no, el test avisa y NO falla — la purga queda para
-  // lab-seed.sql (paso 9).
+  // lab-seed-b.sql (la purga del final).
   //
   // ⚠️  OJO AL PONER ESA KEY: la BD es UNA sola. El service role de este
   //     proyecto es también el de G-10 y Salchimelo, no solo el del lab.
@@ -245,7 +245,7 @@ test('limpieza: borrar el usuario de prueba', async () => {
   if (!key) {
     console.warn(
       `[create-user.spec] Sin E2E_SERVICE_ROLE_KEY: queda el usuario ${NUEVO_EMAIL}. ` +
-      'Se purga al correr lab-seed.sql (paso 9).',
+      'Se purga al correr lab-seed-b.sql.',
     )
     test.skip(true, 'sin service role: la purga la hace lab-seed')
     return
