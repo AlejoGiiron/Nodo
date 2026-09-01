@@ -211,13 +211,24 @@ en Vento.
 6. **Tabla de columnas de `src/lib/sentry.test.ts` vs el esquema real.** En Vento son 74
    entradas. Agregar una columna al esquema obliga a agregarla ahí, en la misma sesión.
 
-7. **Nombre de la entidad sede — `sede_id`. DECIDIDO el 2026-08-31.** En Vento no se renombra:
-   `restaurant_id` × 1.010 en 77 archivos, y allá "restaurant" es **cierto**. Acá sería **falso**, y
-   un nombre falso dirige mal. Además el repo heredado **ya usa la palabra "sede"**: el permiso
-   `sedes.gestionar` existe en el catálogo y R6 dice textualmente *"la organización de una sede es
-   la misma la mire quien la mire"*. Renombrar no inventa vocabulario: alinea la columna con la
-   palabra que el proyecto ya usa. Se ejecuta **después de podar** (menos ocurrencias) y en un
-   commit solo. Criterio de éxito: el conteo de `restaurant_id` llega a **cero**.
+7. **Nombre de la entidad sede — `sede_id`. ✅ CERRADO el 2026-09-01.** En Vento no se renombra:
+   allá "restaurant" es **cierto**. Acá sería **falso**, y un nombre falso dirige mal.
+   📋 **Estado, y cómo reconfirmarlo:** `grep -rn restaurant_id src/ tests/ supabase/functions/` →
+   **cero**. `src/` y `tests/` llegaron a cero **sin una pasada de renombre**: se fueron alineando
+   al escribir el esquema base y los consumidores del grupo 29.
+   🔴 **El criterio "el conteo llega a cero" era INALCANZABLE, y por la misma razón que en la
+   verificación de marca.** `supabase/_heredado/` tiene **610 ocurrencias** y **no se tocan**: es
+   registro de procedencia, y renombrarlo haría que un archivo archivado describiera un esquema que
+   nunca tuvo. Las menciones en `docs/` y en este archivo son **históricas** —dicen qué se
+   renombró— y también se quedan. **El criterio correcto es por LISTA:** cero en el código **ejecutable**
+   (`src/`, `tests/`, `supabase/functions/`), y todo lo demás enumerado como mención histórica
+   legítima. Las dos que quedan en `supabase/migrations/` son **comentarios** que nombran el
+   nombre viejo —uno dice que src ya está en cero, el otro que `get_my_sede_id` es ex
+   `get_my_restaurant_id`—: procedencia, no código.
+   ⚠️ **Lo que el renombre destapó, que era lo caro:** la Edge Function `create-user` seguía
+   exigiendo `restaurant_id` mientras `src` y los tests mandaban `sede_id`. **Crear un usuario
+   estaba roto de punta a punta** y ningún verificador lo veía —una Edge Function corre en Deno,
+   fuera de `tsc` y de ESLint—. Ver el corolario de los strings.
 
 8. **🔴 Costo unitario grabado en la línea de venta — DECIDIDO el 2026-08-31.** El costo se
    **congela en el momento de vender**, no se calcula después leyendo el costo actual del producto.

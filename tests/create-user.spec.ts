@@ -82,7 +82,7 @@ let cajero: SupabaseClient
 let OWNER_ID = ''
 let SEDE = ''
 let ORG = ''
-let ROL_MOZO = ''
+let ROL_NO_OWNER = ''
 let cajeroActivoOriginal = true
 
 test.beforeAll(async () => {
@@ -96,9 +96,12 @@ test.beforeAll(async () => {
   ORG = p.organization_id as string
 
   // Rol RBAC que se le asignará al usuario nuevo (uno cualquiera, no-owner).
+  // Era 'mozo' hasta el 2026-09-01: ese rol se fue con el catálogo propio de Nodo
+  // (deuda #23). `.single()` sobre cero filas TIRA, así que esto reventaba el
+  // beforeAll entero y con él todo el archivo.
   const { data: rol } = await owner.from('roles')
-    .select('id, name').eq('organization_id', ORG).eq('name', 'mozo').single()
-  ROL_MOZO = rol!.id as string
+    .select('id, name').eq('organization_id', ORG).eq('name', 'cajero').single()
+  ROL_NO_OWNER = rol!.id as string
 
   const cid = (await cajero.auth.getUser()).data.user!.id
   cajeroActivoOriginal = (await owner.from('profiles')
@@ -112,8 +115,8 @@ test('cajero SIN usuarios.gestionar → 403', async () => {
     email: `e2e-nope-${SUFFIX}@gvento.test`,
     password: NUEVO_PASS,
     full_name: 'No Debe Existir',
-    role: 'waiter',
-    role_id: ROL_MOZO,
+    role: 'cashier',
+    role_id: ROL_NO_OWNER,
     sede_id: SEDE,
   })
 
@@ -136,8 +139,8 @@ test('llamante DESACTIVADO → 403 con el mensaje de is_active', async () => {
       email: `e2e-nope2-${SUFFIX}@gvento.test`,
       password: NUEVO_PASS,
       full_name: 'No Debe Existir 2',
-      role: 'waiter',
-      role_id: ROL_MOZO,
+      role: 'cashier',
+      role_id: ROL_NO_OWNER,
       sede_id: SEDE,
     })
 
@@ -154,7 +157,7 @@ test('role_id inexistente → 400 y NO queda cuenta colgada', async () => {
     email,
     password: NUEVO_PASS,
     full_name: 'Rol Invalido',
-    role: 'waiter',
+    role: 'cashier',
     role_id: crypto.randomUUID(),
     sede_id: SEDE,
   })
@@ -180,8 +183,8 @@ test('alta completa en UN request: role_id Y organization_id correctos', async (
     email: NUEVO_EMAIL,
     password: NUEVO_PASS,
     full_name: `E2E CreateUser ${SUFFIX}`,
-    role: 'waiter',
-    role_id: ROL_MOZO,
+    role: 'cashier',
+    role_id: ROL_NO_OWNER,
     sede_id: SEDE,
   })
 
@@ -197,7 +200,7 @@ test('alta completa en UN request: role_id Y organization_id correctos', async (
   expect(error).toBeNull()
 
   // 1. El rol RBAC vino asignado del servidor, sin segundo paso del navegador.
-  expect(perfil!.role_id, 'el usuario nace CON rol (antes lo asignaba el browser)').toBe(ROL_MOZO)
+  expect(perfil!.role_id, 'el usuario nace CON rol (antes lo asignaba el browser)').toBe(ROL_NO_OWNER)
 
   // 2. organization_id derivado de la sede por handle_new_user. ESTE es el
   //    cierre del círculo: el caso Angie/Katherine (perfil sin organización, y
@@ -207,7 +210,7 @@ test('alta completa en UN request: role_id Y organization_id correctos', async (
   // 3. Coherencia del resto.
   expect(perfil!.sede_id).toBe(SEDE)
   expect(perfil!.is_active).toBe(true)
-  expect(perfil!.role).toBe('waiter')
+  expect(perfil!.role).toBe('cashier')
 
   // 4. Y el usuario puede iniciar sesión de verdad.
   expect(await puedeLoguear(NUEVO_EMAIL, NUEVO_PASS)).toBe(true)

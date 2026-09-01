@@ -32,10 +32,10 @@ serve(async (req) => {
     const { data: { user }, error: authErr } = await caller.auth.getUser()
     if (authErr || !user) return json({ error: 'No autorizado' }, 401)
 
-    // Verifica que el llamante esté ACTIVO y tenga permiso sobre el restaurante.
+    // Verifica que el llamante esté ACTIVO y tenga permiso sobre la sede.
     const { data: callerProfile, error: profErr } = await admin
       .from('profiles')
-      .select('is_active, restaurant_id, organization_id')
+      .select('is_active, sede_id, organization_id')
       .eq('id', user.id)
       .single()
 
@@ -58,20 +58,20 @@ serve(async (req) => {
 
     // Parsea y valida el cuerpo. `role_id` (RBAC) es opcional por compatibilidad
     // con llamantes viejos, pero la UI siempre lo manda.
-    const { email, password, full_name, role, role_id, restaurant_id } = await req.json()
+    const { email, password, full_name, role, role_id, sede_id } = await req.json()
 
-    if (!email || !password || !full_name || !role || !restaurant_id)
+    if (!email || !password || !full_name || !role || !sede_id)
       return json({ error: 'Faltan campos requeridos' }, 400)
 
     if (password.length < 8)
       return json({ error: 'La contraseña debe tener mínimo 8 caracteres' }, 400)
 
-    if (!['admin', 'cashier', 'waiter'].includes(role))
+    if (!['admin', 'cashier'].includes(role))
       return json({ error: 'Rol inválido' }, 400)
 
-    // El restaurant_id debe coincidir con el del llamante
-    if (restaurant_id !== callerProfile.restaurant_id)
-      return json({ error: 'No tienes permiso sobre ese restaurante' }, 403)
+    // La sede debe coincidir con la del llamante.
+    if (sede_id !== callerProfile.sede_id)
+      return json({ error: 'No tienes permiso sobre esa sede' }, 403)
 
     // Validación del rol RBAC ANTES de crear la cuenta: si el rol es inválido
     // conviene rechazar sin haber creado nada, y así la compensación de abajo
@@ -101,7 +101,7 @@ serve(async (req) => {
       email,
       password,
       email_confirm: true,
-      user_metadata: { full_name, role, restaurant_id },
+      user_metadata: { full_name, role, sede_id },
     })
 
     if (createErr) return json({ error: createErr.message }, 400)

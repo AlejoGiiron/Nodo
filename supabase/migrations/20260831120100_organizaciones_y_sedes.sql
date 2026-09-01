@@ -17,7 +17,7 @@
 -- las sedes (restaurants)"—. Este archivo alinea la tabla con la palabra que el
 -- proyecto ya usa.
 --
--- ⚠️ src/ sigue diciendo restaurant_id (1.017 ocurrencias al 2026-08-31). El
+-- ✅ src/ y tests/ dicen `sede_id`: CERO ocurrencias de restaurant_id (2026-09-01). El
 --    arbol queda inconsistente hasta la pasada de renombre (deudas #3 y #21),
 --    que ahora tiene un criterio de exito limpio: el conteo en src/ llega a
 --    CERO. Nada esta aplicado, asi que no hay ruptura en runtime.

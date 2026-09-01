@@ -836,3 +836,58 @@ dónde salen estos dos?"— en vez de una sensación.
 ⚠️ Y funciona en las dos direcciones. Medir **menos** de lo predicho es cobertura que se perdió sin
 querer; medir **más** es un caso que no sabías que existía. Las dos son información, y las dos se
 pierden si el único criterio es que el exit code sea 0.
+
+
+---
+
+## 2026-09-01 · El renombre `restaurant_id` → `sede_id`: el conteo previo cambió la tarea
+
+**Conteo ANTES, por zona** — tomado antes de tocar nada, que es lo que hizo aparecer el hallazgo:
+
+| Zona | Antes | Después | Qué es |
+|---|---|---|---|
+| `src/` | **0** | 0 | ya estaba en cero |
+| `tests/` | **0** | 0 | ya estaba en cero |
+| `supabase/functions/` | **6** | **0** | 🔴 código vivo y roto |
+| `supabase/migrations/` | 2 | 2 | comentarios que nombran el nombre viejo |
+| `supabase/_heredado/` | 610 | **610** | registro de procedencia, NO se toca |
+| `docs/` + `CLAUDE.md` | 29 | 31 | menciones históricas (subieron: ahora se documenta el cierre) |
+
+### El hallazgo: `src/` y `tests/` ya estaban en cero, sin una pasada de renombre
+
+R1 punto 7 describía un trabajo de **1.010 ocurrencias en 77 archivos**. No quedaba ninguna. Se
+fueron alineando solas al **escribir el esquema base** y al migrar los consumidores del grupo 29 —
+o sea que el renombre nunca fue una tarea, fue una **consecuencia** de haber escrito el esquema con
+el nombre correcto desde el principio.
+
+⚠️ Y por eso el conteo previo valía: **la tarea que quedaba no era la que estaba planificada.**
+
+### Lo caro estaba en la única zona que ningún verificador mira
+
+`supabase/functions/create-user/index.ts` seguía exigiendo `restaurant_id`:
+
+- `src` (helper + `useUsers`) manda **`sede_id`** ✅
+- `tests/create-user.spec.ts` manda **`sede_id`** ✅
+- la Edge Function **exigía `restaurant_id`** y devolvía `400 Faltan campos requeridos` ❌
+- el trigger `handle_new_user` lee **`sede_id`** del `user_metadata` ✅ y falla ruidoso si no está
+
+**Crear un usuario estaba roto de punta a punta.** Y nadie lo veía: una Edge Function corre en Deno,
+**fuera de `tsc` y de ESLint**, y el cuerpo de la llamada es un objeto que ningún compilador cruza
+entre emisor y receptor. Es el cuarto caso del corolario de los strings, escrito esta misma sesión.
+
+🔴 **Dos defectos más en el mismo archivo, del mismo tipo:** la allowlist de roles aceptaba
+`'waiter'`, valor que el enum `user_role` ya no tiene — habría pasado la validación y reventado
+después, en el trigger. Y `tests/create-user.spec.ts` resolvía el rol RBAC por
+`.eq('name', 'mozo').single()`: **`.single()` sobre cero filas tira**, así que el `beforeAll`
+reventaba y con él **el archivo entero**.
+
+### El criterio "el conteo llega a cero" era inalcanzable
+
+Igual que en la verificación de marca: `supabase/_heredado/` tiene **610 ocurrencias** y no se
+tocan —renombrarlas haría que un archivo archivado describiera un esquema que nunca tuvo—, y las de
+`docs/` son históricas. **Cero es imposible por construcción, así que como criterio miente
+siempre.**
+
+**El criterio quedó por LISTA:** cero en el código **ejecutable** (`src/`, `tests/`,
+`supabase/functions/`) — ✅ cumplido — y todo lo demás enumerado como mención histórica legítima.
+Segunda vez que un criterio de "conteo a cero" se cae por la misma razón; ya es la forma, no el caso.
