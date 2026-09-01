@@ -63,7 +63,9 @@ const SECTIONS: { id: SectionId; label: string; icon: LucideIcon; permission?: s
   { id: 'notificaciones', label: 'Notificaciones', icon: Bell },
 ]
 
-const DEFAULT_CASH_OUT_REASONS = ['Mercado', 'Domicilio', 'Servicios', 'Otro']
+// Sugerencias de DETALLE, no categorías (ver la sección de Caja).
+// 'Domicilio' sale: G-Nexo no tiene reparto — el cliente carga y se lleva.
+const DEFAULT_CASH_OUT_REASONS = ['Mercado', 'Servicios', 'Papelería', 'Transporte']
 const DEFAULT_STATIONS = ['Cocina fría', 'Cocina caliente', 'Barra']
 
 // ─── Shared UI helpers ────────────────────────────────────────────
@@ -749,11 +751,15 @@ function SectionCaja() {
     <div>
       <SectionTitle>Caja</SectionTitle>
 
-      {/* Motivos de egreso */}
+      {/* Sugerencias de DETALLE para egresos.
+          🔴 NO son categorías. La categoría del movimiento (gasto · retiro · otro)
+          es FIJA en el esquema y no se edita: si cada sede inventara las suyas,
+          los reportes entre sedes y entre meses dejarían de ser comparables. */}
       <div style={{ marginBottom: 32 }}>
-        <h3 style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', marginBottom: 4 }}>Motivos de egreso</h3>
+        <h3 style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', marginBottom: 4 }}>Sugerencias de detalle</h3>
         <p style={{ fontSize: 12, color: '#64748b', marginBottom: 16 }}>
-          Aparecen como opciones rápidas al registrar egresos de caja.
+          Autocompletan el campo Detalle al registrar un egreso. NO cambian la
+          categoría del movimiento, que es fija en el esquema.
         </p>
         <EditableList items={localReasons} onChange={setLocalReasons} placeholder="Nuevo motivo..." />
       </div>
