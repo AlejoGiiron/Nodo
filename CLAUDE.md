@@ -284,6 +284,37 @@ generados**, el archivo que acabás de escribir **no es el que git materializa**
 son distintos. Un check de artefacto se valida **después de un checkout**, no en la sesión que lo
 creó. El defecto del CRLF mordió al parche que lo documentaba, en el mismo turno.
 
+
+**🔴 COROLARIO — POR QUÉ LEER NO ALCANZA.** R4 dice *qué* hacer. Esto dice *por qué*, que es lo
+que hace que se aplique cuando nadie está mirando:
+
+> **La coincidencia entre dos declaraciones no es evidencia: es la misma afirmación escrita dos
+> veces.**
+
+Dos fuentes que coinciden **se leen como confirmación**, y esa es la trampa. Si las dos son
+declaraciones —un documento, un comentario, un `.env.example`, un tipo escrito a mano— coincidir no
+prueba nada sobre el mundo: **ninguna de las dos ejecuta**. Se confirman entre sí con la misma
+autoridad con que se equivocan juntas.
+
+Y hay algo peor que la falta de evidencia: **leer una declaración falsa la confirma.** Cada lectura
+la deja igual de intacta y un poco más creíble, porque ahora "ya la revisamos". Un documento no se
+audita releyéndolo; se audita ejecutando contra él.
+
+**Caso medido (2026-08-31).** `CLAUDE.md` y `.env.example` declaraban `VITE_GNEXO_SUPABASE_URL`
+mientras el código leía `VITE_GVENTO_SUPABASE_URL`. **Dos documentos de acuerdo entre sí, cinco
+días**, leídos muchas veces —para escribir el esquema, para citar R1, para el runbook— y ninguna
+lectura lo destapó. Lo destapó **enumerar qué consume el código y comparar**. Un `.env` escrito
+siguiendo la documentación no conectaba con nada.
+
+**El corolario del corolario, que es lo accionable:** una verificación **que no podía haber salido
+mal no es una verificación**. Antes de creerle a un verde, preguntá cómo se vería el rojo. Si no
+hay respuesta, lo que se midió es una tautología.
+
+*Ejemplo de aplicarlo, del mismo día:* para confirmar que el DSN de Sentry ya llegaba, no se
+grepearon los nombres —eso son otra vez dos declaraciones—: se compiló con un DSN centinela y se
+buscó **el valor en el bundle**, y después se recompiló con el nombre viejo para confirmar que
+**el centinela desaparecía**. Recién ahí el verde valía algo.
+
 → **Evidencia:** *"Aprendizajes de proyectos hermanos"* más abajo · repo de G-Vento,
 `docs/BITACORA.md` → *"Trampas de TERMINAL"*.
 
