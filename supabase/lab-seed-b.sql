@@ -45,6 +45,18 @@ select * from (values
 --   Lab Coctel  → compuesto, descuenta 1 Lab Vaso por venta (prueba la receta)
 --   Lab Vaso    → insumo con tracking (el que baja)
 --   Lab Cerveza → simple SIN tracking (prueba que NO baja)
+-- 🔴 EL EXTRA NO ES DECORACIÓN: sin él, cuatro specs no pueden vender.
+--    `useProductsWithExtras` hace que el POS abra el `ItemConfigModal` SOLO si el
+--    producto tiene al menos un extra ACTIVO asignado. Sin extra, el modal nunca
+--    aparece y todo spec que haga click en `Lab Coctel` y espere ese modal se
+--    cuelga 10s y falla. Medido el 2026-09-01: 5 specs rotos por esta ausencia.
+--    El lab heredado tenía `Lab Doble` y yo no lo porté — la enumeración miró qué
+--    PRODUCTOS nombran los specs, no de qué depende el FLUJO del POS.
+create temporary table _lab_extras on commit drop as
+select * from (values
+  ('Lab Doble', 3000)
+) as t(name, price);
+
 create temporary table _lab_productos on commit drop as
 select * from (values
   ('Lab Coctel',  18000, 'composite', false, 0),
@@ -66,6 +78,8 @@ declare
   v_rol_cajero uuid;
   v_uid        uuid;
   v_p          record;
+  v_e          record;
+  v_extra      uuid;
   v_faltan     text := '';
   d            jsonb;
 begin
@@ -163,6 +177,22 @@ begin
   insert into public.product_components (sede_id, parent_id, component_id, qty)
   values (v_sede, v_coctel, v_vaso, 1)
   on conflict (parent_id, component_id) do nothing;
+
+  -- El extra, y su ASIGNACIÓN a Lab Coctel. Las dos cosas hacen falta: un extra
+  -- suelto no abre el modal, y `add_order_items_with_extras` además rechaza un
+  -- extra no asignado al producto (lo cazó `verificar-rpcs.sql`).
+  -- SIN linked_product_id a propósito: si descontara stock, los specs que miden
+  -- "bajó exactamente 1" tendrían un segundo movimiento que explicar.
+  for v_e in select * from _lab_extras loop
+    if not exists (select 1 from public.extras where sede_id = v_sede and name = v_e.name) then
+      insert into public.extras (sede_id, name, price) values (v_sede, v_e.name, v_e.price);
+      raise notice 'extra % creado', v_e.name;
+    end if;
+  end loop;
+
+  select id into v_extra from public.extras where sede_id = v_sede and name = 'Lab Doble';
+  insert into public.product_extras (product_id, extra_id)
+       values (v_coctel, v_extra) on conflict do nothing;
 
   -- ── Purga de los usuarios que crean los specs ───────────────────────────
   -- 🔴 Allowlist por PREFIJO y acotada a la org LAB: no se borra "todo lo que no

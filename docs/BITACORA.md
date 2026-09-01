@@ -1183,3 +1183,108 @@ Así que **el rojo que buscábamos SÍ se ve**. Sin esa comprobación, el exit 0
 que no se sabe si podía salir mal — justo lo que el corolario de R4 prohíbe dar por bueno.
 
 Y el `rollback` no dejó nada: `select count(*) from products where name like 'VERIF%'` → **0**.
+
+
+---
+
+## 2026-09-01 · La suite corrió por primera vez, y la predicción salió mal de un modo instructivo
+
+**La lectura honesta primero, sin suavizarla.** De las siete causas predichas y fechadas:
+
+| # | Predicción | Confianza | Resultado |
+|---|---|---|---|
+| 1 | Aserciones de DOM en tests migrados | **alta** | ❌ **NO ocurrió.** `VENTA GRATIS` migrado **pasa** |
+| 2 | Más strings de `.from()`/`select()` viejos | **alta** | ❌ **NO ocurrió.** Cero |
+| 3 | Specs de módulos podados | alta | ✅ `rbac.spec.ts` ×3, por `getByRole('link', {name:'Mesas'})` |
+| 4 | `create-user` (función sin re-desplegar) | alta | ⏳ sin medir |
+| 5 | Policies RLS | media | ✅ pero **de otra forma** (ver abajo) |
+| 6 | `suscripcion-*` | media | ⚠️ **se SALTARON, no fallaron** |
+| 7 | Timeouts / flakes | **baja** | ✅ **6 de 15** — la más acertada |
+
+**Y cuatro fallos vinieron de una causa que NO estaba en la lista.**
+
+### 🔴 La conclusión, que es sobre el método y no sobre los tests
+
+> **Enumerar sirvió para PODAR SIN ROMPER. No sirvió para ANTICIPAR QUÉ SE ROMPE AL EJECUTAR.
+> Son dos capacidades distintas y las habíamos tratado como una.**
+
+La enumeración fue excelente en lo suyo: la predicción #2 —"quedan strings de consulta viejos"— era
+la que más confianza tenía y **dio cero**, precisamente porque enumerar los encontró antes. Lo mismo
+la #1. **Las dos predicciones de confianza alta que fallaron, fallaron porque la enumeración ya
+había hecho su trabajo.**
+
+Lo que la enumeración no puede ver es lo que solo existe **en ejecución**: un modal que no abre
+porque falta un dato, un `.first()` que cae en un producto distinto, un navegador que se cae. Para
+eso no hay lista: hay que correr.
+
+⚠️ **Y la de menor confianza fue la que más acertó.** Eso no es suerte: los timeouts eran la única
+predicción sobre el **entorno**, no sobre el **código**. Enumerar código no dice nada del entorno.
+
+---
+
+## 2026-09-01 · Los 43 saltados son tests SIN INFORMACIÓN, no aprobados
+
+De 117 tests ejecutados en la corrida parcial: **59 pasaron, 15 fallaron, 43 se saltaron**.
+
+Los 43 **no** son `test.skip`: son los que Playwright omite cuando un test falla dentro de un
+`describe.serial`. **No se sabe nada de ellos.**
+
+> Un `describe.serial` que aborta produce exactamente la clase **"indistinguible de"**: en el
+> resumen, *saltado* y *pasado* se leen igual — los dos son "no rojo".
+
+⚠️ **Y no es un problema de lectura: tiene consecuencia material.** Los tests de **limpieza** son
+casi siempre los ÚLTIMOS de su bloque, así que un fallo temprano **se lleva puesta la limpieza**.
+El laboratorio acumula residuo, y el residuo rompe la corrida siguiente. Ver el caso del `.first()`.
+
+---
+
+## 2026-09-01 · QUINTO caso de que `extras` sostiene el flujo de venta — y el primero MEDIDO
+
+Los cuatro anteriores salieron de **enumeración**: alguien leyó, grepeó y concluyó. Éste salió de
+que **cinco specs se rompieron**.
+
+**El mecanismo:** `useProductsWithExtras` hace que el POS abra el `ItemConfigModal` **solo si el
+producto tiene al menos un extra ACTIVO asignado**. `lab-seed-b.sql` no creaba ninguno —el lab
+heredado tenía `Lab Doble` y no lo porté—. Sin extra, el modal nunca aparece, y los cinco specs que
+hacen click en `Lab Coctel` y lo esperan se cuelgan 10s y fallan:
+`descuento` ×3, `tipo-venta-reset` ×2, `fiado`, `pago-mixto`, `arqueo`.
+
+**Por qué se me escapó, que es la parte útil:** enumeré **qué productos nombran los specs** y
+concluí que los extras se los crean ellos. Era cierto y era insuficiente. Lo que había que enumerar
+era **de qué depende el FLUJO del POS**, que es otra pregunta. Es el corolario de la propiedad —
+*enumerar qué depende no alcanza, hay que enumerar de qué propiedad depende*— aplicado a un seed en
+vez de a una poda.
+
+✅ **Corregido y verificado ejecutando:** con `Lab Doble` asignado a `Lab Coctel`, `descuento.spec`
+(4/4) y `tipo-venta-reset.spec` (2/2) pasan.
+
+---
+
+## 2026-09-01 · El laboratorio acumula residuo, y el residuo rompe la corrida siguiente
+
+`pos.spec.ts` falla con `expect(total).toBeGreaterThan(0)` → **`Received: 0`**. La causa no es el
+POS: es **qué producto es el primero**.
+
+El test hace `page.getByTestId('product-card').first().click()` — **sin nombrar el producto**.
+Consultando la base:
+
+```
+AV Insumo 761791   price=0.00   is_active=true    <- residuo de anular-venta.spec
+E2E Prod 270863    price=15000  is_active=true    <- residuo de productos.spec
+E2E Insumo 851750  price=1000   is_active=true    <- residuo de compras.spec
+```
+
+**Son fixtures de corridas anteriores que quedaron activos porque sus tests de limpieza se
+SALTARON** cuando su spec abortó. Un insumo de precio 0 como primera tarjeta da un carrito en 0.
+
+### 🔴 El bucle, que es lo que hay que romper
+
+> **Un fallo se lleva puesta la limpieza → el lab queda sucio → la suciedad causa fallos nuevos →
+> que se llevan puesta más limpieza.**
+
+Es realimentación positiva, y explica por qué una suite que "casi anda" se degrada corrida a
+corrida en vez de estabilizarse. **La limpieza no puede depender de que los tests pasen.**
+
+⚠️ Y hay una lección de diseño de tests aparte: **`.first()` es un locator sin sujeto.** Funciona
+mientras el orden sea el esperado, y el orden depende de datos que otro spec crea. `pos.spec.ts`
+debería nombrar su producto como hacen los demás.
