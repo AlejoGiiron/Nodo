@@ -119,7 +119,7 @@ begin
   if v_sede_id <> get_my_sede_id() then
     raise exception 'El producto no pertenece a tu sede';
   end if;
-  if not has_permission('productos.editar') then
+  if not has_permission('inventario.ajustar') then
     raise exception 'No autorizado para ajustar inventario';
   end if;
   if v_kind <> 'simple' then

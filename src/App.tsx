@@ -70,6 +70,8 @@ function App() {
               </Route>
               <Route element={<ProtectedRoute permission="productos.editar" />}>
                 <Route path="productos" element={<ProductsPage />} />
+              </Route>
+              <Route element={<ProtectedRoute permission="inventario.ver" />}>
                 <Route path="inventario" element={<InventoryPage />} />
               </Route>
               <Route element={<ProtectedRoute permission="compras.gestionar" />}>

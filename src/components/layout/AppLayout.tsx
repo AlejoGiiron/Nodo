@@ -66,7 +66,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'Catálogo e inventario',
     items: [
       { to: '/productos', label: 'Productos', icon: Package, permission: 'productos.editar' },
-      { to: '/inventario', label: 'Inventario', icon: Boxes, permission: 'productos.editar' },
+      { to: '/inventario', label: 'Inventario', icon: Boxes, permission: 'inventario.ver' },
       { to: '/compras', label: 'Compras', icon: ShoppingBag, permission: 'compras.gestionar' },
     ],
   },

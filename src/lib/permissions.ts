@@ -32,25 +32,19 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
     { key: 'caja.cerrar', label: 'Cerrar turno' },
     { key: 'caja.movimientos', label: 'Movimientos' },
   ] },
-  { module: 'Mesas', perms: [
-    { key: 'mesas.gestionar', label: 'Gestionar' },
-    { key: 'mesas.cobrar', label: 'Cobrar' },
-  ] },
-  { module: 'Cocina', perms: [
-    { key: 'cocina.acceder', label: 'Acceder' },
-  ] },
-  { module: 'Delivery', perms: [
-    { key: 'delivery.gestionar', label: 'Gestionar' },
-  ] },
   { module: 'Productos', perms: [
     { key: 'productos.ver', label: 'Ver' },
     { key: 'productos.editar', label: 'Editar' },
   ] },
+  { module: 'Inventario', perms: [
+    { key: 'inventario.ver', label: 'Ver stock y movimientos' },
+    { key: 'inventario.ajustar', label: 'Ajustar stock' },
+  ] },
   { module: 'Compras', perms: [
     { key: 'compras.gestionar', label: 'Gestionar' },
   ] },
-  { module: 'Fiado', perms: [
-    { key: 'fiado.gestionar', label: 'Gestionar' },
+  { module: 'Cartera', perms: [
+    { key: 'fiado.gestionar', label: 'Gestionar' }  // clave heredada: ver DEUDAS #23,
   ] },
   { module: 'Ventas', perms: [
     { key: 'ventas.historial', label: 'Historial de ventas' },
@@ -112,8 +106,6 @@ export const SYSTEM_ROLES: Record<string, readonly string[]> = {
   cajero: [
     'pos.vender', 'pos.descuento', 'pos.anular',
     'caja.abrir', 'caja.cerrar', 'caja.movimientos',
-    'mesas.cobrar', 'delivery.gestionar',
     'fiado.gestionar', 'ventas.historial',
   ],
-  mozo: ['pos.vender', 'mesas.gestionar', 'cocina.acceder'],
 }

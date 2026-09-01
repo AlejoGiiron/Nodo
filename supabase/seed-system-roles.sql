@@ -10,7 +10,7 @@
 -- política de un rol: editá permissions.ts y regenerá.
 -- ============================================================
 --
--- QUÉ HACE: siembra (o actualiza) los 4 roles de sistema de UNA organización.
+-- QUÉ HACE: siembra (o actualiza) los 3 roles de sistema de UNA organización.
 -- Idempotente por diseño (`on conflict … do update`): re-correrla sobre una org que
 -- ya existe reafirma la política canónica sin duplicar filas.
 --
@@ -18,24 +18,21 @@
 -- generada se edita a mano igual de fácil que una escrita a mano. Los seeds
 -- (lab-seed, onboard-org, onboard-org-paso1) LLAMAN a esta función. Ver R1.
 --
--- CATÁLOGO VIVO (23 permisos):
+-- CATÁLOGO VIVO (21 permisos):
 --   POS             pos.vender, pos.descuento, pos.anular
 --   Caja            caja.abrir, caja.cerrar, caja.movimientos
---   Mesas           mesas.gestionar, mesas.cobrar
---   Cocina          cocina.acceder
---   Delivery        delivery.gestionar
 --   Productos       productos.ver, productos.editar
+--   Inventario      inventario.ver, inventario.ajustar
 --   Compras         compras.gestionar
---   Fiado           fiado.gestionar
+--   Cartera         fiado.gestionar
 --   Ventas          ventas.historial, ventas.anular
 --   Reportes        reportes.financiero, reportes.stock, reportes.consolidado
 --   Configuración   config.acceder, usuarios.gestionar, sedes.gestionar, roles.gestionar
 --
 -- POLÍTICA DE ROLES:
 --   owner    1 comodín "*" — hereda todo, presente y futuro
---   admin   23 permisos
---   cajero  10 permisos
---   mozo     3 permisos
+--   admin   21 permisos
+--   cajero   8 permisos
 --
 -- ⚠️ ESTA FUNCIÓN NO CORRIGE ORGANIZACIONES YA EXISTENTES. Nadie vuelve a correr un
 --    onboarding sobre una org que ya está vendiendo. Reconciliar las que nacieron
@@ -72,18 +69,16 @@ begin
     (p_org, 'owner', true, '["*"]'::jsonb),
     (p_org, 'admin', true, '[
       "pos.vender","pos.descuento","pos.anular","caja.abrir","caja.cerrar",
-      "caja.movimientos","mesas.gestionar","mesas.cobrar","cocina.acceder",
-      "delivery.gestionar","productos.ver","productos.editar",
-      "compras.gestionar","fiado.gestionar","ventas.historial","ventas.anular",
-      "reportes.financiero","reportes.stock","reportes.consolidado",
-      "config.acceder","usuarios.gestionar","sedes.gestionar","roles.gestionar"
+      "caja.movimientos","productos.ver","productos.editar","inventario.ver",
+      "inventario.ajustar","compras.gestionar","fiado.gestionar",
+      "ventas.historial","ventas.anular","reportes.financiero","reportes.stock",
+      "reportes.consolidado","config.acceder","usuarios.gestionar",
+      "sedes.gestionar","roles.gestionar"
     ]'::jsonb),
     (p_org, 'cajero', true, '[
       "pos.vender","pos.descuento","pos.anular","caja.abrir","caja.cerrar",
-      "caja.movimientos","mesas.cobrar","delivery.gestionar","fiado.gestionar",
-      "ventas.historial"
-    ]'::jsonb),
-    (p_org, 'mozo', true, '["pos.vender","mesas.gestionar","cocina.acceder"]'::jsonb)
+      "caja.movimientos","fiado.gestionar","ventas.historial"
+    ]'::jsonb)
   on conflict (organization_id, name)
     do update set permissions = excluded.permissions, is_system = true;
 end $fn$;
@@ -100,11 +95,10 @@ commit;
 -- ============================================================
 -- VERIFICACIÓN (correr aparte tras el commit)
 -- ============================================================
--- Esperado: 4 filas por organización, con estos tamaños:
+-- Esperado: 3 filas por organización, con estos tamaños:
 --   owner   → 1
---   admin   → 23
---   cajero  → 10
---   mozo    → 3
+--   admin   → 21
+--   cajero  → 8
 --
 -- select o.name as org, r.name as rol,
 --        jsonb_array_length(r.permissions) as n,
