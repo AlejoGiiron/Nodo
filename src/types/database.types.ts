@@ -1444,7 +1444,7 @@ export type Database = {
       order_type: "dine_in" | "takeaway" | "delivery"
       payment_method: "cash" | "card" | "transfer" | "nequi"
       table_status: "free" | "occupied" | "reserved" | "waiting_bill"
-      user_role: "admin" | "cashier" | "waiter"
+      user_role: "admin" | "cashier"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1604,7 +1604,7 @@ export const Constants = {
       order_type: ["dine_in", "takeaway", "delivery"],
       payment_method: ["cash", "card", "transfer", "nequi"],
       table_status: ["free", "occupied", "reserved", "waiting_bill"],
-      user_role: ["admin", "cashier", "waiter"],
+      user_role: ["admin", "cashier"],
     },
   },
 } as const

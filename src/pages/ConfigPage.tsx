@@ -382,9 +382,12 @@ function generatePassword(): string {
 }
 
 // Deriva el enum legacy (que exige la Edge Function) desde el nombre del rol RBAC.
-function enumFromRoleName(name: string): 'admin' | 'cashier' | 'waiter' {
+function enumFromRoleName(name: string): 'admin' | 'cashier' {
   if (name === 'owner' || name === 'admin') return 'admin'
-  if (name === 'mozo') return 'waiter'
+  // 🔴 El rol 'mozo' ya no mapea a nada: 'waiter' salio del enum user_role
+  // (G-Nexo no tiene mozos). Un rol RBAC llamado 'mozo' —si quedara alguno
+  // heredado— cae en 'cashier', que es el MENOS privilegiado de los dos que
+  // quedan. Fail-closed: ante un nombre que no reconocemos, el minimo.
   return 'cashier'
 }
 

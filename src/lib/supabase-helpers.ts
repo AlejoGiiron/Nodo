@@ -1033,7 +1033,7 @@ export const createUser = (params: {
   password: string
   full_name: string
   /** Rol enum legacy que consume el trigger handle_new_user. */
-  role: 'admin' | 'cashier' | 'waiter'
+  role: 'admin' | 'cashier'
   /** Rol RBAC. Lo asigna la propia Edge Function, en el mismo request. */
   role_id: string | null
   sede_id: string

@@ -93,7 +93,6 @@ const NAV_GROUPS: NavGroup[] = [
 const ROLE_LABELS: Record<UserRole, string> = {
   admin: 'Administrador',
   cashier: 'Cajero',
-  waiter: 'Mesero',
 }
 
 export function AppLayout() {

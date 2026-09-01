@@ -48,7 +48,7 @@ export function useUsers() {
       password: string
       full_name: string
       /** Rol enum legacy que requiere la Edge Function / trigger handle_new_user. */
-      enumRole: 'admin' | 'cashier' | 'waiter'
+      enumRole: 'admin' | 'cashier'
       /** Rol RBAC (roles.id). Lo asigna la Edge Function, no el navegador. */
       roleId: string | null
     }) => {
