@@ -1033,7 +1033,7 @@ export interface PurchaseInvoiceDetailRow {
   total: number
   payment_method: string
   notes: string | null
-  suppliers: { name: string; contact_name: string | null; phone: string | null } | null
+  suppliers: { name: string; contact: string | null; phone: string | null } | null
   profiles: { full_name: string | null } | null
   purchase_invoice_items: {
     id: string
@@ -1049,7 +1049,7 @@ export const getPurchaseInvoiceDetail = (invoiceId: string) =>
     .from('purchase_invoices')
     .select(
       'id, created_at, invoice_number, total, payment_method, notes, ' +
-        'suppliers(name, contact_name, phone), ' +
+        'suppliers(name, contact, phone), ' +
         'profiles!purchase_invoices_created_by_fkey(full_name), ' +
         'purchase_invoice_items(id, qty, unit_cost, subtotal, products(name))',
     )

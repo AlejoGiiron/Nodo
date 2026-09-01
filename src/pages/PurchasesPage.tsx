@@ -111,9 +111,9 @@ function SuppliersTab({ onEdit }: { onEdit: (s: Supplier | 'new') => void }) {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: '#0f172a' }}>{s.name}</div>
                 <div style={{ display: 'flex', gap: 14, fontSize: 12, color: '#64748b', marginTop: 2, flexWrap: 'wrap' }}>
-                  {s.contact_name && <span>{s.contact_name}</span>}
+                  {s.contact && <span>{s.contact}</span>}
                   {s.phone && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Phone size={11} /> {s.phone}</span>}
-                  {s.document && <span>NIT {s.document}</span>}
+                  {s.nit && <span>NIT {s.nit}</span>}
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 6 }}>

@@ -44,7 +44,7 @@ export function PurchaseDetailModal({ invoiceId, onClose }: PurchaseDetailModalP
                 <Meta label="Fecha" value={fmtDateTime(invoice.created_at)} />
                 <Meta label="N.° factura" value={invoice.invoice_number ?? '—'} />
                 <Meta label="Registró" value={invoice.profiles?.full_name ?? '—'} />
-                {invoice.suppliers?.contact_name && <Meta label="Contacto" value={invoice.suppliers.contact_name} />}
+                {invoice.suppliers?.contact && <Meta label="Contacto" value={invoice.suppliers.contact} />}
                 {invoice.suppliers?.phone && <Meta label="Teléfono" value={invoice.suppliers.phone} />}
               </div>
 

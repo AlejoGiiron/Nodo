@@ -124,8 +124,8 @@ const COLUMNAS_DEL_ESQUEMA: ColumnaEsquema[] = [
   // `document` es EL caso que motivó todo esto: texto libre con placeholder
   // "C.C. / NIT" donde un cajero escribe un nombre completo.
   { tabla: 'customers', columna: 'document', ejemplo: 'CC 79123456 Juan Perez' },
-  { tabla: 'suppliers', columna: 'document', ejemplo: 900123456 },
-  { tabla: 'suppliers', columna: 'contact_name', ejemplo: 'Maria Gomez' },
+  { tabla: 'suppliers', columna: 'nit', ejemplo: 900123456 },
+  { tabla: 'suppliers', columna: 'contact', ejemplo: 'Maria Gomez' },
 
   // ── purchase_invoices / items (compras-proveedores.sql)
   { tabla: 'purchase_invoices', columna: 'invoice_number', ejemplo: 'FV-00123' },

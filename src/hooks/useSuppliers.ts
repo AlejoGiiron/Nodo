@@ -34,7 +34,7 @@ export function useSuppliers() {
 
   const save = useMutation({
     mutationFn: async (
-      input: Pick<TablesInsert<'suppliers'>, 'name' | 'contact_name' | 'phone' | 'document' | 'notes'>
+      input: Pick<TablesInsert<'suppliers'>, 'name' | 'contact' | 'phone' | 'nit' | 'notes'>
         & { id?: string },
     ) => {
       const { error } = await upsertSupplier({

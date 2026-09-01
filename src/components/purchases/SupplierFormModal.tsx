@@ -22,9 +22,9 @@ export function SupplierFormModal({ supplier, onClose }: SupplierFormModalProps)
   const isNew = supplier === 'new'
 
   const [name, setName] = useState(isNew ? '' : supplier.name)
-  const [contactName, setContactName] = useState(isNew ? '' : supplier.contact_name ?? '')
+  const [contactName, setContactName] = useState(isNew ? '' : supplier.contact ?? '')
   const [phone, setPhone] = useState(isNew ? '' : supplier.phone ?? '')
-  const [document, setDocument] = useState(isNew ? '' : supplier.document ?? '')
+  const [nit, setNit] = useState(isNew ? '' : supplier.nit ?? '')
   const [notes, setNotes] = useState(isNew ? '' : supplier.notes ?? '')
 
   const handleSave = async () => {
@@ -32,9 +32,9 @@ export function SupplierFormModal({ supplier, onClose }: SupplierFormModalProps)
     await save({
       id: isNew ? undefined : supplier.id,
       name: name.trim(),
-      contact_name: contactName.trim() || null,
+      contact: contactName.trim() || null,
       phone: phone.trim() || null,
-      document: document.trim() || null,
+      nit: nit.trim() || null,
       notes: notes.trim() || null,
     })
     onClose()
@@ -73,7 +73,7 @@ export function SupplierFormModal({ supplier, onClose }: SupplierFormModalProps)
           </div>
           <div>
             <label style={fieldLabel}>NIT / Documento</label>
-            <input data-testid="supplier-document" value={document} onChange={(e) => setDocument(e.target.value)} placeholder="900123456-7" style={inputStyle} />
+            <input data-testid="supplier-document" value={nit} onChange={(e) => setNit(e.target.value)} placeholder="900123456-7" style={inputStyle} />
           </div>
           <div>
             <label style={fieldLabel}>Notas</label>
