@@ -69,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) {
       // Hipo de red / RLS transitorio (p. ej. en un token refresh de fondo):
       // NO pisar el profile con null. Un profile nulo deja la app sin sede
-      // activa y cuelga pantallas (mesas, branding). Se conserva el previo.
+      // activa y cuelga pantallas (branding). Se conserva el previo.
       // En el PRIMER fetch (login) no hay previo → queda null como antes y el
       // flujo de login continúa (isLoading se apaga en el .finally del caller).
       console.error('fetchProfile falló; se conserva el profile previo:', error.message)

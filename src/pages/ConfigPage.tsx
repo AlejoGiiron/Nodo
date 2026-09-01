@@ -4,8 +4,6 @@ import {
   Building2,
   Users,
   Wallet,
-  ChefHat,
-  Bell,
   Plus,
   Trash2,
   Upload,
@@ -44,7 +42,7 @@ import type { Tables } from '@/types/database.types'
 
 // ─── Constants ────────────────────────────────────────────────────
 
-type SectionId = 'sede' | 'usuarios' | 'sedes' | 'roles' | 'extras' | 'caja' | 'cocina' | 'notificaciones'
+type SectionId = 'sede' | 'usuarios' | 'sedes' | 'roles' | 'extras' | 'caja'
 
 const SECTIONS: { id: SectionId; label: string; icon: LucideIcon; permission?: string }[] = [
   { id: 'sede', label: 'Sede', icon: Building2 },
@@ -53,14 +51,11 @@ const SECTIONS: { id: SectionId; label: string; icon: LucideIcon; permission?: s
   { id: 'roles', label: 'Roles y permisos', icon: Shield, permission: 'roles.gestionar' },
   { id: 'extras', label: 'Extras', icon: Puzzle, permission: 'productos.editar' },
   { id: 'caja', label: 'Caja', icon: Wallet },
-  { id: 'cocina', label: 'Cocina', icon: ChefHat },
-  { id: 'notificaciones', label: 'Notificaciones', icon: Bell },
 ]
 
 // Sugerencias de DETALLE, no categorías (ver la sección de Caja).
 // 'Domicilio' sale: Nodo no tiene reparto — el cliente carga y se lleva.
 const DEFAULT_CASH_OUT_REASONS = ['Mercado', 'Servicios', 'Papelería', 'Transporte']
-const DEFAULT_STATIONS = ['Cocina fría', 'Cocina caliente', 'Barra']
 
 // ─── Shared UI helpers ────────────────────────────────────────────
 
@@ -839,297 +834,6 @@ function SectionCaja() {
   )
 }
 
-// ─── Section 4: Cocina ────────────────────────────────────────────
-
-function SectionCocina() {
-  const { sede, config, isLoading, updateConfig, updateSede, isSaving } = useSedeConfig()
-
-  const [pin, setPin] = useState('')
-  const [stations, setStations] = useState<string[]>([])
-  const [greenMin, setGreenMin] = useState(10)
-  const [amberMin, setAmberMin] = useState(20)
-  const [initialized, setInitialized] = useState(false)
-
-  if (!initialized && !isLoading) {
-    setPin(config.kitchen_pin ?? '')
-    setStations(config.kitchen_stations ?? DEFAULT_STATIONS)
-    setGreenMin(config.kds_timers?.green ?? 10)
-    setAmberMin(config.kds_timers?.amber ?? 20)
-    setInitialized(true)
-  }
-
-  if (isLoading) return <Skeleton />
-
-  // uses_kitchen vive en la fila sedes. Se guarda al instante (no espera al
-  // SaveButton del KDS) para que el sidebar, el botón de Mesas y el checkbox del
-  // ProductModal reaccionen de inmediato al invalidar el cache ['sede'].
-  const usesKitchen = sede?.uses_kitchen ?? true
-  const toggleUsesKitchen = () => updateSede({ uses_kitchen: !usesKitchen })
-
-  return (
-    <div>
-      <SectionTitle>Cocina</SectionTitle>
-
-      {/* Toggle: ¿esta sede usa cocina? — gobierna el resto de la sección */}
-      <div style={{ marginBottom: 28 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', maxWidth: 560 }}>
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>Esta sede usa cocina</div>
-            <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
-              Si se desactiva, no se envían comandas ni hay KDS en esta sede.
-            </div>
-          </div>
-          <button
-            type="button"
-            data-testid="config-uses-kitchen"
-            onClick={toggleUsesKitchen}
-            disabled={isSaving}
-            aria-checked={usesKitchen}
-            role="switch"
-            style={{
-              width: 44, height: 24, borderRadius: 12,
-              background: usesKitchen ? '#10b981' : '#e2e8f0',
-              border: 'none', cursor: isSaving ? 'not-allowed' : 'pointer',
-              position: 'relative', transition: 'background .15s', flexShrink: 0,
-            }}
-          >
-            <span style={{
-              position: 'absolute', top: 2,
-              left: usesKitchen ? 22 : 2,
-              width: 20, height: 20, borderRadius: '50%',
-              background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,.2)',
-              transition: 'left .15s',
-            }} />
-          </button>
-        </div>
-      </div>
-
-      {!usesKitchen && (
-        <div style={{
-          fontSize: 13, color: '#64748b', lineHeight: 1.5,
-          border: '1px dashed #e2e8f0', borderRadius: 9, padding: '14px 16px', maxWidth: 560,
-        }}>
-          Esta sede no usa cocina. El KDS y las comandas están desactivados, y los
-          productos no muestran la opción “Va a cocina”. Activa el interruptor para
-          configurar PIN, estaciones y tiempos del semáforo.
-        </div>
-      )}
-
-      {usesKitchen && <>
-      {/* PIN */}
-      <div style={{ marginBottom: 28 }}>
-        <FieldLabel>PIN de acceso al KDS (4 dígitos)</FieldLabel>
-        <input
-          type="text"
-          inputMode="numeric"
-          value={pin}
-          maxLength={4}
-          onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
-          placeholder="Sin PIN = acceso libre"
-          style={{
-            width: 160,
-            border: '1.5px solid #e2e8f0',
-            borderRadius: 8,
-            padding: '10px 12px',
-            fontSize: 20,
-            fontFamily: 'monospace',
-            letterSpacing: 8,
-            color: '#0f172a',
-            outline: 'none',
-          }}
-          onFocus={e => (e.currentTarget.style.borderColor = '#10b981')}
-          onBlur={e => (e.currentTarget.style.borderColor = '#e2e8f0')}
-        />
-      </div>
-
-      {/* Estaciones */}
-      <div style={{ marginBottom: 28 }}>
-        <h3 style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', marginBottom: 4 }}>Estaciones de cocina</h3>
-        <p style={{ fontSize: 12, color: '#64748b', marginBottom: 12 }}>
-          Se usan para categorizar órdenes en el KDS.
-        </p>
-        <EditableList items={stations} onChange={setStations} placeholder="Nueva estación..." />
-      </div>
-
-      {/* Semáforo */}
-      <div style={{ marginBottom: 8 }}>
-        <h3 style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', marginBottom: 4 }}>Tiempos del semáforo</h3>
-        <p style={{ fontSize: 12, color: '#64748b', marginBottom: 16 }}>
-          Controla el color de las cards en el KDS según el tiempo transcurrido.
-        </p>
-        <div style={{ display: 'flex', gap: 24 }}>
-          <div>
-            <FieldLabel>
-              <span style={{ color: '#10b981' }}>Verde</span> hasta (min)
-            </FieldLabel>
-            <input
-              type="number"
-              min={1}
-              max={59}
-              value={greenMin}
-              onChange={e => setGreenMin(Number(e.target.value))}
-              style={{
-                width: 100,
-                border: '1.5px solid #e2e8f0',
-                borderRadius: 8,
-                padding: '9px 12px',
-                fontSize: 16,
-                fontFamily: 'monospace',
-                color: '#0f172a',
-                outline: 'none',
-              }}
-              onFocus={e => (e.currentTarget.style.borderColor = '#10b981')}
-              onBlur={e => (e.currentTarget.style.borderColor = '#e2e8f0')}
-            />
-          </div>
-          <div>
-            <FieldLabel>
-              <span style={{ color: '#f59e0b' }}>Ámbar</span> hasta (min)
-            </FieldLabel>
-            <input
-              type="number"
-              min={1}
-              max={120}
-              value={amberMin}
-              onChange={e => setAmberMin(Number(e.target.value))}
-              style={{
-                width: 100,
-                border: '1.5px solid #e2e8f0',
-                borderRadius: 8,
-                padding: '9px 12px',
-                fontSize: 16,
-                fontFamily: 'monospace',
-                color: '#0f172a',
-                outline: 'none',
-              }}
-              onFocus={e => (e.currentTarget.style.borderColor = '#10b981')}
-              onBlur={e => (e.currentTarget.style.borderColor = '#e2e8f0')}
-            />
-          </div>
-        </div>
-      </div>
-
-      <SaveButton
-        onClick={() =>
-          updateConfig({
-            kitchen_pin: pin || null,
-            kitchen_stations: stations,
-            kds_timers: { green: greenMin, amber: amberMin },
-          })
-        }
-        loading={isSaving}
-      />
-      </>}
-    </div>
-  )
-}
-
-// ─── Section 6: Notificaciones ────────────────────────────────────
-
-function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <button
-      onClick={() => onChange(!checked)}
-      style={{
-        width: 44,
-        height: 24,
-        borderRadius: 12,
-        background: checked ? '#10b981' : '#cbd5e1',
-        border: 'none',
-        cursor: 'pointer',
-        position: 'relative',
-        transition: 'background .15s',
-        flexShrink: 0,
-      }}
-    >
-      <span
-        style={{
-          position: 'absolute',
-          top: 3,
-          left: checked ? 23 : 3,
-          width: 18,
-          height: 18,
-          borderRadius: '50%',
-          background: '#fff',
-          transition: 'left .15s',
-          boxShadow: '0 1px 4px rgba(0,0,0,.2)',
-        }}
-      />
-    </button>
-  )
-}
-
-function SectionNotificaciones() {
-  const { config, isLoading, updateConfig, isSaving } = useSedeConfig()
-
-  const [kitchenSound, setKitchenSound] = useState(true)
-  const [initialized, setInitialized] = useState(false)
-
-  if (!initialized && !isLoading) {
-    setKitchenSound(config.notifications?.kitchen_sound ?? true)
-    setInitialized(true)
-  }
-
-  if (isLoading) return <Skeleton />
-
-  const ToggleRow = ({
-    label,
-    description,
-    value,
-    onChange,
-  }: {
-    label: string
-    description: string
-    value: boolean
-    onChange: (v: boolean) => void
-  }) => (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '16px 20px',
-        border: '1px solid #e2e8f0',
-        borderRadius: 10,
-        background: '#fff',
-        gap: 16,
-      }}
-    >
-      <div>
-        <p style={{ fontSize: 14, fontWeight: 600, color: '#0f172a', margin: 0 }}>{label}</p>
-        <p style={{ fontSize: 12, color: '#64748b', margin: '2px 0 0' }}>{description}</p>
-      </div>
-      <Toggle checked={value} onChange={onChange} />
-    </div>
-  )
-
-  return (
-    <div>
-      <SectionTitle>Notificaciones</SectionTitle>
-      <p style={{ fontSize: 13, color: '#64748b', marginBottom: 20 }}>
-        Controla las alertas sonoras de cada módulo.
-      </p>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 520 }}>
-        <ToggleRow
-          label="Cocina — nueva comanda"
-          description="Beep triple al recibir una comanda en el KDS"
-          value={kitchenSound}
-          onChange={setKitchenSound}
-        />
-      </div>
-
-      <SaveButton
-        onClick={() =>
-          updateConfig({
-            notifications: { kitchen_sound: kitchenSound },
-          })
-        }
-        loading={isSaving}
-      />
-    </div>
-  )
-}
-
 // ─── Section: Sedes ───────────────────────────────────────────────
 
 function StoreModal({
@@ -1691,8 +1395,6 @@ export function ConfigPage() {
     roles: <SectionRoles />,
     extras: <SectionExtras />,
     caja: <SectionCaja />,
-    cocina: <SectionCocina />,
-    notificaciones: <SectionNotificaciones />,
   }
 
   return (

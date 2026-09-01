@@ -11,12 +11,6 @@ export interface SedeConfig {
   cash_out_reasons?: string[]
   payment_methods?: PaymentMethod[]
   nequi_qr_url?: string | null
-  kitchen_pin?: string | null
-  kitchen_stations?: string[]
-  kds_timers?: { green: number; amber: number }
-  notifications?: {
-    kitchen_sound?: boolean
-  }
 }
 
 export function useSedeConfig() {

@@ -136,7 +136,7 @@ export const removeProductExtra = (productId: string, extraId: string) =>
     .eq('extra_id', extraId)
 
 // IDs de productos de la sede que tienen al menos un extra ACTIVO asignado.
-// Se usa en POS/Mesas para decidir si abrir el modal de configuración.
+// Se usa en el POS para decidir si abrir el modal de configuración.
 export const getProductsWithActiveExtras = (sedeId: string) =>
   supabase
     .from('product_extras')
@@ -278,84 +278,7 @@ export const deleteProductImage = async (imageUrl: string): Promise<void> => {
   }
 }
 
-// --- Tables ---
-
-export const getTables = (sedeId: string) =>
-  supabase.from('tables').select('*').eq('sede_id', sedeId).order('name')
-
-export const createTable = (table: TablesInsert<'tables'>) =>
-  supabase.from('tables').insert(table).select().single()
-
-export const updateTable = (tableId: string, data: TablesUpdate<'tables'>) =>
-  supabase.from('tables').update(data).eq('id', tableId).select().single()
-
-export const deleteTable = (tableId: string) =>
-  supabase.from('tables').delete().eq('id', tableId)
-
-export const updateTableStatus = (
-  tableId: string,
-  status: Tables<'tables'>['status'],
-) => supabase.from('tables').update({ status }).eq('id', tableId).select().single()
-
-export const getTableActiveOrderCount = (tableId: string) =>
-  supabase
-    .from('orders')
-    .select('*', { count: 'exact', head: true })
-    .eq('table_id', tableId)
-    .in('status', ['pending', 'preparing', 'ready'])
-
-const ORDER_ITEMS_WITH_EXTRAS = `
-  id, qty, unit_price, notes, sent_to_kitchen,
-  products(id, name, price, routes_to_kitchen),
-  order_item_extras(id, qty, unit_price, extras(id, name))
-` as const
-
-export const getActiveOrderByTable = (tableId: string) =>
-  supabase
-    .from('orders')
-    .select(`*, order_items(${ORDER_ITEMS_WITH_EXTRAS})`)
-    .eq('table_id', tableId)
-    .in('status', ['pending', 'preparing', 'ready'])
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-
-export const getActiveOrdersForTables = (tableIds: string[]) =>
-  supabase
-    .from('orders')
-    .select(`*, order_items(${ORDER_ITEMS_WITH_EXTRAS})`)
-    .in('table_id', tableIds)
-    .in('status', ['pending', 'preparing', 'ready'])
-
-export const markItemsSentToKitchen = (itemIds: string[]) =>
-  supabase
-    .from('order_items')
-    .update({ sent_to_kitchen: true })
-    .in('id', itemIds)
-
 // --- Orders ---
-
-const ORDER_WITH_RELATIONS = `
-  *,
-  tables(id, name),
-  order_items(
-    id, qty, unit_price, modifiers, notes,
-    products(id, name, price)
-  )
-` as const
-
-export const getOrders = (sedeId: string, status?: Tables<'orders'>['status']) => {
-  const base = supabase
-    .from('orders')
-    .select(ORDER_WITH_RELATIONS)
-    .eq('sede_id', sedeId)
-    .order('created_at', { ascending: false })
-
-  return status ? base.eq('status', status) : base
-}
-
-export const getOrderById = (orderId: string) =>
-  supabase.from('orders').select(ORDER_WITH_RELATIONS).eq('id', orderId).single()
 
 export const createOrder = (order: TablesInsert<'orders'>) =>
   supabase.from('orders').insert(order).select().single()
@@ -730,7 +653,7 @@ export const getShiftPayments = (sedeId: string, from: string) =>
 // Nº de VENTAS (órdenes distintas) del turno. Una venta mixta = varias filas
 // payments pero UNA orden → order_id distintos. Incluye las ventas GRATIS (vale
 // 100%, total 0, sin payment): se anclan por total=0 + order_number asignado
-// (marca de venta completada, la distingue de una mesa abierta) + created_at en
+// (marca de venta completada) + created_at en
 // la ventana. Fiado (total>0, sin payment) NO cuenta (igual que antes).
 export const getShiftSalesCount = async (sedeId: string, from: string): Promise<number> => {
   const { data: pays, error: e1 } = await supabase
@@ -1154,21 +1077,6 @@ export const upsertCustomer = (data: TablesInsert<'customers'>) =>
 // cliente para no perder la trazabilidad de la deuda. Se desactiva.
 export const deleteCustomer = (customerId: string) =>
   supabase.from('customers').update({ is_active: false }).eq('id', customerId)
-
-// Marca una orden EXISTENTE como venta a fiado (usado en el cobro de mesa, donde
-// la orden ya existe con sus ítems y el stock ya descontado). El POS no lo usa:
-// crea la orden directamente con estos campos.
-export const setOrderFiado = (
-  orderId: string,
-  customerId: string,
-  customerName: string | null,
-) =>
-  supabase
-    .from('orders')
-    .update({ payment_status: 'pending', customer_id: customerId, customer_name: customerName })
-    .eq('id', orderId)
-    .select()
-    .single()
 
 // --- Cuentas por cobrar (deudas a fiado) ---
 

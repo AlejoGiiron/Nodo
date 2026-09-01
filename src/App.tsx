@@ -10,8 +10,6 @@ import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { LoginPage } from '@/pages/LoginPage'
 import { POSPage } from '@/pages/POSPage'
-import { TablesPage } from '@/pages/TablesPage'
-import { KitchenPage } from '@/pages/KitchenPage'
 import { ProductsPage } from '@/pages/ProductsPage'
 import { InventoryPage } from '@/pages/InventoryPage'
 import { PurchasesPage } from '@/pages/PurchasesPage'
@@ -53,15 +51,11 @@ function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
 
-          {/* Cocina KDS — acceso independiente por PIN, sin Supabase Auth */}
-          <Route path="cocina" element={<KitchenPage />} />
-
           {/* Rutas protegidas — cualquier usuario autenticado */}
           <Route element={<ProtectedRoute />}>
             <Route element={<AppLayout />}>
               <Route index element={<Navigate to="/ventas" replace />} />
               <Route path="ventas" element={<POSPage />} />
-              <Route path="mesas" element={<TablesPage />} />
 
               {/* Rutas gateadas por permiso RBAC */}
               <Route element={<ProtectedRoute permission="productos.editar" />}>

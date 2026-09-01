@@ -2,8 +2,6 @@ import { useState } from 'react'
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import {
   ShoppingCart,
-  LayoutGrid,
-  ChefHat,
   Package,
   Boxes,
   BarChart3,
@@ -51,11 +49,8 @@ const NAV_GROUPS: NavGroup[] = [
   {
     id: 'operacion',
     label: 'Operación',
-    // Cocina va al FINAL: si se oculta por uses_kitchen=false no deja hueco.
     items: [
       { to: '/ventas', label: 'Ventas', icon: ShoppingCart },
-      { to: '/mesas', label: 'Mesas', icon: LayoutGrid },
-      { to: '/cocina', label: 'Cocina', icon: ChefHat, permission: 'cocina.acceder' },
     ],
   },
   {
@@ -116,14 +111,9 @@ export function AppLayout() {
     navigate('/login', { replace: true })
   }
 
-  // Cocina depende de la sede: además del permiso, exige que la sede use cocina.
-  // Default true mientras carga el sede (evita que el item parpadee).
-  const sedeUsesKitchen = sede?.uses_kitchen ?? true
-
-  // Gating por item (idéntico al de antes): permiso RBAC + cocina por sede.
-  const isItemVisible = (item: NavItem) =>
-    (!item.permission || can(item.permission))
-    && (item.to !== '/cocina' || sedeUsesKitchen)
+  // Gating por item: permiso RBAC. El gate extra por `uses_kitchen` se fue con
+  // cocina — era la única condición que no salía del catálogo de permisos.
+  const isItemVisible = (item: NavItem) => !item.permission || can(item.permission)
 
   // Grupos con sus items visibles; un grupo sin items visibles no se renderiza.
   const visibleGroups = NAV_GROUPS

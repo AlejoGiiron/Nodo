@@ -1,19 +1,5 @@
 import type { ShiftReconciliation, ArqueoMethod } from '@/lib/shiftCalc'
 
-export interface ComandaData {
-  sedeName?: string | null
-  tableName: string
-  zone?: string | null
-  waiter?: string | null
-  orderId: string
-  items: {
-    qty: number
-    name: string
-    notes?: string | null
-    extras?: { name: string; qty: number }[]
-  }[]
-}
-
 // ─── Andamiaje térmico común (80mm) ───────────────────────────────
 // Una sola fuente para el envoltorio de estilos y el ciclo
 // crear-DOM → imprimir → limpiar que comparten TODOS los comprobantes
@@ -74,45 +60,6 @@ function printThermal(contentHtml: string, opts: ThermalPrintOptions): void {
   document.body.appendChild(div)
   window.print()
   setTimeout(() => div.remove(), 1000)
-}
-
-export function printComanda(data: ComandaData): void {
-  const timeStr = new Date().toLocaleTimeString('es-CO', {
-    hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota',
-  })
-
-  const html = `
-    <div style="text-align:center;margin-bottom:8px">
-      ${data.sedeName ? `<div style="font-size:13px;font-weight:700;letter-spacing:1px">${data.sedeName.toUpperCase()}</div>` : ''}
-      <div style="font-size:16px;font-weight:700;letter-spacing:2px">COMANDA</div>
-      <div style="font-size:14px;font-weight:700">Mesa: ${data.tableName}</div>
-      ${data.zone ? `<div style="font-size:11px">${data.zone}</div>` : ''}
-      ${data.waiter ? `<div style="font-size:11px">Atiende: ${data.waiter}</div>` : ''}
-      <div style="font-size:10px;margin-top:2px">${timeStr} · #${data.orderId.slice(-6).toUpperCase()}</div>
-    </div>
-    <div style="border-top:1px dashed #000;margin:6px 0"></div>
-    ${data.items.map(item => `
-      <div style="margin-bottom:4px">
-        <div style="font-weight:700;font-size:14px">${item.qty}x ${item.name}</div>
-        ${(item.extras ?? []).map(ex => `<div style="padding-left:16px;font-size:12px">+ ${ex.name} ×${ex.qty}</div>`).join('')}
-        ${item.notes ? `<div style="padding-left:16px;font-size:11px">* ${item.notes}</div>` : ''}
-      </div>
-    `).join('')}
-    <div style="border-top:1px dashed #000;margin:8px 0"></div>
-    <div style="text-align:center;font-size:11px">— Cocina Nodo —</div>
-  `
-
-  printThermal(html, {
-    styleId: 'nodo-printer-css',
-    contentId: 'nodo-comanda-content',
-    className: 'comanda-print',
-    fontSize: 13,
-    lineHeight: 1.5,
-  })
-}
-
-export function printToThermal(_url: string, data: ComandaData): void {
-  printComanda(data)
 }
 
 // ─── Ticket de venta (recibo de cobro) ────────────────────────────

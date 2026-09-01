@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ShoppingCart, LayoutGrid, BarChart3, User, Lock, Eye, EyeOff, Check, X, ChevronRight } from 'lucide-react'
+import { ShoppingCart, Users, BarChart3, User, Lock, Eye, EyeOff, Check, X, ChevronRight } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 
@@ -15,7 +15,7 @@ function Spinner() {
 
 const FEATURES = [
   { Icon: ShoppingCart, text: 'Facturación rápida con inventario sincronizado' },
-  { Icon: LayoutGrid,   text: 'Gestión de mesas y comandas en tiempo real' },
+  { Icon: Users,        text: 'Clientes, cupo de crédito y cartera al día' },
   { Icon: BarChart3,    text: 'Reportes de cierre y análisis por turno' },
 ]
 
