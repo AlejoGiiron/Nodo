@@ -434,6 +434,23 @@ Después de eso:
 2. Renombrar `restaurant_id` → `sede_id`, `cash_shifts` → jornada/caja, y la marca heredada
    **en la misma pasada** (deudas #3 y #21).
 3. Regenerar el catálogo (deuda #23) y correr `pnpm gen:rbac:check`.
+4. 🔴 **VERIFICAR QUE TODA RPC NOMBRADA EN EL PLAN EXISTA EN ALGUN ARCHIVO.** Es un grep, y habria
+   cazado los CUATRO huecos de esta consolidacion antes de darla por cerrada:
+
+   ```bash
+   grep -ohE "create or replace function public.[a-z_]+" supabase/0*.sql supabase/1*.sql \
+     | sed "s/.*public.//" | sort -u
+   # comparar contra las funciones nombradas en este documento y en el paso 0
+   ```
+
+   ⚠️ Leerlo con criterio: un renombre deliberado (`get_my_restaurant_id` → `get_my_sede_id`,
+   `set_shift_closed_at` → `set_jornada_closed_at`) aparece como faltante **sin serlo**, y
+   `seed_system_roles` vive en su archivo **generado**. Importa lo que queda despues de descartar
+   esos casos.
+
+   **Corrido el 2026-08-31: encontro `protect_organization_subscription`** — el cuarto hueco, y
+   uno de clase A (base tecnica). Con el se cae tambien `_t_priv` y las columnas de suscripcion
+   de `organizations`, que el archivo 02 no tiene. ⛔ PENDIENTE.
 4. Recién ahí, el primer `db push`. **Desde ese momento R5 aplica con todo su peso.**
 ---
 
