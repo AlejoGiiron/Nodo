@@ -5,9 +5,9 @@
 -- supabase/register-sale-void.sql.
 --
 -- 🔴 ESTE ARCHIVO NO ESTABA EN EL PLAN DE 12 — es la TERCERA enmienda, y la
---    encontro el archivo 11: al negar la escritura directa de `payments`, quedo
+--    encontro la migracion `rls`: al negar la escritura directa de `payments`, quedo
 --    a la vista que la consolidacion nunca escribio estas dos RPC, aunque el
---    plan las clasifico y les asigno el archivo 06. Sin ellas, con las policies
+--    plan las clasifico y les asigno la migracion `ventas`. Sin ellas, con las policies
 --    puestas, COBRAR UNA VENTA ES IMPOSIBLE.
 --
 --    Se numera 06b y no se renumera lo commiteado. La leccion accionable —una
@@ -42,7 +42,7 @@ begin;
 --    `has_permission('pos.vender')`. El propio archivo heredado lo pedia:
 --    "Deuda anotada: pasar a has_permission cuando se elimine el enum". Y es la
 --    causa mecanica del residuo de G-Vento —las policies miraban el enum, asi
---    que el catalogo no enforceaba nada—. Coherente con el archivo 11.
+--    que el catalogo no enforceaba nada—. Coherente con la migracion `rls`.
 -- ------------------------------------------------------------
 create or replace function public.register_sale_payment(
   p_order_id uuid,
@@ -139,7 +139,7 @@ grant  execute on function public.register_sale_payment(uuid, jsonb) to authenti
 -- register_sale_void — anulacion de una venta de la jornada actual
 --
 -- La reversion de stock es ESPEJO EXACTO de add_order_items_with_extras
--- (archivo 07b): simple, compuesto por componentes, y el producto vinculado a
+-- (migracion `extras_y_alta_de_items`): simple, compuesto por componentes, y el producto vinculado a
 -- un extra. Si una rama del alta no tiene su reversa, el stock queda mal y no
 -- avisa — es un contrato entre las dos funciones.
 --
@@ -271,7 +271,7 @@ begin
     end if;
 
     -- Extras con producto vinculado: tienen su reversa porque el alta los
-    -- descuenta (archivo 07b). Sin esto, el envase retornable no volveria.
+    -- descuenta (migracion `extras_y_alta_de_items`). Sin esto, el envase retornable no volveria.
     for v_ex in
       select oie.qty as ex_qty, e.linked_product_id
       from public.order_item_extras oie

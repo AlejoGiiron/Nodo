@@ -138,7 +138,7 @@ create index idx_purchase_invoice_items_product on public.purchase_invoice_items
 -- son justo los que producen numeros absurdos en silencio:
 --   · costo_actual nulo  → primera compra: no hay nada que promediar.
 --   · stock_actual <= 0  → hubo sobreventa (permitida a proposito, ver el
---     archivo 05). Ponderar contra un stock negativo da un costo negativo o
+--     migracion `catalogo`). Ponderar contra un stock negativo da un costo negativo o
 --     una division por cero.
 --   · sin stock_tracking → no hay cantidad contra la cual ponderar.
 -- ------------------------------------------------------------
@@ -283,7 +283,7 @@ begin
    where id = v_invoice_id;
 
   -- 8. 🔴 LA COMPRA SALE DE LA CAJA. Categoria estructurada, no texto libre:
-  --    `reason` queda como detalle (archivo 10). amount es entero: COP no usa
+  --    `reason` queda como detalle (migracion `caja`). amount es entero: COP no usa
   --    decimales.
   v_cash_amount := round(v_total)::integer;
 
@@ -311,7 +311,7 @@ revoke execute on function public.register_purchase(jsonb, jsonb) from anon;
 grant  execute on function public.register_purchase(jsonb, jsonb) to authenticated;
 
 
--- RLS habilitada aca; policies en el 11 (ver la cabecera del archivo 02).
+-- RLS habilitada aca; policies en el 11 (ver la cabecera de la migracion `organizaciones_y_sedes`).
 alter table public.suppliers             enable row level security;
 alter table public.purchase_invoices     enable row level security;
 alter table public.purchase_invoice_items enable row level security;

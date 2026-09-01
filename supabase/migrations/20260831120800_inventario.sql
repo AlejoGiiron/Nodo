@@ -165,7 +165,7 @@ grant  execute on function public.adjust_stock(uuid, integer, text) to authentic
 -- ============================================================
 
 
--- RLS habilitada aca; policies en el 11 (ver la cabecera del archivo 02).
+-- RLS habilitada aca; policies en el 11 (ver la cabecera de la migracion `organizaciones_y_sedes`).
 alter table public.stock_movements    enable row level security;
 alter table public.product_components enable row level security;
 

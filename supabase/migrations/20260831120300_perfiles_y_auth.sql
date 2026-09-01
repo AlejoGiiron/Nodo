@@ -32,7 +32,7 @@ begin;
 --
 -- 🔴 `role` NO TIENE DEFAULT, Y ESO ES EL ARREGLO DE UN DEFECTO.
 -- El default heredado era 'waiter', el rol MENOS privilegiado. Al podar ese
--- valor del enum (archivo 01), el default habria pasado a 'cashier' — o sea que
+-- valor del enum (migracion `extensiones_y_tipos`), el default habria pasado a 'cashier' — o sea que
 -- un borrado, por si solo, habria vuelto el default MAS PRIVILEGIADO. Nadie
 -- eligio eso: fue el efecto colateral de otra decision, y es fail-open, que R2
 -- prohibe.
@@ -78,7 +78,7 @@ create trigger trg_profiles_updated_at
   before update on public.profiles
   for each row execute function public.handle_updated_at();
 
--- La FK que el archivo 02 dejo pendiente, ahora que profiles existe.
+-- La FK que la migracion `organizaciones_y_sedes` dejo pendiente, ahora que profiles existe.
 alter table public.user_stores
   add constraint user_stores_user_id_fkey
   foreign key (user_id) references public.profiles on delete cascade;
@@ -289,7 +289,7 @@ create trigger trg_protect_profile_self_escalation
   for each row execute function public.protect_profile_self_escalation();
 
 
--- RLS habilitada aca; policies en el 11 (ver la cabecera del archivo 02).
+-- RLS habilitada aca; policies en el 11 (ver la cabecera de la migracion `organizaciones_y_sedes`).
 alter table public.profiles enable row level security;
 
 commit;

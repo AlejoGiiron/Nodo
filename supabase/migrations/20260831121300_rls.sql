@@ -214,7 +214,7 @@ create policy "store_sequences: ver de mi sede"
 -- Caja
 -- jornadas: abrir y cerrar SI las hace el cliente (es una accion de caja).
 -- cash_movements: los manuales tambien — pero con categoria, que la constraint
--- del archivo 10 exige. Los automaticos los ponen las RPC.
+-- de la migracion `caja` exige. Los automaticos los ponen las RPC.
 -- ------------------------------------------------------------
 create policy "jornadas: ver de mi sede"
   on public.jornadas for select to authenticated
@@ -305,7 +305,7 @@ create policy "debt_payments: ver de mi sede"
 --
 -- ⚠️ NO se abre una policy de insert sobre payments para "destrabar": seria
 --    exactamente el fail-open que este archivo cierra. El camino correcto es
---    escribir las dos RPC (archivo 06b), no ablandar la policy.
+--    escribir las dos RPC (migracion `rpc_de_venta`), no ablandar la policy.
 -- ============================================================
 
 commit;

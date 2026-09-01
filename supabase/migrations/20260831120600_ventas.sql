@@ -16,7 +16,7 @@
 --   · el `update roles set permissions` de sale-void.sql → hallazgo H4: el
 --     catalogo se GENERA. El permiso de anular se declara en permissions.ts.
 --   · el indice idx_one_open_shift_per_store de sale-void.sql → es de jornada
---     de caja y va con el archivo 10, no aca. Ojo: es un DUPLICADO exacto de
+--     de caja y va con la migracion `caja`, no aca. Ojo: es un DUPLICADO exacto de
 --     idx_cash_shifts_one_open (hallazgo H3); en el 10 va UNO SOLO.
 -- ============================================================
 
@@ -95,7 +95,7 @@ comment on column public.orders.discount_type is
 --    G-Nexo, la columna vuelve sin recrear nada.
 --
 -- ⏳ PENDIENTE QUE SIGUE ABIERTO: orders.payment_status y orders.customer_id
---    (cartera) se agregan en el archivo 09, cuando exista la tabla customers.
+--    (cartera) se agregan en la migracion `clientes_y_cartera`, cuando exista la tabla customers.
 --    Mismo patron que la FK de user_stores en el 03.
 
 
@@ -208,7 +208,7 @@ revoke execute on function public.next_order_number(uuid) from anon;
 grant  execute on function public.next_order_number(uuid) to authenticated;
 
 
--- RLS habilitada aca; policies en el 11 (ver la cabecera del archivo 02).
+-- RLS habilitada aca; policies en el 11 (ver la cabecera de la migracion `organizaciones_y_sedes`).
 alter table public.orders          enable row level security;
 alter table public.order_items     enable row level security;
 alter table public.payments        enable row level security;

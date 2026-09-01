@@ -128,7 +128,7 @@ create index idx_order_item_extras_order_item_id
 --
 --  1. 🔴 GRABA unit_cost. La v2 no lo hacia porque en G-Vento la columna no
 --     existia. Congela el costo al vender, leyendo products.cost_price en ese
---     instante. Sin esto, el archivo 06 tendria la columna y nadie la llenaria:
+--     instante. Sin esto, la migracion `ventas` tendria la columna y nadie la llenaria:
 --     el peor de los mundos, porque el hueco se descubre cuando ya no se puede
 --     reconstruir (R1 punto 8).
 --
@@ -312,7 +312,7 @@ revoke execute on function public.add_order_items_with_extras(uuid, jsonb) from 
 grant  execute on function public.add_order_items_with_extras(uuid, jsonb) to authenticated;
 
 
--- RLS habilitada aca; policies en el 11 (ver la cabecera del archivo 02).
+-- RLS habilitada aca; policies en el 11 (ver la cabecera de la migracion `organizaciones_y_sedes`).
 alter table public.extras            enable row level security;
 alter table public.product_extras    enable row level security;
 alter table public.order_item_extras enable row level security;

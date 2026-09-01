@@ -80,7 +80,7 @@ create type public.payment_method as enum ('cash', 'card', 'transfer', 'nequi');
 -- `order_type` ('dine_in','takeaway','delivery') — el eje entero es de
 --    restaurante: comer aca / llevar / domicilio. G-Nexo vende sobre mostrador
 --    y NO tiene rutas ni despacho (ver CLAUDE.md, Alcance). La columna
---    orders.type desaparece con el tipo; se documenta en el archivo 06.
+--    orders.type desaparece con el tipo; se documenta en la migracion `ventas`.
 --
 -- Se anotan en NEGATIVO porque un tipo ausente no deja rastro: sin esta nota,
 -- el proximo que compare este esquema con el de G-Vento no sabe si falta por

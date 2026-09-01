@@ -29,7 +29,7 @@ begin;
 -- 1 · daily_sales_summary — ventas por dia y metodo de pago
 --
 -- CAMBIO: se cae la dimension `order_type`. El eje dine_in/takeaway/delivery no
--- existe en G-Nexo (archivo 01).
+-- existe en G-Nexo (migracion `extensiones_y_tipos`).
 --
 -- 🔴 CAMBIO DE FONDO: la exclusion de anuladas pasa de `status != 'cancelled'`
 --    a `cancelled_at is null`. Las dos marcan el mismo hecho, y tener DOS
@@ -71,7 +71,7 @@ group by
 -- 2 · product_performance — unidades y venta por producto y dia
 --
 -- ⏳ NO calcula margen todavia, y es deliberado. `order_items.unit_cost` ya
---    existe (archivo 06) y con el margen es `sum(qty * (unit_price -
+--    existe (migracion `ventas`) y con el margen es `sum(qty * (unit_price -
 --    unit_cost))` — pero utilidades tiene una condicion sin resolver: que hacer
 --    cuando `unit_cost` es nulo, o sea cuando se vendio algo que nunca se
 --    compro. Eso es la deuda #19: la pantalla debe DECLARARLO, no promediarlo

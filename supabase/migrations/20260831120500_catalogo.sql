@@ -10,7 +10,7 @@
 --
 -- R5: no aplicado en G-Nexo (base vacia). Desde el primer `db push`, R5 manda.
 --
--- NO viaja `routes_to_kitchen` (cocina, clase B). Enumeracion en el archivo 02.
+-- NO viaja `routes_to_kitchen` (cocina, clase B). Enumeracion en la migracion `organizaciones_y_sedes`.
 -- ============================================================
 
 begin;
@@ -81,15 +81,15 @@ comment on column public.products.stock_qty is
 comment on column public.products.cost_price is
   'Costo unitario por PROMEDIO PONDERADO MOVIL, recalculado en cada compra. '
   'Nulo hasta la primera compra registrada. Lo mantiene register_purchase '
-  '(archivo 08). 🔴 NO es la fuente del costo historico: el costo de una venta '
-  'se CONGELA en la linea de venta al vender (R1 punto 8, archivo 06). Leer '
+  '(migracion `compras`). 🔴 NO es la fuente del costo historico: el costo de una venta '
+  'se CONGELA en la linea de venta al vender (R1 punto 8, migracion `ventas`). Leer '
   'este campo para calcular utilidades pasadas da un numero distinto cada vez '
   'que se abre el reporte.';
 
 comment on column public.products.kind is
   'simple = tiene stock propio. composite = no tiene stock propio; al venderse '
   'explota product_components y descuenta sus componentes. En G-Nexo composite '
-  'es el BULTO que se vende por unidad (ver archivo 07); en G-Vento era la '
+  'es el BULTO que se vende por unidad (ver migracion `inventario`); en G-Vento era la '
   'receta. Mismo mecanismo, otro nombre de negocio.';
 
 comment on column public.products.min_stock is
@@ -103,7 +103,7 @@ create trigger trg_products_updated_at
   for each row execute function public.handle_updated_at();
 
 
--- RLS habilitada aca; policies en el 11 (ver la cabecera del archivo 02).
+-- RLS habilitada aca; policies en el 11 (ver la cabecera de la migracion `organizaciones_y_sedes`).
 alter table public.categories enable row level security;
 alter table public.products   enable row level security;
 

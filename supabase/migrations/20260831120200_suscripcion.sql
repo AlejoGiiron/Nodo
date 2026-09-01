@@ -10,7 +10,7 @@
 --    21,7% que "viaja tal cual" — y aun así se perdió en la consolidación.
 --
 -- Se numera 02b por DEPENDENCIA, no al final: solo necesita `organizations` y
--- `handle_updated_at`, ambos del archivo 02. Va en archivo propio y no dentro
+-- `handle_updated_at`, ambos de la migracion `organizaciones_y_sedes`. Va en archivo propio y no dentro
 -- del 02 porque es un dominio distinto y así se ve al leerlo.
 --
 -- R5: no aplicado en G-Nexo (base vacía). Desde el primer `db push`, R5 manda.

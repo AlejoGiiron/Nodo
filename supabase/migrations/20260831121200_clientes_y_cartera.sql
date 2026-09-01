@@ -56,7 +56,7 @@ create trigger trg_customers_updated_at
 
 -- ------------------------------------------------------------
 -- Columnas que la cartera agrega a `orders`.
--- El archivo 06 las dejo declaradas como pendientes hasta que existiera
+-- La migracion `ventas` las dejo declaradas como pendientes hasta que existiera
 -- `customers`. Mismo patron que la FK de user_stores en el 03.
 -- ------------------------------------------------------------
 alter table public.orders
@@ -128,7 +128,7 @@ create index idx_debt_payments_sede_created
 -- register_debt_payment
 --
 -- 🔴 ASIMETRIA DELIBERADA CON LA COMPRA (decidido el 2026-08-31)
--- El archivo 08 RECHAZA la compra si no hay jornada abierta. Acá NO se
+-- La migracion `compras` RECHAZA la compra si no hay jornada abierta. Acá NO se
 -- rechaza, y la asimetria es el punto, no un descuido:
 --
 --   · Rechazar una SALIDA de plata protege la caja.
@@ -274,7 +274,7 @@ revoke execute on function public.register_debt_payment(uuid, numeric, text) fro
 grant  execute on function public.register_debt_payment(uuid, numeric, text) to authenticated;
 
 
--- RLS habilitada aca; policies en el 11 (ver la cabecera del archivo 02).
+-- RLS habilitada aca; policies en el 11 (ver la cabecera de la migracion `organizaciones_y_sedes`).
 alter table public.customers     enable row level security;
 alter table public.debt_payments enable row level security;
 

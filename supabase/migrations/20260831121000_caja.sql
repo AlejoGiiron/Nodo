@@ -97,7 +97,7 @@ create trigger trg_jornadas_updated_at
 --
 --    ── LO QUE ESTA EXCEPCION NO HABILITA ──────────────────────────────────
 --    🔴 SIGUE PROHIBIDO forzar un dato que el usuario SI eligio. Ahi el trigger
---    VALIDA y RECHAZA (ver enforce_profile_organization en el archivo 03):
+--    VALIDA y RECHAZA (ver enforce_profile_organization en la migracion `perfiles_y_auth`):
 --    corregir en silencio una eleccion del usuario reescribe su intencion y
 --    hace que el resultado dependa del orden de disparo de los triggers.
 --
@@ -242,7 +242,7 @@ create index idx_cash_movements_sede_cat
 -- ============================================================
 
 
--- RLS habilitada aca; policies en el 11 (ver la cabecera del archivo 02).
+-- RLS habilitada aca; policies en el 11 (ver la cabecera de la migracion `organizaciones_y_sedes`).
 alter table public.jornadas       enable row level security;
 alter table public.cash_movements enable row level security;
 

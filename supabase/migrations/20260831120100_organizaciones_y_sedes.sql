@@ -28,7 +28,7 @@
 --
 -- ── RLS SE HABILITA ACA, LAS POLICIES VAN EN EL 11 ──────────────────────────
 -- Una tabla con RLS habilitada y sin policies NIEGA TODO. Por eso el orden es
--- este y no el inverso: la ventana entre el archivo 02 y el 11 es fail-closed.
+-- este y no el inverso: la ventana entre la migracion `organizaciones_y_sedes` y el 11 es fail-closed.
 -- Crear la tabla sin RLS y "agregarla despues" seria fail-open, que es el modo
 -- de fallo que R2 prohibe: lo que nadie se acordo de cubrir, pasa.
 -- ============================================================
@@ -147,7 +147,7 @@ create trigger trg_roles_updated_at
 -- ------------------------------------------------------------
 -- user_stores — sedes a las que un usuario tiene acceso
 --
--- La FK a profiles se agrega en el archivo 03, cuando esa tabla exista: aca
+-- La FK a profiles se agrega en la migracion `perfiles_y_auth`, cuando esa tabla exista: aca
 -- solo se declara la columna. Se hace asi para no invertir el orden de los
 -- archivos por una sola dependencia.
 -- ------------------------------------------------------------
