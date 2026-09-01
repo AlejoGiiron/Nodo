@@ -337,6 +337,6 @@ test('Configuración: el toggle de is_active NO se ofrece en la fila propia', as
 
   // Exactamente una fila (la propia) sin toggle...
   await expect(page.getByTestId('user-toggle-self')).toHaveCount(1)
-  // ...y al menos una fila ajena que sí lo tiene (cajero.test / mozo.test).
+  // ...y al menos una fila ajena que sí lo tiene (cajero.test).
   expect(await page.getByTitle(/^(Desactivar|Activar)$/).count()).toBeGreaterThan(0)
 })

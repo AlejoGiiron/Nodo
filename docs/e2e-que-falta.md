@@ -95,16 +95,32 @@ servidor.
 
 ---
 
-## 5 · Lo que la suite va a encontrar rota, y conviene esperarlo
+## 5 · 🔴 PREDICCIÓN FECHADA — escrita el 2026-09-01, ANTES de correr un solo test
 
-**No es pesimismo: es que ninguno de estos caminos se ejecutó nunca contra el esquema nuevo.**
+**Por qué se escribe antes:** *un conteo sin predicción es una observación, no una verificación.*
+Es la misma regla que convirtió el −11 en hallazgo cuando yo había predicho −9. Acá el "conteo" es
+la lista de fallos.
 
-| Sospecha | Por qué |
-|---|---|
-| Aserciones sobre el DOM en tests migrados | el criterio nuevo: migrar entre UIs conserva el sujeto, no las aserciones. Ya hay **una** confirmada (`discount-amount`) |
-| Más strings de `.from()` / `select()` | van **5 apariciones** de esa clase; el grep encontró las que sabía buscar |
-| Los specs que tocaban módulos podados | `rbac.spec.ts` menciona permisos eliminados; `config.spec.ts`, el toggle de cocina |
-| Las policies RLS | **nunca se ejecutaron**. `verificar-rpcs.sql` prueba resolución, no autorización |
+**Cómo se lee después:**
+- Si la suite falla **por estas causas** → la enumeración funciona, y el rojo era predecible.
+- Si aparece algo **que no está en esta lista** → **ese es el hallazgo**, y hay que entender por qué
+  ninguna enumeración lo vio.
+- Si la suite pasa **entera a la primera** → sospechar, no celebrar (R10). Ninguno de estos caminos
+  se ejecutó nunca contra el esquema nuevo; que no falle nada sería la sorpresa.
+
+| # | Fallo esperado | Por qué | Confianza |
+|---|---|---|---|
+| 1 | **Aserciones sobre el DOM en tests migrados** | migrar entre UIs conserva el sujeto, no las aserciones. Ya hay **una confirmada** (`discount-amount` esperaba `"18.000"`) | alta |
+| 2 | **Más strings de `.from()` / `select()` con nombres viejos** | van **5 apariciones** de esa clase. El grep encontró las que supe buscar; por definición no encontró las que no. | alta |
+| 3 | **Specs que tocan módulos podados** | `rbac.spec.ts` menciona permisos eliminados; `config.spec.ts`, el toggle de cocina | alta |
+| 4 | **`create-user.spec.ts`** | la Edge Function se corrigió (`sede_id`) pero **nunca se re-desplegó**: la que corre en la nube puede seguir pidiendo `restaurant_id` | alta |
+| 5 | **Policies RLS que niegan de más o de menos** | **nunca se ejecutaron**. `verificar-rpcs.sql` prueba resolución, no autorización | media |
+| 6 | **`suscripcion-*.spec.ts`** | dependen de Edge Functions y de un secreto HMAC que no está configurado en el proyecto de Nodo | media |
+| 7 | **Timeouts / flakes en el primer arranque** | la base está vacía y fría; los `refetchInterval` y los `waitFor` se calibraron contra el lab de Vento, con datos | baja |
+
+⚠️ **Lo que esta lista NO cubre, dicho para que no se lea como exhaustiva:** todo lo que dependa de
+que el seed del lab quedó bien. Si `lab-seed.sql` siembra algo distinto de lo que los specs
+esperan, los fallos van a parecer bugs de la aplicación y van a ser del seed.
 
 ---
 

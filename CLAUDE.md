@@ -533,6 +533,60 @@ que la suite E2E pueda correr: es el único verificador que mira esta clase.
 
 ---
 
+## 🔴 ACCESO A INFRAESTRUCTURA — reglas no negociables
+
+*Fijadas el 2026-09-01, al dar acceso al CLI de Supabase.*
+
+**Una sola vía al recurso: el CLI de Supabase, ya pinneado como devDependency.**
+⛔ **NO se usa el MCP de Supabase.** Dos vías al mismo recurso es **R1 aplicada a la
+infraestructura**: dos caminos que hacen lo mismo, nada que los sincronice, y el día que uno cambie
+de comportamiento nadie se entera hasta que algo se cae.
+
+### Lo que se puede correr sin preguntar
+
+`gen types` · `migration list` · `db diff` · `db dump` · y **cualquier consulta de LECTURA**.
+
+### Lo que exige confirmación ANTES, mostrando qué se va a aplicar
+
+`db push` · aplicar cualquier migración · **cualquier escritura sobre la base**.
+
+### ⛔ NUNCA
+
+**`db reset`. Borra la base entera.** Si parece que hace falta: **parar y decirlo**, no correrlo.
+
+### 🔴 El alcance del token, que es lo que lo hace peligroso
+
+Un access token de Supabase (`sbp_…`) es **de la CUENTA, no de un proyecto**. La misma credencial
+alcanza **todos** los proyectos de esa cuenta — incluido **Vento, que está en PRODUCCIÓN con dos
+clientes**.
+
+> **Verificar el project-ref ANTES de cualquier comando que escriba.**
+> El único ref permitido es el de Nodo: `kvyiwiilrzpcjzbqaoow`.
+
+⚠️ Y por eso el alcance **no se asume**: si alguien dice "ese token es solo de un proyecto", eso se
+comprueba, porque los PAT de Supabase no se emiten por proyecto. Confundir un token de cuenta con
+uno de proyecto es la diferencia entre un error recuperable y tocar producción ajena.
+
+### El token no vive en ningún archivo
+
+Ni en el repo, ni en `.env`, ni en `config.toml`, ni en un script, ni en un mensaje de commit. Va
+como **variable de entorno de la sesión**, exportada antes de arrancar.
+
+🔴 **Si aparece en cualquier otro lado —un archivo, un log, un pegado en una conversación— es un
+INCIDENTE:** se para, se avisa, y **se rota**. Un secreto que se pegó en texto plano está
+comprometido **aunque no lo haya usado nadie**: queda en historiales y en logs, y su alcance no se
+reduce por buena intención. Rotar cuesta un minuto; asumir que no pasó nada cuesta lo que valga el
+proyecto más caro de la cuenta.
+
+### R5 rige, y el token la hace más fácil de romper
+
+Desde el primer push, **todo cambio de esquema es un archivo nuevo en `migrations/`**. Con acceso
+directo es más cómodo aplicar algo a mano y saltearse el archivo — **eso deja la base y el repo
+divergiendo en silencio**, que es exactamente el modo de fallo que R5 existe para evitar. La
+comodidad de la herramienta no cambia la regla.
+
+---
+
 ## Aprendizajes de proyectos hermanos (Quota, Vento)
 
 Reglas duras traídas de los hermanos — aplican a todo el trabajo en este repo:

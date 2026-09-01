@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { loginAsOwner, loginAsCashier, loginAsWaiter, hasWaiterCreds } from './helpers/auth'
+import { loginAsOwner, loginAsCashier } from './helpers/auth'
 import { openShiftIfClosed, closeShiftIfOpen } from './helpers/shift'
 
 // Historial de turnos (cuadre persistido de F1) + historial de gastos (egresos).
@@ -97,17 +97,45 @@ test.describe.serial('Historiales de turnos y gastos', () => {
     await expect(page.getByText('Historial de gastos')).toBeVisible()
   })
 
-  test('gating negativo: el mozo NO ve Turnos ni Gastos', async ({ page }) => {
-    test.skip(!hasWaiterCreds(), 'Requiere mozo.test: crea la cuenta, re-corre lab-seed y define E2E_WAITER_* en .env.test')
-    await loginAsWaiter(page)
+  // 🔴 REESCRITO el 2026-09-01. Era 'el mozo NO ve Turnos ni Gastos', y el rol
+  //    `mozo` se fue con el catálogo propio de Nodo (deuda 23).
+  //
+  //    El sujeto CAMBIA, no solo el nombre: el cajero **SÍ tiene** `caja.cerrar`
+  //    y `caja.movimientos`, así que ve Turnos y Gastos. Copiar el test cambiando
+  //    el login habría afirmado lo contrario de la verdad y —peor— habría pasado
+  //    igual el día que el gating se rompiera, porque estaría probando ausencias
+  //    que nadie promete.
+  //
+  //    El cajero tiene 8 de 21 permisos, así que el gating es MÁS fino que con el
+  //    mozo: se verifica lo que realmente NO tiene.
+  //
+  //    ⚠️ Y ya no hay `test.skip`. El skip anterior dependía de una cuenta
+  //    opcional, y **un test saltado se ve igual que uno que pasa en el resumen**
+  //    — la clase "indistinguible de", otra vez. Las credenciales del cajero son
+  //    obligatorias para otros 8 specs, así que acá no hay nada opcional.
+  test('gating negativo: el cajero NO ve Productos, Inventario, Compras, Reportes ni Configuración', async ({ page }) => {
+    await loginAsCashier(page)
     await page.goto('/ventas')
 
-    // El mozo no tiene caja.* → nav oculto.
-    await expect(page.getByRole('link', { name: 'Turnos' })).toHaveCount(0)
-    await expect(page.getByRole('link', { name: 'Gastos' })).toHaveCount(0)
+    // Lo que el cajero NO tiene → el item de nav no se renderiza.
+    for (const item of ['Productos', 'Inventario', 'Compras', 'Reportes', 'Configuración']) {
+      await expect(page.getByRole('link', { name: item }), `nav "${item}" visible para el cajero`)
+        .toHaveCount(0)
+    }
 
-    // Navegar por URL redirige (ProtectedRoute por permiso).
-    await page.goto('/historial-turnos')
+    // CONTRASTE — sin esto el test pasaría con el nav entero roto: lo que el
+    // cajero SÍ tiene tiene que seguir estando. Un test de ausencia sin su
+    // positivo es exactamente lo que R10 manda mirar con lupa.
+    for (const item of ['Turnos', 'Gastos', 'Historial']) {
+      await expect(page.getByRole('link', { name: item }), `nav "${item}" deberia verse`)
+        .toHaveCount(1)
+    }
+
+    // Navegar por URL redirige (ProtectedRoute por permiso), que es el gate real:
+    // ocultar el nav es cosmético.
+    await page.goto('/reportes')
+    await expect(page).toHaveURL(/\/ventas/, { timeout: 15_000 })
+    await page.goto('/configuracion')
     await expect(page).toHaveURL(/\/ventas/, { timeout: 15_000 })
   })
 })
