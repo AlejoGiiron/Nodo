@@ -79,15 +79,11 @@ const COLUMNAS_DEL_ESQUEMA: ColumnaEsquema[] = [
   { tabla: 'products', columna: 'min_stock', ejemplo: 5, permitida: true },
   { tabla: 'products', columna: 'kind', ejemplo: 'composite', permitida: true },
 
-  // ── tables (schema.sql, tables-waiting-bill.sql)
-  { tabla: 'tables', columna: 'zone', ejemplo: 'Terraza' },
-  { tabla: 'tables', columna: 'capacity', ejemplo: 4 },
-  { tabla: 'tables', columna: 'status', ejemplo: 'waiting_bill', permitida: true },
+  // ── tables (esquema base)
 
   // ── orders (schema.sql + delivery/numbering/vale/void/fiado)
   { tabla: 'orders', columna: 'customer_name', ejemplo: 'Juan Perez' },
   { tabla: 'orders', columna: 'customer_phone', ejemplo: '3009876543' },
-  { tabla: 'orders', columna: 'waiter_name', ejemplo: 'Andres' },
   { tabla: 'orders', columna: 'delivery_address', ejemplo: 'Carrera 7 #45-12 apto 302' },
   { tabla: 'orders', columna: 'notes', ejemplo: 'Sin cebolla, para Pedro' },
   { tabla: 'orders', columna: 'total', ejemplo: 150000 },
@@ -97,14 +93,11 @@ const COLUMNAS_DEL_ESQUEMA: ColumnaEsquema[] = [
   { tabla: 'orders', columna: 'estimated_delivery_minutes', ejemplo: 30 },
   { tabla: 'orders', columna: 'order_number', ejemplo: 1247, permitida: true },
   { tabla: 'orders', columna: 'payment_status', ejemplo: 'partial', permitida: true },
-  { tabla: 'orders', columna: 'discount_kind', ejemplo: 'vale', permitida: true },
   { tabla: 'orders', columna: 'discount_type', ejemplo: 'fixed', permitida: true },
-  { tabla: 'orders', columna: 'type', ejemplo: 'delivery', permitida: true },
 
   // ── order_items / order_item_extras / extras
   { tabla: 'order_items', columna: 'unit_price', ejemplo: 12500 },
   { tabla: 'order_items', columna: 'modifiers', ejemplo: 'para Pedro' },
-  { tabla: 'order_items', columna: 'sent_to_kitchen', ejemplo: true },
   { tabla: 'order_item_extras', columna: 'unit_price', ejemplo: 2000 },
   { tabla: 'extras', columna: 'price', ejemplo: 2000 },
 
@@ -112,18 +105,21 @@ const COLUMNAS_DEL_ESQUEMA: ColumnaEsquema[] = [
   { tabla: 'payments', columna: 'amount', ejemplo: 45000 },
   { tabla: 'payments', columna: 'method', ejemplo: 'nequi', permitida: true },
   { tabla: 'debt_payments', columna: 'payment_method', ejemplo: 'transfer', permitida: true },
+  { tabla: 'order_items', columna: 'unit_cost', ejemplo: 8000 },
+  { tabla: 'cash_movements', columna: 'categoria', ejemplo: 'gasto' },
+  { tabla: 'debt_payments', columna: 'requiere_conciliacion', ejemplo: true },
 
-  // ── cash_shifts / cash_movements (caja-cierre-cuadre.sql, shift-reconciliation.sql)
-  { tabla: 'cash_shifts', columna: 'opening_amount', ejemplo: 200000 },
-  { tabla: 'cash_shifts', columna: 'closing_amount', ejemplo: 450000 },
-  { tabla: 'cash_shifts', columna: 'expected_amount', ejemplo: 455000 },
-  { tabla: 'cash_shifts', columna: 'expected', ejemplo: 455000 },
-  { tabla: 'cash_shifts', columna: 'declared', ejemplo: 450000 },
-  { tabla: 'cash_shifts', columna: 'expected_total', ejemplo: 455000 },
-  { tabla: 'cash_shifts', columna: 'declared_total', ejemplo: 450000 },
-  { tabla: 'cash_shifts', columna: 'close_comment', ejemplo: 'Faltaron 20.000, los puso Ana' },
-  { tabla: 'cash_shifts', columna: 'difference', ejemplo: -5000, permitida: true },
-  { tabla: 'cash_shifts', columna: 'sales_count', ejemplo: 37, permitida: true },
+  // ── jornadas / cash_movements (migración `caja`)
+  { tabla: 'jornadas', columna: 'opening_amount', ejemplo: 200000 },
+  { tabla: 'jornadas', columna: 'closing_amount', ejemplo: 450000 },
+  { tabla: 'jornadas', columna: 'expected_amount', ejemplo: 455000 },
+  { tabla: 'jornadas', columna: 'expected', ejemplo: 455000 },
+  { tabla: 'jornadas', columna: 'declared', ejemplo: 450000 },
+  { tabla: 'jornadas', columna: 'expected_total', ejemplo: 455000 },
+  { tabla: 'jornadas', columna: 'declared_total', ejemplo: 450000 },
+  { tabla: 'jornadas', columna: 'close_comment', ejemplo: 'Faltaron 20.000, los puso Ana' },
+  { tabla: 'jornadas', columna: 'difference', ejemplo: -5000, permitida: true },
+  { tabla: 'jornadas', columna: 'sales_count', ejemplo: 37, permitida: true },
   { tabla: 'cash_movements', columna: 'amount', ejemplo: 30000 },
   { tabla: 'cash_movements', columna: 'reason', ejemplo: 'Adelanto a Carlos' },
 
@@ -141,8 +137,6 @@ const COLUMNAS_DEL_ESQUEMA: ColumnaEsquema[] = [
   { tabla: 'purchase_invoice_items', columna: 'subtotal', ejemplo: 96000 },
 
   // ── couriers / stock_movements / store_sequences
-  { tabla: 'couriers', columna: 'name', ejemplo: 'Wilson Mora' },
-  { tabla: 'couriers', columna: 'phone', ejemplo: '3012223344' },
   { tabla: 'stock_movements', columna: 'notes', ejemplo: 'Ajuste hecho por Ana' },
   { tabla: 'stock_movements', columna: 'reference_id', ejemplo: '3f2b1c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d', permitida: true },
   { tabla: 'store_sequences', columna: 'last_order_number', ejemplo: 1247 },
