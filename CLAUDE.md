@@ -554,18 +554,32 @@ de comportamiento nadie se entera hasta que algo se cae.
 
 **`db reset`. Borra la base entera.** Si parece que hace falta: **parar y decirlo**, no correrlo.
 
-### 🔴 El alcance del token, que es lo que lo hace peligroso
+### 🔴 El alcance del token
 
-Un access token de Supabase (`sbp_…`) es **de la CUENTA, no de un proyecto**. La misma credencial
-alcanza **todos** los proyectos de esa cuenta — incluido **Vento, que está en PRODUCCIÓN con dos
-clientes**.
+**Supabase SÍ emite tokens con alcance de PROYECTO.** La pantalla de *Generate token* tiene
+*Resource access → Project (recomendado)*, permisos granulares por área (Project, Database,
+Application Services, Infrastructure) que arrancan **todos en No access**, y expiración de 7 días
+por defecto.
 
-> **Verificar el project-ref ANTES de cualquier comando que escriba.**
-> El único ref permitido es el de Nodo: `kvyiwiilrzpcjzbqaoow`.
+✅ **El token en uso está acotado al proyecto de Nodo.** Vento queda fuera de alcance **por
+construcción, no por una instrucción escrita** — que es exactamente la diferencia entre un **guard**
+y un **recordatorio**, el argumento que este proyecto viene midiendo desde el primer día. Un
+recordatorio que se puede leer sin contestar se salta en silencio; un alcance que no incluye el
+recurso no se puede saltar.
 
-⚠️ Y por eso el alcance **no se asume**: si alguien dice "ese token es solo de un proyecto", eso se
-comprueba, porque los PAT de Supabase no se emiten por proyecto. Confundir un token de cuenta con
-uno de proyecto es la diferencia entre un error recuperable y tocar producción ajena.
+> **⚠️ REDUNDANTE A PROPÓSITO — no borrar:** verificar el project-ref antes de cualquier comando
+> que escriba. El único ref permitido es el de Nodo: `kvyiwiilrzpcjzbqaoow`.
+>
+> Hoy esto lo garantiza el alcance del token, así que la regla no hace falta. Se conserva porque el
+> día que alguien genere un token **legacy de cuenta** —siguen existiendo— la garantía desaparece
+> sin aviso y la regla vuelve a ser lo único que queda. Es la misma redundancia deliberada con la
+> que R0 vive en este documento **además** del hook: un mecanismo no puede garantizar su propia
+> existencia.
+
+🔴 **Y la regla que sobrevive a los dos datos: el alcance se COMPRUEBA, no se asume.** Ver
+`docs/BITACORA.md` → *"dos afirmaciones opuestas, ninguna verificada"*: acá se afirmó primero que el
+token era de proyecto y después que no podía serlo, **las dos veces sin mirar**, y lo resolvió abrir
+la pantalla.
 
 ### El token no vive en ningún archivo
 

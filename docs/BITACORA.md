@@ -1028,3 +1028,45 @@ La tabla es `jornadas` desde el esquema base. `anular-venta`, `arqueo`, `descuen
 `helpers/shift` la nombraban en strings de `.from(...)`. **Quinta aparición** de la clase "lo que no
 es una referencia de código, ningún verificador lo mira" — y esta vez fueron 9 ocurrencias que
 habrían fallado todas en tiempo de ejecución.
+
+
+---
+
+## 2026-09-01 · Dos afirmaciones OPUESTAS, ninguna verificada — y el desacuerdo las hizo más creíbles
+
+**El caso.** Sobre el alcance de un access token de Supabase:
+
+| Quién | Afirmó | ¿Verificó? |
+|---|---|---|
+| El usuario | "es solo del proyecto de Nodo, no hay peligro" | **no** |
+| Yo | "los `sbp_` no se emiten por proyecto, son de cuenta" | **no** |
+
+**El dato real:** Supabase **sí** emite tokens con alcance de proyecto. La pantalla de *Generate
+token* tiene *Resource access → Project*, permisos granulares por área que arrancan **todos en No
+access**, y expiración de 7 días por defecto. **Mi afirmación era falsa**, y la del usuario era
+cierta pero sin comprobar en el momento de decirla.
+
+**Lo resolvió mirar la pantalla.** No un argumento, no una segunda lectura: la interfaz.
+
+### 🔴 La variante que hace este caso distinto del corolario de R4
+
+El corolario dice: *la coincidencia entre dos declaraciones no es evidencia — es la misma afirmación
+escrita dos veces.* Este caso es su forma **con desacuerdo**, y es peor:
+
+> **Cuando dos declaraciones se CONTRADICEN, una parece haber ganado la discusión — y "ganar" se
+> siente como haber verificado.**
+
+Coincidir al menos deja la incomodidad de que nadie salió a mirar. **Discrepar la elimina:** aparece
+un ganador, el ganador queda con la sensación de haber demostrado algo, y el perdedor concede. Los
+dos salen más convencidos que antes **y el mundo sigue sin haber sido consultado**. Acá el que
+"ganó" la discusión fui yo —sonaba técnico y específico— y estaba equivocado.
+
+**Lo accionable, y es una pregunta:** cuando una discusión se resuelve porque un lado convenció al
+otro, preguntá **qué se miró**. Si la respuesta es "nadie miró, uno argumentó mejor", lo que hay es
+una opinión con más confianza, no un dato. La verificación no es el argumento más fuerte: es abrir
+la cosa.
+
+⚠️ **Y el corolario operativo que quedó puesto:** el alcance del token ahora lo garantiza el
+**mecanismo** (permisos de proyecto, todo en *No access* por defecto), no una regla escrita. La
+regla se conservó igual, **marcada como redundante a propósito**, porque un token legacy de cuenta
+la vuelve necesaria sin aviso. Mismo criterio con el que R0 vive en `CLAUDE.md` además del hook.
