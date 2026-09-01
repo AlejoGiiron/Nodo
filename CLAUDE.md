@@ -475,6 +475,64 @@ dos cosas y parece economía.
 
 ---
 
+### ⚠️ CRITERIO SIN NÚMERO · AL QUITAR UN TÉRMINO, DECIDE LA DIRECCIÓN DEL FALLO — NO LA CONSISTENCIA
+
+*Medido el 2026-09-01, podando el vale. Dos listas, el mismo término muerto, decisiones OPUESTAS y
+las dos correctas.*
+
+Cuando una poda deja un término huérfano en una lista, la pregunta **no** es "¿ya no existe, así que
+lo saco?". Es:
+
+> **Si me equivoco y lo dejo, ¿el error afloja o endurece?**
+
+| Lista | Qué hace un término de más | Al podar |
+|---|---|---|
+| **Regex de redacción de PII** (`sentry.ts`) — `waiter\|mozo` | **REDACTA de más** → falla **CERRADO**. Sacarlo solo puede **destapar** un dato. | **SE CONSERVA** |
+| **Allowlist de claves conocidas** (`sentry.ts`) — `discount_kind` | **DEJA PASAR de más** → falla **ABIERTO**. Conservarlo solo puede **filtrar**. | **SE SACA** |
+
+Las dos entradas nombraban columnas que ya no existen. La consistencia diría "tratalas igual"; la
+dirección del fallo dice lo contrario, y la dirección del fallo tiene razón. **Una lista que
+PROHÍBE y una que PERMITE se podan al revés.**
+
+⚠️ **Es R2 aplicada a la poda**, y por eso vale escribirlo: R2 dice cómo construir la lista, no qué
+hacer cuando encoge. La respuesta es la misma idea —lo permitido se declara positivamente, lo
+prohibido nunca se enumera— leída en el momento de borrar: **hacia el lado que prohíbe, quedarse de
+más es gratis; hacia el lado que permite, es una fuga.**
+
+---
+
+### ⚠️ CRITERIO SIN NÚMERO · MIGRAR UN TEST ENTRE DOS UI CONSERVA EL SUJETO, NO LAS ASERCIONES
+
+*Defecto propio, medido el 2026-09-01.*
+
+El corolario de la propiedad dice **qué** test migrar. Este dice **cómo**, porque migrar bien el
+sujeto no alcanza:
+
+> Al mover un test de una pantalla a otra, **cada aserción sobre el DOM hay que re-derivarla de la
+> pantalla nueva.** Las que miran la **base de datos** sí viajan: el sujeto es el mismo.
+
+**Caso medido.** El test `VENTA GRATIS` se migró de la caja de Mesas al POS —correctamente: su
+sujeto era el clamp del descuento, no el flujo de dos fases—. Pero viajó también esto:
+
+```ts
+await expect(page.getByTestId('discount-amount')).toHaveValue('18.000')
+```
+
+**Falso en el POS.** Su input renderiza `String(discount)`: sin formato de miles y **sin clamp**. El
+clamp existe, pero en el CÁLCULO (`discountAmt = Math.min(discount, subtotal)`), no en el campo. La
+aserción venía de la caja de Mesas, que sí formateaba. Las tres aserciones contra la BD
+—`order.total`, `discount_amount`, `paymentCount`— eran correctas y siguen siéndolo.
+
+🔴 **Lo que lo hace grave no es el error: es que no lo cazó ningún verificador.** `tsc` ve un
+string; ESLint ve un string; los E2E no corren sin `.env`. Apareció **por casualidad**, leyendo el
+código del input mientras se podaba otra cosa.
+
+**Lo accionable:** un test migrado entre pantallas es **código nuevo y no verificado**. Se marca
+como tal —en el propio test— hasta que la suite corra de verdad. Y es una razón concreta más para
+que la suite E2E pueda correr: es el único verificador que mira esta clase.
+
+---
+
 ## Aprendizajes de proyectos hermanos (Quota, Vento)
 
 Reglas duras traídas de los hermanos — aplican a todo el trabajo en este repo:
