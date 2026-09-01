@@ -30,8 +30,8 @@ function loadEnv(path: string) {
 }
 loadEnv('.env'); loadEnv('.env.test')
 
-const URL = () => process.env.VITE_GVENTO_SUPABASE_URL!
-const ANON = () => process.env.VITE_GVENTO_SUPABASE_ANON_KEY!
+const URL = () => process.env.VITE_GNEXO_SUPABASE_URL!
+const ANON = () => process.env.VITE_GNEXO_SUPABASE_ANON_KEY!
 const FN = () => process.env.E2E_CREATE_USER_FN ?? 'create-user'
 
 const SUFFIX = Date.now().toString().slice(-6)

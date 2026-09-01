@@ -74,7 +74,7 @@ No hace falta tener un `pnpm dev` corriendo a mano: Playwright lo arranca en `51
 
 ## Requisitos
 
-- El `.env` del proyecto con `VITE_GVENTO_SUPABASE_URL` y `VITE_GVENTO_SUPABASE_ANON_KEY`
+- El `.env` del proyecto con `VITE_GNEXO_SUPABASE_URL` y `VITE_GNEXO_SUPABASE_ANON_KEY`
   (los tests usan el backend real de Supabase, contra la org **LAB**). El health
   check de `global-setup.ts` también los lee para verificar la organización.
 - Las dos cuentas de prueba de la org LAB: **owner.test** y **cajero.test**

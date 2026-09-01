@@ -57,7 +57,7 @@ test.skip(!SECRETO, 'Requiere E2E_GCENTRO_HMAC_SECRET (mismo valor que el de la 
 const CLAVE_DESCARTE = 'gnexo:suscripcion:descartado'
 
 const FN_URL = () =>
-  `${process.env.VITE_GVENTO_SUPABASE_URL}/functions/v1/${
+  `${process.env.VITE_GNEXO_SUPABASE_URL}/functions/v1/${
     process.env.E2E_APLICAR_ESTADO_FN ?? 'aplicar-estado'
   }`
 
@@ -105,8 +105,8 @@ const banner = (page: Page) => page.getByTestId('subscription-banner')
 
 test.beforeAll(async () => {
   owner = createClient(
-    process.env.VITE_GVENTO_SUPABASE_URL!,
-    process.env.VITE_GVENTO_SUPABASE_ANON_KEY!,
+    process.env.VITE_GNEXO_SUPABASE_URL!,
+    process.env.VITE_GNEXO_SUPABASE_ANON_KEY!,
     { auth: { persistSession: false } },
   )
   const { error } = await owner.auth.signInWithPassword(ownerCreds())

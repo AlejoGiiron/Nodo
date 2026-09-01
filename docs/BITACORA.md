@@ -440,3 +440,72 @@ compila igual y revienta recién contra el `CHECK`, en runtime, en producción.
 Es un lado **débil pero real**: participa del contrato y no lo protege. Y encaja con R1 punto 5
 —`database.types.ts` escrito a mano diverge del esquema sin que `tsc` lo note—: acá no diverge,
 simplemente **no dice nada**, que a los efectos del contrato es lo mismo.
+
+---
+
+## 2026-08-31 · El contrato de variables de entorno estaba roto ANTES de tocarlo
+
+Al renombrar la marca heredada aparecio que **el codigo leia `VITE_GVENTO_SUPABASE_URL` mientras
+`CLAUDE.md` y `.env.example` declaraban `VITE_GNEXO_SUPABASE_URL`**. Un `.env` escrito siguiendo la
+documentacion no conectaba con nada.
+
+**No lo introdujo el renombre: ya estaba, desde que se escribio el documento.** Cinco dias con dos
+archivos declarando una cosa y el codigo leyendo otra, y nadie lo noto.
+
+### Por que es la clase peor, segun la propia convencion
+
+*"Una nota que dirige mal cuesta mas que una ausente. Si no podes verificar una afirmacion, no la
+escribas como hecho."* La seccion de variables de entorno de `CLAUDE.md` no describia el estado del
+repo: describia **la intencion** de quien lo escribio. Las dos se ven identicas en el papel y solo
+se distinguen ejecutando.
+
+⚠️ **Y el agravante que hace de esto un caso y no una anecdota: NO habia una sola fuente
+equivocada, habia dos de acuerdo entre si.** `CLAUDE.md` y `.env.example` decian ambos `GNEXO`. Dos
+lados coincidiendo se lee como confirmacion — pero los dos eran documentos, y **ningun documento
+ejecuta**. La coincidencia entre dos declaraciones no es evidencia: es la misma afirmacion escrita
+dos veces.
+
+### Lo que lo destapo no fue leer
+
+Se encontro **intentando ejecutar contra el documento**, no revisandolo. El documento se leyo
+muchas veces en estos dias —para escribir el esquema, para citar R1, para el runbook— y sobrevivio
+intacto cada vez, porque **leer una declaracion falsa la confirma**. Lo que la rompio fue enumerar
+que variables consume el codigo y compararlas con las declaradas: un `grep` de dos lados.
+
+Es R4 con una vuelta mas: el proxy no era un test ni un tipo, era **la documentacion del propio
+repo**, escrita por nosotros y por eso especialmente creible.
+
+### Un tercer lado, que sigue roto y falla CALLADO
+
+La misma enumeracion mostro que el desajuste no era uno sino **tres**, y el tercero no lo arregla
+este renombre:
+
+| Declara `.env.example` | Lee el codigo |
+|---|---|
+| `VITE_GNEXO_SUPABASE_URL` | ✅ ahora `VITE_GNEXO_SUPABASE_URL` |
+| `VITE_GNEXO_SUPABASE_ANON_KEY` | ✅ ahora `VITE_GNEXO_SUPABASE_ANON_KEY` |
+| `VITE_GNEXO_SENTRY_DSN` | 🔴 `VITE_SENTRY_DSN` — **nunca van a coincidir** |
+
+Y el modo de fallo de ese tercero es peor que el de los otros dos: si el DSN no llega, **Sentry
+simplemente no inicializa**. No hay error, no hay pantalla rota — hay ausencia de reportes, que se
+descubre el dia que hace falta un error que no esta. Los otros dos fallaban ruidoso (la app no
+conecta); este falla en silencio.
+
+⛔ Sin decidir: el codigo usa `VITE_SENTRY_DSN`, `VITE_SENTRY_RELEASE` y `VITE_SENTRY_ENVIRONMENT`
+—consistente entre si, sin prefijo de producto—, y `.env.example` declara **solo** el DSN y con
+prefijo. Alinear el example al codigo es una linea; alinear el codigo al example son tres. Va a
+deudas.
+
+### La verificacion que se hizo, y lo que NO prueba
+
+`tsc --noEmit` dio exit 0 antes y despues de cada pasada del renombre, leyendo el codigo **dentro**
+del archivo de salida y no de una tuberia (R9).
+
+⚠️ **Pero eso prueba consistencia interna, no correspondencia.** `database.types.ts` se renombro en
+la MISMA pasada que el codigo que lo consume, asi que src y tipos concuerdan **por construccion**:
+tsc no podia dar otra cosa. Que coincidan con el esquema SQL nuevo es una afirmacion distinta, que
+solo se verifica regenerando los tipos contra la base despues del `db push`.
+
+Es R4 aplicada a la propia verificacion: **un verde que no podia haber salido rojo no es
+evidencia.** Se anota porque es exactamente el matiz que se pierde cuando alguien lee "tsc verde"
+en un commit dentro de seis meses.

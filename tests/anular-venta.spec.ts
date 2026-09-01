@@ -30,7 +30,7 @@ loadEnv('.env'); loadEnv('.env.test')
 let _owner: SupabaseClient | null = null
 async function db(): Promise<SupabaseClient> {
   if (_owner) return _owner
-  const c = createClient(process.env.VITE_GVENTO_SUPABASE_URL!, process.env.VITE_GVENTO_SUPABASE_ANON_KEY!, { auth: { persistSession: false } })
+  const c = createClient(process.env.VITE_GNEXO_SUPABASE_URL!, process.env.VITE_GNEXO_SUPABASE_ANON_KEY!, { auth: { persistSession: false } })
   const { email, password } = ownerCreds()
   const { error } = await c.auth.signInWithPassword({ email, password })
   if (error) throw error
@@ -39,7 +39,7 @@ async function db(): Promise<SupabaseClient> {
 }
 // Cliente cajero (para el rechazo por permiso: la RPC debe negar server-side).
 async function dbCajero(): Promise<SupabaseClient> {
-  const c = createClient(process.env.VITE_GVENTO_SUPABASE_URL!, process.env.VITE_GVENTO_SUPABASE_ANON_KEY!, { auth: { persistSession: false } })
+  const c = createClient(process.env.VITE_GNEXO_SUPABASE_URL!, process.env.VITE_GNEXO_SUPABASE_ANON_KEY!, { auth: { persistSession: false } })
   const { email, password } = cashierCreds()
   const { error } = await c.auth.signInWithPassword({ email, password })
   if (error) throw error

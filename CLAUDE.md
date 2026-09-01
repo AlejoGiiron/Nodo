@@ -493,6 +493,38 @@ archivo y confirmar **qué es la cosa** —tabla o andamiaje, enum o CHECK, nomb
 Cuesta un `sed -n`. Los cuatro casos se detectaron así, y siempre al escribir el código que
 dependía de ellos: **nunca releyendo el plan.**
 
+#### 🔴 Corolario del RENOMBRE — no se renombra lo que nombra algo externo que no controlamos
+
+*Agregado el 2026-08-31, durante el renombre de `restaurant_id` y de la marca heredada.*
+
+La regla de poda dice qué no borrar. Ésta dice **qué no renombrar**, y el criterio es uno solo:
+
+> **Si el nombre apunta a algo que vive fuera de este repo y que no cambiamos en la misma pasada,
+> renombrarlo NO lo renombra: lo desconecta.**
+
+Un renombre normal cambia las dos puntas a la vez —la definición y sus usos— y por eso es seguro.
+Cuando una punta está afuera, el renombre toca **solo la de adentro**, y el resultado es un texto
+que dice algo falso con toda confianza.
+
+**Casos medidos, con lo que habría pasado:**
+
+| Nombre | Qué nombra afuera | Si se renombraba |
+|---|---|---|
+| `owner.test@gvento.com` · `cajero.test@gvento.com` | Cuentas que **existen en el backend del lab** | `tests/README.md` pasaba de cierto a **falso**: instrucciones para entrar con un usuario inexistente. |
+| `src/design-system.md` — *"G-Vento Design System"* | La identidad de **otro producto**. G-Nexo necesita el suyo (CLAUDE.md) | El título afirmaría que ese es el design system de G-Nexo. Un **pendiente honesto** se convertiría en una **nota falsa**. |
+| `VITE_GVENTO_SUPABASE_URL` | Una clave del `.env` de cada máquina, **fuera de git** | ✅ Sí se renombró — pero **no alcanzaba con el código**: exige que cada quien cambie su `.env`, y por eso se pidió confirmación en vez de darlo por cerrado. |
+
+**La distinción operativa**, que es lo que hay que aplicar: preguntá **dónde vive la otra punta**.
+
+- Adentro del repo → renombrá las dos y verificá que el conteo llegue a cero.
+- Afuera y **bajo nuestro control** (un `.env`, un bucket) → renombrá, y el cambio **no está
+  terminado** hasta que la otra punta se movió. Se avisa; no se da por hecho.
+- Afuera y **fuera de nuestro control** (una cuenta ya creada, otro producto, un servicio de
+  terceros) → **no se renombra**. Si el nombre molesta, lo que cambia es la **cosa**, no el texto.
+
+⚠️ Corolario del corolario: un renombre a medias es **peor que no renombrar**, porque el texto
+queda afirmando la conexión que acaba de romper. Es la misma familia que la nota que dirige mal.
+
 ### Dónde está el peligro
 
 No en el 24,6% que se borra. En el **43,3% de zona gris** que parece viajar tal cual y necesita

@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import { loginAsOwner } from './helpers/auth'
 import { ALL_PERMISSION_KEYS } from '../src/lib/permissions'
 
-// VITE_GVENTO_* (backend del lab) viven en .env; playwright.config solo carga
+// VITE_GNEXO_* (backend del lab) viven en .env; playwright.config solo carga
 // .env.test. Cargamos .env aquí para el test del trigger vía API.
 function loadEnv(path: string) {
   try {
@@ -99,8 +99,8 @@ test.describe('Roles y permisos — editables (menos owner)', () => {
 
   test('editar el rol OWNER vía API falla (trigger de BD)', async () => {
     const sb = createClient(
-      process.env.VITE_GVENTO_SUPABASE_URL!,
-      process.env.VITE_GVENTO_SUPABASE_ANON_KEY!,
+      process.env.VITE_GNEXO_SUPABASE_URL!,
+      process.env.VITE_GNEXO_SUPABASE_ANON_KEY!,
     )
     const { data: auth, error: aerr } = await sb.auth.signInWithPassword({
       email: process.env.E2E_OWNER_EMAIL!,

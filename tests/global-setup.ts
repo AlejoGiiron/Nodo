@@ -11,7 +11,7 @@ const LAB_ORG = 'LAB'
 /**
  * Carga variables de un archivo .env (sin dotenv) en process.env, sin pisar las
  * ya definidas. playwright.config.ts ya cargó .env.test; aquí necesitamos las
- * credenciales del backend (VITE_GVENTO_*) que viven en .env.
+ * credenciales del backend (VITE_GNEXO_*) que viven en .env.
  */
 function loadEnvFile(file: string): void {
   if (!existsSync(file)) return
@@ -53,22 +53,22 @@ async function checkServedAppIsGnexo(): Promise<void> {
  * datos) y NO debe tocar producción.
  *
  * Hace login real con E2E_OWNER_EMAIL contra el mismo Supabase que usa la app
- * (VITE_GVENTO_*), consulta su organización (RLS solo deja ver la propia) y
+ * (VITE_GNEXO_*), consulta su organización (RLS solo deja ver la propia) y
  * aborta si no es LAB.
  */
 async function checkCredentialsAreLab(): Promise<void> {
   loadEnvFile('.env')
   loadEnvFile('.env.test')
 
-  const url = process.env.VITE_GVENTO_SUPABASE_URL
-  const anonKey = process.env.VITE_GVENTO_SUPABASE_ANON_KEY
+  const url = process.env.VITE_GNEXO_SUPABASE_URL
+  const anonKey = process.env.VITE_GNEXO_SUPABASE_ANON_KEY
   const email = process.env.E2E_OWNER_EMAIL
   const password = process.env.E2E_OWNER_PASSWORD
 
   if (!url || !anonKey) {
     throw new Error(
-      '[E2E health check] Faltan VITE_GVENTO_SUPABASE_URL / ' +
-      'VITE_GVENTO_SUPABASE_ANON_KEY (revisa .env). No se puede verificar la ' +
+      '[E2E health check] Faltan VITE_GNEXO_SUPABASE_URL / ' +
+      'VITE_GNEXO_SUPABASE_ANON_KEY (revisa .env). No se puede verificar la ' +
       'organización de las credenciales de prueba.',
     )
   }
