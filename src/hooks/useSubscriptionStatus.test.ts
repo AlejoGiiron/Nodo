@@ -1,4 +1,17 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
+
+// `resolveNotice` es una funcion PURA, pero vive en un modulo que arrastra
+// useAuth -> AuthContext -> src/lib/supabase, y ese crea el cliente EN LA CARGA
+// DEL MODULO. Sin `.env` presente eso tira "supabaseUrl is required" y el archivo
+// ni siquiera se COLECTA: 0 tests, suite roja.
+//
+// No es teorico y no es de esta maquina: en CI y en cualquier clon recien hecho
+// no hay `.env`. El suite unitario quedaba rojo por una razon que no tiene nada
+// que ver con lo que estos tests prueban, y un rojo permanente esconde a los
+// rojos nuevos: el tripwire del catalogo (src/lib/permissions.test.ts) vive en
+// este mismo suite. Se mockea el CLIENTE, nunca la funcion bajo prueba.
+vi.mock('@/lib/supabase', () => ({ supabase: {} }))
+
 import { resolveNotice } from './useSubscriptionStatus'
 
 // ============================================================================

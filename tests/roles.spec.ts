@@ -17,7 +17,10 @@ function loadEnv(path: string) {
 loadEnv('.env')
 loadEnv('.env.test')
 
-const SYSTEM_NON_OWNER = ['admin', 'cajero', 'mozo']
+// `mozo` se cayo con el catalogo propio de Nodo (deuda #23): era exactamente
+// mesas.gestionar + mesas.cobrar + cocina.acceder + delivery.gestionar, asi que al
+// podar esos modulos no quedaba un rol reducido, quedaba una lista vacia.
+const SYSTEM_NON_OWNER = ['admin', 'cajero']
 
 async function openRoles(page: import('@playwright/test').Page) {
   await loginAsOwner(page)
@@ -38,7 +41,7 @@ test.describe('Roles y permisos — editables (menos owner)', () => {
     await expect(owner.getByTestId('role-delete')).toHaveCount(0)
   })
 
-  test('admin/cajero/mozo son editables pero NO eliminables', async ({ page }) => {
+  test('admin/cajero son editables pero NO eliminables', async ({ page }) => {
     await openRoles(page)
     for (const name of SYSTEM_NON_OWNER) {
       const row = roleRow(page, name)
@@ -47,23 +50,27 @@ test.describe('Roles y permisos — editables (menos owner)', () => {
     }
   })
 
-  test('el catálogo muestra los 23 permisos (incl. compras/fiado/historial/anular)', async ({ page }) => {
+  test('la UI de Roles muestra TODAS las claves del catálogo', async ({ page }) => {
     await openRoles(page)
     await page.getByRole('button', { name: 'Crear rol' }).click()
     await expect(page.getByTestId('role-modal')).toBeVisible()
 
+    // Esta mitad SI necesita navegador: verifica que la matriz de Roles renderice
+    // una casilla por cada clave del catalogo. La otra mitad —que el catalogo sea
+    // exactamente el que fijamos— vive en src/lib/permissions.test.ts (vitest):
+    // es un dato del repo y no debe depender de que haya servidor levantado.
+    //
+    // El numero NO se clava aca a proposito. Estaba clavado (`toBe(23)`) y eso
+    // ponia el mismo contrato en dos lados, que es R1. Ahora este spec compara la
+    // pantalla contra el catalogo, y el catalogo contra la lista fijada.
     await expect(page.locator('[data-testid^="perm-"]')).toHaveCount(ALL_PERMISSION_KEYS.length)
-    // 22 → 23 el 2026-08-31: entró `ventas.anular`, que se enforceaba desde junio
-    // (register-sale-void.sql, SalesHistoryPage) pero no estaba en el catálogo, así
-    // que no se podía conceder desde esta misma pantalla. Este número clavado es el
-    // único tripwire del repo sobre el tamaño del catálogo: si se pone rojo, mirá QUÉ
-    // permiso cambió antes de tocar el número.
-    expect(ALL_PERMISSION_KEYS.length).toBe(23)
 
-    // Los 3 que faltaban en el catálogo viejo ahora están.
+    // Muestras de los modulos que en Vento no se podian conceder desde esta misma
+    // pantalla, mas el modulo nuevo de Nodo.
     await expect(page.getByTestId('perm-compras.gestionar')).toBeVisible()
     await expect(page.getByTestId('perm-fiado.gestionar')).toBeVisible()
-    await expect(page.getByTestId('perm-ventas.historial')).toBeVisible()
+    await expect(page.getByTestId('perm-ventas.anular')).toBeVisible()
+    await expect(page.getByTestId('perm-inventario.ajustar')).toBeVisible()
   })
 
   test('editar cajero: agregar un permiso, guardar y verificar (round-trip)', async ({ page }) => {

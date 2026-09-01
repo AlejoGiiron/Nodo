@@ -557,3 +557,93 @@ está a dos líneas del mensaje de error y aun así lo habría mandado a mirar a
 **Quinto caso del patrón "aparece al ejecutar/enumerar, no al planificar/leer".** Los anteriores:
 el hueco de extras, el 09 bloqueado por transitividad, el `protect_organization_subscription`
 perdido, y el orden de migraciones que no era ejecutable.
+
+
+---
+
+## 2026-08-31 · El tripwire del catálogo: por qué un conteo no era un tripwire
+
+**Deuda #6 pagada, pero no como estaba escrita.** La deuda pedía literalmente *"un `toBe(N)` en
+`tests/roles.spec.ts` que clave el tamaño"*. Se implementó otra cosa, y la razón vale más que el
+test.
+
+### El agujero del conteo, mostrado con el mutante
+
+Un `toBe(21)` detecta **altas y bajas**. No detecta una **sustitución**: cambiar una clave por otra
+deja el conteo en 21. Y una sustitución no es un caso raro — es exactamente la forma que toma el
+cambio cuando alguien "arregla" un typo en el lugar equivocado.
+
+Mutante 1: `ventas.anular` → `ventas.anualr` en `PERMISSION_GROUPS`. El catálogo sigue teniendo 21
+claves. Con la lista fijada, el rojo dice:
+
+```
+Expected: "claves que DESAPARECIERON del catálogo: ninguna"
+Received: "claves que DESAPARECIERON del catálogo: ventas.anular"
+Expected: "claves NUEVAS que no están fijadas acá: ninguna"
+Received: "claves NUEVAS que no están fijadas acá: ventas.anualr"
+```
+
+🔴 **Y acá está el dato que decide el diseño del mensaje.** La tercera aserción del mismo test
+—`expect(ALL_PERMISSION_KEYS).toEqual(CATALOGO_FIJADO)`— sí se puso roja, pero imprimió esto:
+
+```
+AssertionError: expected [ Array(21) ] to deeply equal [ Array(21) ]
+```
+
+**Un rojo que dice "esperaba 21, recibí 21" es peor que no tener el test**: manda a mirar un
+número que está bien. Por eso las aserciones se hacen sobre un **string construido con los
+nombres** y no sobre el array: no es cosmética, es la diferencia entre un tripwire que dirige y uno
+que confunde. Es la misma familia que R6 —un guard que rechaza señalando la causa que no es— y que
+la regex de `global-setup`.
+
+### Los otros dos mutantes, y el control negativo
+
+| Mutante | Qué murió |
+|---|---|
+| `ventas.anular` → `ventas.anualr` (conteo intacto) | 3 aserciones, nombrando las dos claves |
+| invertir el orden de `productos.ver` / `productos.editar` | **solo** la aserción de orden — el conjunto no cambió |
+| `admin: ALL_PERMISSION_KEYS` → `[...ALL_PERMISSION_KEYS]` | la aserción de que `admin` es **derivado**, no una copia |
+
+Control negativo: revertido, **7/7 verde**. Sin ese control el ejercicio no prueba nada (R4: antes
+de creerle a un verde, preguntá cómo se vería el rojo).
+
+### Dónde vive, y por qué no donde decía la deuda
+
+En `src/lib/permissions.test.ts` (vitest), no en `tests/roles.spec.ts` (Playwright).
+
+> **Un tripwire que necesita infraestructura para ponerse rojo no está puesto.**
+
+El spec E2E exige servidor levantado y backend del lab disponible. El catálogo es un **dato del
+repo**: comparar dos constantes no necesita navegador. En el spec quedó la mitad que sí lo
+necesita —que la UI de Roles renderice una casilla por clave— y se le **quitó** el `toBe(23)`:
+tener el número clavado en dos lados era exactamente R1.
+
+---
+
+## 2026-08-31 · El suite unitario decía "256 passed" y un archivo entero no corría
+
+**Encontrado al poner el tripwire, y es lo que le habría quitado el valor.**
+
+`pnpm test:unit` salía **exit 1**, pero el resumen decía `Tests 256 passed (256)`. Los dos datos
+eran ciertos: el archivo `src/hooks/useSubscriptionStatus.test.ts` **no fallaba, no se colectaba**
+— `(0 test)`. Sus **24 tests no corrían desde que existen en este repo**, y el resumen no los
+extraña porque no puede contar lo que nunca se cargó.
+
+**La causa.** `resolveNotice` es una función pura, pero vive en un módulo que arrastra
+`useAuth → AuthContext → src/lib/supabase`, y ese crea el cliente **en la carga del módulo**. Sin
+`.env` presente eso tira `supabaseUrl is required` antes de que exista un solo test. No es una
+particularidad de esta máquina: **en CI y en cualquier clon recién hecho no hay `.env`.**
+
+Se mockeó el **cliente**, nunca la función bajo prueba: `vi.mock('@/lib/supabase')`. Resultado:
+**280 tests, 5 archivos, exit 0** — 24 tests recuperados.
+
+🔴 **Por qué esto era urgente y no un arreglo de paso.** El tripwire del catálogo vive en ese mismo
+suite. **Un rojo permanente esconde a los rojos nuevos**: si `pnpm test:unit` sale 1 siempre, el
+día que el catálogo cambie en silencio nadie va a notar la diferencia. Es la misma forma que la
+deuda 23.3 —una clave inexistente y una denegada devuelven las dos `false`, y por eso son
+**indistinguibles**—: lo que rompe el mecanismo no es la ausencia de señal, es que la señal **ya
+esté encendida por otra cosa**.
+
+⚠️ Y el resumen verde con exit rojo es primo de R9: **el número que te muestran no es el que
+pensás**. Acá ni siquiera hubo tubería — alcanzó con leer la línea de "Tests" y no la de "Test
+Files".

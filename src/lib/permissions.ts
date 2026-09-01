@@ -44,7 +44,9 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
     { key: 'compras.gestionar', label: 'Gestionar' },
   ] },
   { module: 'Cartera', perms: [
-    { key: 'fiado.gestionar', label: 'Gestionar' }  // clave heredada: ver DEUDAS #23,
+    // La ETIQUETA del modulo es Cartera; la CLAVE sigue siendo `fiado` a proposito:
+    // la consumen la RPC, dos policies y tres pantallas. Ver DEUDAS #23.
+    { key: 'fiado.gestionar', label: 'Gestionar' },
   ] },
   { module: 'Ventas', perms: [
     { key: 'ventas.historial', label: 'Historial de ventas' },

@@ -179,9 +179,14 @@ LO QUE ESTO **NO** ARREGLA, dicho explícitamente:
    En Vento 6 permisos del catálogo no gateaban nada y fallaban ABIERTO. Al
    agregar una clave acá, verificá que exista el \`can()\` que la consume.
 
-⛔ TRIPWIRE PENDIENTE: en Vento, tests/roles.spec.ts clava el tamaño del catálogo
-   con toBe(N) para que un cambio silencioso salga rojo. Nodo todavía no tiene el
-   suyo. Ponerlo con el primer catálogo real.`
+✅ TRIPWIRE PUESTO (2026-08-31): src/lib/permissions.test.ts clava las 21 claves
+   como LISTA ORDENADA, no como conteo. Un toBe(N) detecta altas y bajas pero NO
+   una SUSTITUCIÓN —el conteo no se mueve—, que es justo el cambio que hace alguien
+   "arreglando" un typo en el lugar equivocado. El rojo nombra QUÉ clave cambió.
+   Corré: pnpm test:unit   (no necesita servidor ni backend del lab)
+   ⚠️ Si lo ponés rojo NO edites la lista para que pase. Primero mirá qué clave
+   cambió; si el cambio es intencional, movés la lista Y sus consumidores en la
+   misma pasada (R1).`
 
 import fs from 'node:fs'
 import path from 'node:path'

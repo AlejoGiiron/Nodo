@@ -771,6 +771,6 @@ Todo lo de esta sección caduca. Preferí siempre el comando sobre el dato.
 | `settings.json` + hooks | Copiados y verificados en banco. ⛔ Falta correrlos en la máquina real. |
 | Generador de RBAC | **Ya viajó** (2026-08-31). Existen `scripts/gen-rbac-sql.mjs` y `supabase/seed-system-roles.sql`; `pnpm gen:rbac:check` da **exit 0**. ⛔ Falta que ese check corra en **CI** (deuda 5) y ⛔ falta el **catálogo propio** (deuda 23): las 23 claves de `SYSTEM_ROLES` siguen siendo las de Vento (`cocina.*`, `mesas.*`, `delivery.*`). Viajó el mecanismo, no el contenido. Reconfirmar con `grep -oE "'[a-z_]+\.[a-z_]+'" src/lib/permissions.ts \| sort -u \| wc -l`. |
 | Design system | ⛔ Pendiente. |
-| Tripwire del catálogo (`tests/roles.spec.ts`) | ⛔ Pendiente. |
+| Tripwire del catálogo | ✅ **Puesto (2026-08-31)** en `src/lib/permissions.test.ts`: las 21 claves como **lista ordenada**, no un conteo — un conteo no ve una sustitución. Auditado por mutación, 3/3 mutantes muertos. Reconfirmar con `pnpm test:unit`. |
 | Regla nueva sin número | ⛔ Numerarla en Vento primero. |
 | Las 5 skills | ⛔ Pendientes. |
