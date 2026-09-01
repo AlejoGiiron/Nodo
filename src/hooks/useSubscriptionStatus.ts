@@ -22,7 +22,7 @@ export interface SubscriptionNotice {
  * Textos por defecto cuando `subscription_message` viene vacío.
  *
  * POR QUÉ un default y no ocultar el banner: el ESTADO es el contrato y el
- * mensaje es presentación. Si un NULL silenciara el aviso, G-Centro tendría un
+ * mensaje es presentación. Si un NULL silenciara el aviso, Centro tendría un
  * interruptor accidental para apagarlo — un campo opcional pasaría a decidir si
  * el cliente se entera o no.
  */
@@ -37,7 +37,7 @@ const MENSAJE_POR_DEFECTO: Record<EstadoConAviso, string> = {
  *
  * FAIL-OPEN: el `switch` NO tiene `else`/`default` que muestre algo. Todo lo
  * que no sea exactamente `expiring` o `grace` —incluidos `active`, los dos
- * estados no implementados, un valor nuevo que agregue G-Centro y una columna
+ * estados no implementados, un valor nuevo que agregue Centro y una columna
  * nula— devuelve `null`. La ausencia de información nunca degrada a un cliente:
  * un bar sin poder operar un domingo por una bandera que no supimos leer es
  * inaceptable, y el bien protegido acá es la cobranza, no los datos.
@@ -68,7 +68,7 @@ export function resolveNotice(
 }
 
 /**
- * Lee la bandera de suscripción que escribe G-Centro. Nodo SOLO LEE.
+ * Lee la bandera de suscripción que escribe Centro. Nodo SOLO LEE.
  *
  * ── SIN REALTIME (decisión, no omisión) ─────────────────────────────────────
  * Nodo usa Realtime en cinco lugares y estaría disponible acá, pero una
@@ -81,7 +81,7 @@ export function resolveNotice(
  *
  * ── EL TIMESTAMP NO DECIDE ──────────────────────────────────────────────────
  * `subscription_updated_at` significa "cuándo CAMBIÓ el estado", no "cuándo
- * llamó G-Centro": re-aplicar el mismo estado es un no-op y no la mueve. Por
+ * llamó Centro": re-aplicar el mismo estado es un no-op y no la mueve. Por
  * eso un cliente estable en `grace` hace tres semanas tiene el timestamp viejo
  * y ESO ES CORRECTO. Caducar el aviso por antigüedad haría desaparecer el
  * banner solo — la degradación por timeout que queremos evitar, invertida.

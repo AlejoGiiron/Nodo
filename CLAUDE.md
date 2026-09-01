@@ -192,8 +192,8 @@ en Vento.
    la que tiene huecos.
 
 3. **`subscription_status` — 6 lados, TRES REPOS.** ⚠️ **Corregido el 2026-08-31: NO es un enum**, es `text` con `CHECK`. Se verifico leyendo el SQL; la version anterior de esta nota decia "enum" y dirigia mal justo donde importa, porque la asimetria enum/CHECK es la que decide si sumar un estado es caro. Ampliar el CHECK es un `drop`/`add constraint` trivial, y la decision ya venia tomada de Vento por esa misma razon. Ya eran 4 lados y 2 repos entre
-   Vento y G-Centro; Nodo agrega los suyos. **No existe ningún mecanismo que garantice el
-   aviso.** El aviso a G-Centro va ANTES del deploy, no después. **Paquete real.**
+   Vento y Centro; Nodo agrega los suyos. **No existe ningún mecanismo que garantice el
+   aviso.** El aviso a Centro va ANTES del deploy, no después. **Paquete real.**
    📋 Lados **dentro de este repo**, enumerados el 2026-08-31 y **consistentes entre si**: el CHECK
    de `supabase/02b-suscripcion.sql` · `ESTADOS` en `supabase/functions/aplicar-estado/index.ts` ·
    `ESTADOS` en `tests/suscripcion-estado.spec.ts` · `resolveNotice()` en
@@ -433,7 +433,7 @@ de planificación — **y ganó**. Una nota que tranquiliza mal es peor que una 
 
 ---
 
-## Aprendizajes de proyectos hermanos (G-Quota, Vento)
+## Aprendizajes de proyectos hermanos (Quota, Vento)
 
 Reglas duras traídas de los hermanos — aplican a todo el trabajo en este repo:
 
@@ -565,6 +565,39 @@ que dice algo falso con toda confianza.
 
 ⚠️ Corolario del corolario: un renombre a medias es **peor que no renombrar**, porque el texto
 queda afirmando la conexión que acaba de romper. Es la misma familia que la nota que dirige mal.
+
+#### 🔴 Corolario del corolario — quitar el prefijo abarató la marca y ENCARECIÓ su verificación
+
+*Medido el 2026-08-31, al pasar de `G-Nexo` a `Nodo` y sacarle el prefijo a toda la familia.*
+
+La convención nueva —raíz sola, sin prefijo ni guion— es mejor marca. **Y tiene un costo que no
+previmos, en el lugar donde menos se mira: la verificación.**
+
+**Un prefijo no solo distingue el producto: hace la cadena DISTINTIVA.** `gvento` y `G-Nexo` no
+aparecen en ningún otro contexto, así que contarlos era fiable y "llega a cero" era un criterio
+honesto. Los nombres desnudos **son palabras comunes o substrings de palabras comunes**, y eso
+vale para los cuatro:
+
+| Nombre | Aparece dentro de |
+|---|---|
+| `vento` | in**vento**rio · e**vento** · In**vento**ryPage |
+| `nodo` | — pero `nodo` es palabra común en español y en grafos |
+| `centro` | **centro** de costos · **centro** de acopio · **centr**ado |
+| `mura` | **mura**lla · **mura**l |
+| `cresco` | (el único razonablemente distintivo) |
+
+**Medido:** `vento` da **47 coincidencias** en `src/` + `tests/` y casi todas son ruido; `centro`
+en minúscula da 5, todas ruido. Un criterio de "el conteo llega a cero" **es inalcanzable por
+construcción** y por lo tanto miente siempre.
+
+**LA REGLA, entonces:** toda verificación futura de marca va **por LISTA ENUMERADA, nunca por
+conteo**. Se escribe qué menciones legítimas quedan y por qué cada una está permitida; la
+verificación consiste en confirmar que **esa lista es exhaustiva**, no en que un número dé cero.
+
+⚠️ **Y el patrón general, que es lo que hay que retener:** una decisión buena en su propio eje
+—marca más limpia— puede **degradar un mecanismo en otro eje** —verificabilidad— sin que nadie lo
+note, porque los dos ejes los evalúa gente distinta en momentos distintos. Al tomar una decisión de
+nomenclatura, preguntá también **cómo se va a verificar después**.
 
 ### Dónde está el peligro
 
@@ -734,7 +767,7 @@ Todo lo de esta sección caduca. Preferí siempre el comando sobre el dato.
 | Origen de la copia | Vento rama `develop`, `d848852`. También `docs/reglas-de-clase` en origin, viva hasta terminar de copiar. |
 | Conteo de errores repetidos en Vento | **Discrepante:** el traspaso dice 9, su `CLAUDE.md` dice 11, el cierre dice 13 y numera los casos #11–#14. Resolver contra `docs/BITACORA.md` antes de citarlo. |
 | `settings.json` + hooks | Copiados, verificados en banco y **corriendo en la máquina real** (2026-08-31): disparó 3 veces en sesión. ⛔ Las 3 fueron falsos positivos — tasa de ruido sin medir (deuda 22). |
-| G-Centro | Ya nació multi-producto. Enumerar qué falta para que Nodo entre como tercer producto — **en su propio hilo**. |
+| Centro | Ya nació multi-producto. Enumerar qué falta para que Nodo entre como tercer producto — **en su propio hilo**. |
 | `settings.json` + hooks | Copiados y verificados en banco. ⛔ Falta correrlos en la máquina real. |
 | Generador de RBAC | **Ya viajó** (2026-08-31). Existen `scripts/gen-rbac-sql.mjs` y `supabase/seed-system-roles.sql`; `pnpm gen:rbac:check` da **exit 0**. ⛔ Falta que ese check corra en **CI** (deuda 5) y ⛔ falta el **catálogo propio** (deuda 23): las 23 claves de `SYSTEM_ROLES` siguen siendo las de Vento (`cocina.*`, `mesas.*`, `delivery.*`). Viajó el mecanismo, no el contenido. Reconfirmar con `grep -oE "'[a-z_]+\.[a-z_]+'" src/lib/permissions.ts \| sort -u \| wc -l`. |
 | Design system | ⛔ Pendiente. |

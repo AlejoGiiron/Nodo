@@ -17,7 +17,7 @@ import { waitPosReady } from './helpers/pos'
 // el punto de la Fase 1 (privilegios por columna en allowlist + trigger). Para
 // montar cada escenario hay que escribirlas por alguno de los dos caminos que
 // existen, y se eligió `aplicar-estado` firmada con HMAC porque es EL MISMO
-// camino que usa G-Centro en producción. Beneficio lateral: cada corrida
+// camino que usa Centro en producción. Beneficio lateral: cada corrida
 // revalida que la función siga viva y que "Verify JWT" siga desactivado (si un
 // redeploy lo reactiva, estos tests fallan con 401 y avisan).
 //
@@ -28,7 +28,7 @@ import { waitPosReady } from './helpers/pos'
 //     escribe la función). Queda con la hora de la corrida — y es honesto: el
 //     estado REALMENTE cambió varias veces. LAB es el laboratorio, no un
 //     cliente que pague, así que ese timestamp no alimenta ningún cobro.
-//   · LAB es el tenant con el que G-Centro prueba su panel: si esta suite corre
+//   · LAB es el tenant con el que Centro prueba su panel: si esta suite corre
 //     mientras ellos ensayan, se pisan. Es coordinación, no código; el restore
 //     acota la ventana a la duración de la corrida.
 //
@@ -66,7 +66,7 @@ let orgId = ''
 let snap: { status: string; message: string | null }
 
 /**
- * Escribe la bandera como lo hace G-Centro: HMAC sobre `${ts}.${crudo}` con el
+ * Escribe la bandera como lo hace Centro: HMAC sobre `${ts}.${crudo}` con el
  * cuerpo CRUDO (no re-serializado) y sin Authorization — la función tiene
  * "Verify JWT" desactivado y el HMAC es su única autenticación.
  */
@@ -176,7 +176,7 @@ for (const estado of ['restricted', 'suspended']) {
 
 // ── expiring: aviso descartable ─────────────────────────────────────────────
 
-test('expiring muestra el mensaje de G-Centro y es descartable', async ({ page }) => {
+test('expiring muestra el mensaje de Centro y es descartable', async ({ page }) => {
   await setEstado('expiring', 'Tu plan vence el 25 de agosto.')
   await recargarPos(page)
 
@@ -188,7 +188,7 @@ test('expiring muestra el mensaje de G-Centro y es descartable', async ({ page }
 })
 
 test('expiring sin mensaje usa el texto por defecto (no se calla)', async ({ page }) => {
-  // Un NULL no puede silenciar el aviso: sería darle a G-Centro un interruptor
+  // Un NULL no puede silenciar el aviso: sería darle a Centro un interruptor
   // accidental para apagarlo.
   await setEstado('expiring', null)
   await recargarPos(page)

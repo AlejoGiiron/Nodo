@@ -5,7 +5,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { ownerCreds } from './helpers/auth'
 
 // ============================================================================
-// Estado de suscripción escrito por G-Centro — protección de escritura
+// Estado de suscripción escrito por Centro — protección de escritura
 // (migración supabase/organization-subscription.sql)
 //
 // ⚠️  REQUIERE la migración APLICADA en LAB. El primer test verifica que las
@@ -73,7 +73,7 @@ let owner: SupabaseClient
 let orgId = ''
 let orgNombre = ''
 // Baseline del estado de suscripción al empezar. NO se asume 'active' + null:
-// LAB es el tenant de prueba de G-Centro, así que estos valores CAMBIAN de
+// LAB es el tenant de prueba de Centro, así que estos valores CAMBIAN de
 // forma legítima cada vez que alguien ejercita la Edge Function. Los casos de
 // abajo comparan contra este snapshot en vez de contra un valor fijo — un test
 // que exija "nadie escribió nunca" se rompe con el uso normal del laboratorio.
@@ -118,7 +118,7 @@ const ESTADOS = ['active', 'expiring', 'grace', 'restricted', 'suspended']
 
 test('las 3 columnas existen y el estado es uno del enum', async () => {
   // Canario de "aplicaste la migración". NO assertea 'active' ni updated_at
-  // null: LAB es el tenant de prueba de G-Centro y esos valores cambian de
+  // null: LAB es el tenant de prueba de Centro y esos valores cambian de
   // forma legítima. Lo que sí es invariante es que la columna exista y que su
   // contenido esté dentro del CHECK.
   const { data, error } = await owner
@@ -231,7 +231,7 @@ test('el CHECK rechaza un estado fuera del enum', async () => {
 // HTTP + mensaje). Ninguno probó el EFECTO: que la fila siguiera intacta. Es la
 // mitad que importa, porque una validación que corre DESPUÉS de la escritura
 // devuelve el mismo 400 y deja la fila escrita — el fallo que apareció en
-// G-Centro (validación dentro de la función de envío, insert en el handler).
+// Centro (validación dentro de la función de envío, insert en el handler).
 //
 // Hoy el orden es correcto: el enum se valida en index.ts:134 y el UPDATE está
 // en :167, con el cliente service role construido recién en :137. Estos tests
@@ -247,7 +247,7 @@ test('el CHECK rechaza un estado fuera del enum', async () => {
 // ── SOLO LEE (contra LAB) ───────────────────────────────────────────────────
 // Los tres casos son RECHAZOS, así que el spec no cambia el estado de suscripción
 // de LAB. No agregar acá un caso de camino feliz sin pensarlo: escribiría el
-// estado del tenant que G-Centro usa para probar.
+// estado del tenant que Centro usa para probar.
 //
 // Requiere el secreto HMAC (una firma inválida muere en :112, antes del enum,
 // y el test no probaría nada). Sin él hace skip, como el caso del service role.
@@ -260,7 +260,7 @@ const FN_URL = () =>
 
 type RespuestaFn = { status: number; body: { error?: string; ok?: boolean } }
 
-/** Firma y llama a la función igual que G-Centro: HMAC sobre `${ts}.${crudo}`
+/** Firma y llama a la función igual que Centro: HMAC sobre `${ts}.${crudo}`
  *  con el cuerpo CRUDO (no re-serializado). No manda Authorization: la función
  *  tiene "Verify JWT" desactivado y el HMAC es la única autenticación. */
 async function aplicarEstado(secreto: string, payload: unknown): Promise<RespuestaFn> {
@@ -337,7 +337,7 @@ test('un organization_id malformado da 400 legible, no el 500 generico', async (
 
   // ANTES del arreglo esto daba 500 "Error de base de datos": el id llegaba al
   // .eq() y Postgres contestaba 22P02, que caía en el catch genérico del SELECT.
-  // El status es lo que discrimina — un 500 acá le dice a G-Centro "la base
+  // El status es lo que discrimina — un 500 acá le dice a Centro "la base
   // falló" cuando el que se equivocó fue él, y no le dice qué corregir.
   expect(res.status).toBe(400)
   expect(res.body.error).toMatch(/organization_id/i)

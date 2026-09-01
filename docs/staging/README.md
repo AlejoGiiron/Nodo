@@ -161,5 +161,5 @@ negar. Eso son los specs E2E, no el push.
 - [ ] 🔴 **Leer el script de backup del Ubuntu** y confirmar con qué patrón toma volúmenes (§4).
 - [ ] Generar los secretos de `.env.staging` — **ninguno reutilizado**.
 - [ ] Desplegar las **edge functions** (`create-user`, `aplicar-estado`) en el stack: el esquema
-      **presupone** que G-Centro escribe `subscription_status` por ahí (ver `02b`/`suscripcion`).
+      **presupone** que Centro escribe `subscription_status` por ahí (ver `02b`/`suscripcion`).
 - [ ] Decidir si staging tiene **dominio y TLS** o se accede por IP:puerto.

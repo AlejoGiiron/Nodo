@@ -19,7 +19,7 @@ describe('resolveNotice — fail-open', () => {
     ['active (el estado normal)', 'active'],
     ['restricted — NO implementado en esta fase', 'restricted'],
     ['suspended — NO implementado en esta fase', 'suspended'],
-    ['un estado que agregue G-Centro y no conozcamos', 'trial_extendido'],
+    ['un estado que agregue Centro y no conozcamos', 'trial_extendido'],
     ['columna nula', null],
     ['lectura fallida / fila ausente', undefined],
     ['cadena vacía', ''],
@@ -42,7 +42,7 @@ describe('resolveNotice — fail-open', () => {
 })
 
 describe('resolveNotice — mensaje por defecto', () => {
-  // Un mensaje vacío NO puede silenciar el banner: sería darle a G-Centro un
+  // Un mensaje vacío NO puede silenciar el banner: sería darle a Centro un
   // interruptor accidental para apagar el aviso.
   const vacios: Array<[string, string | null | undefined]> = [
     ['null', null],
@@ -67,7 +67,7 @@ describe('resolveNotice — mensaje por defecto', () => {
     })
   }
 
-  it('el mensaje de G-Centro gana sobre el default cuando trae texto', () => {
+  it('el mensaje de Centro gana sobre el default cuando trae texto', () => {
     const n = resolveNotice('expiring', 'Renovar antes del 20 de agosto.')
     expect(n!.mensaje).toBe('Renovar antes del 20 de agosto.')
   })

@@ -39,7 +39,7 @@
 --    razón, escrita ahí: "es una bandera COMPARTIDA ENTRE DOS REPOS — ampliar
 --    un CHECK es un drop/add trivial, ampliar un enum es ALTER TYPE". No hay
 --    nada que bajar a CHECK: ya lo es, y por eso sumar un estado no crea
---    divergencia de tipo con G-Centro.
+--    divergencia de tipo con Centro.
 --
 -- ⚠️ Lo que este archivo NO trae: la tabla `_t_priv` del original. No es
 --    esquema — es una SONDA de verificación (hace `set local role authenticated`
@@ -52,7 +52,7 @@ begin;
 -- ------------------------------------------------------------
 -- Columnas
 --
--- Default 'active' es FAIL-CLOSED EN LA DIRECCION QUE IMPORTA: si G-Centro no
+-- Default 'active' es FAIL-CLOSED EN LA DIRECCION QUE IMPORTA: si Centro no
 -- responde nunca, el cliente NO se degrada solo. El riesgo de dejar operando a
 -- quien no pagó es comercial y reversible; el de bloquear a quien sí pagó
 -- porque un servicio externo no contestó es un cliente parado sin causa.
@@ -69,9 +69,9 @@ alter table public.organizations
   add column subscription_updated_at timestamptz;
 
 comment on column public.organizations.subscription_status is
-  'Estado de suscripcion. Lo escribe SOLO G-Centro via Edge Function con '
+  'Estado de suscripcion. Lo escribe SOLO Centro via Edge Function con '
   'service role; protegido de escritura por cliente con '
-  'trg_protect_organization_subscription. Default active: si G-Centro no '
+  'trg_protect_organization_subscription. Default active: si Centro no '
   'responde nunca, el cliente NO se degrada. '
   '🔴 CONTRATO EN 6 LADOS Y 3 REPOS (R1 punto 3): al agregar un estado hay que '
   'tocar tambien la edge function aplicar-estado, el spec, resolveNotice y '
@@ -106,13 +106,13 @@ set search_path = public
 as $$
 begin
   -- Solo usuarios reales: PostgREST hace SET ROLE authenticated. El
-  -- service_role de la Edge Function de G-Centro, los seeds y postgres pasan.
+  -- service_role de la Edge Function de Centro, los seeds y postgres pasan.
   if current_user = 'authenticated' then
     if new.subscription_status is distinct from old.subscription_status
        or new.subscription_message is distinct from old.subscription_message
        or new.subscription_updated_at is distinct from old.subscription_updated_at
     then
-      raise exception 'El estado de suscripcion solo lo escribe G-Centro'
+      raise exception 'El estado de suscripcion solo lo escribe Centro'
         using errcode = 'check_violation';
     end if;
   end if;

@@ -115,7 +115,7 @@ export function SubscriptionBanner() {
         espacios (un token, un ID largo) se RECORTA EN SILENCIO — un flex item
         trae `min-width:auto` y el ancestro es `overflow-hidden`, así que el
         texto no desborda la página: simplemente deja de verse, sin ninguna
-        señal. El tope de largo se acordó con G-Centro (140), pero el tope no
+        señal. El tope de largo se acordó con Centro (140), pero el tope no
         protege de una corrida sin cortes posibles.
       */}
       <span

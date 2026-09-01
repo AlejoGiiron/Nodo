@@ -141,11 +141,11 @@ error**. Ver `docs/staging/README.md` §4.
 volúmenes con un patrón tipo `supabase_*`, `nodo_staging_db` queda afuera solo; si usa `*db*`,
 entra. **Pendiente de dato, no decidido.**
 
-**G-Centro como tercer producto.** G-Centro ya nació multi-producto. Enumerar qué falta para que Nodo entre — pero **en su propio hilo**, no acá.
+**Centro como tercer producto.** Centro ya nació multi-producto. Enumerar qué falta para que Nodo entre — pero **en su propio hilo**, no acá.
 
 ⚠️ **Y ahora el esquema base LO PRESUPONE (2026-08-31).** `supabase/02b-suscripcion.sql` deja
 `subscription_status` con default `active` y escribible **solo** por la Edge Function con service
-role — es decir, por G-Centro. Sin G-Centro conectado, el estado nunca cambia: el sistema opera
+role — es decir, por Centro. Sin Centro conectado, el estado nunca cambia: el sistema opera
 siempre en `active`, que es fail-closed en la direccion correcta (nadie se degrada solo) pero
 tambien significa que **hoy no hay quien suspenda a nadie**. Sigue siendo trabajo de su propio
 hilo; lo que cambia es que dejo de ser opcional para el modelo de negocio.

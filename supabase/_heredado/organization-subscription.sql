@@ -1,8 +1,8 @@
 -- ============================================================
--- Vento — FASE 1: estado de suscripción escrito por G-Centro
+-- Vento — FASE 1: estado de suscripción escrito por Centro
 --
--- ARQUITECTURA: G-Centro (panel de suscripciones, repo y BD aparte) ESCRIBE
--- una bandera en organizations; Vento solo LEE. Si G-Centro se cae, el POS
+-- ARQUITECTURA: Centro (panel de suscripciones, repo y BD aparte) ESCRIBE
+-- una bandera en organizations; Vento solo LEE. Si Centro se cae, el POS
 -- sigue vendiendo — por eso el default es 'active' y NO hay NOT NULL sin
 -- default: la ausencia de información nunca puede degradar a un cliente.
 --
@@ -61,7 +61,7 @@
 -- ⚠️ RESIDUO CONOCIDO: el unique es sensible a mayúsculas y espacios, así que
 -- 'G-10' y 'g-10 ' siguen siendo dos filas válidas y distintas. NO se usa
 -- unique sobre lower(name) para no rechazar nombres legítimos. La conclusión
--- operativa no cambia: **G-Centro debe guardar el UUID, nunca el nombre.**
+-- operativa no cambia: **Centro debe guardar el UUID, nunca el nombre.**
 --
 -- Ejecutar en: Supabase Dashboard > SQL Editor. Migración NUEVA.
 -- ============================================================
@@ -78,7 +78,7 @@ select name, count(*) as veces, array_agg(id) as ids
  group by name
 having count(*) > 1;
 
--- Referencia para G-Centro: los UUID de cada organización. La cantidad de
+-- Referencia para Centro: los UUID de cada organización. La cantidad de
 -- sedes ayuda a desambiguar si dos nombres se parecen.
 -- ⚠️ LAB NO es un cliente que pague: es el laboratorio. No debe entrar a un
 -- cobro ni a un conteo de clientes activos (ver CLAUDE.md).
@@ -150,7 +150,7 @@ begin;
 -- text+check; los 5 enums son del esquema original). Y hay una razón extra
 -- acá: es una bandera COMPARTIDA ENTRE DOS REPOS — ampliar un CHECK es un
 -- drop/add constraint trivial, ampliar un enum es ALTER TYPE con sus
--- restricciones. Si G-Centro suma un estado, que salga barato.
+-- restricciones. Si Centro suma un estado, que salga barato.
 alter table public.organizations
   add column if not exists subscription_status text not null default 'active'
     check (subscription_status in
@@ -169,9 +169,9 @@ alter table public.organizations
   add column if not exists subscription_updated_at timestamptz;
 
 comment on column public.organizations.subscription_status is
-  'Estado de suscripción. Lo escribe SOLO G-Centro vía Edge Function con service role; '
+  'Estado de suscripción. Lo escribe SOLO Centro vía Edge Function con service role; '
   'protegido de escritura por cliente con trg_protect_organization_subscription. '
-  'Default active: si G-Centro no responde nunca, el cliente NO se degrada.';
+  'Default active: si Centro no responde nunca, el cliente NO se degrada.';
 
 -- ── 2. unique (name) ───────────────────────────────────────────────────────
 -- Idempotente: si ya existiera la constraint, no falla.
@@ -195,7 +195,7 @@ set search_path = public
 as $$
 begin
   -- Solo usuarios reales: PostgREST hace SET ROLE authenticated. El service_role
-  -- de la Edge Function de G-Centro, los seeds y postgres pasan sin restricción.
+  -- de la Edge Function de Centro, los seeds y postgres pasan sin restricción.
   --
   -- A diferencia de protect_profile_self_escalation, NO se acota a la fila
   -- propia: no existe ningún caso legítimo en que un usuario de la app escriba
@@ -209,7 +209,7 @@ begin
        or new.subscription_message is distinct from old.subscription_message
        or new.subscription_updated_at is distinct from old.subscription_updated_at
     then
-      raise exception 'El estado de suscripcion solo lo escribe G-Centro'
+      raise exception 'El estado de suscripcion solo lo escribe Centro'
         using errcode = 'check_violation';
     end if;
 
@@ -304,7 +304,7 @@ select conname, pg_get_constraintdef(oid)
 -- Simula el re-grant accidental y comprueba que el trigger ataja. Revierte
 -- entero. Reemplazar los dos UUID.
 --
--- ESPERADO: ERROR 'El estado de suscripcion solo lo escribe G-Centro'.
+-- ESPERADO: ERROR 'El estado de suscripcion solo lo escribe Centro'.
 -- Si en cambio el UPDATE PASA, el trigger no está haciendo su trabajo.
 begin;
   grant update on public.organizations to authenticated;   -- el accidente a simular

@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════════════════
  * ⚠️  ESTE ARCHIVO ESTÁ DUPLICADO A PROPÓSITO
  *
- * Existe una copia casi idéntica en G-Centro:
+ * Existe una copia casi idéntica en Centro:
  *     gcentro/src/lib/sentry.ts
  *
  * No es un descuido ni un candidato a extraer a un paquete compartido: los dos
@@ -20,7 +20,7 @@
  * debe ser idéntico.
  *
  * ⚠️ DIVERGENCIA CONOCIDA Y ABIERTA (2026-08-05). Nodo pasó el filtro de
- * DENY-LIST a ALLOWLIST por clave (ver el bloque de abajo). G-Centro sigue con
+ * DENY-LIST a ALLOWLIST por clave (ver el bloque de abajo). Centro sigue con
  * la deny-list y por lo tanto sigue fugando: PII numérica bajo cualquier clave
  * desconocida, y nombres propios en texto libre bajo una clave que no esté
  * enumerada. Se decidió a propósito arreglarlo en su propio hilo, no desde acá.
@@ -350,7 +350,7 @@ const RE_MOVIL_CO = /\b3\d{9}\b/g
  *
  * Escrito como escape `\u0000` y NO como byte NUL literal: el literal es
  * invisible en el editor y se corrompe en silencio al copiar el archivo — que
- * es exactamente como se rompio este modulo al portarlo a G-Centro.
+ * es exactamente como se rompio este modulo al portarlo a Centro.
  */
 const CENTINELA = '\u0000'
 /** Marcador completo: NUL + `g` + indice + NUL. Ver por que la `g` en `guardar`. */

@@ -1,7 +1,7 @@
 // ============================================================
 // Vento — Edge Function `aplicar-estado`
 //
-// G-Centro (panel de suscripciones, repo y BD aparte) llama a esta función para
+// Centro (panel de suscripciones, repo y BD aparte) llama a esta función para
 // escribir el estado de suscripción en organizations. Es el ÚNICO camino de
 // escritura: el cliente autenticado tiene esas columnas bloqueadas por
 // trg_protect_organization_subscription y por privilegios de columna
@@ -9,11 +9,11 @@
 //
 // ── AUTENTICACIÓN: HMAC, NO JWT ─────────────────────────────────────────────
 // El llamante es un SERVIDOR, no un usuario. Las alternativas eran:
-//   · Compartirle a G-Centro el service_role key de Vento — NO: esa llave
+//   · Compartirle a Centro el service_role key de Vento — NO: esa llave
 //     abre la base ENTERA, sin límite de alcance ni forma de rotarla sin
 //     romper todo lo demás. Una integración no debe pedir la llave maestra.
 //   · HMAC con secreto dedicado — SÍ: alcance limitado a este endpoint,
-//     rotable por su cuenta, y no le da a G-Centro ninguna otra capacidad.
+//     rotable por su cuenta, y no le da a Centro ninguna otra capacidad.
 //
 // ⚠️ Requiere DESACTIVAR "Verify JWT" en la configuración de la función
 // (Dashboard > Edge Functions > aplicar-estado > Details). Sin eso, Supabase
@@ -38,7 +38,7 @@
 // subscription_updated_at. Esa columna significa "cuándo CAMBIÓ el estado", no
 // "cuándo llamaron a la función" — así sirve para contar desde cuándo corre un
 // período de gracia. Además evita que el trigger trg_organizations_updated_at
-// mueva `updated_at` en cada reintento de G-Centro.
+// mueva `updated_at` en cada reintento de Centro.
 // ============================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -71,11 +71,11 @@ const VENTANA_SEG = 300
 // Sin este chequeo, un id malformado llegaba al `.eq('id', ...)`, Postgres
 // respondía 22P02 y eso caía en el 500 genérico "Error de base de datos": un
 // mensaje que MIENTE sobre la causa (dice "la base falló" cuando el que se
-// equivocó fue el llamante) y no le dice a G-Centro qué corregir.
+// equivocó fue el llamante) y no le dice a Centro qué corregir.
 //
 // ⚠️ ESTRECHA EL CONTRATO a propósito: Postgres acepta también `{...}` y la
 // forma sin guiones, y esas ahora dan 400 aunque antes habrían funcionado. Es
-// aceptable porque el único llamante es G-Centro y el id sale serializado de su
+// aceptable porque el único llamante es Centro y el id sale serializado de su
 // propia BD, siempre canónico. Si algún día otro llamante manda otra forma, el
 // síntoma es un 400 explícito, no una escritura perdida.
 const RE_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i

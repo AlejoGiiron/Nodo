@@ -1,7 +1,7 @@
 -- ============================================================
--- LabCentro — organización de laboratorio para G-Centro
+-- LabCentro — organización de laboratorio para Centro
 --
--- POR QUÉ EXISTE: el esquema de G-Centro tiene un unique sobre
+-- POR QUÉ EXISTE: el esquema de Centro tiene un unique sobre
 -- (producto_id, organizacion_externa_id) que impide vincular dos contratos a
 -- la misma organización. LAB ya está vinculado, así que necesitan una SEGUNDA
 -- organización para ejercitar el paso de vincular. La restricción es
@@ -10,7 +10,7 @@
 --
 -- QUÉ CREA: SOLO la fila de `organizations`. Nada más.
 --   · NO crea sede (`restaurants`), NI roles, NI usuarios.
---   · Alcanza para lo que G-Centro necesita: un UUID al que vincular un
+--   · Alcanza para lo que Centro necesita: un UUID al que vincular un
 --     contrato y sobre el que escribir banderas con `aplicar-estado` (que usa
 --     service role y por lo tanto no depende de RLS ni de que haya usuarios).
 --
@@ -33,7 +33,7 @@
 -- quien mire la tabla entienda qué es, y para poder filtrarla a mano. Ningún
 -- código lo lee. Si algún día Vento gana una vista multi-organización, ESTE
 -- es el marcador que hay que respetar.
--- La exclusión real de cobranza vive del lado de G-Centro (`es_prueba = true`).
+-- La exclusión real de cobranza vive del lado de Centro (`es_prueba = true`).
 --
 -- ── IDEMPOTENTE ─────────────────────────────────────────────────────────────
 -- `organizations.name` tiene UNIQUE desde organization-subscription.sql, así
@@ -53,7 +53,7 @@ values (
   'LabCentro',
   jsonb_build_object(
     'es_laboratorio', true,
-    'proposito',      'Tenant de prueba de G-Centro: alta y vinculación de suscripciones',
+    'proposito',      'Tenant de prueba de Centro: alta y vinculación de suscripciones',
     'no_es_cliente',  true,
     'creada',         '2026-08-19'
   )
@@ -75,7 +75,7 @@ select name || '  ' || id as "copiar_tal_cual"
 -- ============================================================
 -- Verificación (opcional): estado inicial de la bandera.
 -- Debe salir 'active' con mensaje y timestamp en NULL — nunca fue escrita.
--- Es la línea base contra la que G-Centro compara su primera escritura.
+-- Es la línea base contra la que Centro compara su primera escritura.
 -- ============================================================
 select name,
        subscription_status,

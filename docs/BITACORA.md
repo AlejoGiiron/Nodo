@@ -35,7 +35,7 @@ Secciones a traer, según los punteros del `CLAUDE.md`:
 
 | Regla | Sección en la bitácora de Vento |
 |---|---|
-| R1 | *"FASE 1 — estado de suscripción"* (el aviso a G-Centro) |
+| R1 | *"FASE 1 — estado de suscripción"* (el aviso a Centro) |
 | R2 | *"Filtros de privacidad: ALLOWLIST por clave, nunca deny-list"* |
 | R3 | *"Un defecto de CLASE se barre en toda la suite, no solo donde estalló"* |
 | R4 · R9 | *"Trampas de TERMINAL — el síntoma no señala la causa"* |
@@ -509,3 +509,51 @@ solo se verifica regenerando los tipos contra la base despues del `db push`.
 Es R4 aplicada a la propia verificacion: **un verde que no podia haber salido rojo no es
 evidencia.** Se anota porque es exactamente el matiz que se pierde cuando alguien lee "tsc verde"
 en un commit dentro de seis meses.
+
+---
+
+## 2026-08-31 · La regex que ningún reemplazo podía encontrar
+
+**El caso más caro de los que se cazaron a tiempo.**
+
+`tests/global-setup.ts` verifica, antes de correr la suite E2E, que la app servida en el puerto sea
+la nuestra y no otra corriendo ahí. Lo hacía así:
+
+```ts
+if (!/G-?Vento/i.test(html)) { /* aborta la suite entera */ }
+```
+
+Al renombrar la marca, `index.html` pasó a decir `Nodo`. **La regex siguió buscando `G-?Vento`.**
+El health check habría **abortado la suite E2E completa**, y el mensaje habría dicho *"el servidor
+NO es Nodo, ¿hay otra app en el puerto?"* — señalando un problema de infraestructura que no existía.
+
+### Por qué ningún renombre lo tocó
+
+**La cadena literal `G-Vento` NO ESTÁ EN EL ARCHIVO.** Lo que hay es `G-?Vento`: una regex con un
+cuantificador opcional en el medio. Tres pasadas de reemplazo de marca —`G-Vento`→`G-Nexo`,
+después `G-Nexo`→`Nodo`, más la de variables de entorno— pasaron por encima de ese archivo y
+**ninguna lo vio**, porque todas buscan cadenas y ahí no hay una cadena: hay un patrón.
+
+Es una forma nueva del mismo defecto: **el objeto no se llama como se lee.** Ya lo habíamos visto
+con `ROLE_LABELS` —donde `waiter` era una CLAVE de un `Record` tipado, no la cadena `'waiter'`— y
+con `product_components`, donde lo específico de bar estaba en los comentarios y no en los nombres.
+
+### Cómo apareció
+
+**Enumerando, no grepeando la marca.** El grep de `[Vv]ento` sobre `src/` y `tests/` devolvió 47
+líneas, casi todas ruido (`inventario`, `evento`, `InventoryPage`). Al **leer la lista** en vez de
+mirar el número, esta saltó: era la única que no era ruido y no era una mención legítima.
+
+⚠️ **Si el criterio hubiera sido el conteo, no aparece.** 47 no dice nada; leer 47 líneas sí. Es
+exactamente el argumento del corolario de verificación por lista, y este caso es su evidencia.
+
+### Qué habría costado
+
+La suite E2E aborta **antes del primer test**, con un mensaje que culpa al servidor. Alguien habría
+buscado un conflicto de puertos, revisado el `dev server`, quizá reiniciado el Ubuntu. El defecto
+está a dos líneas del mensaje de error y aun así lo habría mandado a mirar al lugar equivocado —
+**el mismo perfil que R6**: un guard que rechaza señalando la causa que no es.
+
+**Quinto caso del patrón "aparece al ejecutar/enumerar, no al planificar/leer".** Los anteriores:
+el hueco de extras, el 09 bloqueado por transitividad, el `protect_organization_subscription`
+perdido, y el orden de migraciones que no era ejecutable.

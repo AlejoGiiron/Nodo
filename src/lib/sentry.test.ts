@@ -482,7 +482,7 @@ describe('error REAL de Nodo — el evento completo', () => {
  * Estos tests fijan esa decisión. Con delimitadores más "legibles" —espacios,
  * por ejemplo— el marcador choca con el texto real del mensaje y lo corrompe:
  * un `0` suelto se restaura como un UUID, y un índice sin valor emite
- * literalmente `undefined`. Se descubrió al portar este módulo a G-Centro,
+ * literalmente `undefined`. Se descubrió al portar este módulo a Centro,
  * donde el NUL se perdió al copiar el archivo y el bug apareció entero.
  */
 describe('integridad de los marcadores internos de scrubString', () => {
