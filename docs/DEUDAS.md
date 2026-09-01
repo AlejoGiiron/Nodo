@@ -108,6 +108,30 @@ que hay un incidente.
 
 ## Ideas pospuestas — decisiones de NO hacer
 
+**🔴 STAGING: CANCELADO PARA EL MVP — 2026-09-01. Es una decisión con motivo, no un "después".**
+
+Todo el aparato de staging existía **para una sola cosa**: no arriesgar la producción de Vento en el
+Ubuntu compartido. **Empujando directo al proyecto de Supabase de Nodo en la nube ese riesgo no
+existe** — son proyectos distintos y la base está vacía. La razón de ser del staging desapareció, así
+que no se pospone por falta de tiempo: **se cancela porque ya no protege de nada.**
+
+Pasan de **pre-MVP** a **trabajo pre-PRODUCCIÓN**:
+
+| Qué | Dónde vive | Por qué vuelve antes de producción |
+|---|---|---|
+| Deuda **#31** — el patrón del script de backup del Ubuntu | esta tabla, más abajo | sigue **pendiente de dato**: hasta leerlo, la exclusión del ciclo nocturno está *tomada pero no garantizada* |
+| El **script del diff de servicios** | `docs/staging/verificar-servicios.sh` | fail-closed con exit binario; el día que haya un host compartido, se necesita |
+| `docs/staging/` completo | compose, `.env.staging.example`, README | el README tiene el **criterio de aceptación del push** (§5), que **NO se cancela**: ver `supabase/verificar-rpcs.sql` |
+
+⚠️ **Los archivos SE CONSERVAN, no se borran.** Es el mismo criterio de la regla de poda invertida:
+lo que sobra hoy es la *urgencia*, no la *pieza*. Borrarlos costaría re-derivarlos, y la enumeración
+de riesgos del README es trabajo que ya está hecho.
+
+⚠️ **Lo que sí sobrevive intacto del staging:** el criterio de que **un push verde no prueba que las
+RPC corran** (§5 del README). Eso no era de staging, era de Postgres — no valida cuerpos plpgsql al
+crearlos. Se ejecuta con `supabase/verificar-rpcs.sql`.
+
+
 **`preventa` NO es un valor de `canal` — decidido el 2026-09-01.** Estuvo en la lista de candidatos
 del allowlist y se dejó afuera **a propósito**, no por olvido. La razón es de modelado y no de
 alcance: **no es el mismo eje.**
