@@ -12,7 +12,6 @@ import { LoginPage } from '@/pages/LoginPage'
 import { POSPage } from '@/pages/POSPage'
 import { TablesPage } from '@/pages/TablesPage'
 import { KitchenPage } from '@/pages/KitchenPage'
-import { DeliveryPage } from '@/pages/DeliveryPage'
 import { ProductsPage } from '@/pages/ProductsPage'
 import { InventoryPage } from '@/pages/InventoryPage'
 import { PurchasesPage } from '@/pages/PurchasesPage'
@@ -65,9 +64,6 @@ function App() {
               <Route path="mesas" element={<TablesPage />} />
 
               {/* Rutas gateadas por permiso RBAC */}
-              <Route element={<ProtectedRoute permission="delivery.gestionar" />}>
-                <Route path="delivery" element={<DeliveryPage />} />
-              </Route>
               <Route element={<ProtectedRoute permission="productos.editar" />}>
                 <Route path="productos" element={<ProductsPage />} />
               </Route>

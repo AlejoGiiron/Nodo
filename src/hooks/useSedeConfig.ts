@@ -14,9 +14,7 @@ export interface SedeConfig {
   kitchen_pin?: string | null
   kitchen_stations?: string[]
   kds_timers?: { green: number; amber: number }
-  default_delivery_time?: number
   notifications?: {
-    delivery_sound?: boolean
     kitchen_sound?: boolean
   }
 }

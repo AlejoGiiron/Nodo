@@ -962,64 +962,6 @@ export const getCashOutTotal = ({
   return q
 }
 
-// --- Couriers ---
-
-export const getCouriers = (sedeId: string) =>
-  supabase
-    .from('couriers')
-    .select('*')
-    .eq('sede_id', sedeId)
-    .eq('is_active', true)
-    .order('name')
-
-export const upsertCourier = (data: TablesInsert<'couriers'>) =>
-  supabase.from('couriers').upsert(data).select().single()
-
-export const deleteCourier = (courierId: string) =>
-  supabase.from('couriers').update({ is_active: false }).eq('id', courierId)
-
-// --- Delivery orders ---
-
-export const getDeliveryOrders = (sedeId: string) => {
-  const todayStart = new Date()
-  todayStart.setHours(0, 0, 0, 0)
-  const todayISO = todayStart.toISOString()
-
-  return supabase
-    .from('orders')
-    .select(`
-      *,
-      order_items(id, qty, unit_price, notes, products(id, name, price)),
-      couriers(id, name, phone)
-    `)
-    .eq('sede_id', sedeId)
-    .eq('type', 'delivery')
-    .neq('status', 'cancelled')
-    .or(`status.in.(pending,preparing,ready),created_at.gte.${todayISO}`)
-    .order('created_at', { ascending: false })
-}
-
-export const assignOrderCourier = (
-  orderId: string,
-  courierId: string | null,
-  estimatedMinutes: number | null,
-) =>
-  supabase
-    .from('orders')
-    .update({ courier_id: courierId, estimated_delivery_minutes: estimatedMinutes })
-    .eq('id', orderId)
-    .select()
-    .single()
-
-// --- All couriers (including inactive, for config panel) ---
-
-export const getAllCouriers = (sedeId: string) =>
-  supabase
-    .from('couriers')
-    .select('*')
-    .eq('sede_id', sedeId)
-    .order('name')
-
 // --- Profiles (sede users, for admin config) ---
 
 export const getSedeProfiles = (sedeId: string) =>

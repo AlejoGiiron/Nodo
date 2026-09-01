@@ -10,7 +10,6 @@ import {
   Receipt,
   Settings,
   LogOut,
-  Truck,
   Wallet,
   ShoppingBag,
   HandCoins,
@@ -24,7 +23,6 @@ import { useAuth } from '@/hooks/useAuth'
 import { usePermissions } from '@/hooks/usePermissions'
 import { useSedeConfig } from '@/hooks/useSedeConfig'
 import { useCashShift } from '@/hooks/useCashShift'
-import { useDeliveryCount } from '@/hooks/useDeliveryCount'
 import { useCollapsedGroups } from '@/hooks/useCollapsedGroups'
 import { ShiftBanner } from '@/components/shift/ShiftBanner'
 import { OpenShiftModal } from '@/components/shift/OpenShiftModal'
@@ -57,7 +55,6 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { to: '/ventas', label: 'Ventas', icon: ShoppingCart },
       { to: '/mesas', label: 'Mesas', icon: LayoutGrid },
-      { to: '/delivery', label: 'Delivery', icon: Truck, permission: 'delivery.gestionar' },
       { to: '/cocina', label: 'Cocina', icon: ChefHat, permission: 'cocina.acceder' },
     ],
   },
@@ -104,7 +101,6 @@ export function AppLayout() {
   // Branding de la SEDE activa (sedes): nombre + logo capturados en Config.
   const brandName = sede?.name ?? 'Nodo'
   const brandLogo = sede?.logo_url ?? null
-  const deliveryCount = useDeliveryCount()
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const { collapsed, toggle } = useCollapsedGroups()
@@ -206,14 +202,6 @@ export function AppLayout() {
                       >
                         <Icon className="w-4 h-4 flex-shrink-0" />
                         <span className="flex-1">{label}</span>
-                        {to === '/delivery' && deliveryCount > 0 && (
-                          <span
-                            className="ml-auto text-xs font-bold rounded-full px-1.5 py-0.5 min-w-[18px] text-center leading-none"
-                            style={{ background: '#f59e0b', color: '#fff' }}
-                          >
-                            {deliveryCount}
-                          </span>
-                        )}
                       </NavLink>
                     ))}
                   </div>

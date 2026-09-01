@@ -302,3 +302,46 @@ distinguirse, es un atributo del **usuario o del rol**, no del canal.
 4. **Sin `'otro'`.** En `cash_movements.categoria` sí lo pusimos, con detalle obligatorio, porque
    ahí el universo era abierto. Acá son tres valores y ampliar es trivial: **`'otro'` solo crearía
    un balde donde se esconderían los canales reales** en vez de nombrarlos.
+
+
+---
+
+## 9 · 🔴 La enumeracion tenia un hueco, y aparecio al ejecutarla
+
+*Anotado el 2026-09-01, durante el commit de Delivery.*
+
+Este documento decia que Delivery eran **tres archivos y dos ediciones mecanicas**: `DeliveryPage`,
+`useDelivery`, `useDeliveryCount`, mas la ruta y el item de nav. Al borrarlos y grepear el residuo
+aparecio que Delivery era **bastante mas**:
+
+| Lo que faltaba | Donde |
+|---|---|
+| **El modulo de repartidores entero** — `CourierFormModal` + `SectionDelivery` | `ConfigPage.tsx`, ~205 lineas |
+| 5 helpers de `couriers` + `getDeliveryOrders` + `assignOrderCourier` | `supabase-helpers.ts` |
+| `default_delivery_time` y `delivery_sound` | `useSedeConfig.ts` |
+| La seccion en `SectionId`, en `SECTIONS` y en el map de render | `ConfigPage.tsx` |
+| El aviso sonoro "Delivery — nueva orden" | `ConfigPage.tsx`, seccion Notificaciones |
+
+⚠️ **La tabla `couriers` no existe en el esquema base** — cero ocurrencias en `supabase/migrations/`.
+O sea que no era residuo cosmetico: era codigo que consulta una tabla inexistente.
+
+**Por que se escapo, que es lo unico que importa.** La enumeracion se hizo grepeando
+`KitchenPage|DeliveryPage|TablesPage` y los conceptos `order_type`, `preparing`, `table_id`.
+**`courier` no estaba en ninguna de las dos listas.** Un modulo satelite no se llama como el modulo
+del que cuelga, y por eso ningun grep del padre lo encuentra.
+
+**Septimo caso del patron "aparece al ejecutar, no al planificar"** — y el primero en el que lo que
+fallo fue *la enumeracion misma*, que es justamente el instrumento que existe para que esto no pase.
+
+🔴 **Lo accionable, y va a la checklist de poda:** despues de borrar, **grepear la palabra del
+modulo y leer el residuo**. No para confirmar que da cero —nunca da cero— sino para **descubrir los
+satelites que no se llaman como el padre**. Los cinco items de la tabla salieron de un solo
+`grep -rn "delivery|Delivery" src/` corrido *despues* del borrado.
+
+### Estado del commit de Delivery
+
+Borrado limpio: `DeliveryPage.tsx` (872) · `useDelivery.ts` (209) · `useDeliveryCount.ts` (52) ·
+`tests/delivery.spec.ts` (28). Editados: `App.tsx`, `AppLayout.tsx`, `ConfigPage.tsx`,
+`supabase-helpers.ts`, `useSedeConfig.ts`.
+`tsc --noEmit` exit **0** · `pnpm test:unit` **280 passed, exit 0**.
+⚠️ Con la advertencia del bloque de arriba puesta: **ese verde no valida el esquema.**

@@ -5,7 +5,6 @@ import {
   Users,
   Wallet,
   ChefHat,
-  Truck,
   Bell,
   Plus,
   Trash2,
@@ -38,18 +37,14 @@ import { useProducts } from '@/hooks/useProducts'
 import {
   uploadSedeLogo,
   uploadNequiQR,
-  upsertCourier,
-  getAllCouriers,
-  deleteCourier,
   countOrderItemsUsingExtra,
 } from '@/lib/supabase-helpers'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { PaymentMethod } from '@/hooks/useSedeConfig'
 import type { Tables } from '@/types/database.types'
 
 // ─── Constants ────────────────────────────────────────────────────
 
-type SectionId = 'sede' | 'usuarios' | 'sedes' | 'roles' | 'extras' | 'caja' | 'cocina' | 'delivery' | 'notificaciones'
+type SectionId = 'sede' | 'usuarios' | 'sedes' | 'roles' | 'extras' | 'caja' | 'cocina' | 'notificaciones'
 
 const SECTIONS: { id: SectionId; label: string; icon: LucideIcon; permission?: string }[] = [
   { id: 'sede', label: 'Sede', icon: Building2 },
@@ -59,7 +54,6 @@ const SECTIONS: { id: SectionId; label: string; icon: LucideIcon; permission?: s
   { id: 'extras', label: 'Extras', icon: Puzzle, permission: 'productos.editar' },
   { id: 'caja', label: 'Caja', icon: Wallet },
   { id: 'cocina', label: 'Cocina', icon: ChefHat },
-  { id: 'delivery', label: 'Delivery', icon: Truck },
   { id: 'notificaciones', label: 'Notificaciones', icon: Bell },
 ]
 
@@ -1030,213 +1024,6 @@ function SectionCocina() {
   )
 }
 
-// ─── Section 5: Delivery ──────────────────────────────────────────
-
-type CourierRow = Tables<'couriers'>
-
-function CourierFormModal({
-  courier,
-  sedeId,
-  onClose,
-}: {
-  courier: CourierRow | null
-  sedeId: string
-  onClose: () => void
-}) {
-  const qc = useQueryClient()
-  const [name, setName] = useState(courier?.name ?? '')
-  const [phone, setPhone] = useState(courier?.phone ?? '')
-  const [saving, setSaving] = useState(false)
-
-  const handleSave = async () => {
-    if (!name.trim()) { toast.error('El nombre es obligatorio'); return }
-    setSaving(true)
-    const { error } = await upsertCourier({
-      ...(courier ? { id: courier.id } : {}),
-      sede_id: sedeId,
-      name: name.trim(),
-      phone: phone.trim() || null,
-      is_active: true,
-    })
-    setSaving(false)
-    if (error) { toast.error('Error al guardar repartidor'); return }
-    toast.success(courier ? 'Repartidor actualizado' : 'Repartidor creado')
-    qc.invalidateQueries({ queryKey: ['all_couriers', sedeId] })
-    onClose()
-  }
-
-  return (
-    <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,.55)', display: 'grid', placeItems: 'center', zIndex: 50 }}
-      onClick={e => e.target === e.currentTarget && onClose()}
-    >
-      <div style={{ background: '#fff', borderRadius: 14, width: 400, boxShadow: '0 25px 50px -12px rgba(0,0,0,.25)' }}>
-        <div style={{ padding: '18px 22px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h3 style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', margin: 0 }}>
-            {courier ? 'Editar repartidor' : 'Nuevo repartidor'}
-          </h3>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={18} /></button>
-        </div>
-        <div style={{ padding: '22px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div>
-            <FieldLabel>Nombre</FieldLabel>
-            <TextInput value={name} onChange={setName} placeholder="Pedro Ramírez" />
-          </div>
-          <div>
-            <FieldLabel>Teléfono (opcional)</FieldLabel>
-            <TextInput value={phone} onChange={setPhone} placeholder="310 000 0000" />
-          </div>
-        </div>
-        <div style={{ padding: '0 22px 22px', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <button onClick={onClose} style={{ padding: '10px 20px', border: '1.5px solid #e2e8f0', borderRadius: 9, background: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: '#334155' }}>
-            Cancelar
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            style={{ padding: '10px 24px', background: saving ? '#cbd5e1' : '#10b981', border: 'none', borderRadius: 10, cursor: saving ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 6, boxShadow: saving ? 'none' : '0 4px 12px rgba(16,185,129,.3)' }}
-          >
-            {saving && <Loader2 size={14} className="animate-spin" />}
-            Guardar
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function SectionDelivery() {
-  const { profile } = useAuth()
-  const { config, isLoading: configLoading, updateConfig, isSaving } = useSedeConfig()
-  const sedeId = profile?.sede_id ?? ''
-  const qc = useQueryClient()
-
-  const [defaultTime, setDefaultTime] = useState<number>(config.default_delivery_time ?? 30)
-  const [editCourier, setEditCourier] = useState<CourierRow | null | 'new'>()
-  const [timeInitialized, setTimeInitialized] = useState(false)
-
-  if (!timeInitialized && !configLoading) {
-    setDefaultTime(config.default_delivery_time ?? 30)
-    setTimeInitialized(true)
-  }
-
-  const { data: couriers = [], isLoading: couriersLoading } = useQuery({
-    queryKey: ['all_couriers', sedeId],
-    queryFn: async () => {
-      const { data, error } = await getAllCouriers(sedeId)
-      if (error) throw error
-      return data ?? []
-    },
-    enabled: !!sedeId,
-    staleTime: 30_000,
-  })
-
-  const handleDeactivate = async (id: string) => {
-    const { error } = await deleteCourier(id)
-    if (error) { toast.error('Error al desactivar repartidor'); return }
-    toast.success('Repartidor desactivado')
-    qc.invalidateQueries({ queryKey: ['all_couriers', sedeId] })
-  }
-
-  if (configLoading || couriersLoading) return <Skeleton />
-
-  return (
-    <div>
-      <SectionTitle>Delivery</SectionTitle>
-
-      {/* Tiempo estimado default */}
-      <div style={{ marginBottom: 32 }}>
-        <FieldLabel>Tiempo estimado de entrega por defecto (minutos)</FieldLabel>
-        <input
-          type="number"
-          min={5}
-          max={180}
-          value={defaultTime}
-          onChange={e => setDefaultTime(Number(e.target.value))}
-          style={{
-            width: 120,
-            border: '1.5px solid #e2e8f0',
-            borderRadius: 8,
-            padding: '9px 12px',
-            fontSize: 16,
-            fontFamily: 'monospace',
-            color: '#0f172a',
-            outline: 'none',
-          }}
-          onFocus={e => (e.currentTarget.style.borderColor = '#10b981')}
-          onBlur={e => (e.currentTarget.style.borderColor = '#e2e8f0')}
-        />
-        <SaveButton onClick={() => updateConfig({ default_delivery_time: defaultTime })} loading={isSaving} />
-      </div>
-
-      {/* Repartidores */}
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-          <h3 style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', margin: 0 }}>Repartidores</h3>
-          <button
-            onClick={() => setEditCourier('new')}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: '#10b981', border: 'none', borderRadius: 9, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: '#fff', boxShadow: '0 4px 12px rgba(16,185,129,.3)' }}
-          >
-            <Plus size={14} /> Agregar
-          </button>
-        </div>
-
-        <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden' }}>
-          {couriers.length === 0 && (
-            <div style={{ padding: '28px 16px', textAlign: 'center', color: '#94a3b8', fontSize: 14 }}>
-              No hay repartidores registrados
-            </div>
-          )}
-          {couriers.map((c, idx) => (
-            <div
-              key={c.id}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                padding: '12px 16px',
-                borderBottom: idx < couriers.length - 1 ? '1px solid #f1f5f9' : 'none',
-                gap: 12,
-                opacity: c.is_active ? 1 : 0.5,
-              }}
-            >
-              <div style={{ flex: 1 }}>
-                <p style={{ fontSize: 14, fontWeight: 600, color: '#0f172a', margin: 0 }}>{c.name}</p>
-                {c.phone && <p style={{ fontSize: 12, color: '#64748b', margin: 0 }}>{c.phone}</p>}
-              </div>
-              <span style={{ fontSize: 11, fontWeight: 600, color: c.is_active ? '#065f46' : '#64748b', background: c.is_active ? '#ecfdf5' : '#f1f5f9', padding: '3px 10px', borderRadius: 20 }}>
-                {c.is_active ? 'Activo' : 'Inactivo'}
-              </span>
-              <button
-                onClick={() => setEditCourier(c)}
-                style={{ background: 'none', border: '1px solid #e2e8f0', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 12, color: '#334155' }}
-              >
-                Editar
-              </button>
-              {c.is_active && (
-                <button
-                  onClick={() => handleDeactivate(c.id)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}
-                  title="Desactivar"
-                >
-                  <Trash2 size={15} />
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {editCourier !== undefined && (
-        <CourierFormModal
-          courier={editCourier === 'new' ? null : editCourier}
-          sedeId={sedeId}
-          onClose={() => setEditCourier(undefined)}
-        />
-      )}
-    </div>
-  )
-}
-
 // ─── Section 6: Notificaciones ────────────────────────────────────
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
@@ -1275,12 +1062,10 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
 function SectionNotificaciones() {
   const { config, isLoading, updateConfig, isSaving } = useSedeConfig()
 
-  const [deliverySound, setDeliverySound] = useState(true)
   const [kitchenSound, setKitchenSound] = useState(true)
   const [initialized, setInitialized] = useState(false)
 
   if (!initialized && !isLoading) {
-    setDeliverySound(config.notifications?.delivery_sound ?? true)
     setKitchenSound(config.notifications?.kitchen_sound ?? true)
     setInitialized(true)
   }
@@ -1326,12 +1111,6 @@ function SectionNotificaciones() {
       </p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 520 }}>
         <ToggleRow
-          label="Delivery — nueva orden"
-          description="Alerta cuando llega un pedido de delivery"
-          value={deliverySound}
-          onChange={setDeliverySound}
-        />
-        <ToggleRow
           label="Cocina — nueva comanda"
           description="Beep triple al recibir una comanda en el KDS"
           value={kitchenSound}
@@ -1342,7 +1121,7 @@ function SectionNotificaciones() {
       <SaveButton
         onClick={() =>
           updateConfig({
-            notifications: { delivery_sound: deliverySound, kitchen_sound: kitchenSound },
+            notifications: { kitchen_sound: kitchenSound },
           })
         }
         loading={isSaving}
@@ -1913,7 +1692,6 @@ export function ConfigPage() {
     extras: <SectionExtras />,
     caja: <SectionCaja />,
     cocina: <SectionCocina />,
-    delivery: <SectionDelivery />,
     notificaciones: <SectionNotificaciones />,
   }
 
