@@ -85,7 +85,7 @@ export function useDelivery() {
 
   const fetchOrders = useCallback(async () => {
     if (!profile) return
-    const { data, error } = await getDeliveryOrders(profile.restaurant_id)
+    const { data, error } = await getDeliveryOrders(profile.sede_id)
     if (error) {
       toast.error('Error al cargar órdenes de delivery')
       return
@@ -109,7 +109,7 @@ export function useDelivery() {
 
   const fetchCouriers = useCallback(async () => {
     if (!profile) return
-    const { data } = await getCouriers(profile.restaurant_id)
+    const { data } = await getCouriers(profile.sede_id)
     setCouriers(data ?? [])
   }, [profile])
 
@@ -124,7 +124,7 @@ export function useDelivery() {
     init()
 
     // Canal Realtime con nombre único (patrón Math.random() del proyecto)
-    const channelName = `delivery:${profile.restaurant_id}:${Math.random().toString(36).slice(2, 8)}`
+    const channelName = `delivery:${profile.sede_id}:${Math.random().toString(36).slice(2, 8)}`
     const channel = supabase
       .channel(channelName)
       .on(
@@ -133,7 +133,7 @@ export function useDelivery() {
           event: '*',
           schema: 'public',
           table: 'orders',
-          filter: `restaurant_id=eq.${profile.restaurant_id}`,
+          filter: `sede_id=eq.${profile.sede_id}`,
         },
         fetchOrders,
       )
@@ -143,7 +143,7 @@ export function useDelivery() {
           event: '*',
           schema: 'public',
           table: 'couriers',
-          filter: `restaurant_id=eq.${profile.restaurant_id}`,
+          filter: `sede_id=eq.${profile.sede_id}`,
         },
         fetchCouriers,
       )

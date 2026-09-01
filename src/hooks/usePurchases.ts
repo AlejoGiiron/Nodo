@@ -15,13 +15,13 @@ export const PURCHASES_PAGE_SIZE = 25
 /** Historial de compras (cabeceras), paginado por fecha desc. */
 export function usePurchaseInvoices(page: number) {
   const { profile } = useAuth()
-  const restaurantId = profile?.restaurant_id ?? null
+  const sedeId = profile?.sede_id ?? null
 
   const query = useQuery({
-    queryKey: ['purchase_invoices', restaurantId, page],
+    queryKey: ['purchase_invoices', sedeId, page],
     queryFn: async () => {
       const { data, count, error } = await getPurchaseInvoices({
-        restaurantId: restaurantId!,
+        sedeId: sedeId!,
         page,
         pageSize: PURCHASES_PAGE_SIZE,
       })
@@ -31,7 +31,7 @@ export function usePurchaseInvoices(page: number) {
         count: count ?? 0,
       }
     },
-    enabled: !!restaurantId,
+    enabled: !!sedeId,
     placeholderData: keepPreviousData,
     staleTime: 30_000,
   })
@@ -74,7 +74,7 @@ export function usePurchaseInvoiceDetail(invoiceId: string | null) {
 export function useRegisterPurchase() {
   const { profile } = useAuth()
   const queryClient = useQueryClient()
-  const restaurantId = profile?.restaurant_id ?? null
+  const sedeId = profile?.sede_id ?? null
 
   const mutation = useMutation({
     meta: { area: 'compras' satisfies SentryArea },
@@ -87,10 +87,10 @@ export function useRegisterPurchase() {
     },
     onSuccess: () => {
       // Inventario: niveles (products) + auditoría de movimientos.
-      queryClient.invalidateQueries({ queryKey: ['products', restaurantId] })
+      queryClient.invalidateQueries({ queryKey: ['products', sedeId] })
       queryClient.invalidateQueries({ queryKey: ['stock_movements'] })
       // Historial de compras.
-      queryClient.invalidateQueries({ queryKey: ['purchase_invoices', restaurantId] })
+      queryClient.invalidateQueries({ queryKey: ['purchase_invoices', sedeId] })
 
       // La compra NO toca la caja: no hay egreso automático que reflejar.
       toast.success('Compra registrada y stock actualizado.')

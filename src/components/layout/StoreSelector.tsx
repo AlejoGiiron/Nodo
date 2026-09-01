@@ -5,13 +5,13 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 
 type UserStore = {
-  restaurant_id: string
-  restaurants: { id: string; name: string } | null
+  sede_id: string
+  sedes: { id: string; name: string } | null
 }
 
 /**
  * Selector de sede activa. Se muestra solo si el usuario tiene MÁS de una sede
- * (user_stores). Al cambiar, actualiza profiles.restaurant_id (sede activa),
+ * (user_stores). Al cambiar, actualiza profiles.sede_id (sede activa),
  * re-carga el profile e invalida todas las queries para recargar datos de la
  * nueva sede.
  *
@@ -26,7 +26,7 @@ export function StoreSelector() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('user_stores')
-        .select('restaurant_id, restaurants(id, name)')
+        .select('sede_id, sedes(id, name)')
         .eq('user_id', user!.id)
       if (error) throw error
       return (data ?? []) as UserStore[]
@@ -39,10 +39,10 @@ export function StoreSelector() {
   if (stores.length <= 1) return null
 
   const handleChange = async (newId: string) => {
-    if (!user || newId === profile?.restaurant_id) return
+    if (!user || newId === profile?.sede_id) return
     const { error } = await supabase
       .from('profiles')
-      .update({ restaurant_id: newId })
+      .update({ sede_id: newId })
       .eq('id', user.id)
     if (error) {
       toast.error('No se pudo cambiar de sede')
@@ -61,14 +61,14 @@ export function StoreSelector() {
       <Store size={14} color="#64748b" />
       <select
         data-testid="store-selector"
-        value={profile?.restaurant_id ?? ''}
+        value={profile?.sede_id ?? ''}
         onChange={(e) => handleChange(e.target.value)}
         className="bg-transparent text-sm font-medium text-slate-700 outline-none cursor-pointer"
         style={{ border: 'none' }}
       >
         {stores.map((s) => (
-          <option key={s.restaurant_id} value={s.restaurant_id}>
-            {s.restaurants?.name ?? 'Sede'}
+          <option key={s.sede_id} value={s.sede_id}>
+            {s.sedes?.name ?? 'Sede'}
           </option>
         ))}
       </select>

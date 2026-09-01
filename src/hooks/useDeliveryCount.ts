@@ -16,7 +16,7 @@ export function useDeliveryCount(): number {
     const { count: c } = await supabase
       .from('orders')
       .select('*', { count: 'exact', head: true })
-      .eq('restaurant_id', profile.restaurant_id)
+      .eq('sede_id', profile.sede_id)
       .eq('type', 'delivery')
       .in('status', ['pending', 'preparing', 'ready'])
     setCount(c ?? 0)
@@ -28,14 +28,14 @@ export function useDeliveryCount(): number {
     fetchCount()
 
     const ch = supabase
-      .channel(`dlv-cnt:${profile.restaurant_id}:${Math.random().toString(36).slice(2, 6)}`)
+      .channel(`dlv-cnt:${profile.sede_id}:${Math.random().toString(36).slice(2, 6)}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'orders',
-          filter: `restaurant_id=eq.${profile.restaurant_id}`,
+          filter: `sede_id=eq.${profile.sede_id}`,
         },
         fetchCount,
       )

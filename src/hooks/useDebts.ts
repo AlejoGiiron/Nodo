@@ -40,16 +40,16 @@ const deriveDebt = (row: DebtRow): Debt => {
 /** Cuentas por cobrar: órdenes a fiado pendientes/parciales con su saldo. */
 export function useDebts() {
   const { profile } = useAuth()
-  const restaurantId = profile?.restaurant_id ?? null
+  const sedeId = profile?.sede_id ?? null
 
   const query = useQuery({
-    queryKey: ['debts', restaurantId],
+    queryKey: ['debts', sedeId],
     queryFn: async () => {
-      const { data, error } = await getDebts(restaurantId!)
+      const { data, error } = await getDebts(sedeId!)
       if (error) throw error
       return (data ?? []).map((r) => deriveDebt(r as unknown as DebtRow))
     },
-    enabled: !!restaurantId,
+    enabled: !!sedeId,
     staleTime: 15_000,
   })
 

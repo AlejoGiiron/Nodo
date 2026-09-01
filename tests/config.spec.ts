@@ -6,7 +6,7 @@ const ROLE = `Rol E2E ${SUFFIX}`
 
 // Secciones visibles para owner (6 base + Sedes + Roles + Extras).
 const SECTIONS = [
-  'Restaurante', 'Usuarios', 'Sedes', 'Roles y permisos', 'Extras',
+  'Sede', 'Usuarios', 'Sedes', 'Roles y permisos', 'Extras',
   'Caja', 'Cocina', 'Delivery', 'Notificaciones',
 ]
 
@@ -29,11 +29,11 @@ test.describe('Configuración', () => {
     await expect(page.getByRole('button', { name: 'Roles y permisos' })).toBeVisible()
   })
 
-  test('editar el nombre del restaurante se guarda (toast)', async ({ page }) => {
+  test('editar el nombre del sede se guarda (toast)', async ({ page }) => {
     await loginAsOwner(page)
     await page.goto('/configuracion')
 
-    const nameInput = page.getByTestId('config-restaurant-name')
+    const nameInput = page.getByTestId('config-sede-name')
     const original = await nameInput.inputValue()
 
     // Cambia a un valor temporal y guarda.

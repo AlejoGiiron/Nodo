@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-hot-toast'
 import { useAuth } from '@/hooks/useAuth'
 import {
-  getRestaurantProfiles,
+  getSedeProfiles,
   updateProfile,
   createUser as createUserHelper,
 } from '@/lib/supabase-helpers'
@@ -14,21 +14,21 @@ export type UserRow = Tables<'profiles'>
 export function useUsers() {
   const { profile } = useAuth()
   const queryClient = useQueryClient()
-  const restaurantId = profile?.restaurant_id
+  const sedeId = profile?.sede_id
 
   const { data: users = [], isLoading } = useQuery({
-    queryKey: ['restaurant_users', restaurantId],
+    queryKey: ['sede_users', sedeId],
     queryFn: async () => {
-      const { data, error } = await getRestaurantProfiles(restaurantId!)
+      const { data, error } = await getSedeProfiles(sedeId!)
       if (error) throw error
       return data ?? []
     },
-    enabled: !!restaurantId,
+    enabled: !!sedeId,
     staleTime: 30_000,
   })
 
   const invalidate = () =>
-    queryClient.invalidateQueries({ queryKey: ['restaurant_users', restaurantId] })
+    queryClient.invalidateQueries({ queryKey: ['sede_users', sedeId] })
 
   const updateMutation = useMutation({
     meta: { area: 'config' satisfies SentryArea },
@@ -63,7 +63,7 @@ export function useUsers() {
         full_name: params.full_name,
         role: params.enumRole,
         role_id: params.roleId,
-        restaurant_id: restaurantId!,
+        sede_id: sedeId!,
       })
       if (error) throw error
       const body = data as { error?: string; user_id?: string } | null

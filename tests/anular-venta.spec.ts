@@ -52,7 +52,7 @@ async function ctx() {
   const c = await db()
   if (!SEDE) {
     OWNER_ID = (await c.auth.getUser()).data.user!.id
-    SEDE = (await c.from('profiles').select('restaurant_id').eq('id', OWNER_ID).single()).data!.restaurant_id as string
+    SEDE = (await c.from('profiles').select('sede_id').eq('id', OWNER_ID).single()).data!.sede_id as string
   }
   return c
 }
@@ -60,20 +60,20 @@ async function ctx() {
 // Abre turno si no hay; devuelve { id, opened_at }. Idempotente (índice único).
 async function ensureShift(): Promise<{ id: string; opened_at: string }> {
   const c = await ctx()
-  const open = (await c.from('cash_shifts').select('id, opened_at').eq('restaurant_id', SEDE).is('closed_at', null).maybeSingle()).data
+  const open = (await c.from('cash_shifts').select('id, opened_at').eq('sede_id', SEDE).is('closed_at', null).maybeSingle()).data
   if (open) return open as { id: string; opened_at: string }
-  const ins = await c.from('cash_shifts').insert({ restaurant_id: SEDE, opened_by: OWNER_ID, opening_amount: 0 }).select('id, opened_at').single()
+  const ins = await c.from('cash_shifts').insert({ sede_id: SEDE, opened_by: OWNER_ID, opening_amount: 0 }).select('id, opened_at').single()
   if (ins.error) throw ins.error
   return ins.data as { id: string; opened_at: string }
 }
 async function closeShifts(): Promise<void> {
   const c = await ctx()
-  await c.from('cash_shifts').update({ closed_at: new Date().toISOString(), closed_by: OWNER_ID, closing_amount: 0 }).eq('restaurant_id', SEDE).is('closed_at', null)
+  await c.from('cash_shifts').update({ closed_at: new Date().toISOString(), closed_by: OWNER_ID, closing_amount: 0 }).eq('sede_id', SEDE).is('closed_at', null)
 }
 
 async function prodByName(name: string): Promise<{ id: string; kind: string; stock_tracking: boolean }> {
   const c = await ctx()
-  const { data, error } = await c.from('products').select('id, kind, stock_tracking').eq('restaurant_id', SEDE).eq('name', name).limit(1).single()
+  const { data, error } = await c.from('products').select('id, kind, stock_tracking').eq('sede_id', SEDE).eq('name', name).limit(1).single()
   if (error) throw new Error(`prod ${name}: ${error.message}`)
   return data as { id: string; kind: string; stock_tracking: boolean }
 }
@@ -114,7 +114,7 @@ async function createSale(opts: {
   const paid = opts.paid ?? true
   const insert: Record<string, unknown> = {
     type: 'takeaway', status: 'preparing', total: opts.total,
-    restaurant_id: SEDE, created_by: OWNER_ID,
+    sede_id: SEDE, created_by: OWNER_ID,
     payment_status: paid ? 'paid' : 'pending',
   }
   if (opts.discount) {
@@ -136,7 +136,7 @@ async function createSale(opts: {
     const { error: pe } = await c.rpc('register_sale_payment', { p_order_id: order!.id, p_payments: opts.payments ?? [{ method: 'cash', amount: opts.total }] })
     if (pe) throw new Error('pay: ' + pe.message)
   }
-  const n = await c.rpc('next_order_number', { p_restaurant_id: SEDE })
+  const n = await c.rpc('next_order_number', { p_sede_id: SEDE })
   if (n.error) throw n.error
   await c.from('orders').update({ order_number: n.data }).eq('id', order!.id)
   return { id: order!.id, number: n.data as number }
@@ -186,10 +186,10 @@ async function openSaleDetail(page: Page, number: number) {
 test.describe.serial('Anulación de ventas', () => {
   test('setup: fixtures + turno abierto', async () => {
     const c = await ctx()
-    const cat = (await c.from('categories').select('id').eq('restaurant_id', SEDE).limit(1).single()).data!.id
+    const cat = (await c.from('categories').select('id').eq('sede_id', SEDE).limit(1).single()).data!.id
     const mk = async (name: string, price: number, tracking: boolean, qty?: number) => {
       const { data, error } = await c.from('products').insert({
-        restaurant_id: SEDE, category_id: cat, name, price, kind: 'simple',
+        sede_id: SEDE, category_id: cat, name, price, kind: 'simple',
         stock_tracking: tracking, ...(tracking ? { stock_qty: qty, min_stock: 0 } : {}),
       }).select('id').single()
       if (error) throw new Error(`mk ${name}: ${error.message}`)
@@ -198,7 +198,7 @@ test.describe.serial('Anulación de ventas', () => {
     P_SIMPLE = await mk(`AV Simple ${SUFFIX}`, 5000, true, 60)
     P_NOTRK = await mk(`AV NoTrack ${SUFFIX}`, 7000, false)
     P_INSUMO = await mk(`AV Insumo ${SUFFIX}`, 0, true, 60)
-    EXTRA = (await c.from('extras').insert({ restaurant_id: SEDE, name: `AV ExtraLinked ${SUFFIX}`, price: 3000, linked_product_id: P_INSUMO, is_active: true }).select('id').single()).data!.id as string
+    EXTRA = (await c.from('extras').insert({ sede_id: SEDE, name: `AV ExtraLinked ${SUFFIX}`, price: 3000, linked_product_id: P_INSUMO, is_active: true }).select('id').single()).data!.id as string
     await c.from('product_extras').insert({ product_id: P_SIMPLE, extra_id: EXTRA })
     COCTEL = (await prodByName('Lab Coctel')).id
     VASO = (await prodByName('Lab Vaso')).id
@@ -342,7 +342,7 @@ test.describe.serial('Anulación de ventas', () => {
     await ensureShift()
     const c = await ctx()
     const { id } = await createSale({ items: [{ product_id: P_SIMPLE, qty: 1, unit_price: 5000 }], total: 5000, paid: false })
-    const { error: ae } = await c.from('debt_payments').insert({ restaurant_id: SEDE, order_id: id, amount: 1000, payment_method: 'cash', created_by: OWNER_ID })
+    const { error: ae } = await c.from('debt_payments').insert({ sede_id: SEDE, order_id: id, amount: 1000, payment_method: 'cash', created_by: OWNER_ID })
     expect(ae).toBeNull()
     const { error } = await voidRpc(await db(), id)
     expect(error?.message ?? '').toContain('ya tiene abonos')
@@ -361,7 +361,7 @@ test.describe.serial('Anulación de ventas', () => {
     await ensureShift()
     const c = await ctx()
     const cliente = `AV Fiado ${SUFFIX}`
-    const cust = (await c.from('customers').insert({ restaurant_id: SEDE, name: cliente }).select('id').single()).data!.id as string
+    const cust = (await c.from('customers').insert({ sede_id: SEDE, name: cliente }).select('id').single()).data!.id as string
     const { id } = await createSale({ items: [{ product_id: P_SIMPLE, qty: 1, unit_price: 5000 }], total: 5000, paid: false, customerId: cust, customerName: cliente })
 
     // Antes de anular: el cliente aparece en Cartera (deuda pendiente).
@@ -387,7 +387,7 @@ test.describe.serial('Anulación de ventas', () => {
     await closeShiftIfOpen(page)
     await openShiftIfClosed(page, 0)
     await ctx()
-    const fresh = (await (await db()).from('cash_shifts').select('id').eq('restaurant_id', SEDE).is('closed_at', null).order('opened_at', { ascending: false }).limit(1).single()).data
+    const fresh = (await (await db()).from('cash_shifts').select('id').eq('sede_id', SEDE).is('closed_at', null).order('opened_at', { ascending: false }).limit(1).single()).data
     const shiftId = fresh!.id as string
 
     // Una venta gratis (vale 100%) VIVA y otra ANULADA, ambas en el turno.
@@ -465,7 +465,7 @@ test.describe.serial('Anulación de ventas', () => {
     // "fiado con abono"). Se borran para no contaminar el baseline de Cartera de
     // otros specs (getDebts los vería como deuda viva).
     const c = await ctx()
-    const pend = ((await c.from('orders').select('id').eq('restaurant_id', SEDE).in('payment_status', ['pending', 'partial']).is('cancelled_at', null)).data ?? []).map((o) => o.id)
+    const pend = ((await c.from('orders').select('id').eq('sede_id', SEDE).in('payment_status', ['pending', 'partial']).is('cancelled_at', null)).data ?? []).map((o) => o.id)
     if (pend.length) {
       await c.from('debt_payments').delete().in('order_id', pend)
       await c.from('orders').delete().in('id', pend)

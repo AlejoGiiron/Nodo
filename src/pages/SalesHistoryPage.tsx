@@ -3,7 +3,7 @@ import {
   Search, X, ChevronLeft, ChevronRight, Printer, Receipt,
   Store, Bike, UtensilsCrossed, Calendar, Ban, AlertTriangle,
 } from 'lucide-react'
-import { useRestaurantConfig } from '@/hooks/useRestaurantConfig'
+import { useSedeConfig } from '@/hooks/useSedeConfig'
 import { usePermissions } from '@/hooks/usePermissions'
 import { useCashShift } from '@/hooks/useCashShift'
 import {
@@ -95,7 +95,7 @@ function methodDisplay(row: { payment_status: string; total: number; payments: {
 
 function SaleDetailModal({ orderId, onClose }: { orderId: string; onClose: () => void }) {
   const { sale, isLoading } = useSaleDetail(orderId)
-  const { restaurant } = useRestaurantConfig()
+  const { sede } = useSedeConfig()
   const { can } = usePermissions()
   const { currentShift } = useCashShift()
   const voidMutation = useVoidSale()
@@ -143,8 +143,8 @@ function SaleDetailModal({ orderId, onClose }: { orderId: string; onClose: () =>
   const handleReprint = () => {
     if (!sale) return
     printSaleTicket({
-      restaurantName: restaurant?.name,
-      restaurantAddress: restaurant?.address,
+      sedeName: sede?.name,
+      sedeAddress: sede?.address,
       orderNumber: sale.order_number,
       orderId: sale.id,
       type: sale.type,

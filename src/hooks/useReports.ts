@@ -20,8 +20,8 @@ export interface ReportParams {
 
 export function useReports({ from, to }: ReportParams) {
   const { profile } = useAuth()
-  const restaurantId = profile?.restaurant_id ?? null
-  const enabled = !!restaurantId && !!from && !!to
+  const sedeId = profile?.sede_id ?? null
+  const enabled = !!sedeId && !!from && !!to
 
   const dailySales = useQuery({
     queryKey: ['reports_daily_sales', from, to],
@@ -89,8 +89,8 @@ export function useReports({ from, to }: ReportParams) {
 
   // Total regalado en vales (ruletazo) en el rango — KPI de Reportes.
   const vouchers = useQuery({
-    queryKey: ['reports_vouchers', restaurantId, from, to],
-    queryFn: () => getVouchersTotal(restaurantId!, dayStartISO(from), dayEndISO(to)),
+    queryKey: ['reports_vouchers', sedeId, from, to],
+    queryFn: () => getVouchersTotal(sedeId!, dayStartISO(from), dayEndISO(to)),
     enabled,
     staleTime: 5 * 60_000,
   })

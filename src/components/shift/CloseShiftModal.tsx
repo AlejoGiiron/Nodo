@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { X, DollarSign, TrendingUp, TrendingDown, Minus, AlertTriangle } from 'lucide-react'
 import { useCashShift } from '@/hooks/useCashShift'
-import { useRestaurantConfig } from '@/hooks/useRestaurantConfig'
+import { useSedeConfig } from '@/hooks/useSedeConfig'
 import { calcShiftBalance } from '@/lib/shiftCalc'
 import type { ShiftReconciliation, MethodReconciliation } from '@/lib/shiftCalc'
 import { printCashReport, buildCashReportData } from '@/lib/printer'
@@ -30,7 +30,7 @@ interface CloseShiftModalProps {
 
 export function CloseShiftModal({ onClose }: CloseShiftModalProps) {
   const { currentShift, salesSummary, movements, vouchersTotal, closeShift, isClosingShift } = useCashShift()
-  const { restaurant } = useRestaurantConfig()
+  const { sede } = useSedeConfig()
   const [rawAmount, setRawAmount] = useState('')
   // Arqueo multi-método: declarado por método NO-efectivo (blanco = 0) + comentario.
   const [declaredOther, setDeclaredOther] = useState<Record<OtherMethod, string>>({
@@ -94,8 +94,8 @@ export function CloseShiftModal({ onClose }: CloseShiftModalProps) {
       // reimpresión del historial → salida idéntica; usa el snapshot, no recomputa.
       if (closedRow?.close_reconciliation) {
         printCashReport(buildCashReportData(closedRow, {
-          restaurantName: restaurant?.name,
-          restaurantAddress: restaurant?.address,
+          sedeName: sede?.name,
+          sedeAddress: sede?.address,
           movementsIn,
           movementsOut,
         }))

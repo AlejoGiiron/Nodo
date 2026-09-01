@@ -238,7 +238,7 @@ const CLAVE_PERMITIDA: Record<string, Forma> = {
   // Es la pieza que hace barato todo el resto: con el UUID vas a la BD, que es
   // lo que manda la regla del proyecto ("NO ASUMIR, CONFIRMAR CONTRA LA BD").
   id: 'uuid', orderId: 'uuid', order_id: 'uuid',
-  restaurantId: 'uuid', restaurant_id: 'uuid',
+  sedeId: 'uuid', sede_id: 'uuid',
   shiftId: 'uuid', shift_id: 'uuid',
   productId: 'uuid', product_id: 'uuid',
   invoiceId: 'uuid', invoice_id: 'uuid',

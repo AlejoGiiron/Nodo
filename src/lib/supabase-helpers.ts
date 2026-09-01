@@ -10,13 +10,13 @@ export const getProfile = (userId: string) =>
 export const upsertProfile = (profile: TablesInsert<'profiles'>) =>
   supabase.from('profiles').upsert(profile).select().single()
 
-// --- Restaurants ---
+// --- Sedes ---
 
-export const getRestaurant = (restaurantId: string) =>
-  supabase.from('restaurants').select('*').eq('id', restaurantId).single()
+export const getSede = (sedeId: string) =>
+  supabase.from('sedes').select('*').eq('id', sedeId).single()
 
-export const updateRestaurant = (restaurantId: string, data: TablesUpdate<'restaurants'>) =>
-  supabase.from('restaurants').update(data).eq('id', restaurantId).select().single()
+export const updateSede = (sedeId: string, data: TablesUpdate<'sedes'>) =>
+  supabase.from('sedes').update(data).eq('id', sedeId).select().single()
 
 // --- Organization / suscripcion ---
 
@@ -37,11 +37,11 @@ export const getOrganizationSubscription = (organizationId: string) =>
 
 // --- Categories ---
 
-export const getCategories = (restaurantId: string) =>
+export const getCategories = (sedeId: string) =>
   supabase
     .from('categories')
     .select('*')
-    .eq('restaurant_id', restaurantId)
+    .eq('sede_id', sedeId)
     .eq('is_active', true)
     .order('sort_order')
 
@@ -60,11 +60,11 @@ export const countActiveProductsByCategory = (categoryId: string) =>
 
 // --- Products ---
 
-export const getProducts = (restaurantId: string, categoryId?: string) => {
+export const getProducts = (sedeId: string, categoryId?: string) => {
   const base = supabase
     .from('products')
     .select('*, categories(id, name, color)')
-    .eq('restaurant_id', restaurantId)
+    .eq('sede_id', sedeId)
     .eq('is_active', true)
     .order('name')
 
@@ -83,20 +83,20 @@ export const updateProductStock = (productId: string, stock_qty: number) =>
 // --- Extras (catálogo de subproductos reutilizables) ---
 
 // Solo activos: para asignación a productos y selección en POS (prompt 2).
-export const getExtras = (restaurantId: string) =>
+export const getExtras = (sedeId: string) =>
   supabase
     .from('extras')
     .select('*')
-    .eq('restaurant_id', restaurantId)
+    .eq('sede_id', sedeId)
     .eq('is_active', true)
     .order('name')
 
 // Incluye inactivos: para el catálogo de configuración.
-export const getAllExtras = (restaurantId: string) =>
+export const getAllExtras = (sedeId: string) =>
   supabase
     .from('extras')
     .select('*')
-    .eq('restaurant_id', restaurantId)
+    .eq('sede_id', sedeId)
     .order('is_active', { ascending: false })
     .order('name')
 
@@ -137,11 +137,11 @@ export const removeProductExtra = (productId: string, extraId: string) =>
 
 // IDs de productos de la sede que tienen al menos un extra ACTIVO asignado.
 // Se usa en POS/Mesas para decidir si abrir el modal de configuración.
-export const getProductsWithActiveExtras = (restaurantId: string) =>
+export const getProductsWithActiveExtras = (sedeId: string) =>
   supabase
     .from('product_extras')
-    .select('product_id, products!inner(restaurant_id), extras!inner(is_active)')
-    .eq('products.restaurant_id', restaurantId)
+    .select('product_id, products!inner(sede_id), extras!inner(is_active)')
+    .eq('products.sede_id', sedeId)
     .eq('extras.is_active', true)
 
 // --- Venta con extras (RPC atómica) ---
@@ -209,7 +209,7 @@ export const adjustStock = (productId: string, qty: number, reason: string) =>
 export type StockMovementType = 'sale' | 'adjustment' | 'return' | 'purchase'
 
 export interface StockMovementsFilters {
-  restaurantId: string
+  sedeId: string
   type?: StockMovementType | null
   from?: string        // ISO inicio (createdAt >=)
   to?: string          // ISO fin (createdAt <=)
@@ -230,7 +230,7 @@ export interface StockMovementRow {
 }
 
 export const getStockMovements = ({
-  restaurantId, type, from, to, page, pageSize,
+  sedeId, type, from, to, page, pageSize,
 }: StockMovementsFilters) => {
   let q = supabase
     .from('stock_movements')
@@ -238,7 +238,7 @@ export const getStockMovements = ({
       'id, created_at, type, qty, reference_id, notes, product_id, products(name), profiles(full_name)',
       { count: 'exact' },
     )
-    .eq('restaurant_id', restaurantId)
+    .eq('sede_id', sedeId)
 
   if (type) q = q.eq('type', type)
   if (from) q = q.gte('created_at', from)
@@ -253,12 +253,12 @@ export const getStockMovements = ({
 // --- Storage: product-images ---
 
 export const uploadProductImage = async (
-  restaurantId: string,
+  sedeId: string,
   productId: string,
   file: File,
 ): Promise<string | null> => {
   const ext = file.name.split('.').pop() ?? 'jpg'
-  const path = `${restaurantId}/${productId}.${ext}`
+  const path = `${sedeId}/${productId}.${ext}`
   const { data, error } = await supabase.storage
     .from('product-images')
     .upload(path, file, { upsert: true })
@@ -280,8 +280,8 @@ export const deleteProductImage = async (imageUrl: string): Promise<void> => {
 
 // --- Tables ---
 
-export const getTables = (restaurantId: string) =>
-  supabase.from('tables').select('*').eq('restaurant_id', restaurantId).order('name')
+export const getTables = (sedeId: string) =>
+  supabase.from('tables').select('*').eq('sede_id', sedeId).order('name')
 
 export const createTable = (table: TablesInsert<'tables'>) =>
   supabase.from('tables').insert(table).select().single()
@@ -344,11 +344,11 @@ const ORDER_WITH_RELATIONS = `
   )
 ` as const
 
-export const getOrders = (restaurantId: string, status?: Tables<'orders'>['status']) => {
+export const getOrders = (sedeId: string, status?: Tables<'orders'>['status']) => {
   const base = supabase
     .from('orders')
     .select(ORDER_WITH_RELATIONS)
-    .eq('restaurant_id', restaurantId)
+    .eq('sede_id', sedeId)
     .order('created_at', { ascending: false })
 
   return status ? base.eq('status', status) : base
@@ -373,15 +373,15 @@ export const updateOrderTotal = (orderId: string, total: number) =>
 // que la RPC valide Σ pagos contra el total ya descontado.
 // Total REGALADO en vales en un rango (por sede). Suma discount_amount de las
 // órdenes con discount_kind='vale' y created_at en [fromISO, toISO]. RLS ya
-// limita a la sede; se filtra por restaurant_id de todas formas. Para el KPI
+// limita a la sede; se filtra por sede_id de todas formas. Para el KPI
 // "Regalado en vales" de Reportes. from/to = límites ISO de día (Bogotá).
 export const getVouchersTotal = async (
-  restaurantId: string, fromISO: string, toISO: string,
+  sedeId: string, fromISO: string, toISO: string,
 ): Promise<number> => {
   const { data, error } = await supabase
     .from('orders')
     .select('discount_amount')
-    .eq('restaurant_id', restaurantId)
+    .eq('sede_id', sedeId)
     .eq('discount_kind', 'vale')
     .gte('created_at', fromISO)
     .lte('created_at', toISO)
@@ -401,8 +401,8 @@ export const applyOrderDiscount = (
 
 // Devuelve el siguiente número correlativo de la sede (incremento atómico en
 // la BD). Solo debe llamarse para una venta YA cobrada.
-export const nextOrderNumber = (restaurantId: string) =>
-  supabase.rpc('next_order_number', { p_restaurant_id: restaurantId })
+export const nextOrderNumber = (sedeId: string) =>
+  supabase.rpc('next_order_number', { p_sede_id: sedeId })
 
 // Graba el número correlativo en la orden ya cobrada.
 export const setOrderNumber = (orderId: string, orderNumber: number) =>
@@ -429,7 +429,7 @@ export const setOrderNumber = (orderId: string, orderNumber: number) =>
  *    NO transaccionales (`nextval` no se revierte en un rollback, justamente
  *    para no serializar a los escritores): con una sequence real, cada cobro
  *    fallido quemaría un número para siempre. La contención extra de la fila no
- *    es problema a escala de un restaurante.
+ *    es problema a escala de un sede.
  *
  * Falta cubrir los dos caminos que NO pasan por `register_sale_payment`:
  * el fiado (no hay pago) y la venta gratis por vale del 100% (total 0).
@@ -487,17 +487,17 @@ const setOrderNumberConReintento = async (
 // posibilidad de reintentar.
 export const assignOrderNumber = async (
   orderId: string,
-  restaurantId: string,
+  sedeId: string,
 ): Promise<AssignOrderNumberResult> => {
   // Una venta sin número no aparece en el Historial (ordena por número), no se
   // puede reimprimir su ticket, y getShiftSalesCount cuenta las ventas gratis
   // por `order_number not null`. Devolver null en silencio dejaba un cobro real
   // con el registro incompleto y CERO señal de que pasó.
-  const { data, error } = await nextOrderNumber(restaurantId)
+  const { data, error } = await nextOrderNumber(sedeId)
   if (error || typeof data !== 'number') {
     captureIssue('Venta cobrada sin número: falló next_order_number', 'numeracion', {
       orderId,
-      restaurantId,
+      sedeId,
       error,
       tipoDeDato: typeof data,
     })
@@ -512,7 +512,7 @@ export const assignOrderNumber = async (
     // hueco permanente en la numeración además de la venta sin número.
     captureIssue('Venta cobrada sin número: falló el UPDATE del correlativo', 'numeracion', {
       orderId,
-      restaurantId,
+      sedeId,
       numeroPerdido: data,
       error: res.error,
       intentos: res.intentos,
@@ -530,16 +530,16 @@ export const assignOrderNumber = async (
  */
 export const retryOrderNumber = async (
   orderId: string,
-  restaurantId: string,
+  sedeId: string,
   numeroReservado: number | null,
 ): Promise<AssignOrderNumberResult> => {
-  if (numeroReservado === null) return assignOrderNumber(orderId, restaurantId)
+  if (numeroReservado === null) return assignOrderNumber(orderId, sedeId)
 
   const res = await setOrderNumberConReintento(orderId, numeroReservado)
   if (!res.ok) {
     captureIssue('Reintento manual del correlativo falló', 'numeracion', {
       orderId,
-      restaurantId,
+      sedeId,
       numeroPerdido: numeroReservado,
       error: res.error,
       intentos: res.intentos,
@@ -552,7 +552,7 @@ export const retryOrderNumber = async (
 // --- Historial de ventas (ventas completadas, con número) ---
 
 export interface SalesHistoryFilters {
-  restaurantId: string
+  sedeId: string
   from?: string        // ISO inicio (createdAt >=)
   to?: string          // ISO fin (createdAt <=)
   method?: Enums<'payment_method'> | null
@@ -576,7 +576,7 @@ export interface SalesHistoryRow {
 }
 
 export const getSalesHistory = ({
-  restaurantId, from, to, method, orderNumber, page, pageSize,
+  sedeId, from, to, method, orderNumber, page, pageSize,
 }: SalesHistoryFilters) => {
   const paymentsSel = method ? 'payments!inner(method, amount)' : 'payments(method, amount)'
   const select =
@@ -586,7 +586,7 @@ export const getSalesHistory = ({
   let q = supabase
     .from('orders')
     .select(select, { count: 'exact' })
-    .eq('restaurant_id', restaurantId)
+    .eq('sede_id', sedeId)
     .not('order_number', 'is', null)
 
   if (orderNumber != null) q = q.eq('order_number', orderNumber)
@@ -654,7 +654,7 @@ export const getSaleDetail = (orderId: string) =>
 // anulada perdió sus payments → no tiene método → no puede bucketizarse; se
 // muestra aparte. Son pocas (índice parcial idx_orders_cancelled). Trae quién
 // anuló (canceller) y el motivo para la auditoría. Ordenadas por número desc.
-export const getCancelledSales = (restaurantId: string, from?: string, to?: string) => {
+export const getCancelledSales = (sedeId: string, from?: string, to?: string) => {
   let q = supabase
     .from('orders')
     .select(
@@ -663,7 +663,7 @@ export const getCancelledSales = (restaurantId: string, from?: string, to?: stri
         `payments(method, amount), profiles!orders_created_by_fkey(full_name), ` +
         `canceller:profiles!orders_cancelled_by_fkey(full_name)`,
     )
-    .eq('restaurant_id', restaurantId)
+    .eq('sede_id', sedeId)
     .not('order_number', 'is', null)
     .not('cancelled_at', 'is', null)
 
@@ -720,11 +720,11 @@ export const registerSalePayment = (orderId: string, parts: SalePaymentPart[]) =
 export const getOrderPayments = (orderId: string) =>
   supabase.from('payments').select('*').eq('order_id', orderId)
 
-export const getShiftPayments = (restaurantId: string, from: string) =>
+export const getShiftPayments = (sedeId: string, from: string) =>
   supabase
     .from('payments')
     .select('*')
-    .eq('restaurant_id', restaurantId)
+    .eq('sede_id', sedeId)
     .gte('created_at', from)
 
 // Nº de VENTAS (órdenes distintas) del turno. Una venta mixta = varias filas
@@ -732,11 +732,11 @@ export const getShiftPayments = (restaurantId: string, from: string) =>
 // 100%, total 0, sin payment): se anclan por total=0 + order_number asignado
 // (marca de venta completada, la distingue de una mesa abierta) + created_at en
 // la ventana. Fiado (total>0, sin payment) NO cuenta (igual que antes).
-export const getShiftSalesCount = async (restaurantId: string, from: string): Promise<number> => {
+export const getShiftSalesCount = async (sedeId: string, from: string): Promise<number> => {
   const { data: pays, error: e1 } = await supabase
     .from('payments')
     .select('order_id')
-    .eq('restaurant_id', restaurantId)
+    .eq('sede_id', sedeId)
     .gte('created_at', from)
   if (e1) throw e1
   const ids = new Set((pays ?? []).map((p) => p.order_id as string))
@@ -744,7 +744,7 @@ export const getShiftSalesCount = async (restaurantId: string, from: string): Pr
   const { data: free, error: e2 } = await supabase
     .from('orders')
     .select('id')
-    .eq('restaurant_id', restaurantId)
+    .eq('sede_id', sedeId)
     .eq('total', 0)
     .not('order_number', 'is', null)
     .is('cancelled_at', null)   // una venta gratis anulada NO cuenta
@@ -758,11 +758,11 @@ export const getShiftSalesCount = async (restaurantId: string, from: string): Pr
 // kind='vale' de las órdenes con pago en la ventana (mismo criterio que
 // sales_count). INFORMATIVO para el arqueo; no entra al cuadre. Las órdenes a
 // fiado (sin fila en payments) no cuentan acá — igual que en sales_count.
-export const getShiftVouchersTotal = async (restaurantId: string, from: string): Promise<number> => {
+export const getShiftVouchersTotal = async (sedeId: string, from: string): Promise<number> => {
   const { data: pays, error: e1 } = await supabase
     .from('payments')
     .select('order_id')
-    .eq('restaurant_id', restaurantId)
+    .eq('sede_id', sedeId)
     .gte('created_at', from)
   if (e1) throw e1
   const orderIds = [...new Set((pays ?? []).map((p) => p.order_id))]
@@ -784,7 +784,7 @@ export const getShiftVouchersTotal = async (restaurantId: string, from: string):
   const { data: free, error: e3 } = await supabase
     .from('orders')
     .select('discount_amount')
-    .eq('restaurant_id', restaurantId)
+    .eq('sede_id', sedeId)
     .eq('discount_kind', 'vale')
     .eq('total', 0)
     .not('order_number', 'is', null)
@@ -821,11 +821,11 @@ export const createCashMovement = (movement: TablesInsert<'cash_movements'>) =>
 
 // --- Cash Shifts ---
 
-export const getOpenShift = (restaurantId: string) =>
+export const getOpenShift = (sedeId: string) =>
   supabase
     .from('cash_shifts')
     .select('*')
-    .eq('restaurant_id', restaurantId)
+    .eq('sede_id', sedeId)
     .is('closed_at', null)
     .maybeSingle()
 
@@ -875,7 +875,7 @@ export type ClosedShiftRow = {
 }
 
 export interface ClosedShiftsFilters {
-  restaurantId: string
+  sedeId: string
   /** Filtro de PRESENTACIÓN (no seguridad): solo turnos abiertos/cerrados por
    *  este usuario. La RLS ya limita a la sede. */
   userId?: string | null
@@ -886,7 +886,7 @@ export interface ClosedShiftsFilters {
 }
 
 export const getClosedShifts = ({
-  restaurantId, userId, from, to, page, pageSize,
+  sedeId, userId, from, to, page, pageSize,
 }: ClosedShiftsFilters) => {
   let q = supabase
     .from('cash_shifts')
@@ -897,7 +897,7 @@ export const getClosedShifts = ({
       'cerro:profiles!cash_shifts_closed_by_fkey(full_name)',
       { count: 'exact' },
     )
-    .eq('restaurant_id', restaurantId)
+    .eq('sede_id', sedeId)
     .not('closed_at', 'is', null)
   if (userId) q = q.or(`opened_by.eq.${userId},closed_by.eq.${userId}`)
   if (from) q = q.gte('closed_at', from)
@@ -919,7 +919,7 @@ export type CashOutRow = {
 }
 
 export interface CashOutFilters {
-  restaurantId: string
+  sedeId: string
   userId?: string | null
   from?: string
   to?: string
@@ -928,7 +928,7 @@ export interface CashOutFilters {
 }
 
 export const getCashOutMovements = ({
-  restaurantId, userId, from, to, page, pageSize,
+  sedeId, userId, from, to, page, pageSize,
 }: CashOutFilters) => {
   let q = supabase
     .from('cash_movements')
@@ -937,7 +937,7 @@ export const getCashOutMovements = ({
       'autor:profiles!cash_movements_created_by_fkey(full_name)',
       { count: 'exact' },
     )
-    .eq('restaurant_id', restaurantId)
+    .eq('sede_id', sedeId)
     .eq('type', 'out')
   if (userId) q = q.eq('created_by', userId)
   if (from) q = q.gte('created_at', from)
@@ -949,12 +949,12 @@ export const getCashOutMovements = ({
 
 /** Suma de egresos del período (para el total; consulta sin paginar, solo amount). */
 export const getCashOutTotal = ({
-  restaurantId, userId, from, to,
+  sedeId, userId, from, to,
 }: Omit<CashOutFilters, 'page' | 'pageSize'>) => {
   let q = supabase
     .from('cash_movements')
     .select('amount')
-    .eq('restaurant_id', restaurantId)
+    .eq('sede_id', sedeId)
     .eq('type', 'out')
   if (userId) q = q.eq('created_by', userId)
   if (from) q = q.gte('created_at', from)
@@ -964,11 +964,11 @@ export const getCashOutTotal = ({
 
 // --- Couriers ---
 
-export const getCouriers = (restaurantId: string) =>
+export const getCouriers = (sedeId: string) =>
   supabase
     .from('couriers')
     .select('*')
-    .eq('restaurant_id', restaurantId)
+    .eq('sede_id', sedeId)
     .eq('is_active', true)
     .order('name')
 
@@ -980,7 +980,7 @@ export const deleteCourier = (courierId: string) =>
 
 // --- Delivery orders ---
 
-export const getDeliveryOrders = (restaurantId: string) => {
+export const getDeliveryOrders = (sedeId: string) => {
   const todayStart = new Date()
   todayStart.setHours(0, 0, 0, 0)
   const todayISO = todayStart.toISOString()
@@ -992,7 +992,7 @@ export const getDeliveryOrders = (restaurantId: string) => {
       order_items(id, qty, unit_price, notes, products(id, name, price)),
       couriers(id, name, phone)
     `)
-    .eq('restaurant_id', restaurantId)
+    .eq('sede_id', sedeId)
     .eq('type', 'delivery')
     .neq('status', 'cancelled')
     .or(`status.in.(pending,preparing,ready),created_at.gte.${todayISO}`)
@@ -1013,17 +1013,17 @@ export const assignOrderCourier = (
 
 // --- All couriers (including inactive, for config panel) ---
 
-export const getAllCouriers = (restaurantId: string) =>
+export const getAllCouriers = (sedeId: string) =>
   supabase
     .from('couriers')
     .select('*')
-    .eq('restaurant_id', restaurantId)
+    .eq('sede_id', sedeId)
     .order('name')
 
-// --- Profiles (restaurant users, for admin config) ---
+// --- Profiles (sede users, for admin config) ---
 
-export const getRestaurantProfiles = (restaurantId: string) =>
-  supabase.from('profiles').select('*').eq('restaurant_id', restaurantId).order('full_name')
+export const getSedeProfiles = (sedeId: string) =>
+  supabase.from('profiles').select('*').eq('sede_id', sedeId).order('full_name')
 
 export const updateProfile = (userId: string, data: TablesUpdate<'profiles'>) =>
   supabase.from('profiles').update(data).eq('id', userId).select().single()
@@ -1036,39 +1036,39 @@ export const createUser = (params: {
   role: 'admin' | 'cashier' | 'waiter'
   /** Rol RBAC. Lo asigna la propia Edge Function, en el mismo request. */
   role_id: string | null
-  restaurant_id: string
+  sede_id: string
 }) => supabase.functions.invoke('create-user', { body: params })
 
-// --- Storage: restaurant-logos (logo + nequi QR) ---
+// --- Storage: sede-logos (logo + nequi QR) ---
 
-export const uploadRestaurantLogo = async (
-  restaurantId: string,
+export const uploadSedeLogo = async (
+  sedeId: string,
   file: File,
 ): Promise<string | null> => {
   const ext = file.name.split('.').pop() ?? 'png'
-  const path = `${restaurantId}/logo.${ext}`
+  const path = `${sedeId}/logo.${ext}`
   const { data, error } = await supabase.storage
-    .from('restaurant-logos')
+    .from('sede-logos')
     .upload(path, file, { upsert: true })
   if (error || !data) return null
   const { data: { publicUrl } } = supabase.storage
-    .from('restaurant-logos')
+    .from('sede-logos')
     .getPublicUrl(data.path)
   return publicUrl
 }
 
 export const uploadNequiQR = async (
-  restaurantId: string,
+  sedeId: string,
   file: File,
 ): Promise<string | null> => {
   const ext = file.name.split('.').pop() ?? 'png'
-  const path = `${restaurantId}/nequi-qr.${ext}`
+  const path = `${sedeId}/nequi-qr.${ext}`
   const { data, error } = await supabase.storage
-    .from('restaurant-logos')
+    .from('sede-logos')
     .upload(path, file, { upsert: true })
   if (error || !data) return null
   const { data: { publicUrl } } = supabase.storage
-    .from('restaurant-logos')
+    .from('sede-logos')
     .getPublicUrl(data.path)
   return publicUrl
 }
@@ -1078,11 +1078,11 @@ export const uploadNequiQR = async (
 export type Supplier = Tables<'suppliers'>
 
 // Proveedores ACTIVOS de la sede (borrado = soft-deactivate, ver deleteSupplier).
-export const getSuppliers = (restaurantId: string) =>
+export const getSuppliers = (sedeId: string) =>
   supabase
     .from('suppliers')
     .select('*')
-    .eq('restaurant_id', restaurantId)
+    .eq('sede_id', sedeId)
     .eq('is_active', true)
     .order('name')
 
@@ -1095,7 +1095,7 @@ export const deleteSupplier = (supplierId: string) =>
   supabase.from('suppliers').update({ is_active: false }).eq('id', supplierId)
 
 // Payload de la compra. La RPC register_purchase DERIVA total/subtotales y el
-// restaurant_id; del cliente solo se usan estos campos (unit_cost es el costo
+// sede_id; del cliente solo se usan estos campos (unit_cost es el costo
 // capturado del documento físico).
 export type PurchaseInvoicePayload = {
   supplier_id: string
@@ -1131,7 +1131,7 @@ export const registerPurchase = (
 
 // Historial de compras (cabeceras), paginado y ordenado por fecha desc.
 export interface PurchaseInvoicesFilters {
-  restaurantId: string
+  sedeId: string
   page: number
   pageSize: number
 }
@@ -1147,7 +1147,7 @@ export interface PurchaseInvoiceListRow {
 }
 
 export const getPurchaseInvoices = ({
-  restaurantId, page, pageSize,
+  sedeId, page, pageSize,
 }: PurchaseInvoicesFilters) => {
   const fromIdx = page * pageSize
   return supabase
@@ -1157,7 +1157,7 @@ export const getPurchaseInvoices = ({
         'suppliers(name), profiles!purchase_invoices_created_by_fkey(full_name)',
       { count: 'exact' },
     )
-    .eq('restaurant_id', restaurantId)
+    .eq('sede_id', sedeId)
     .order('created_at', { ascending: false })
     .range(fromIdx, fromIdx + pageSize - 1)
 }
@@ -1198,11 +1198,11 @@ export const getPurchaseInvoiceDetail = (invoiceId: string) =>
 export type Customer = Tables<'customers'>
 
 // Clientes ACTIVOS de la sede (borrado = soft-deactivate, patrón suppliers).
-export const getCustomers = (restaurantId: string) =>
+export const getCustomers = (sedeId: string) =>
   supabase
     .from('customers')
     .select('*')
-    .eq('restaurant_id', restaurantId)
+    .eq('sede_id', sedeId)
     .eq('is_active', true)
     .order('name')
 
@@ -1246,14 +1246,14 @@ export interface DebtRow {
 
 // Órdenes a fiado pendientes/parciales de la sede, con sus abonos. El saldo se
 // deriva en el cliente: total − suma(debt_payments.amount).
-export const getDebts = (restaurantId: string) =>
+export const getDebts = (sedeId: string) =>
   supabase
     .from('orders')
     .select(
       'id, order_number, created_at, total, payment_status, customer_id, customer_name, ' +
         'customers(name), debt_payments(amount)',
     )
-    .eq('restaurant_id', restaurantId)
+    .eq('sede_id', sedeId)
     .in('payment_status', ['pending', 'partial'])
     .is('cancelled_at', null)   // una venta fiada anulada sale de Cartera
     .order('created_at', { ascending: false })

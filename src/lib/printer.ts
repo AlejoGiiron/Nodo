@@ -1,7 +1,7 @@
 import type { ShiftReconciliation, ArqueoMethod } from '@/lib/shiftCalc'
 
 export interface ComandaData {
-  restaurantName?: string | null
+  sedeName?: string | null
   tableName: string
   zone?: string | null
   waiter?: string | null
@@ -83,7 +83,7 @@ export function printComanda(data: ComandaData): void {
 
   const html = `
     <div style="text-align:center;margin-bottom:8px">
-      ${data.restaurantName ? `<div style="font-size:13px;font-weight:700;letter-spacing:1px">${data.restaurantName.toUpperCase()}</div>` : ''}
+      ${data.sedeName ? `<div style="font-size:13px;font-weight:700;letter-spacing:1px">${data.sedeName.toUpperCase()}</div>` : ''}
       <div style="font-size:16px;font-weight:700;letter-spacing:2px">COMANDA</div>
       <div style="font-size:14px;font-weight:700">Mesa: ${data.tableName}</div>
       ${data.zone ? `<div style="font-size:11px">${data.zone}</div>` : ''}
@@ -134,8 +134,8 @@ const formatCOP = (n: number) =>
   }).format(n)
 
 export interface SaleTicketData {
-  restaurantName?: string | null
-  restaurantAddress?: string | null
+  sedeName?: string | null
+  sedeAddress?: string | null
   orderNumber: number | null
   orderId: string
   type: string
@@ -168,8 +168,8 @@ export function printSaleTicket(data: SaleTicketData): void {
 
   const html = `
     <div style="text-align:center;margin-bottom:6px">
-      ${data.restaurantName ? `<div style="font-size:16px;font-weight:700;letter-spacing:3px">${data.restaurantName.toUpperCase()}</div>` : ''}
-      ${data.restaurantAddress ? `<div style="font-size:11px">${data.restaurantAddress}</div>` : ''}
+      ${data.sedeName ? `<div style="font-size:16px;font-weight:700;letter-spacing:3px">${data.sedeName.toUpperCase()}</div>` : ''}
+      ${data.sedeAddress ? `<div style="font-size:11px">${data.sedeAddress}</div>` : ''}
       <div style="font-size:13px;font-weight:700;margin-top:4px">${ventaLabel}</div>
       <div style="font-size:10px;margin-top:2px">${dateStr}  ${timeStr} · ${typeLabel}</div>
     </div>
@@ -217,8 +217,8 @@ const ARQUEO_METHOD_LABEL: Record<ArqueoMethod, string> = {
 const ARQUEO_ORDER: ArqueoMethod[] = ['cash', 'card', 'transfer', 'nequi']
 
 export interface CashReportData {
-  restaurantName?: string | null
-  restaurantAddress?: string | null
+  sedeName?: string | null
+  sedeAddress?: string | null
   shiftId: string
   openedAt: string
   closedAt: string | null
@@ -280,8 +280,8 @@ function buildCashReportHtml(data: CashReportData): string {
 
   return `
     <div style="text-align:center;margin-bottom:6px">
-      ${data.restaurantName ? `<div style="font-size:15px;font-weight:700;letter-spacing:2px">${data.restaurantName.toUpperCase()}</div>` : ''}
-      ${data.restaurantAddress ? `<div style="font-size:11px">${data.restaurantAddress}</div>` : ''}
+      ${data.sedeName ? `<div style="font-size:15px;font-weight:700;letter-spacing:2px">${data.sedeName.toUpperCase()}</div>` : ''}
+      ${data.sedeAddress ? `<div style="font-size:11px">${data.sedeAddress}</div>` : ''}
       <div style="font-size:13px;font-weight:700;margin-top:4px">ARQUEO DE CAJA</div>
       <div style="font-size:10px;margin-top:2px">Turno #${data.shiftId.slice(-6).toUpperCase()}</div>
     </div>
@@ -332,11 +332,11 @@ export interface CashReportShiftRow {
 // (row.close_reconciliation), NUNCA recomputa el esperado (bug de ventana).
 export function buildCashReportData(
   row: CashReportShiftRow,
-  ctx: { restaurantName?: string | null; restaurantAddress?: string | null; movementsIn: number; movementsOut: number },
+  ctx: { sedeName?: string | null; sedeAddress?: string | null; movementsIn: number; movementsOut: number },
 ): CashReportData {
   return {
-    restaurantName: ctx.restaurantName,
-    restaurantAddress: ctx.restaurantAddress,
+    sedeName: ctx.sedeName,
+    sedeAddress: ctx.sedeAddress,
     shiftId: row.id,
     openedAt: row.opened_at,
     closedAt: row.closed_at,

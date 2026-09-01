@@ -122,7 +122,7 @@ test.describe.serial('Cocina por sede y por producto', () => {
     try {
       // Cambiar la sede activa a la dedicada SIN cocina. Esperar a que la
       // conmutación propague: el brand del sidebar pasa a la sede nueva (señal
-      // de que el profile se refrescó y el restaurant recargó con uses_kitchen).
+      // de que el profile se refrescó y el sede recargó con uses_kitchen).
       await page.getByTestId('store-selector').selectOption({ label: NO_KITCHEN })
       await expect(page.getByTestId('sidebar-brand-name')).toHaveText(NO_KITCHEN, { timeout: 15_000 })
 

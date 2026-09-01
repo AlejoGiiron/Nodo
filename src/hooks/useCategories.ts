@@ -6,12 +6,12 @@ export function useCategories() {
   const { profile } = useAuth()
 
   return useQuery({
-    queryKey: ['categories', profile?.restaurant_id],
+    queryKey: ['categories', profile?.sede_id],
     queryFn: async () => {
-      const { data, error } = await getCategories(profile!.restaurant_id)
+      const { data, error } = await getCategories(profile!.sede_id)
       if (error) throw error
       return data ?? []
     },
-    enabled: !!profile?.restaurant_id,
+    enabled: !!profile?.sede_id,
   })
 }

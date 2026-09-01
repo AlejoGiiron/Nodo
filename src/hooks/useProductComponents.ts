@@ -54,7 +54,7 @@ export function useProductComponents(parentId: string | null) {
             parent_id: parentId,
             component_id: row.component_id,
             qty: row.qty,
-            restaurant_id: profile.restaurant_id,
+            sede_id: profile.sede_id,
           })
           if (error) throw error
         } else if (existing.qty !== row.qty) {

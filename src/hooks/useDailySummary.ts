@@ -49,7 +49,7 @@ export function useDailySummary(date: string) {
         },
       }
     },
-    enabled: !!profile?.restaurant_id && !!date,
+    enabled: !!profile?.sede_id && !!date,
     staleTime: 5 * 60_000,
   })
 }

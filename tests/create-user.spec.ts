@@ -91,8 +91,8 @@ test.beforeAll(async () => {
 
   OWNER_ID = (await owner.auth.getUser()).data.user!.id
   const p = (await owner.from('profiles')
-    .select('restaurant_id, organization_id').eq('id', OWNER_ID).single()).data!
-  SEDE = p.restaurant_id as string
+    .select('sede_id, organization_id').eq('id', OWNER_ID).single()).data!
+  SEDE = p.sede_id as string
   ORG = p.organization_id as string
 
   // Rol RBAC que se le asignará al usuario nuevo (uno cualquiera, no-owner).
@@ -114,7 +114,7 @@ test('cajero SIN usuarios.gestionar → 403', async () => {
     full_name: 'No Debe Existir',
     role: 'waiter',
     role_id: ROL_MOZO,
-    restaurant_id: SEDE,
+    sede_id: SEDE,
   })
 
   expect(status).toBe(403)
@@ -138,7 +138,7 @@ test('llamante DESACTIVADO → 403 con el mensaje de is_active', async () => {
       full_name: 'No Debe Existir 2',
       role: 'waiter',
       role_id: ROL_MOZO,
-      restaurant_id: SEDE,
+      sede_id: SEDE,
     })
 
     expect(status).toBe(403)
@@ -156,7 +156,7 @@ test('role_id inexistente → 400 y NO queda cuenta colgada', async () => {
     full_name: 'Rol Invalido',
     role: 'waiter',
     role_id: crypto.randomUUID(),
-    restaurant_id: SEDE,
+    sede_id: SEDE,
   })
 
   expect(status).toBe(400)
@@ -182,7 +182,7 @@ test('alta completa en UN request: role_id Y organization_id correctos', async (
     full_name: `E2E CreateUser ${SUFFIX}`,
     role: 'waiter',
     role_id: ROL_MOZO,
-    restaurant_id: SEDE,
+    sede_id: SEDE,
   })
 
   expect(status).toBe(200)
@@ -191,7 +191,7 @@ test('alta completa en UN request: role_id Y organization_id correctos', async (
 
   const { data: perfil, error } = await owner
     .from('profiles')
-    .select('id, email, role, role_id, organization_id, restaurant_id, is_active')
+    .select('id, email, role, role_id, organization_id, sede_id, is_active')
     .eq('id', body.user_id)
     .single()
   expect(error).toBeNull()
@@ -205,7 +205,7 @@ test('alta completa en UN request: role_id Y organization_id correctos', async (
   expect(perfil!.organization_id, 'organization_id derivado de la sede').toBe(ORG)
 
   // 3. Coherencia del resto.
-  expect(perfil!.restaurant_id).toBe(SEDE)
+  expect(perfil!.sede_id).toBe(SEDE)
   expect(perfil!.is_active).toBe(true)
   expect(perfil!.role).toBe('waiter')
 

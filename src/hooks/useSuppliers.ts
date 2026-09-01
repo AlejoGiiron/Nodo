@@ -16,21 +16,21 @@ export type { Supplier }
 export function useSuppliers() {
   const { profile } = useAuth()
   const queryClient = useQueryClient()
-  const restaurantId = profile?.restaurant_id ?? null
+  const sedeId = profile?.sede_id ?? null
 
   const query = useQuery({
-    queryKey: ['suppliers', restaurantId],
+    queryKey: ['suppliers', sedeId],
     queryFn: async () => {
-      const { data, error } = await getSuppliers(restaurantId!)
+      const { data, error } = await getSuppliers(sedeId!)
       if (error) throw error
       return data ?? []
     },
-    enabled: !!restaurantId,
+    enabled: !!sedeId,
     staleTime: 60_000,
   })
 
   const invalidate = () =>
-    queryClient.invalidateQueries({ queryKey: ['suppliers', restaurantId] })
+    queryClient.invalidateQueries({ queryKey: ['suppliers', sedeId] })
 
   const save = useMutation({
     mutationFn: async (
@@ -39,7 +39,7 @@ export function useSuppliers() {
     ) => {
       const { error } = await upsertSupplier({
         ...input,
-        restaurant_id: restaurantId!,
+        sede_id: sedeId!,
       })
       if (error) throw error
     },

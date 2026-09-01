@@ -14,7 +14,7 @@ import { useCategories } from '@/hooks/useCategories'
 import { useProductsWithExtras } from '@/hooks/useProductsWithExtras'
 import { useAuth } from '@/hooks/useAuth'
 import { usePermissions } from '@/hooks/usePermissions'
-import { useRestaurantConfig } from '@/hooks/useRestaurantConfig'
+import { useSedeConfig } from '@/hooks/useSedeConfig'
 import { useCashShift } from '@/hooks/useCashShift'
 import { OpenShiftModal } from '@/components/shift/OpenShiftModal'
 import { ItemConfigModal } from '@/components/pos/ItemConfigModal'
@@ -90,8 +90,8 @@ function PrintTicket({
   orderId,
   orderNumber,
   receivedAmt,
-  restaurantName,
-  restaurantAddress,
+  sedeName,
+  sedeAddress,
 }: {
   items: CartItem[]
   subtotal: number
@@ -105,8 +105,8 @@ function PrintTicket({
   orderId: string
   orderNumber: number | null
   receivedAmt?: number
-  restaurantName: string
-  restaurantAddress?: string | null
+  sedeName: string
+  sedeAddress?: string | null
 }) {
   const now = new Date()
   const dateStr = now.toLocaleDateString('es-CO', {
@@ -129,8 +129,8 @@ function PrintTicket({
   return (
     <div className="ticket-print">
       <div style={{ textAlign: 'center', marginBottom: 6 }}>
-        <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: 3 }}>{restaurantName.toUpperCase()}</div>
-        {restaurantAddress && <div style={{ fontSize: 11 }}>{restaurantAddress}</div>}
+        <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: 3 }}>{sedeName.toUpperCase()}</div>
+        {sedeAddress && <div style={{ fontSize: 11 }}>{sedeAddress}</div>}
         <div style={{ fontSize: 13, fontWeight: 700, marginTop: 4 }}>{ventaLabel}</div>
         <div style={{ fontSize: 10, marginTop: 2 }}>{dateStr}  {timeStr} · {orderTypeLabel}</div>
       </div>
@@ -842,7 +842,7 @@ function CheckoutModal({
 }) {
   const { profile } = useAuth()
   const { can } = usePermissions()
-  const { restaurant } = useRestaurantConfig()
+  const { sede } = useSedeConfig()
   const { refetchSales } = useCashShift()
   const queryClient = useQueryClient()
   const [step, setStep] = useState<'method' | 'amount' | 'success'>('method')
@@ -900,7 +900,7 @@ function CheckoutModal({
         type: orderType,
         status: 'pending',
         total,
-        restaurant_id: profile.restaurant_id,
+        sede_id: profile.sede_id,
         created_by: profile.id,
         // Descuento REAL persistido (monto en COP ya reflejado en total) + su
         // clase (normal | vale). El vale es siempre 'fixed' (forzado en el store).
@@ -947,7 +947,7 @@ function CheckoutModal({
 
       // Numeración: es una venta real (cobrada o a fiado) → asignar número
       // correlativo. Si falla, no se tumba la venta (queda registrada igual).
-      const num = await assignOrderNumber(order.id, profile.restaurant_id)
+      const num = await assignOrderNumber(order.id, profile.sede_id)
       setOrderNumber(num.orderNumber)
       setNumeroReservado(num.numeroReservado)
 
@@ -978,7 +978,7 @@ function CheckoutModal({
     if (!orderId || !profile) return
     setReintentandoNumero(true)
     try {
-      const num = await retryOrderNumber(orderId, profile.restaurant_id, numeroReservado)
+      const num = await retryOrderNumber(orderId, profile.sede_id, numeroReservado)
       setOrderNumber(num.orderNumber)
       setNumeroReservado(num.numeroReservado)
       if (num.orderNumber != null) toast.success(`Número asignado: venta #${num.orderNumber}`)
@@ -1339,8 +1339,8 @@ function CheckoutModal({
               orderId={orderId}
               orderNumber={orderNumber}
               receivedAmt={method === 'efectivo' ? receivedNum : undefined}
-              restaurantName={restaurant?.name ?? 'G-Vento'}
-              restaurantAddress={restaurant?.address}
+              sedeName={sede?.name ?? 'G-Vento'}
+              sedeAddress={sede?.address}
             />
           </div>
         )}

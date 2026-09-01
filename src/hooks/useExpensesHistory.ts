@@ -30,17 +30,17 @@ function dayEndISO(day: string): string {
  */
 export function useExpensesHistory({ from, to, scope, page }: ExpensesHistoryUIFilters) {
   const { profile } = useAuth()
-  const restaurantId = profile?.restaurant_id ?? null
+  const sedeId = profile?.sede_id ?? null
   const userId = scope === 'mine' ? (profile?.id ?? null) : null
 
   const fromISO = from ? dayStartISO(from) : undefined
   const toISO = to ? dayEndISO(to) : undefined
 
   const query = useQuery({
-    queryKey: ['expenses_history', restaurantId, from, to, scope, userId, page],
+    queryKey: ['expenses_history', sedeId, from, to, scope, userId, page],
     queryFn: async () => {
       const { data, count, error } = await getCashOutMovements({
-        restaurantId: restaurantId!,
+        sedeId: sedeId!,
         userId,
         from: fromISO,
         to: toISO,
@@ -53,17 +53,17 @@ export function useExpensesHistory({ from, to, scope, page }: ExpensesHistoryUIF
         count: count ?? 0,
       }
     },
-    enabled: !!restaurantId && !!from && !!to,
+    enabled: !!sedeId && !!from && !!to,
     placeholderData: keepPreviousData,
     staleTime: 30_000,
   })
 
   // Total del período (todas las filas filtradas, no solo la página actual).
   const totalQuery = useQuery({
-    queryKey: ['expenses_total', restaurantId, from, to, scope, userId],
+    queryKey: ['expenses_total', sedeId, from, to, scope, userId],
     queryFn: async () => {
       const { data, error } = await getCashOutTotal({
-        restaurantId: restaurantId!,
+        sedeId: sedeId!,
         userId,
         from: fromISO,
         to: toISO,
@@ -71,7 +71,7 @@ export function useExpensesHistory({ from, to, scope, page }: ExpensesHistoryUIF
       if (error) throw error
       return (data ?? []).reduce((s, r) => s + (r.amount ?? 0), 0)
     },
-    enabled: !!restaurantId && !!from && !!to,
+    enabled: !!sedeId && !!from && !!to,
     placeholderData: keepPreviousData,
     staleTime: 30_000,
   })

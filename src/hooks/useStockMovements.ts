@@ -20,13 +20,13 @@ export interface StockMovementsParams {
  */
 export function useStockMovements({ type, from, to, page, pageSize }: StockMovementsParams) {
   const { profile } = useAuth()
-  const restaurantId = profile?.restaurant_id
+  const sedeId = profile?.sede_id
 
   return useQuery({
-    queryKey: ['stock_movements', restaurantId, type ?? null, from ?? null, to ?? null, page, pageSize],
+    queryKey: ['stock_movements', sedeId, type ?? null, from ?? null, to ?? null, page, pageSize],
     queryFn: async () => {
       const { data, error, count } = await getStockMovements({
-        restaurantId: restaurantId!, type, from, to, page, pageSize,
+        sedeId: sedeId!, type, from, to, page, pageSize,
       })
       if (error) throw error
       return {
@@ -34,7 +34,7 @@ export function useStockMovements({ type, from, to, page, pageSize }: StockMovem
         total: count ?? 0,
       }
     },
-    enabled: !!restaurantId,
+    enabled: !!sedeId,
     placeholderData: keepPreviousData,
     staleTime: 10_000,
   })

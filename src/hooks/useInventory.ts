@@ -20,7 +20,7 @@ export function useInventory() {
       if (error) throw error
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products', profile?.restaurant_id] })
+      queryClient.invalidateQueries({ queryKey: ['products', profile?.sede_id] })
       queryClient.invalidateQueries({ queryKey: ['stock_movements'] })
       toast.success('Stock ajustado')
     },

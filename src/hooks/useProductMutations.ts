@@ -17,7 +17,7 @@ export function useProductMutations() {
   const { profile } = useAuth()
 
   const invalidate = () =>
-    queryClient.invalidateQueries({ queryKey: ['products', profile?.restaurant_id] })
+    queryClient.invalidateQueries({ queryKey: ['products', profile?.sede_id] })
 
   const saveProduct = useMutation({
     meta: { area: 'productos' satisfies SentryArea },
@@ -42,7 +42,7 @@ export function useProductMutations() {
 
   const uploadImage = async (productId: string, file: File): Promise<string | null> => {
     if (!profile) return null
-    const url = await uploadProductImage(profile.restaurant_id, productId, file)
+    const url = await uploadProductImage(profile.sede_id, productId, file)
     if (!url) toast.error('No se pudo subir la imagen — el producto se guardará sin ella')
     return url
   }
@@ -59,8 +59,8 @@ export function useCategoryMutations() {
   const { profile } = useAuth()
 
   const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: ['categories', profile?.restaurant_id] })
-    queryClient.invalidateQueries({ queryKey: ['products', profile?.restaurant_id] })
+    queryClient.invalidateQueries({ queryKey: ['categories', profile?.sede_id] })
+    queryClient.invalidateQueries({ queryKey: ['products', profile?.sede_id] })
   }
 
   const saveCategory = useMutation({

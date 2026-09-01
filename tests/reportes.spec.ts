@@ -41,7 +41,7 @@ test.describe('Reportes', () => {
     await expect(page.getByTestId('export-stock')).toBeVisible()
   })
 
-  test('el sidebar muestra el nombre del restaurante', async ({ page }) => {
+  test('el sidebar muestra el nombre del sede', async ({ page }) => {
     const brand = page.getByTestId('sidebar-brand-name')
     await expect(brand).toBeVisible()
     await expect(brand).not.toHaveText('')

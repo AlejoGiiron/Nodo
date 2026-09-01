@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { X, ArrowDownLeft, ArrowUpRight, DollarSign, AlertTriangle } from 'lucide-react'
 import { useCashShift } from '@/hooks/useCashShift'
-import { useRestaurantConfig } from '@/hooks/useRestaurantConfig'
+import { useSedeConfig } from '@/hooks/useSedeConfig'
 import { availableCash } from '@/lib/shiftCalc'
 
 const OTHER_REASON = 'Otro'
@@ -24,7 +24,7 @@ interface MovementsModalProps {
 
 export function MovementsModal({ onClose }: MovementsModalProps) {
   const { currentShift, salesSummary, movements, addMovement, isAddingMovement } = useCashShift()
-  const { config } = useRestaurantConfig()
+  const { config } = useSedeConfig()
 
   const [type, setType] = useState<'in' | 'out'>('in')
   const [rawAmount, setRawAmount] = useState('')

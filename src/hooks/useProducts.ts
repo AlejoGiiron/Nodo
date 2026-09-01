@@ -7,12 +7,12 @@ export function useProducts() {
   const { profile } = useAuth()
 
   return useQuery({
-    queryKey: ['products', profile?.restaurant_id],
+    queryKey: ['products', profile?.sede_id],
     queryFn: async () => {
-      const { data, error } = await getProducts(profile!.restaurant_id)
+      const { data, error } = await getProducts(profile!.sede_id)
       if (error) throw error
       return (data ?? []) as ProductWithCategory[]
     },
-    enabled: !!profile?.restaurant_id,
+    enabled: !!profile?.sede_id,
   })
 }

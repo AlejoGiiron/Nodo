@@ -89,7 +89,7 @@ export function LoginPage() {
           }}>G</div>
           <div>
             <div style={{ fontWeight: 700, fontSize: 18, color: '#f8fafc', letterSpacing: -0.3 }}>G-Vento</div>
-            <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 1 }}>POS · Restaurantes</div>
+            <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 1 }}>POS · Sedes</div>
           </div>
         </div>
 
@@ -100,7 +100,7 @@ export function LoginPage() {
             <span style={{ color: '#10b981' }}>de vuelta.</span>
           </h1>
           <p style={{ fontSize: 14, color: '#94a3b8', marginTop: 14, marginBottom: 0, lineHeight: 1.55, maxWidth: 340 }}>
-            Ingresa a tu turno y comienza a facturar. Todo lo que tu restaurante necesita, en un solo lugar.
+            Ingresa a tu turno y comienza a facturar. Todo lo que tu sede necesita, en un solo lugar.
           </p>
 
           {/* Features */}
@@ -193,7 +193,7 @@ export function LoginPage() {
                   type="email"
                   value={email}
                   onChange={e => { setEmail(e.target.value); setError(false) }}
-                  placeholder="tu@restaurante.com"
+                  placeholder="tu@sede.com"
                   autoFocus
                   autoComplete="email"
                   style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 14, color: '#0f172a' }}
@@ -276,7 +276,7 @@ export function LoginPage() {
 
         {/* Footer */}
         <div style={{ fontSize: 11.5, color: '#94a3b8', textAlign: 'center' }}>
-          ¿No tienes acceso? El administrador de tu restaurante crea las cuentas.
+          ¿No tienes acceso? El administrador de tu sede crea las cuentas.
         </div>
       </div>
     </div>

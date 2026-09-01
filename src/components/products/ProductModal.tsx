@@ -9,7 +9,7 @@ import { useExtras } from '@/hooks/useExtras'
 import { useProductExtras } from '@/hooks/useProductExtras'
 import { useProductComponents, type RecipeRow } from '@/hooks/useProductComponents'
 import { useAuth } from '@/hooks/useAuth'
-import { useRestaurantConfig } from '@/hooks/useRestaurantConfig'
+import { useSedeConfig } from '@/hooks/useSedeConfig'
 import type { ProductWithCategory } from '@/stores/cartStore'
 import type { Tables, TablesInsert } from '@/types/database.types'
 
@@ -29,7 +29,7 @@ interface ProductModalProps {
 
 export function ProductModal({ product, categories, onClose }: ProductModalProps) {
   const { profile } = useAuth()
-  const { restaurant } = useRestaurantConfig()
+  const { sede } = useSedeConfig()
   const { saveProduct, uploadImage, removeImage } = useProductMutations()
   const { data: allProducts = [] } = useProducts()
   const { extras } = useExtras()
@@ -74,8 +74,8 @@ export function ProductModal({ product, categories, onClose }: ProductModalProps
   const [saving, setSaving] = useState(false)
 
   // El control "Va a cocina" solo aplica si la sede usa cocina. Default true
-  // mientras carga el restaurant (no condiciona el guardado, solo el render).
-  const sedeUsesKitchen = restaurant?.uses_kitchen ?? true
+  // mientras carga el sede (no condiciona el guardado, solo el render).
+  const sedeUsesKitchen = sede?.uses_kitchen ?? true
 
   // Receta (solo para compuestos). Se inicializa desde BD en modo edición.
   const [recipeRows, setRecipeRows] = useState<RecipeRow[]>([])
@@ -143,7 +143,7 @@ export function ProductModal({ product, categories, onClose }: ProductModalProps
         description: description.trim() || null,
         price: priceNum,
         category_id: categoryId,
-        restaurant_id: profile.restaurant_id,
+        sede_id: profile.sede_id,
         image_url: finalImageUrl,
         is_active: true,
         kind,

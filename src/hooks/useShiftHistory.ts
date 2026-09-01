@@ -31,14 +31,14 @@ function dayEndISO(day: string): string {
  */
 export function useShiftHistory({ from, to, scope, page }: ShiftHistoryUIFilters) {
   const { profile } = useAuth()
-  const restaurantId = profile?.restaurant_id ?? null
+  const sedeId = profile?.sede_id ?? null
   const userId = scope === 'mine' ? (profile?.id ?? null) : null
 
   const query = useQuery({
-    queryKey: ['shift_history', restaurantId, from, to, scope, userId, page],
+    queryKey: ['shift_history', sedeId, from, to, scope, userId, page],
     queryFn: async () => {
       const { data, count, error } = await getClosedShifts({
-        restaurantId: restaurantId!,
+        sedeId: sedeId!,
         userId,
         from: from ? dayStartISO(from) : undefined,
         to: to ? dayEndISO(to) : undefined,
@@ -51,7 +51,7 @@ export function useShiftHistory({ from, to, scope, page }: ShiftHistoryUIFilters
         count: count ?? 0,
       }
     },
-    enabled: !!restaurantId && !!from && !!to,
+    enabled: !!sedeId && !!from && !!to,
     placeholderData: keepPreviousData,
     staleTime: 30_000,
   })

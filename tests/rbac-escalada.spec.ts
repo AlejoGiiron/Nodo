@@ -50,12 +50,12 @@ type ProfileSnap = {
   role: string
   role_id: string | null
   organization_id: string | null
-  restaurant_id: string
+  sede_id: string
   full_name: string
   is_active: boolean
 }
 
-const SNAP_COLS = 'id, role, role_id, organization_id, restaurant_id, full_name, is_active'
+const SNAP_COLS = 'id, role, role_id, organization_id, sede_id, full_name, is_active'
 
 let owner: SupabaseClient
 let cajero: SupabaseClient
@@ -77,7 +77,7 @@ async function restore(snap: ProfileSnap): Promise<void> {
       role: snap.role,
       role_id: snap.role_id,
       organization_id: snap.organization_id,
-      restaurant_id: snap.restaurant_id,
+      sede_id: snap.sede_id,
       full_name: snap.full_name,
       is_active: snap.is_active,
     })
@@ -219,29 +219,29 @@ test('un usuario desactivado NO puede auto-reactivarse', async () => {
 
 // ── DEBEN PASAR ─────────────────────────────────────────────────────────────
 
-test('cambio de sede activa: update de una sola columna restaurant_id', async () => {
+test('cambio de sede activa: update de una sola columna sede_id', async () => {
   // Flujo real del StoreSelector (StoreSelector.tsx:43-46). El owner del lab
   // tiene 3 sedes en user_stores (lab-seed bloque e).
   const { data: sedes } = await owner
     .from('user_stores')
-    .select('restaurant_id')
+    .select('sede_id')
     .eq('user_id', ownerSnap.id)
 
-  const otra = (sedes ?? []).map((s) => s.restaurant_id).find((r) => r !== ownerSnap.restaurant_id)
+  const otra = (sedes ?? []).map((s) => s.sede_id).find((r) => r !== ownerSnap.sede_id)
   test.skip(!otra, 'el owner del lab necesita ≥2 sedes en user_stores para este caso')
 
   const res = await owner
     .from('profiles')
-    .update({ restaurant_id: otra! })
+    .update({ sede_id: otra! })
     .eq('id', ownerSnap.id)
     .select(SNAP_COLS)
 
   expect(bloqueado(res), 'el cambio de sede activa NO debe verse afectado por el trigger').toBe(false)
-  expect((await readProfile(ownerSnap.id)).restaurant_id).toBe(otra)
+  expect((await readProfile(ownerSnap.id)).sede_id).toBe(otra)
 
   // Vuelve a la sede original: el resto de la suite asume la sede por defecto.
   await restore(ownerSnap)
-  expect((await readProfile(ownerSnap.id)).restaurant_id).toBe(ownerSnap.restaurant_id)
+  expect((await readProfile(ownerSnap.id)).sede_id).toBe(ownerSnap.sede_id)
 })
 
 test('el usuario puede editar su propio full_name', async () => {
@@ -290,7 +290,7 @@ test('el admin puede asignar role_id a OTRO usuario de su sede', async () => {
 // ── Capa de APP (UX del desactivado) ────────────────────────────────────────
 
 test('el desactivado NO entra: la sesión se corta con mensaje', async ({ page }) => {
-  // Server-side el acceso ya está cerrado (P2): get_my_restaurant_id() devuelve
+  // Server-side el acceso ya está cerrado (P2): get_my_sede_id() devuelve
   // null y la RLS no da ni una fila. Sin este chequeo el usuario entraba igual y
   // veía la app EN BLANCO, sin explicación. Esto verifica la capa de UX.
   const off = await owner

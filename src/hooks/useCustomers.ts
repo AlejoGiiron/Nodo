@@ -16,16 +16,16 @@ export type { Customer }
  */
 export function useCustomers() {
   const { profile } = useAuth()
-  const restaurantId = profile?.restaurant_id ?? null
+  const sedeId = profile?.sede_id ?? null
 
   const query = useQuery({
-    queryKey: ['customers', restaurantId],
+    queryKey: ['customers', sedeId],
     queryFn: async () => {
-      const { data, error } = await getCustomers(restaurantId!)
+      const { data, error } = await getCustomers(sedeId!)
       if (error) throw error
       return data ?? []
     },
-    enabled: !!restaurantId,
+    enabled: !!sedeId,
     staleTime: 60_000,
   })
 
@@ -39,10 +39,10 @@ export function useCustomers() {
 export function useCustomerMutations() {
   const { profile } = useAuth()
   const queryClient = useQueryClient()
-  const restaurantId = profile?.restaurant_id ?? null
+  const sedeId = profile?.sede_id ?? null
 
   const invalidate = () =>
-    queryClient.invalidateQueries({ queryKey: ['customers', restaurantId] })
+    queryClient.invalidateQueries({ queryKey: ['customers', sedeId] })
 
   const save = useMutation({
     mutationFn: async (
@@ -51,7 +51,7 @@ export function useCustomerMutations() {
     ) => {
       const { data, error } = await upsertCustomer({
         ...input,
-        restaurant_id: restaurantId!,
+        sede_id: sedeId!,
       })
       if (error) throw error
       return data

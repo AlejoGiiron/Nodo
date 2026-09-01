@@ -32,16 +32,16 @@ export type CashMovement = Tables<'cash_movements'>
 export function useCashShift() {
   const { profile } = useAuth()
   const queryClient = useQueryClient()
-  const restaurantId = profile?.restaurant_id
+  const sedeId = profile?.sede_id
 
   const { data: currentShift = null, isLoading: isLoadingShift } = useQuery({
-    queryKey: ['cash_shift_open', restaurantId],
+    queryKey: ['cash_shift_open', sedeId],
     queryFn: async () => {
-      const { data, error } = await getOpenShift(restaurantId!)
+      const { data, error } = await getOpenShift(sedeId!)
       if (error) throw error
       return data ?? null
     },
-    enabled: !!restaurantId,
+    enabled: !!sedeId,
     staleTime: 10_000,
   })
 
@@ -49,7 +49,7 @@ export function useCashShift() {
     queryKey: ['shift_payments', currentShift?.id],
     queryFn: async () => {
       const { data, error } = await getShiftPayments(
-        restaurantId!,
+        sedeId!,
         currentShift!.opened_at,
       )
       if (error) throw error
@@ -80,13 +80,13 @@ export function useCashShift() {
   // en el cierre; el snapshot lo recongela en la mutación al cerrar.
   const { data: vouchersTotal = 0 } = useQuery({
     queryKey: ['shift_vouchers', currentShift?.id],
-    queryFn: () => getShiftVouchersTotal(restaurantId!, currentShift!.opened_at),
+    queryFn: () => getShiftVouchersTotal(sedeId!, currentShift!.opened_at),
     enabled: !!currentShift?.id,
     refetchInterval: 5_000,
   })
 
   const invalidateShift = () =>
-    queryClient.invalidateQueries({ queryKey: ['cash_shift_open', restaurantId] })
+    queryClient.invalidateQueries({ queryKey: ['cash_shift_open', sedeId] })
 
   const invalidateMovements = () =>
     queryClient.invalidateQueries({ queryKey: ['cash_movements', currentShift?.id] })
@@ -102,7 +102,7 @@ export function useCashShift() {
     meta: { area: 'caja' satisfies SentryArea },
     mutationFn: async (openingAmount: number) => {
       const { data, error } = await openShiftHelper({
-        restaurant_id: restaurantId!,
+        sede_id: sedeId!,
         opened_by: profile!.id,
         opening_amount: openingAmount,
       })
@@ -126,8 +126,8 @@ export function useCashShift() {
       comment: string
     }) => {
       // Congelados al cierre: nº de ventas + total de vales (informativo).
-      const salesCount = await getShiftSalesCount(restaurantId!, currentShift!.opened_at)
-      const vouchers = await getShiftVouchersTotal(restaurantId!, currentShift!.opened_at)
+      const salesCount = await getShiftSalesCount(sedeId!, currentShift!.opened_at)
+      const vouchers = await getShiftVouchersTotal(sedeId!, currentShift!.opened_at)
       const reconciliation: ShiftReconciliation = {
         ...params.reconciliation,
         sales_count: salesCount,
@@ -159,7 +159,7 @@ export function useCashShift() {
       const { data, error } = await createCashMovement({
         ...movement,
         shift_id: currentShift!.id,
-        restaurant_id: restaurantId!,
+        sede_id: sedeId!,
         created_by: profile!.id,
       })
       if (error) throw error
@@ -175,11 +175,11 @@ export function useCashShift() {
 
   const channelRef = useRef<RealtimeChannel | null>(null)
 
-  // Realtime: invalida salesSummary cuando se inserta un pago en este restaurante.
+  // Realtime: invalida salesSummary cuando se inserta un pago en este sede.
   // Nombre único por instancia para evitar que Supabase reutilice un canal ya
   // suscrito y lance "cannot add postgres_changes callbacks after subscribe".
   useEffect(() => {
-    if (!restaurantId) return
+    if (!sedeId) return
 
     const channelName = `shift-payments-${Math.random().toString(36).slice(2)}`
 
@@ -187,7 +187,7 @@ export function useCashShift() {
       .channel(channelName)
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'payments', filter: `restaurant_id=eq.${restaurantId}` },
+        { event: 'INSERT', schema: 'public', table: 'payments', filter: `sede_id=eq.${sedeId}` },
         () => queryClient.invalidateQueries({ queryKey: ['shift_payments'] }),
       )
       .subscribe()
@@ -200,7 +200,7 @@ export function useCashShift() {
       channelRef.current = null
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [restaurantId])
+  }, [sedeId])
 
   return {
     currentShift,

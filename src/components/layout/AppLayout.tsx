@@ -22,7 +22,7 @@ import {
 import { toast } from 'react-hot-toast'
 import { useAuth } from '@/hooks/useAuth'
 import { usePermissions } from '@/hooks/usePermissions'
-import { useRestaurantConfig } from '@/hooks/useRestaurantConfig'
+import { useSedeConfig } from '@/hooks/useSedeConfig'
 import { useCashShift } from '@/hooks/useCashShift'
 import { useDeliveryCount } from '@/hooks/useDeliveryCount'
 import { useCollapsedGroups } from '@/hooks/useCollapsedGroups'
@@ -99,12 +99,12 @@ const ROLE_LABELS: Record<UserRole, string> = {
 export function AppLayout() {
   const { profile, signOut } = useAuth()
   const { can } = usePermissions()
-  const { restaurant } = useRestaurantConfig()
+  const { sede } = useSedeConfig()
   const { isOpen, isLoadingShift } = useCashShift()
 
-  // Branding de la SEDE activa (restaurants): nombre + logo capturados en Config.
-  const brandName = restaurant?.name ?? 'G-Vento'
-  const brandLogo = restaurant?.logo_url ?? null
+  // Branding de la SEDE activa (sedes): nombre + logo capturados en Config.
+  const brandName = sede?.name ?? 'G-Vento'
+  const brandLogo = sede?.logo_url ?? null
   const deliveryCount = useDeliveryCount()
   const navigate = useNavigate()
   const { pathname } = useLocation()
@@ -122,8 +122,8 @@ export function AppLayout() {
   }
 
   // Cocina depende de la sede: además del permiso, exige que la sede use cocina.
-  // Default true mientras carga el restaurant (evita que el item parpadee).
-  const sedeUsesKitchen = restaurant?.uses_kitchen ?? true
+  // Default true mientras carga el sede (evita que el item parpadee).
+  const sedeUsesKitchen = sede?.uses_kitchen ?? true
 
   // Gating por item (idéntico al de antes): permiso RBAC + cocina por sede.
   const isItemVisible = (item: NavItem) =>

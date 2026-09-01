@@ -9,7 +9,7 @@ import { toast } from 'react-hot-toast'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/hooks/useAuth'
 import { usePermissions } from '@/hooks/usePermissions'
-import { useRestaurantConfig } from '@/hooks/useRestaurantConfig'
+import { useSedeConfig } from '@/hooks/useSedeConfig'
 import { useCashShift } from '@/hooks/useCashShift'
 import { useTables } from '@/hooks/useTables'
 import { useProducts } from '@/hooks/useProducts'
@@ -214,7 +214,7 @@ function OpenTableModal({
         table_id: table.id,
         total: 0,
         waiter_name: waiterName.trim() || null,
-        restaurant_id: profile.restaurant_id,
+        sede_id: profile.sede_id,
         created_by: profile.id,
       })
       if (orderErr || !order) throw orderErr ?? new Error('Error al crear la orden')
@@ -642,7 +642,7 @@ function TableCheckoutModal({
   const { profile } = useAuth()
   const { can } = usePermissions()
   const { refetchSales } = useCashShift()
-  const { restaurant } = useRestaurantConfig()
+  const { sede } = useSedeConfig()
   const queryClient = useQueryClient()
   const [step, setStep] = useState<'method' | 'amount' | 'success'>('method')
   const [method, setMethod] = useState<PaymentMethodUI>('efectivo')
@@ -739,7 +739,7 @@ function TableCheckoutModal({
 
       // Numeración: es una venta real (cobrada o a fiado) → asignar número.
       // Si falla, no se tumba la venta (queda registrada igual).
-      const num = await assignOrderNumber(order.id, profile.restaurant_id)
+      const num = await assignOrderNumber(order.id, profile.sede_id)
       setOrderNumber(num.orderNumber)
       setNumeroReservado(num.numeroReservado)
 
@@ -777,7 +777,7 @@ function TableCheckoutModal({
     if (!profile) return
     setReintentandoNumero(true)
     try {
-      const num = await retryOrderNumber(order.id, profile.restaurant_id, numeroReservado)
+      const num = await retryOrderNumber(order.id, profile.sede_id, numeroReservado)
       setOrderNumber(num.orderNumber)
       setNumeroReservado(num.numeroReservado)
       if (num.orderNumber != null) toast.success(`Número asignado: venta #${num.orderNumber}`)
@@ -794,8 +794,8 @@ function TableCheckoutModal({
   // PrintTicket del POS, que lee del cartStore.
   const handlePrintTicket = () => {
     printSaleTicket({
-      restaurantName: restaurant?.name,
-      restaurantAddress: restaurant?.address,
+      sedeName: sede?.name,
+      sedeAddress: sede?.address,
       orderNumber,
       orderId: order.id,
       type: order.type,
@@ -1128,12 +1128,12 @@ function TableCheckoutModal({
 
 function TableConfigModal({
   tables,
-  restaurantId,
+  sedeId,
   onClose,
   onChanged,
 }: {
   tables: TableRow[]
-  restaurantId: string
+  sedeId: string
   onClose: () => void
   onChanged: () => void
 }) {
@@ -1166,7 +1166,7 @@ function TableConfigModal({
         if (error) throw error
         toast.success('Mesa actualizada')
       } else {
-        const { error } = await createTable({ ...payload, restaurant_id: restaurantId, status: 'free' })
+        const { error } = await createTable({ ...payload, sede_id: sedeId, status: 'free' })
         if (error) throw error
         toast.success('Mesa creada')
       }
@@ -1342,14 +1342,14 @@ function TableSidePanel({
   const [deletingItemId, setDeletingItemId] = useState<string | null>(null)
   const [sendingToKitchen, setSendingToKitchen] = useState(false)
   const [closingTable, setClosingTable] = useState(false)
-  const { restaurant } = useRestaurantConfig()
+  const { sede } = useSedeConfig()
   const cfg = STATUS_CONFIG[table.status]
 
   const unsentItems = order?.order_items.filter((i) => !i.sent_to_kitchen) ?? []
   // Cocina por sede + por producto: solo van a cocina los ítems no enviados
   // cuyo producto enruta a cocina, y solo si la sede usa cocina. Default true
-  // mientras carga el restaurant (preserva el comportamiento previo).
-  const sedeUsesKitchen = restaurant?.uses_kitchen ?? true
+  // mientras carga el sede (preserva el comportamiento previo).
+  const sedeUsesKitchen = sede?.uses_kitchen ?? true
   const itemsForKitchen = sedeUsesKitchen
     ? unsentItems.filter((i) => i.products?.routes_to_kitchen)
     : []
@@ -1406,7 +1406,7 @@ function TableSidePanel({
 
   const handleSendToKitchen = async () => {
     // Defensa: una sede sin cocina nunca envía comanda (la UI ocultará el botón).
-    if (restaurant && !restaurant.uses_kitchen) return
+    if (sede && !sede.uses_kitchen) return
     if (!order || itemsForKitchen.length === 0) return
     setSendingToKitchen(true)
     try {
@@ -1416,7 +1416,7 @@ function TableSidePanel({
         await updateOrderStatus(order.id, 'preparing')
       }
       printComanda({
-        restaurantName: restaurant?.name,
+        sedeName: sede?.name,
         tableName: table.name,
         zone: table.zone,
         waiter: order.waiter_name,
@@ -1862,7 +1862,7 @@ export function TablesPage() {
       {showConfig && profile && (
         <TableConfigModal
           tables={tables}
-          restaurantId={profile.restaurant_id}
+          sedeId={profile.sede_id}
           onClose={() => setShowConfig(false)}
           onChanged={() => { refetch(); setShowConfig(false) }}
         />

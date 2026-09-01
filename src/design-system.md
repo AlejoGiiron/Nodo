@@ -89,7 +89,7 @@ Precios/nums:  siempre monospace
 |--------------------|---------|--------|-----------|---------------------|
 | Logo nombre        | 18px    | 700    | `#f8fafc` | letterSpacing -0.3  |
 | Logo sub           | 11.5px  | 400    | `#64748b` |                     |
-| Restaurant pill    | 11.5px  | 600    | `#6ee7b7` | letterSpacing 0.3   |
+| Sede pill    | 11.5px  | 600    | `#6ee7b7` | letterSpacing 0.3   |
 | H1 headline        | 38px    | 800    | `#f8fafc` | letterSpacing -1.2, lh 1.05 |
 | H1 acento verde    | 38px    | 800    | `#10b981` |                     |
 | Body copy          | 14px    | 400    | `#94a3b8` | lh 1.55             |

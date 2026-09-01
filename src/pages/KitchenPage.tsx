@@ -117,7 +117,7 @@ function SetupScreen({ onSetup }: { onSetup: (rid: string) => void }) {
         </div>
 
         <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#94a3b8', marginBottom: 8 }}>
-          ID del restaurante
+          ID del sede
         </label>
         <input
           value={rid}
@@ -131,13 +131,13 @@ function SetupScreen({ onSetup }: { onSetup: (rid: string) => void }) {
           }}
         />
         <div style={{ fontSize: 11, color: '#64748b', marginBottom: 24 }}>
-          Disponible en la configuración del restaurante
+          Disponible en la configuración del sede
         </div>
 
         <button
           onClick={() => {
             if (rid) {
-              localStorage.setItem('kds_restaurant_id', rid)
+              localStorage.setItem('kds_sede_id', rid)
               onSetup(rid)
             }
           }}
@@ -439,7 +439,7 @@ function OrderCard({
 
 // ─── KDSBoard ────────────────────────────────────────────────────────────────
 
-function KDSBoard({ restaurantId, onLogout }: { restaurantId: string; onLogout: () => void }) {
+function KDSBoard({ sedeId, onLogout }: { sedeId: string; onLogout: () => void }) {
   const [orders, setOrders]       = useState<KDSOrder[]>([])
   const [loading, setLoading]     = useState(true)
   const [filter, setFilter]       = useState<KDSFilter>('todas')
@@ -480,7 +480,7 @@ function KDSBoard({ restaurantId, onLogout }: { restaurantId: string; onLogout: 
       const { data, error } = await supabase
         .from('orders')
         .select('*, tables(id, name), order_items(id, qty, notes, sent_to_kitchen, products(id, name), order_item_extras(id, qty, extras(name)))')
-        .eq('restaurant_id', restaurantId)
+        .eq('sede_id', sedeId)
         .in('status', ['pending', 'preparing', 'ready'])
         .order('created_at', { ascending: true })
 
@@ -507,18 +507,18 @@ function KDSBoard({ restaurantId, onLogout }: { restaurantId: string; onLogout: 
       // El KDS nunca debe quedar colgado en "Cargando…" ante un error de red.
       setLoading(false)
     }
-  }, [restaurantId])
+  }, [sedeId])
 
   useEffect(() => { fetchOrders() }, [fetchOrders])
 
   // Realtime subscription with unique channel name (avoids ghost subscriptions)
   useEffect(() => {
-    const name = `kds-standalone:${restaurantId}:${Math.random().toString(36).slice(2)}`
+    const name = `kds-standalone:${sedeId}:${Math.random().toString(36).slice(2)}`
     const ch = supabase
       .channel(name)
       .on('postgres_changes', {
         event: '*', schema: 'public', table: 'orders',
-        filter: `restaurant_id=eq.${restaurantId}`,
+        filter: `sede_id=eq.${sedeId}`,
       }, fetchOrders)
       .on('postgres_changes', {
         event: '*', schema: 'public', table: 'order_items',
@@ -529,7 +529,7 @@ function KDSBoard({ restaurantId, onLogout }: { restaurantId: string; onLogout: 
       })
     channelRef.current = ch
     return () => { ch.unsubscribe(); supabase.removeChannel(ch); channelRef.current = null }
-  }, [restaurantId, fetchOrders])
+  }, [sedeId, fetchOrders])
 
   const handleAdvance = async (order: KDSOrder) => {
     // Capture order state before Realtime can modify it (checkoutOrder pattern)
@@ -727,13 +727,13 @@ function KDSBoard({ restaurantId, onLogout }: { restaurantId: string; onLogout: 
 export function KitchenPage() {
   // Always start in 'loading' — initialization resolves the correct state
   const [pageState, setPageState] = useState<KDSPageState>('loading')
-  const [restaurantId, setRestaurantId] = useState<string | null>(null)
+  const [sedeId, setSedeId] = useState<string | null>(null)
   const [kitchenPin, setKitchenPin] = useState<string | null>(null)
 
-  // Fetch restaurant config and decide: pin screen or board
+  // Fetch sede config and decide: pin screen or board
   const checkPinAndProceed = useCallback(async (rid: string) => {
     const { data } = await supabase
-      .from('restaurants')
+      .from('sedes')
       .select('config')
       .eq('id', rid)
       .single()
@@ -749,46 +749,46 @@ export function KitchenPage() {
   // Initialization: localStorage → sesión Supabase activa → pantalla de setup
   useEffect(() => {
     ;(async () => {
-      // 1. Restaurant ID ya guardado localmente
-      let rid = localStorage.getItem('kds_restaurant_id')
+      // 1. Sede ID ya guardado localmente
+      let rid = localStorage.getItem('kds_sede_id')
 
       // 2. Sesión de esta pestaña ya autenticada → ir directo al board
       if (rid && sessionStorage.getItem('kds_auth') === '1') {
-        setRestaurantId(rid)
+        setSedeId(rid)
         setPageState('board')
         return
       }
 
-      // 3. Sin restaurant ID local → detectar sesión Supabase activa (admin logueado)
+      // 3. Sin sede ID local → detectar sesión Supabase activa (admin logueado)
       if (!rid) {
         const { data: { session } } = await supabase.auth.getSession()
         if (session?.user) {
           const { data: profile } = await supabase
             .from('profiles')
-            .select('restaurant_id')
+            .select('sede_id')
             .eq('id', session.user.id)
             .single()
-          if (profile?.restaurant_id) {
-            rid = profile.restaurant_id
-            localStorage.setItem('kds_restaurant_id', rid)
+          if (profile?.sede_id) {
+            rid = profile.sede_id
+            localStorage.setItem('kds_sede_id', rid)
           }
         }
       }
 
-      // 4. Sin ningún restaurant ID → mostrar setup manual
+      // 4. Sin ningún sede ID → mostrar setup manual
       if (!rid) {
         setPageState('setup')
         return
       }
 
-      setRestaurantId(rid)
+      setSedeId(rid)
       await checkPinAndProceed(rid)
     })()
   }, [checkPinAndProceed])
 
   // Llamado desde SetupScreen cuando el admin ingresa el UUID manualmente
   const handleSetup = (rid: string) => {
-    setRestaurantId(rid)
+    setSedeId(rid)
     checkPinAndProceed(rid)
   }
 
@@ -819,5 +819,5 @@ export function KitchenPage() {
     return <PinScreen pin={kitchenPin} onAuthenticated={handleAuthenticated} />
   }
 
-  return <KDSBoard restaurantId={restaurantId!} onLogout={handleLogout} />
+  return <KDSBoard sedeId={sedeId!} onLogout={handleLogout} />
 }

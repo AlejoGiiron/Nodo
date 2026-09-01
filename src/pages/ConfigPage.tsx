@@ -26,7 +26,7 @@ import {
   Package,
   type LucideIcon,
 } from 'lucide-react'
-import { useRestaurantConfig } from '@/hooks/useRestaurantConfig'
+import { useSedeConfig } from '@/hooks/useSedeConfig'
 import { useUsers } from '@/hooks/useUsers'
 import { useAuth } from '@/hooks/useAuth'
 import { usePermissions } from '@/hooks/usePermissions'
@@ -36,7 +36,7 @@ import { useStores, type StoreRow } from '@/hooks/useStores'
 import { useExtras } from '@/hooks/useExtras'
 import { useProducts } from '@/hooks/useProducts'
 import {
-  uploadRestaurantLogo,
+  uploadSedeLogo,
   uploadNequiQR,
   upsertCourier,
   getAllCouriers,
@@ -44,15 +44,15 @@ import {
   countOrderItemsUsingExtra,
 } from '@/lib/supabase-helpers'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import type { PaymentMethod } from '@/hooks/useRestaurantConfig'
+import type { PaymentMethod } from '@/hooks/useSedeConfig'
 import type { Tables } from '@/types/database.types'
 
 // ─── Constants ────────────────────────────────────────────────────
 
-type SectionId = 'restaurante' | 'usuarios' | 'sedes' | 'roles' | 'extras' | 'caja' | 'cocina' | 'delivery' | 'notificaciones'
+type SectionId = 'sede' | 'usuarios' | 'sedes' | 'roles' | 'extras' | 'caja' | 'cocina' | 'delivery' | 'notificaciones'
 
 const SECTIONS: { id: SectionId; label: string; icon: LucideIcon; permission?: string }[] = [
-  { id: 'restaurante', label: 'Restaurante', icon: Building2 },
+  { id: 'sede', label: 'Sede', icon: Building2 },
   { id: 'usuarios', label: 'Usuarios', icon: Users },
   { id: 'sedes', label: 'Sedes', icon: Store, permission: 'sedes.gestionar' },
   { id: 'roles', label: 'Roles y permisos', icon: Shield, permission: 'roles.gestionar' },
@@ -251,10 +251,10 @@ function EditableList({
   )
 }
 
-// ─── Section 1: Restaurante ───────────────────────────────────────
+// ─── Section 1: Sede ───────────────────────────────────────
 
-function SectionRestaurant() {
-  const { restaurant, config, isLoading, updateRestaurant, updateConfig, isSaving } = useRestaurantConfig()
+function SectionSede() {
+  const { sede, config, isLoading, updateSede, updateConfig, isSaving } = useSedeConfig()
   const { profile } = useAuth()
   const logoInputRef = useRef<HTMLInputElement>(null)
 
@@ -265,10 +265,10 @@ function SectionRestaurant() {
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [initialized, setInitialized] = useState(false)
 
-  if (!initialized && restaurant) {
-    setName(restaurant.name ?? '')
-    setAddress(restaurant.address ?? '')
-    setPhone(restaurant.phone ?? '')
+  if (!initialized && sede) {
+    setName(sede.name ?? '')
+    setAddress(sede.address ?? '')
+    setPhone(sede.phone ?? '')
     setSlug((config.slug as string) ?? '')
     setInitialized(true)
   }
@@ -276,22 +276,22 @@ function SectionRestaurant() {
   if (isLoading) return <Skeleton />
 
   const handleLogoUpload = async (file: File) => {
-    if (!profile?.restaurant_id) return
+    if (!profile?.sede_id) return
     setUploadingLogo(true)
-    const url = await uploadRestaurantLogo(profile.restaurant_id, file)
+    const url = await uploadSedeLogo(profile.sede_id, file)
     setUploadingLogo(false)
     if (!url) { toast.error('Error al subir el logo'); return }
-    await updateRestaurant({ logo_url: url })
+    await updateSede({ logo_url: url })
   }
 
   const handleSave = async () => {
-    await updateRestaurant({ name, address, phone })
+    await updateSede({ name, address, phone })
     await updateConfig({ slug: slug.toLowerCase().replace(/\s+/g, '-') })
   }
 
   return (
     <div>
-      <SectionTitle>Restaurante</SectionTitle>
+      <SectionTitle>Sede</SectionTitle>
 
       {/* Logo */}
       <div style={{ marginBottom: 24 }}>
@@ -310,8 +310,8 @@ function SectionRestaurant() {
               justifyContent: 'center',
             }}
           >
-            {restaurant?.logo_url ? (
-              <img src={restaurant.logo_url} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            {sede?.logo_url ? (
+              <img src={sede.logo_url} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : (
               <Building2 size={28} color="#94a3b8" />
             )}
@@ -344,8 +344,8 @@ function SectionRestaurant() {
 
       <div style={{ display: 'grid', gap: 16, gridTemplateColumns: '1fr 1fr', maxWidth: 560 }}>
         <div style={{ gridColumn: '1 / -1' }}>
-          <FieldLabel>Nombre del restaurante</FieldLabel>
-          <TextInput value={name} onChange={setName} placeholder="G-Vento Resto" testId="config-restaurant-name" />
+          <FieldLabel>Nombre del sede</FieldLabel>
+          <TextInput value={name} onChange={setName} placeholder="G-Vento Resto" testId="config-sede-name" />
         </div>
         <div style={{ gridColumn: '1 / -1' }}>
           <FieldLabel>Dirección</FieldLabel>
@@ -360,7 +360,7 @@ function SectionRestaurant() {
           <TextInput
             value={slug}
             onChange={v => setSlug(v.toLowerCase().replace(/\s+/g, '-'))}
-            placeholder="mi-restaurante"
+            placeholder="mi-sede"
           />
         </div>
       </div>
@@ -443,7 +443,7 @@ function CreateUserModal({ onClose }: { onClose: () => void }) {
           </div>
           <div>
             <FieldLabel>Correo electrónico</FieldLabel>
-            <TextInput value={email} onChange={setEmail} placeholder="juan@restaurante.com" type="email" />
+            <TextInput value={email} onChange={setEmail} placeholder="juan@sede.com" type="email" />
           </div>
 
           {/* Contraseña + generador */}
@@ -613,7 +613,7 @@ function SectionUsers() {
 
         {users.length === 0 && (
           <div style={{ padding: '32px 16px', textAlign: 'center', color: '#94a3b8', fontSize: 14 }}>
-            No hay usuarios en este restaurante
+            No hay usuarios en este sede
           </div>
         )}
 
@@ -713,7 +713,7 @@ function SectionUsers() {
 // ─── Section 3: Caja ──────────────────────────────────────────────
 
 function SectionCaja() {
-  const { config, isLoading, updateConfig, isSaving } = useRestaurantConfig()
+  const { config, isLoading, updateConfig, isSaving } = useSedeConfig()
   const { profile } = useAuth()
   const nequiInputRef = useRef<HTMLInputElement>(null)
   const [uploadingQR, setUploadingQR] = useState(false)
@@ -735,9 +735,9 @@ function SectionCaja() {
     setLocalMethods(prev => prev.includes(m) ? prev.filter(x => x !== m) : [...prev, m])
 
   const handleNequiUpload = async (file: File) => {
-    if (!profile?.restaurant_id) return
+    if (!profile?.sede_id) return
     setUploadingQR(true)
-    const url = await uploadNequiQR(profile.restaurant_id, file)
+    const url = await uploadNequiQR(profile.sede_id, file)
     setUploadingQR(false)
     if (!url) { toast.error('Error al subir el QR'); return }
     await updateConfig({ nequi_qr_url: url })
@@ -839,7 +839,7 @@ function SectionCaja() {
 // ─── Section 4: Cocina ────────────────────────────────────────────
 
 function SectionCocina() {
-  const { restaurant, config, isLoading, updateConfig, updateRestaurant, isSaving } = useRestaurantConfig()
+  const { sede, config, isLoading, updateConfig, updateSede, isSaving } = useSedeConfig()
 
   const [pin, setPin] = useState('')
   const [stations, setStations] = useState<string[]>([])
@@ -857,11 +857,11 @@ function SectionCocina() {
 
   if (isLoading) return <Skeleton />
 
-  // uses_kitchen vive en la fila restaurants. Se guarda al instante (no espera al
+  // uses_kitchen vive en la fila sedes. Se guarda al instante (no espera al
   // SaveButton del KDS) para que el sidebar, el botón de Mesas y el checkbox del
-  // ProductModal reaccionen de inmediato al invalidar el cache ['restaurant'].
-  const usesKitchen = restaurant?.uses_kitchen ?? true
-  const toggleUsesKitchen = () => updateRestaurant({ uses_kitchen: !usesKitchen })
+  // ProductModal reaccionen de inmediato al invalidar el cache ['sede'].
+  const usesKitchen = sede?.uses_kitchen ?? true
+  const toggleUsesKitchen = () => updateSede({ uses_kitchen: !usesKitchen })
 
   return (
     <div>
@@ -1027,11 +1027,11 @@ type CourierRow = Tables<'couriers'>
 
 function CourierFormModal({
   courier,
-  restaurantId,
+  sedeId,
   onClose,
 }: {
   courier: CourierRow | null
-  restaurantId: string
+  sedeId: string
   onClose: () => void
 }) {
   const qc = useQueryClient()
@@ -1044,7 +1044,7 @@ function CourierFormModal({
     setSaving(true)
     const { error } = await upsertCourier({
       ...(courier ? { id: courier.id } : {}),
-      restaurant_id: restaurantId,
+      sede_id: sedeId,
       name: name.trim(),
       phone: phone.trim() || null,
       is_active: true,
@@ -1052,7 +1052,7 @@ function CourierFormModal({
     setSaving(false)
     if (error) { toast.error('Error al guardar repartidor'); return }
     toast.success(courier ? 'Repartidor actualizado' : 'Repartidor creado')
-    qc.invalidateQueries({ queryKey: ['all_couriers', restaurantId] })
+    qc.invalidateQueries({ queryKey: ['all_couriers', sedeId] })
     onClose()
   }
 
@@ -1098,8 +1098,8 @@ function CourierFormModal({
 
 function SectionDelivery() {
   const { profile } = useAuth()
-  const { config, isLoading: configLoading, updateConfig, isSaving } = useRestaurantConfig()
-  const restaurantId = profile?.restaurant_id ?? ''
+  const { config, isLoading: configLoading, updateConfig, isSaving } = useSedeConfig()
+  const sedeId = profile?.sede_id ?? ''
   const qc = useQueryClient()
 
   const [defaultTime, setDefaultTime] = useState<number>(config.default_delivery_time ?? 30)
@@ -1112,13 +1112,13 @@ function SectionDelivery() {
   }
 
   const { data: couriers = [], isLoading: couriersLoading } = useQuery({
-    queryKey: ['all_couriers', restaurantId],
+    queryKey: ['all_couriers', sedeId],
     queryFn: async () => {
-      const { data, error } = await getAllCouriers(restaurantId)
+      const { data, error } = await getAllCouriers(sedeId)
       if (error) throw error
       return data ?? []
     },
-    enabled: !!restaurantId,
+    enabled: !!sedeId,
     staleTime: 30_000,
   })
 
@@ -1126,7 +1126,7 @@ function SectionDelivery() {
     const { error } = await deleteCourier(id)
     if (error) { toast.error('Error al desactivar repartidor'); return }
     toast.success('Repartidor desactivado')
-    qc.invalidateQueries({ queryKey: ['all_couriers', restaurantId] })
+    qc.invalidateQueries({ queryKey: ['all_couriers', sedeId] })
   }
 
   if (configLoading || couriersLoading) return <Skeleton />
@@ -1220,7 +1220,7 @@ function SectionDelivery() {
       {editCourier !== undefined && (
         <CourierFormModal
           courier={editCourier === 'new' ? null : editCourier}
-          restaurantId={restaurantId}
+          sedeId={sedeId}
           onClose={() => setEditCourier(undefined)}
         />
       )}
@@ -1264,7 +1264,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
 }
 
 function SectionNotificaciones() {
-  const { config, isLoading, updateConfig, isSaving } = useRestaurantConfig()
+  const { config, isLoading, updateConfig, isSaving } = useSedeConfig()
 
   const [deliverySound, setDeliverySound] = useState(true)
   const [kitchenSound, setKitchenSound] = useState(true)
@@ -1403,7 +1403,7 @@ function SectionSedes() {
   if (isLoading) return <Skeleton />
 
   const isAssigned = (userId: string, storeId: string) =>
-    assignments.some(a => a.user_id === userId && a.restaurant_id === storeId)
+    assignments.some(a => a.user_id === userId && a.sede_id === storeId)
 
   const handleSave = async (data: { name: string; address: string; phone: string }) => {
     if (editStore === 'new') await createStore(data)
@@ -1458,7 +1458,7 @@ function SectionSedes() {
                         <input
                           type="checkbox"
                           checked={checked}
-                          onChange={() => setAssignment({ userId: u.id, restaurantId: store.id, assigned: !checked })}
+                          onChange={() => setAssignment({ userId: u.id, sedeId: store.id, assigned: !checked })}
                           style={{ width: 16, height: 16, accentColor: '#10b981', cursor: 'pointer' }}
                         />
                         <span style={{ fontWeight: 600 }}>{u.full_name}</span>
@@ -1659,11 +1659,11 @@ const formatCOP = (n: number) =>
 
 function ExtraFormModal({
   extra,
-  restaurantId,
+  sedeId,
   onClose,
 }: {
   extra: ExtraRow | null
-  restaurantId: string
+  sedeId: string
   onClose: () => void
 }) {
   const { saveExtra } = useExtras()
@@ -1682,7 +1682,7 @@ function ExtraFormModal({
     if (!isValid) return
     await saveExtra.mutateAsync({
       ...(extra ? { id: extra.id } : {}),
-      restaurant_id: restaurantId,
+      sede_id: sedeId,
       name: name.trim(),
       price: priceNum,
       linked_product_id: tracksStock ? (linkedProductId || null) : null,
@@ -1791,7 +1791,7 @@ function ExtraFormModal({
 
 function SectionExtras() {
   const { profile } = useAuth()
-  const restaurantId = profile?.restaurant_id ?? ''
+  const sedeId = profile?.sede_id ?? ''
   const { extras, isLoading, deactivate } = useExtras()
   const { data: products = [] } = useProducts()
   const [editExtra, setEditExtra] = useState<ExtraRow | null | 'new'>()
@@ -1880,7 +1880,7 @@ function SectionExtras() {
       {editExtra !== undefined && (
         <ExtraFormModal
           extra={editExtra === 'new' ? null : editExtra}
-          restaurantId={restaurantId}
+          sedeId={sedeId}
           onClose={() => setEditExtra(undefined)}
         />
       )}
@@ -1892,12 +1892,12 @@ function SectionExtras() {
 
 export function ConfigPage() {
   const { can } = usePermissions()
-  const [active, setActive] = useState<SectionId>('restaurante')
+  const [active, setActive] = useState<SectionId>('sede')
 
   const visibleSections = SECTIONS.filter(s => !s.permission || can(s.permission))
 
   const SECTION_MAP: Record<SectionId, React.ReactNode> = {
-    restaurante: <SectionRestaurant />,
+    sede: <SectionSede />,
     usuarios: <SectionUsers />,
     sedes: <SectionSedes />,
     roles: <SectionRoles />,

@@ -9,16 +9,16 @@ import { useAuth } from '@/hooks/useAuth'
  */
 export function useProductsWithExtras() {
   const { profile } = useAuth()
-  const restaurantId = profile?.restaurant_id
+  const sedeId = profile?.sede_id
 
   const query = useQuery({
-    queryKey: ['products_with_extras', restaurantId],
+    queryKey: ['products_with_extras', sedeId],
     queryFn: async () => {
-      const { data, error } = await getProductsWithActiveExtras(restaurantId!)
+      const { data, error } = await getProductsWithActiveExtras(sedeId!)
       if (error) throw error
       return new Set((data ?? []).map((r) => r.product_id))
     },
-    enabled: !!restaurantId,
+    enabled: !!sedeId,
     staleTime: 30_000,
   })
 

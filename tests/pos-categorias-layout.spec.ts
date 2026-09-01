@@ -57,7 +57,7 @@ test.beforeAll(async () => {
   const { error } = await db.auth.signInWithPassword(ownerCreds())
   if (error) throw error
 
-  const { data: activas } = await db.from('categories').select('id, name, restaurant_id').eq('is_active', true)
+  const { data: activas } = await db.from('categories').select('id, name, sede_id').eq('is_active', true)
   const base = activas ?? []
   if (!base.length) throw new Error('El lab no tiene categorías activas de base')
 
@@ -69,13 +69,13 @@ test.beforeAll(async () => {
     await db.from('categories').update({ is_active: false }).in('id', desactivadas)
   }
 
-  const rid = base[0].restaurant_id
+  const rid = base[0].sede_id
   const restantes = base.length - residuo.length
   // Completar hasta 7 activas en total.
   const faltan = Math.max(0, 7 - restantes)
   for (const name of NOMBRES.slice(0, faltan)) {
     const { data, error: e } = await db.from('categories')
-      .insert({ name, restaurant_id: rid, color: '#10b981', is_active: true, sort_order: 0 })
+      .insert({ name, sede_id: rid, color: '#10b981', is_active: true, sort_order: 0 })
       .select('id').single()
     if (e) throw e
     creadas.push(data.id)

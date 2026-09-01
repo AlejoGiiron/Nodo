@@ -50,14 +50,14 @@ interface ColumnaEsquema {
 }
 
 const COLUMNAS_DEL_ESQUEMA: ColumnaEsquema[] = [
-  // ── restaurants / organizations (schema.sql, multi-tenant-rbac.sql)
-  { tabla: 'restaurants', columna: 'name', ejemplo: 'Salchimelo Norte' },
-  { tabla: 'restaurants', columna: 'address', ejemplo: 'Calle 45 #12-30' },
-  { tabla: 'restaurants', columna: 'phone', ejemplo: '3001234567' },
-  { tabla: 'restaurants', columna: 'logo_url', ejemplo: 'https://x.co/logo-juan-perez.png' },
-  { tabla: 'restaurants', columna: 'slug', ejemplo: 'salchimelo-norte' },
-  { tabla: 'restaurants', columna: 'kitchen_pin', ejemplo: 1234 },
-  { tabla: 'restaurants', columna: 'nequi_qr_url', ejemplo: 'https://x.co/qr.png' },
+  // ── sedes / organizations (schema.sql, multi-tenant-rbac.sql)
+  { tabla: 'sedes', columna: 'name', ejemplo: 'Salchimelo Norte' },
+  { tabla: 'sedes', columna: 'address', ejemplo: 'Calle 45 #12-30' },
+  { tabla: 'sedes', columna: 'phone', ejemplo: '3001234567' },
+  { tabla: 'sedes', columna: 'logo_url', ejemplo: 'https://x.co/logo-juan-perez.png' },
+  { tabla: 'sedes', columna: 'slug', ejemplo: 'salchimelo-norte' },
+  { tabla: 'sedes', columna: 'kitchen_pin', ejemplo: 1234 },
+  { tabla: 'sedes', columna: 'nequi_qr_url', ejemplo: 'https://x.co/qr.png' },
 
   // ── profiles / roles (schema.sql, config-profile-active.sql)
   { tabla: 'profiles', columna: 'email', ejemplo: 'cajero@salchimelo.co' },
@@ -414,7 +414,7 @@ describe('scrubString — el redactor de PROSA (donde no hay clave que mirar)', 
       error: {
         code: '23505',
         message: 'duplicate key value violates unique constraint "idx_orders_number"',
-        details: 'Key (restaurant_id, order_number)=(a1b2, 1247) already exists.',
+        details: 'Key (sede_id, order_number)=(a1b2, 1247) already exists.',
         hint: null,
       },
     })
@@ -423,7 +423,7 @@ describe('scrubString — el redactor de PROSA (donde no hay clave que mirar)', 
     // '23505' son 5 dígitos y RE_NUM_LARGO lo convertía en '[monto]'.
     expect(err.code).toBe('23505')
     expect(err.message).toContain('idx_orders_number')
-    expect(err.details).toContain('Key (restaurant_id, order_number)=([Filtrado])')
+    expect(err.details).toContain('Key (sede_id, order_number)=([Filtrado])')
     expect(err.hint).toBeNull()
   })
 })
@@ -437,7 +437,7 @@ describe('error REAL de G-Vento — el evento completo', () => {
       tags: { area: 'numeracion', organizacion: 'Salchimelo', sede: 'Sede Norte', rol: 'cajero' },
       extra: {
         orderId: '3f2b1c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d',
-        restaurantId: 'a1b2c3d4-1111-4222-8333-444455556666',
+        sedeId: 'a1b2c3d4-1111-4222-8333-444455556666',
         numeroPerdido: 1247,
         intentos: 3,
         error: { code: '23505', message: 'duplicate key value violates unique constraint', details: null, hint: null },
@@ -446,7 +446,7 @@ describe('error REAL de G-Vento — el evento completo', () => {
 
     // Todo lo que hace accionable el error sobrevive…
     expect(out.extra.orderId).toBe('3f2b1c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d')
-    expect(out.extra.restaurantId).toBe('a1b2c3d4-1111-4222-8333-444455556666')
+    expect(out.extra.sedeId).toBe('a1b2c3d4-1111-4222-8333-444455556666')
     expect(out.extra.numeroPerdido).toBe(1247)
     expect(out.extra.intentos).toBe(3)
     expect((out.extra.error as Record<string, unknown>).code).toBe('23505')

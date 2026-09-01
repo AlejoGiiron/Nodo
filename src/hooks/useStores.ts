@@ -4,12 +4,12 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import type { Tables } from '@/types/database.types'
 
-export type StoreRow = Tables<'restaurants'>
+export type StoreRow = Tables<'sedes'>
 export type OrgUser = Pick<Tables<'profiles'>, 'id' | 'full_name' | 'email'>
-export type StoreAssignment = { user_id: string; restaurant_id: string }
+export type StoreAssignment = { user_id: string; sede_id: string }
 
 /**
- * Sedes (restaurants) de la organización + asignación de usuarios (user_stores).
+ * Sedes (sedes) de la organización + asignación de usuarios (user_stores).
  *
  * Nota: la lectura de profiles está acotada por RLS a la sede activa; con una
  * sola sede coincide con toda la organización. El soporte multi-sede pleno
@@ -23,7 +23,7 @@ export function useStores() {
     queryKey: ['org_stores', organizationId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('restaurants')
+        .from('sedes')
         .select('*')
         .eq('organization_id', organizationId!)
         .order('created_at')
@@ -54,7 +54,7 @@ export function useStores() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('user_stores')
-        .select('user_id, restaurant_id')
+        .select('user_id, sede_id')
       if (error) throw error
       return (data ?? []) as StoreAssignment[]
     },
@@ -69,7 +69,7 @@ export function useStores() {
 
   const createStoreMut = useMutation({
     mutationFn: async (data: { name: string; address?: string; phone?: string }) => {
-      const { error } = await supabase.from('restaurants').insert({
+      const { error } = await supabase.from('sedes').insert({
         name: data.name,
         address: data.address?.trim() || null,
         phone: data.phone?.trim() || null,
@@ -83,7 +83,7 @@ export function useStores() {
 
   const updateStoreMut = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: { name?: string; address?: string | null; phone?: string | null } }) => {
-      const { error } = await supabase.from('restaurants').update(data).eq('id', id)
+      const { error } = await supabase.from('sedes').update(data).eq('id', id)
       if (error) throw error
     },
     onSuccess: () => { invalidateStores(); toast.success('Sede actualizada') },
@@ -92,7 +92,7 @@ export function useStores() {
 
   const deleteStoreMut = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('restaurants').delete().eq('id', id)
+      const { error } = await supabase.from('sedes').delete().eq('id', id)
       if (error) throw error
     },
     onSuccess: () => { invalidateStores(); toast.success('Sede eliminada') },
@@ -100,18 +100,18 @@ export function useStores() {
   })
 
   const setAssignmentMut = useMutation({
-    mutationFn: async ({ userId, restaurantId, assigned }: { userId: string; restaurantId: string; assigned: boolean }) => {
+    mutationFn: async ({ userId, sedeId, assigned }: { userId: string; sedeId: string; assigned: boolean }) => {
       if (assigned) {
         const { error } = await supabase
           .from('user_stores')
-          .insert({ user_id: userId, restaurant_id: restaurantId })
+          .insert({ user_id: userId, sede_id: sedeId })
         if (error && error.code !== '23505') throw error // ignora duplicado
       } else {
         const { error } = await supabase
           .from('user_stores')
           .delete()
           .eq('user_id', userId)
-          .eq('restaurant_id', restaurantId)
+          .eq('sede_id', sedeId)
         if (error) throw error
       }
     },

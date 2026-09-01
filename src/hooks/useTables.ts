@@ -39,7 +39,7 @@ export function useTables() {
   const channelRef = useRef<RealtimeChannel | null>(null)
 
   const fetchAll = useCallback(async () => {
-    if (!profile?.restaurant_id) {
+    if (!profile?.sede_id) {
       // Sin sede activa: nada que traer. Si la sesión ya cargó, apagar el
       // loading (estado vacío, NO spinner eterno). Si la sesión aún carga,
       // mantener el spinner hasta que llegue el profile.
@@ -48,7 +48,7 @@ export function useTables() {
     }
 
     try {
-      const { data: tablesData, error } = await getTables(profile.restaurant_id)
+      const { data: tablesData, error } = await getTables(profile.sede_id)
       if (error) {
         toast.error('Error cargando mesas')
         return
@@ -75,14 +75,14 @@ export function useTables() {
       // quedar colgada en "Cargando mesas…".
       setLoading(false)
     }
-  }, [profile?.restaurant_id, authLoading])
+  }, [profile?.sede_id, authLoading])
 
   useEffect(() => {
     fetchAll()
   }, [fetchAll])
 
   useEffect(() => {
-    if (!profile?.restaurant_id) return
+    if (!profile?.sede_id) return
 
     // Nombre único por instancia para evitar reutilización de canal ya suscrito.
     const channelName = `tables-map-${Math.random().toString(36).slice(2)}`
@@ -91,12 +91,12 @@ export function useTables() {
       .channel(channelName)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'tables', filter: `restaurant_id=eq.${profile.restaurant_id}` },
+        { event: '*', schema: 'public', table: 'tables', filter: `sede_id=eq.${profile.sede_id}` },
         fetchAll,
       )
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'orders', filter: `restaurant_id=eq.${profile.restaurant_id}` },
+        { event: '*', schema: 'public', table: 'orders', filter: `sede_id=eq.${profile.sede_id}` },
         fetchAll,
       )
       .on(
@@ -117,7 +117,7 @@ export function useTables() {
       supabase.removeChannel(channel)
       channelRef.current = null
     }
-  }, [profile?.restaurant_id, fetchAll])
+  }, [profile?.sede_id, fetchAll])
 
   return {
     tables,

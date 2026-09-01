@@ -1,12 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-hot-toast'
 import { useAuth } from '@/hooks/useAuth'
-import { getRestaurant, updateRestaurant } from '@/lib/supabase-helpers'
+import { getSede, updateSede } from '@/lib/supabase-helpers'
 import type { Json, TablesUpdate } from '@/types/database.types'
 
 export type PaymentMethod = 'cash' | 'card' | 'transfer' | 'nequi'
 
-export interface RestaurantConfig {
+export interface SedeConfig {
   slug?: string | null
   cash_out_reasons?: string[]
   payment_methods?: PaymentMethod[]
@@ -21,30 +21,30 @@ export interface RestaurantConfig {
   }
 }
 
-export function useRestaurantConfig() {
+export function useSedeConfig() {
   const { profile } = useAuth()
   const queryClient = useQueryClient()
-  const restaurantId = profile?.restaurant_id
+  const sedeId = profile?.sede_id
 
-  const { data: restaurant, isLoading } = useQuery({
-    queryKey: ['restaurant', restaurantId],
+  const { data: sede, isLoading } = useQuery({
+    queryKey: ['sede', sedeId],
     queryFn: async () => {
-      const { data, error } = await getRestaurant(restaurantId!)
+      const { data, error } = await getSede(sedeId!)
       if (error) throw error
       return data
     },
-    enabled: !!restaurantId,
+    enabled: !!sedeId,
     staleTime: 30_000,
   })
 
-  const config: RestaurantConfig = (restaurant?.config as RestaurantConfig) ?? {}
+  const config: SedeConfig = (sede?.config as SedeConfig) ?? {}
 
   const invalidate = () =>
-    queryClient.invalidateQueries({ queryKey: ['restaurant', restaurantId] })
+    queryClient.invalidateQueries({ queryKey: ['sede', sedeId] })
 
   const updateMutation = useMutation({
-    mutationFn: async (data: TablesUpdate<'restaurants'>) => {
-      const { data: updated, error } = await updateRestaurant(restaurantId!, data)
+    mutationFn: async (data: TablesUpdate<'sedes'>) => {
+      const { data: updated, error } = await updateSede(sedeId!, data)
       if (error) throw error
       return updated
     },
@@ -52,16 +52,16 @@ export function useRestaurantConfig() {
     onError: () => toast.error('Error al guardar los cambios'),
   })
 
-  const updateConfig = (patch: Partial<RestaurantConfig>) =>
+  const updateConfig = (patch: Partial<SedeConfig>) =>
     updateMutation.mutateAsync({
       config: { ...config, ...patch } as Json,
     })
 
   return {
-    restaurant,
+    sede,
     config,
     isLoading,
-    updateRestaurant: updateMutation.mutateAsync,
+    updateSede: updateMutation.mutateAsync,
     updateConfig,
     isSaving: updateMutation.isPending,
   }

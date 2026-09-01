@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ClipboardList, Calendar, ChevronLeft, ChevronRight, Printer } from 'lucide-react'
 import { usePermissions } from '@/hooks/usePermissions'
-import { useRestaurantConfig } from '@/hooks/useRestaurantConfig'
+import { useSedeConfig } from '@/hooks/useSedeConfig'
 import { getShiftMovementTotals } from '@/lib/supabase-helpers'
 import { printCashReport, buildCashReportData } from '@/lib/printer'
 import {
@@ -59,7 +59,7 @@ export function ShiftHistoryPage() {
   // es filtro de PRESENTACIÓN, no seguridad (la RLS limita a la sede igual).
   const { can } = usePermissions()
   const elevated = can('reportes.financiero')
-  const { restaurant } = useRestaurantConfig()
+  const { sede } = useSedeConfig()
   // Reimpresión del arqueo: mismo permiso que P3 (la ruta ya exige caja.cerrar).
   const canReprint = can('caja.cerrar')
 
@@ -70,8 +70,8 @@ export function ShiftHistoryPage() {
     if (!row.close_reconciliation) return
     const totals = await getShiftMovementTotals(row.id)
     printCashReport(buildCashReportData(row, {
-      restaurantName: restaurant?.name,
-      restaurantAddress: restaurant?.address,
+      sedeName: sede?.name,
+      sedeAddress: sede?.address,
       movementsIn: totals.in,
       movementsOut: totals.out,
     }))

@@ -52,7 +52,7 @@ export function CategoryModal({ category, onClose }: CategoryModalProps) {
         description: description.trim() || null,
         color,
         is_active: isActive,
-        restaurant_id: profile.restaurant_id,
+        sede_id: profile.sede_id,
         sort_order: category?.sort_order ?? 0,
       })
       onClose()

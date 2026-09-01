@@ -11,21 +11,21 @@ import type { TablesInsert } from '@/types/database.types'
 export function useExtras() {
   const queryClient = useQueryClient()
   const { profile } = useAuth()
-  const restaurantId = profile?.restaurant_id
+  const sedeId = profile?.sede_id
 
   const extrasQuery = useQuery({
-    queryKey: ['extras', restaurantId],
+    queryKey: ['extras', sedeId],
     queryFn: async () => {
-      const { data, error } = await getAllExtras(restaurantId!)
+      const { data, error } = await getAllExtras(sedeId!)
       if (error) throw error
       return data ?? []
     },
-    enabled: !!restaurantId,
+    enabled: !!sedeId,
     staleTime: 30_000,
   })
 
   const invalidate = () =>
-    queryClient.invalidateQueries({ queryKey: ['extras', restaurantId] })
+    queryClient.invalidateQueries({ queryKey: ['extras', sedeId] })
 
   const saveExtra = useMutation({
     mutationFn: async (data: TablesInsert<'extras'>) => {

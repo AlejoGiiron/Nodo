@@ -37,17 +37,17 @@ function dayEndISO(day: string): string {
  */
 export function useSalesHistory({ from, to, method, search, page }: SalesHistoryUIFilters) {
   const { profile } = useAuth()
-  const restaurantId = profile?.restaurant_id ?? null
+  const sedeId = profile?.sede_id ?? null
 
   // El buscador solo filtra por número exacto si se escribió un número válido.
   const trimmed = search.trim()
   const orderNumber = /^\d+$/.test(trimmed) ? parseInt(trimmed, 10) : null
 
   const query = useQuery({
-    queryKey: ['sales_history', restaurantId, from, to, method, orderNumber, page],
+    queryKey: ['sales_history', sedeId, from, to, method, orderNumber, page],
     queryFn: async () => {
       const { data, count, error } = await getSalesHistory({
-        restaurantId: restaurantId!,
+        sedeId: sedeId!,
         from: from ? dayStartISO(from) : undefined,
         to: to ? dayEndISO(to) : undefined,
         method,
@@ -61,7 +61,7 @@ export function useSalesHistory({ from, to, method, search, page }: SalesHistory
         count: count ?? 0,
       }
     },
-    enabled: !!restaurantId && !!from && !!to,
+    enabled: !!sedeId && !!from && !!to,
     placeholderData: keepPreviousData,
     staleTime: 30_000,
   })
@@ -88,20 +88,20 @@ export function useCancelledSales({
   from, to, enabled,
 }: { from: string; to: string; enabled: boolean }) {
   const { profile } = useAuth()
-  const restaurantId = profile?.restaurant_id ?? null
+  const sedeId = profile?.sede_id ?? null
 
   const query = useQuery({
-    queryKey: ['sales_history_cancelled', restaurantId, from, to],
+    queryKey: ['sales_history_cancelled', sedeId, from, to],
     queryFn: async () => {
       const { data, error } = await getCancelledSales(
-        restaurantId!,
+        sedeId!,
         from ? dayStartISO(from) : undefined,
         to ? dayEndISO(to) : undefined,
       )
       if (error) throw error
       return (data ?? []) as unknown as CancelledSaleRow[]
     },
-    enabled: enabled && !!restaurantId && !!from && !!to,
+    enabled: enabled && !!sedeId && !!from && !!to,
     placeholderData: keepPreviousData,
     staleTime: 30_000,
   })

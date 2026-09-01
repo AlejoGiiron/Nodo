@@ -221,12 +221,12 @@ function AssignCourierModal({
 
 function CourierConfigModal({
   couriers,
-  restaurantId,
+  sedeId,
   onClose,
   onChanged,
 }: {
   couriers: CourierRow[]
-  restaurantId: string
+  sedeId: string
   onClose: () => void
   onChanged: () => void
 }) {
@@ -251,7 +251,7 @@ function CourierConfigModal({
     try {
       const payload: TablesInsert<'couriers'> = {
         id: editId ?? undefined,
-        restaurant_id: restaurantId,
+        sede_id: sedeId,
         name: form.name.trim(),
         phone: form.phone.trim() || null,
       }
@@ -859,7 +859,7 @@ export function DeliveryPage() {
       {showCourierConfig && profile && (
         <CourierConfigModal
           couriers={couriers}
-          restaurantId={profile.restaurant_id}
+          sedeId={profile.sede_id}
           onClose={() => setShowCourierConfig(false)}
           onChanged={() => {
             refetchCouriers()

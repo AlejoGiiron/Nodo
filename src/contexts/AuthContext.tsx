@@ -45,13 +45,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { data } = await supabase
         .from('profiles')
-        .select('organizations(name), restaurants(name), roles(name)')
+        .select('organizations(name), sedes(name), roles(name)')
         .eq('id', userId)
         .single()
       setSentryUserContext({
         userId,
         organizacion: data?.organizations?.name ?? null,
-        sede: data?.restaurants?.name ?? null,
+        sede: data?.sedes?.name ?? null,
         rol: data?.roles?.name ?? null,
       })
     } catch {
@@ -82,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Usuario desactivado: se corta la sesión con un mensaje. Sin esto entraba
     // igual y veía la app EN BLANCO — tras el endurecimiento de is_active,
-    // get_my_restaurant_id() devuelve null y la RLS no le da ni una fila, sin
+    // get_my_sede_id() devuelve null y la RLS no le da ni una fila, sin
     // ninguna explicación. El acceso a datos ya está cerrado server-side; esto
     // es la capa de UX. (El baneo en auth.users sigue pendiente: ver deuda.)
     if (!data.is_active) {

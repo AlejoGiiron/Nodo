@@ -21,7 +21,7 @@ export type Database = {
           created_by: string
           id: string
           reason: string
-          restaurant_id: string
+          sede_id: string
           shift_id: string
           type: Database["public"]["Enums"]["movement_type"]
         }
@@ -31,7 +31,7 @@ export type Database = {
           created_by: string
           id?: string
           reason: string
-          restaurant_id: string
+          sede_id: string
           shift_id: string
           type: Database["public"]["Enums"]["movement_type"]
         }
@@ -41,7 +41,7 @@ export type Database = {
           created_by?: string
           id?: string
           reason?: string
-          restaurant_id?: string
+          sede_id?: string
           shift_id?: string
           type?: Database["public"]["Enums"]["movement_type"]
         }
@@ -54,10 +54,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "cash_movements_restaurant_id_fkey"
-            columns: ["restaurant_id"]
+            foreignKeyName: "cash_movements_sede_id_fkey"
+            columns: ["sede_id"]
             isOneToOne: false
-            referencedRelation: "restaurants"
+            referencedRelation: "sedes"
             referencedColumns: ["id"]
           },
           {
@@ -82,7 +82,7 @@ export type Database = {
           opened_at: string
           opened_by: string
           opening_amount: number
-          restaurant_id: string
+          sede_id: string
           updated_at: string
         }
         Insert: {
@@ -97,7 +97,7 @@ export type Database = {
           opened_at?: string
           opened_by: string
           opening_amount: number
-          restaurant_id: string
+          sede_id: string
           updated_at?: string
         }
         Update: {
@@ -112,7 +112,7 @@ export type Database = {
           opened_at?: string
           opened_by?: string
           opening_amount?: number
-          restaurant_id?: string
+          sede_id?: string
           updated_at?: string
         }
         Relationships: [
@@ -131,10 +131,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "cash_shifts_restaurant_id_fkey"
-            columns: ["restaurant_id"]
+            foreignKeyName: "cash_shifts_sede_id_fkey"
+            columns: ["sede_id"]
             isOneToOne: false
-            referencedRelation: "restaurants"
+            referencedRelation: "sedes"
             referencedColumns: ["id"]
           },
         ]
@@ -147,7 +147,7 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
-          restaurant_id: string
+          sede_id: string
           sort_order: number
           updated_at: string
         }
@@ -158,7 +158,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
-          restaurant_id: string
+          sede_id: string
           sort_order?: number
           updated_at?: string
         }
@@ -169,16 +169,16 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
-          restaurant_id?: string
+          sede_id?: string
           sort_order?: number
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "categories_restaurant_id_fkey"
-            columns: ["restaurant_id"]
+            foreignKeyName: "categories_sede_id_fkey"
+            columns: ["sede_id"]
             isOneToOne: false
-            referencedRelation: "restaurants"
+            referencedRelation: "sedes"
             referencedColumns: ["id"]
           },
         ]
@@ -190,7 +190,7 @@ export type Database = {
           is_active: boolean
           name: string
           phone: string | null
-          restaurant_id: string
+          sede_id: string
           updated_at: string
         }
         Insert: {
@@ -199,7 +199,7 @@ export type Database = {
           is_active?: boolean
           name: string
           phone?: string | null
-          restaurant_id: string
+          sede_id: string
           updated_at?: string
         }
         Update: {
@@ -208,15 +208,15 @@ export type Database = {
           is_active?: boolean
           name?: string
           phone?: string | null
-          restaurant_id?: string
+          sede_id?: string
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "couriers_restaurant_id_fkey"
-            columns: ["restaurant_id"]
+            foreignKeyName: "couriers_sede_id_fkey"
+            columns: ["sede_id"]
             isOneToOne: false
-            referencedRelation: "restaurants"
+            referencedRelation: "sedes"
             referencedColumns: ["id"]
           },
         ]
@@ -230,7 +230,7 @@ export type Database = {
           name: string
           notes: string | null
           phone: string | null
-          restaurant_id: string
+          sede_id: string
           updated_at: string
         }
         Insert: {
@@ -241,7 +241,7 @@ export type Database = {
           name: string
           notes?: string | null
           phone?: string | null
-          restaurant_id: string
+          sede_id: string
           updated_at?: string
         }
         Update: {
@@ -252,15 +252,15 @@ export type Database = {
           name?: string
           notes?: string | null
           phone?: string | null
-          restaurant_id?: string
+          sede_id?: string
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "customers_restaurant_id_fkey"
-            columns: ["restaurant_id"]
+            foreignKeyName: "customers_sede_id_fkey"
+            columns: ["sede_id"]
             isOneToOne: false
-            referencedRelation: "restaurants"
+            referencedRelation: "sedes"
             referencedColumns: ["id"]
           },
         ]
@@ -274,7 +274,7 @@ export type Database = {
           id: string
           order_id: string
           payment_method: string
-          restaurant_id: string
+          sede_id: string
         }
         Insert: {
           amount: number
@@ -284,7 +284,7 @@ export type Database = {
           id?: string
           order_id: string
           payment_method: string
-          restaurant_id: string
+          sede_id: string
         }
         Update: {
           amount?: number
@@ -294,7 +294,7 @@ export type Database = {
           id?: string
           order_id?: string
           payment_method?: string
-          restaurant_id?: string
+          sede_id?: string
         }
         Relationships: [
           {
@@ -319,10 +319,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "debt_payments_restaurant_id_fkey"
-            columns: ["restaurant_id"]
+            foreignKeyName: "debt_payments_sede_id_fkey"
+            columns: ["sede_id"]
             isOneToOne: false
-            referencedRelation: "restaurants"
+            referencedRelation: "sedes"
             referencedColumns: ["id"]
           },
         ]
@@ -335,7 +335,7 @@ export type Database = {
           linked_product_id: string | null
           name: string
           price: number
-          restaurant_id: string
+          sede_id: string
           updated_at: string
         }
         Insert: {
@@ -345,7 +345,7 @@ export type Database = {
           linked_product_id?: string | null
           name: string
           price?: number
-          restaurant_id: string
+          sede_id: string
           updated_at?: string
         }
         Update: {
@@ -355,7 +355,7 @@ export type Database = {
           linked_product_id?: string | null
           name?: string
           price?: number
-          restaurant_id?: string
+          sede_id?: string
           updated_at?: string
         }
         Relationships: [
@@ -367,10 +367,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "extras_restaurant_id_fkey"
-            columns: ["restaurant_id"]
+            foreignKeyName: "extras_sede_id_fkey"
+            columns: ["sede_id"]
             isOneToOne: false
-            referencedRelation: "restaurants"
+            referencedRelation: "sedes"
             referencedColumns: ["id"]
           },
         ]
@@ -492,7 +492,7 @@ export type Database = {
           notes: string | null
           order_number: number | null
           payment_status: string
-          restaurant_id: string
+          sede_id: string
           status: Database["public"]["Enums"]["order_status"]
           table_id: string | null
           total: number
@@ -520,7 +520,7 @@ export type Database = {
           notes?: string | null
           order_number?: number | null
           payment_status?: string
-          restaurant_id: string
+          sede_id: string
           status?: Database["public"]["Enums"]["order_status"]
           table_id?: string | null
           total?: number
@@ -548,7 +548,7 @@ export type Database = {
           notes?: string | null
           order_number?: number | null
           payment_status?: string
-          restaurant_id?: string
+          sede_id?: string
           status?: Database["public"]["Enums"]["order_status"]
           table_id?: string | null
           total?: number
@@ -586,10 +586,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "orders_restaurant_id_fkey"
-            columns: ["restaurant_id"]
+            foreignKeyName: "orders_sede_id_fkey"
+            columns: ["sede_id"]
             isOneToOne: false
-            referencedRelation: "restaurants"
+            referencedRelation: "sedes"
             referencedColumns: ["id"]
           },
           {
@@ -644,7 +644,7 @@ export type Database = {
           id: string
           method: Database["public"]["Enums"]["payment_method"]
           order_id: string
-          restaurant_id: string
+          sede_id: string
         }
         Insert: {
           amount: number
@@ -652,7 +652,7 @@ export type Database = {
           id?: string
           method: Database["public"]["Enums"]["payment_method"]
           order_id: string
-          restaurant_id: string
+          sede_id: string
         }
         Update: {
           amount?: number
@@ -660,7 +660,7 @@ export type Database = {
           id?: string
           method?: Database["public"]["Enums"]["payment_method"]
           order_id?: string
-          restaurant_id?: string
+          sede_id?: string
         }
         Relationships: [
           {
@@ -671,10 +671,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "payments_restaurant_id_fkey"
-            columns: ["restaurant_id"]
+            foreignKeyName: "payments_sede_id_fkey"
+            columns: ["sede_id"]
             isOneToOne: false
-            referencedRelation: "restaurants"
+            referencedRelation: "sedes"
             referencedColumns: ["id"]
           },
         ]
@@ -686,7 +686,7 @@ export type Database = {
           id: string
           parent_id: string
           qty: number
-          restaurant_id: string
+          sede_id: string
         }
         Insert: {
           component_id: string
@@ -694,7 +694,7 @@ export type Database = {
           id?: string
           parent_id: string
           qty: number
-          restaurant_id: string
+          sede_id: string
         }
         Update: {
           component_id?: string
@@ -702,7 +702,7 @@ export type Database = {
           id?: string
           parent_id?: string
           qty?: number
-          restaurant_id?: string
+          sede_id?: string
         }
         Relationships: [
           {
@@ -720,10 +720,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "product_components_restaurant_id_fkey"
-            columns: ["restaurant_id"]
+            foreignKeyName: "product_components_sede_id_fkey"
+            columns: ["sede_id"]
             isOneToOne: false
-            referencedRelation: "restaurants"
+            referencedRelation: "sedes"
             referencedColumns: ["id"]
           },
         ]
@@ -777,7 +777,7 @@ export type Database = {
           min_stock: number
           name: string
           price: number
-          restaurant_id: string
+          sede_id: string
           routes_to_kitchen: boolean
           stock_qty: number | null
           stock_tracking: boolean
@@ -795,7 +795,7 @@ export type Database = {
           min_stock?: number
           name: string
           price: number
-          restaurant_id: string
+          sede_id: string
           routes_to_kitchen?: boolean
           stock_qty?: number | null
           stock_tracking?: boolean
@@ -813,7 +813,7 @@ export type Database = {
           min_stock?: number
           name?: string
           price?: number
-          restaurant_id?: string
+          sede_id?: string
           routes_to_kitchen?: boolean
           stock_qty?: number | null
           stock_tracking?: boolean
@@ -835,10 +835,10 @@ export type Database = {
             referencedColumns: ["category_id"]
           },
           {
-            foreignKeyName: "products_restaurant_id_fkey"
-            columns: ["restaurant_id"]
+            foreignKeyName: "products_sede_id_fkey"
+            columns: ["sede_id"]
             isOneToOne: false
-            referencedRelation: "restaurants"
+            referencedRelation: "sedes"
             referencedColumns: ["id"]
           },
         ]
@@ -851,7 +851,7 @@ export type Database = {
           id: string
           is_active: boolean
           organization_id: string | null
-          restaurant_id: string
+          sede_id: string
           role: Database["public"]["Enums"]["user_role"]
           role_id: string | null
           updated_at: string
@@ -863,7 +863,7 @@ export type Database = {
           id: string
           is_active?: boolean
           organization_id?: string | null
-          restaurant_id: string
+          sede_id: string
           role?: Database["public"]["Enums"]["user_role"]
           role_id?: string | null
           updated_at?: string
@@ -875,7 +875,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           organization_id?: string | null
-          restaurant_id?: string
+          sede_id?: string
           role?: Database["public"]["Enums"]["user_role"]
           role_id?: string | null
           updated_at?: string
@@ -889,10 +889,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "profiles_restaurant_id_fkey"
-            columns: ["restaurant_id"]
+            foreignKeyName: "profiles_sede_id_fkey"
+            columns: ["sede_id"]
             isOneToOne: false
-            referencedRelation: "restaurants"
+            referencedRelation: "sedes"
             referencedColumns: ["id"]
           },
           {
@@ -957,7 +957,7 @@ export type Database = {
           invoice_number: string | null
           notes: string | null
           payment_method: string
-          restaurant_id: string
+          sede_id: string
           supplier_id: string
           total: number
         }
@@ -968,7 +968,7 @@ export type Database = {
           invoice_number?: string | null
           notes?: string | null
           payment_method: string
-          restaurant_id: string
+          sede_id: string
           supplier_id: string
           total?: number
         }
@@ -979,7 +979,7 @@ export type Database = {
           invoice_number?: string | null
           notes?: string | null
           payment_method?: string
-          restaurant_id?: string
+          sede_id?: string
           supplier_id?: string
           total?: number
         }
@@ -992,10 +992,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "purchase_invoices_restaurant_id_fkey"
-            columns: ["restaurant_id"]
+            foreignKeyName: "purchase_invoices_sede_id_fkey"
+            columns: ["sede_id"]
             isOneToOne: false
-            referencedRelation: "restaurants"
+            referencedRelation: "sedes"
             referencedColumns: ["id"]
           },
           {
@@ -1007,7 +1007,7 @@ export type Database = {
           },
         ]
       }
-      restaurants: {
+      sedes: {
         Row: {
           address: string | null
           config: Json
@@ -1046,7 +1046,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "restaurants_organization_id_fkey"
+            foreignKeyName: "sedes_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -1101,7 +1101,7 @@ export type Database = {
           product_id: string
           qty: number
           reference_id: string | null
-          restaurant_id: string
+          sede_id: string
           type: string
         }
         Insert: {
@@ -1112,7 +1112,7 @@ export type Database = {
           product_id: string
           qty: number
           reference_id?: string | null
-          restaurant_id: string
+          sede_id: string
           type: string
         }
         Update: {
@@ -1123,7 +1123,7 @@ export type Database = {
           product_id?: string
           qty?: number
           reference_id?: string | null
-          restaurant_id?: string
+          sede_id?: string
           type?: string
         }
         Relationships: [
@@ -1142,10 +1142,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "stock_movements_restaurant_id_fkey"
-            columns: ["restaurant_id"]
+            foreignKeyName: "stock_movements_sede_id_fkey"
+            columns: ["sede_id"]
             isOneToOne: false
-            referencedRelation: "restaurants"
+            referencedRelation: "sedes"
             referencedColumns: ["id"]
           },
         ]
@@ -1153,22 +1153,22 @@ export type Database = {
       store_sequences: {
         Row: {
           last_order_number: number
-          restaurant_id: string
+          sede_id: string
         }
         Insert: {
           last_order_number?: number
-          restaurant_id: string
+          sede_id: string
         }
         Update: {
           last_order_number?: number
-          restaurant_id?: string
+          sede_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "store_sequences_restaurant_id_fkey"
-            columns: ["restaurant_id"]
+            foreignKeyName: "store_sequences_sede_id_fkey"
+            columns: ["sede_id"]
             isOneToOne: true
-            referencedRelation: "restaurants"
+            referencedRelation: "sedes"
             referencedColumns: ["id"]
           },
         ]
@@ -1183,7 +1183,7 @@ export type Database = {
           name: string
           notes: string | null
           phone: string | null
-          restaurant_id: string
+          sede_id: string
           updated_at: string
         }
         Insert: {
@@ -1195,7 +1195,7 @@ export type Database = {
           name: string
           notes?: string | null
           phone?: string | null
-          restaurant_id: string
+          sede_id: string
           updated_at?: string
         }
         Update: {
@@ -1207,15 +1207,15 @@ export type Database = {
           name?: string
           notes?: string | null
           phone?: string | null
-          restaurant_id?: string
+          sede_id?: string
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "suppliers_restaurant_id_fkey"
-            columns: ["restaurant_id"]
+            foreignKeyName: "suppliers_sede_id_fkey"
+            columns: ["sede_id"]
             isOneToOne: false
-            referencedRelation: "restaurants"
+            referencedRelation: "sedes"
             referencedColumns: ["id"]
           },
         ]
@@ -1226,7 +1226,7 @@ export type Database = {
           created_at: string
           id: string
           name: string
-          restaurant_id: string
+          sede_id: string
           status: Database["public"]["Enums"]["table_status"]
           updated_at: string
           zone: string | null
@@ -1236,7 +1236,7 @@ export type Database = {
           created_at?: string
           id?: string
           name: string
-          restaurant_id: string
+          sede_id: string
           status?: Database["public"]["Enums"]["table_status"]
           updated_at?: string
           zone?: string | null
@@ -1246,17 +1246,17 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
-          restaurant_id?: string
+          sede_id?: string
           status?: Database["public"]["Enums"]["table_status"]
           updated_at?: string
           zone?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "tables_restaurant_id_fkey"
-            columns: ["restaurant_id"]
+            foreignKeyName: "tables_sede_id_fkey"
+            columns: ["sede_id"]
             isOneToOne: false
-            referencedRelation: "restaurants"
+            referencedRelation: "sedes"
             referencedColumns: ["id"]
           },
         ]
@@ -1264,25 +1264,25 @@ export type Database = {
       user_stores: {
         Row: {
           created_at: string
-          restaurant_id: string
+          sede_id: string
           user_id: string
         }
         Insert: {
           created_at?: string
-          restaurant_id: string
+          sede_id: string
           user_id: string
         }
         Update: {
           created_at?: string
-          restaurant_id?: string
+          sede_id?: string
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "user_stores_restaurant_id_fkey"
-            columns: ["restaurant_id"]
+            foreignKeyName: "user_stores_sede_id_fkey"
+            columns: ["sede_id"]
             isOneToOne: false
-            referencedRelation: "restaurants"
+            referencedRelation: "sedes"
             referencedColumns: ["id"]
           },
           {
@@ -1305,16 +1305,16 @@ export type Database = {
           nequi_total: number | null
           order_count: number | null
           order_type: Database["public"]["Enums"]["order_type"] | null
-          restaurant_id: string | null
+          sede_id: string | null
           total_revenue: number | null
           transfer_total: number | null
         }
         Relationships: [
           {
-            foreignKeyName: "orders_restaurant_id_fkey"
-            columns: ["restaurant_id"]
+            foreignKeyName: "orders_sede_id_fkey"
+            columns: ["sede_id"]
             isOneToOne: false
-            referencedRelation: "restaurants"
+            referencedRelation: "sedes"
             referencedColumns: ["id"]
           },
         ]
@@ -1324,15 +1324,15 @@ export type Database = {
           day: string | null
           hour: number | null
           order_count: number | null
-          restaurant_id: string | null
+          sede_id: string | null
           total_revenue: number | null
         }
         Relationships: [
           {
-            foreignKeyName: "orders_restaurant_id_fkey"
-            columns: ["restaurant_id"]
+            foreignKeyName: "orders_sede_id_fkey"
+            columns: ["sede_id"]
             isOneToOne: false
-            referencedRelation: "restaurants"
+            referencedRelation: "sedes"
             referencedColumns: ["id"]
           },
         ]
@@ -1344,7 +1344,7 @@ export type Database = {
           day: string | null
           product_id: string | null
           product_name: string | null
-          restaurant_id: string | null
+          sede_id: string | null
           total_qty: number | null
           total_revenue: number | null
         }
@@ -1357,10 +1357,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "orders_restaurant_id_fkey"
-            columns: ["restaurant_id"]
+            foreignKeyName: "orders_sede_id_fkey"
+            columns: ["sede_id"]
             isOneToOne: false
-            referencedRelation: "restaurants"
+            referencedRelation: "sedes"
             referencedColumns: ["id"]
           },
         ]
@@ -1370,7 +1370,7 @@ export type Database = {
           avg_ticket: number | null
           day: string | null
           order_count: number | null
-          restaurant_id: string | null
+          sede_id: string | null
           total_revenue: number | null
           waiter_id: string | null
           waiter_name: string | null
@@ -1384,10 +1384,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "orders_restaurant_id_fkey"
-            columns: ["restaurant_id"]
+            foreignKeyName: "orders_sede_id_fkey"
+            columns: ["sede_id"]
             isOneToOne: false
-            referencedRelation: "restaurants"
+            referencedRelation: "sedes"
             referencedColumns: ["id"]
           },
         ]
@@ -1403,13 +1403,13 @@ export type Database = {
         Returns: undefined
       }
       get_my_organization_id: { Args: never; Returns: string }
-      get_my_restaurant_id: { Args: never; Returns: string }
+      get_my_sede_id: { Args: never; Returns: string }
       get_my_role: {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
       }
       has_permission: { Args: { perm: string }; Returns: boolean }
-      next_order_number: { Args: { p_restaurant_id: string }; Returns: number }
+      next_order_number: { Args: { p_sede_id: string }; Returns: number }
       register_debt_payment: {
         Args: { p_amount: number; p_order_id: string; p_payment_method: string }
         Returns: Json
