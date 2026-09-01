@@ -1070,3 +1070,53 @@ la cosa.
 **mecanismo** (permisos de proyecto, todo en *No access* por defecto), no una regla escrita. La
 regla se conservó igual, **marcada como redundante a propósito**, porque un token legacy de cuenta
 la vuelve necesaria sin aviso. Mismo criterio con el que R0 vive en `CLAUDE.md` además del hook.
+
+
+---
+
+## 2026-09-01 · Primer diagnóstico CONTRA la base, y tres cosas que no eran como se creían
+
+Con acceso de lectura directo (Management API, token con alcance de proyecto), el estado real:
+
+| Pregunta | Se creía | **Es** |
+|---|---|---|
+| Migraciones | 15 aplicadas | ✅ **15**, `local == remote` en las 15 |
+| Tablas | "las 27" | **23 tablas + 4 vistas.** El 27 salía de contar los dos juntos |
+| `seed_system_roles` | "acabo de volver a pegarla" | 🔴 **NO EXISTÍA.** 19 funciones, ninguna era ésa |
+| Org `LAB` | — | 🔴 **CERO organizaciones** en toda la base |
+| Cuentas de Auth | — | 🔴 **CERO** |
+
+### 🔴 El hallazgo: un `create or replace` que se cree aplicado y no lo está
+
+Lo más caro no es que faltara la función: es que **se creía aplicada**. Pegar un script en el SQL
+Editor y ver el banner verde **no prueba que el objeto quedó** — el script puede haberse corrido
+contra otro proyecto, o la pestaña puede tener otra sesión, o la selección pegada puede haber
+quedado corta. **La única evidencia es preguntarle al catálogo del sistema.**
+
+Es la clase **"indistinguible de"** por tercera vez, y ahora del lado humano: *"lo apliqué"* y *"creo
+que lo apliqué"* producen exactamente la misma señal — un banner verde y una convicción.
+
+⚠️ **Y hay un dato que lo agrava:** ésta es la **segunda** vez que esta función falta. La primera
+fue el push, porque vive fuera de `migrations/`. Un objeto que se puede perder de dos maneras
+distintas no necesita más cuidado: necesita un **check**. Es la deuda #5, quinto check.
+
+### `--include-seed` — verificado ejecutando, no leyendo
+
+`supabase db push --include-seed --dry-run` responde:
+
+```
+Would seed these files:
+ • supabase/seed-system-roles.sql
+{"seeds":["supabase/seed-system-roles.sql"], ...}
+```
+
+Con eso el `config.toml` deja de ser una hipótesis: **el CLI lee `[db.seed].sql_paths` en un push
+remoto**, no solo en `db reset` local, que era la duda razonable que dejaba el comentario del
+template. `pnpm db:push` lleva la bandera, así que el camino por defecto es el correcto.
+
+### Lo que quedó aplicado en esta sesión
+
+1. `supabase/seed-system-roles.sql` → verificado con `pg_proc`: la función existe.
+2. `supabase/lab-seed-a.sql` → org `LAB`, sede `LAB Principal`, 3 roles.
+3. Verificación del RBAC **contra la base**, no contra el archivo:
+   **admin = 21 · cajero = 8 · owner = comodín** — coincide exacto con `SYSTEM_ROLES`.
