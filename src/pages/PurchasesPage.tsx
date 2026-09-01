@@ -7,7 +7,6 @@ import { usePurchaseInvoices } from '@/hooks/usePurchases'
 import { SupplierFormModal } from '@/components/purchases/SupplierFormModal'
 import { NewInvoiceModal } from '@/components/purchases/NewInvoiceModal'
 import { PurchaseDetailModal } from '@/components/purchases/PurchaseDetailModal'
-import { paymentMethodLabel } from '@/components/purchases/paymentMethods'
 
 type Tab = 'invoices' | 'suppliers'
 
@@ -41,13 +40,12 @@ function InvoicesTab({ onNew, onOpen }: { onNew: () => void; onOpen: (id: string
               <th style={{ padding: '10px 16px', fontWeight: 600 }}>Fecha</th>
               <th style={{ padding: '10px 16px', fontWeight: 600 }}>Proveedor</th>
               <th style={{ padding: '10px 16px', fontWeight: 600 }}>N.° factura</th>
-              <th style={{ padding: '10px 16px', fontWeight: 600 }}>Pago</th>
               <th style={{ padding: '10px 16px', fontWeight: 600, textAlign: 'right' }}>Total</th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 ? (
-              <tr><td colSpan={5} style={{ padding: '40px 16px', textAlign: 'center', color: '#94a3b8' }}>Aún no hay compras registradas</td></tr>
+              <tr><td colSpan={4} style={{ padding: '40px 16px', textAlign: 'center', color: '#94a3b8' }}>Aún no hay compras registradas</td></tr>
             ) : rows.map(inv => (
               <tr
                 key={inv.id}
@@ -58,7 +56,6 @@ function InvoicesTab({ onNew, onOpen }: { onNew: () => void; onOpen: (id: string
                 <td style={{ padding: '11px 16px', color: '#64748b', fontFamily: 'monospace', fontSize: 12 }}>{fmtDate(inv.created_at)}</td>
                 <td style={{ padding: '11px 16px', fontWeight: 600, color: '#0f172a' }}>{inv.suppliers?.name ?? '—'}</td>
                 <td style={{ padding: '11px 16px', color: '#64748b' }}>{inv.invoice_number ?? '—'}</td>
-                <td style={{ padding: '11px 16px', color: '#64748b' }}>{paymentMethodLabel(inv.payment_method)}</td>
                 <td style={{ padding: '11px 16px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: '#0f172a' }}>{formatCOP(inv.total)}</td>
               </tr>
             ))}

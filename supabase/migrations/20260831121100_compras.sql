@@ -49,16 +49,12 @@ create trigger trg_suppliers_updated_at
 -- ------------------------------------------------------------
 -- purchase_invoices
 --
--- ⚠️ `payment_method` SE CONSERVA A PROPOSITO, aunque la regla del cliente lo
---    volvio irrelevante (la compra siempre sale de caja). Es `not null` y el
---    frontend lo envia: eliminarlo ahora rompe el front. El orden obligatorio
---    es primero el consumidor y despues la columna — deuda #29.3.
---    🔴 Y arrastra un hallazgo: NO usa el enum `payment_method`, es un CHECK
---    con los cuatro valores copiados a mano. Es el NOVENO lado del contrato de
---    R1 punto 4, duplicado con otro mecanismo. Al eliminarlo, ese lado muere.
---
--- ⚠️ SIN cuentas por pagar: toda compra es de CONTADO. La compra a credito no
---    existe en el heredado (verificado) y esta pospuesta como deuda #28.
+-- ⚠️ SIN `payment_method`. Bajo la regla del cliente la compra SIEMPRE sale de
+--    la caja del dia, asi que la forma de pago no aportaba nada. Al sacarla
+--    muere ademas el NOVENO lado del contrato de R1 punto 4: esa columna no
+--    usaba el enum `payment_method`, era un CHECK con los cuatro valores
+--    COPIADOS A MANO. Eliminar el lado es la unica sincronizacion que no se
+--    pudre.
 -- ------------------------------------------------------------
 create table public.purchase_invoices (
   id             uuid           primary key default gen_random_uuid(),
@@ -66,8 +62,6 @@ create table public.purchase_invoices (
   supplier_id    uuid           not null references public.suppliers on delete restrict,
   invoice_number text,
   total          numeric(12, 2) not null default 0 check (total >= 0),
-  payment_method text           not null
-                                check (payment_method in ('cash', 'card', 'transfer', 'nequi')),
   notes          text,
   created_by     uuid           references public.profiles on delete set null,
   created_at     timestamptz    not null default now()
@@ -77,11 +71,6 @@ comment on table public.purchase_invoices is
   'Factura de compra a proveedor. Pago COMPLETO al registrar, siempre contra la '
   'caja del dia. Sin cuentas por pagar (deuda #28). total lo DERIVA '
   'register_purchase de los items: nunca se recibe del cliente.';
-comment on column public.purchase_invoices.payment_method is
-  'DEPRECADA (deuda #29.3): la regla del cliente es que la compra siempre sale '
-  'de la caja del dia, asi que la forma de pago no aporta. Se conserva porque '
-  'es not null y el front todavia la envia. Primero el consumidor, despues la '
-  'columna.';
 
 create index idx_purchase_invoices_sede_created
   on public.purchase_invoices (sede_id, created_at desc);
@@ -153,7 +142,6 @@ as $$
 declare
   v_sede_id        uuid := get_my_sede_id();
   v_supplier_id    uuid := (p_invoice->>'supplier_id')::uuid;
-  v_payment_method text := p_invoice->>'payment_method';
   v_invoice_number text := nullif(p_invoice->>'invoice_number', '');
   v_notes          text := nullif(p_invoice->>'notes', '');
   v_supplier_name  text;
@@ -201,21 +189,15 @@ begin
     raise exception 'El proveedor no existe o no pertenece a tu sede';
   end if;
 
-  -- 4. Forma de pago: allowlist. DEPRECADA (deuda #29.3) pero todavia not null.
-  if v_payment_method is null
-     or v_payment_method not in ('cash', 'card', 'transfer', 'nequi') then
-    raise exception 'Metodo de pago invalido: %', coalesce(v_payment_method, '(null)');
-  end if;
-
   if p_items is null or jsonb_array_length(p_items) = 0 then
     raise exception 'La compra no tiene items';
   end if;
 
   -- 5. Cabecera. total arranca en 0 y se persiste al final con la suma REAL.
   insert into public.purchase_invoices
-    (sede_id, supplier_id, invoice_number, total, payment_method, notes, created_by)
+    (sede_id, supplier_id, invoice_number, total, notes, created_by)
   values
-    (v_sede_id, v_supplier_id, v_invoice_number, 0, v_payment_method, v_notes, auth.uid())
+    (v_sede_id, v_supplier_id, v_invoice_number, 0, v_notes, auth.uid())
   returning id into v_invoice_id;
 
   -- 6. Items.

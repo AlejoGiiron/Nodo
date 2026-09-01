@@ -1,6 +1,5 @@
 import { X } from 'lucide-react'
 import { usePurchaseInvoiceDetail } from '@/hooks/usePurchases'
-import { paymentMethodLabel } from '@/components/purchases/paymentMethods'
 
 interface PurchaseDetailModalProps {
   invoiceId: string
@@ -43,7 +42,6 @@ export function PurchaseDetailModal({ invoiceId, onClose }: PurchaseDetailModalP
               {/* Metadatos */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, fontSize: 13 }}>
                 <Meta label="Fecha" value={fmtDateTime(invoice.created_at)} />
-                <Meta label="Método de pago" value={paymentMethodLabel(invoice.payment_method)} />
                 <Meta label="N.° factura" value={invoice.invoice_number ?? '—'} />
                 <Meta label="Registró" value={invoice.profiles?.full_name ?? '—'} />
                 {invoice.suppliers?.contact_name && <Meta label="Contacto" value={invoice.suppliers.contact_name} />}

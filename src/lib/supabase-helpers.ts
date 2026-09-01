@@ -1100,7 +1100,6 @@ export const deleteSupplier = (supplierId: string) =>
 export type PurchaseInvoicePayload = {
   supplier_id: string
   invoice_number: string | null
-  payment_method: string            // 'cash' | 'card' | 'transfer' | 'nequi'
   notes: string | null
 }
 

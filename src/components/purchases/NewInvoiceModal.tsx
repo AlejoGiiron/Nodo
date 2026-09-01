@@ -4,8 +4,6 @@ import { toast } from 'react-hot-toast'
 import { useSuppliers } from '@/hooks/useSuppliers'
 import { useProducts } from '@/hooks/useProducts'
 import { useRegisterPurchase } from '@/hooks/usePurchases'
-import type { PaymentMethodValue } from '@/components/purchases/paymentMethods'
-import { PAYMENT_METHODS } from '@/components/purchases/paymentMethods'
 
 interface NewInvoiceModalProps {
   onClose: () => void
@@ -41,7 +39,6 @@ export function NewInvoiceModal({ onClose, onNeedSupplier }: NewInvoiceModalProp
 
   const [supplierId, setSupplierId] = useState('')
   const [invoiceNumber, setInvoiceNumber] = useState('')
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodValue>('cash')
   const [notes, setNotes] = useState('')
   const [lines, setLines] = useState<DraftLine[]>([newLine()])
 
@@ -81,7 +78,6 @@ export function NewInvoiceModal({ onClose, onNeedSupplier }: NewInvoiceModalProp
       invoice: {
         supplier_id: supplierId,
         invoice_number: invoiceNumber.trim() || null,
-        payment_method: paymentMethod,
         notes: notes.trim() || null,
       },
       items: validLines.map(l => ({
@@ -135,12 +131,6 @@ export function NewInvoiceModal({ onClose, onNeedSupplier }: NewInvoiceModalProp
             <div style={{ flex: 1 }}>
               <label style={fieldLabel}>N.° factura</label>
               <input data-testid="invoice-number" value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} placeholder="Opcional" style={inputStyle} />
-            </div>
-            <div style={{ flex: 1 }}>
-              <label style={fieldLabel}>Pago</label>
-              <select data-testid="invoice-payment-method" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value as PaymentMethodValue)} style={{ ...inputStyle, cursor: 'pointer' }}>
-                {PAYMENT_METHODS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-              </select>
             </div>
           </div>
 
