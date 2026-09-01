@@ -1363,3 +1363,69 @@ de `global-setup`: **el error señala un lugar que no es el del defecto.**
 
 ⚠️ Queda anotado y **no corregido en esta pasada**: es del spec, no del laboratorio, y el orden
 acordado era residuo primero.
+
+
+---
+
+## 2026-09-01 · 🔴 `fiado`: el test estaba bien y el sistema estaba mal — una advertencia FALSA
+
+La pregunta con la que se entró fue la correcta y separaba dos bugs: **¿el abono no crea el
+`cash_movement`, o lo crea y la UI no lo muestra?** La respuesta resultó ser **una tercera**, y peor
+que las dos.
+
+### El dato primero
+
+```
+amount=5000  payment_method=cash  creo_movimiento=TRUE
+requiere_conciliacion=FALSE  categoria=abono_cliente
+reason='Abono de E2E Fiado 741270 (venta #50)'
+```
+
+**La cadena abono → cash_movement → jornada funcionó perfecto.** Nada de diseño estaba roto ahí.
+
+### El bug
+
+```ts
+// src/hooks/useDebts.ts
+if (paymentMethod === 'cash' && !result.shift_open) {
+  toast('Abono registrado. El efectivo no entró a caja (sin turno abierto).')
+}
+```
+
+**La RPC nunca devolvió `shift_open`.** Devuelve `jornada_abierta` — el nombre cambió con el
+renombre `shift`→`jornada` y este consumidor se quedó atrás.
+
+`result.shift_open` es `undefined`; `!undefined` es `true`; así que **la rama de degradación se
+tomaba SIEMPRE que el método era efectivo**, incluso con el ingreso creado.
+
+🔴 **Y el modo de fallo es el caro: una advertencia FALSA.** No una pantalla vacía ni un error —
+un cartel que le dice al cajero *"el efectivo no entró a caja"* **cuando sí entró**. La reacción
+natural es ir a registrar el ingreso a mano: **la advertencia falsa induce el error que dice
+prevenir.** Es peor que no avisar nada.
+
+### Por qué `tsc` lo aprobó
+
+`supabase.rpc()` devuelve `Json`, así que el resultado se castea a una **interfaz escrita a mano**
+en `supabase-helpers.ts` — y esa interfaz **también decía `shift_open`**. El compilador validó el
+acceso contra la mentira, no contra la función.
+
+> **Es R1 punto 5 fuera de `database.types.ts`.** El anti-patrón conocido era "los tipos de las
+> TABLAS escritos a mano"; éste es el mismo con el **retorno de una RPC**, que nadie había mirado.
+> Y es más silencioso: una tabla mal tipada suele reventar en la primera consulta; un `jsonb` mal
+> tipado devuelve `undefined`, que es **falsy**, así que **elige una rama** en vez de fallar.
+
+### El arreglo, y por qué no fue renombrar la clave
+
+Lo obvio era `shift_open` → `jornada_abierta`. Se hizo otra cosa: la condición pasa a
+**`result.requiere_conciliacion`**.
+
+**Razón:** la RPC **ya decidió** si ese abono quedó pendiente de conciliar, y lo devuelve. Derivarlo
+en el cliente a partir de `!jornada_abierta` sería **reimplementar la regla en un segundo lugar** —
+R1 otra vez, y con una regla que ya tuvo su discusión de diseño. Además `requiere_conciliacion` era
+un campo **que no consumía nadie**: la bandera que aprobamos para el camino degradado estaba muerta.
+
+✅ **Verificado ejecutando: `fiado.spec.ts` 11/11, exit 0.** `tsc` 0 · `lint` 0 · 269 unitarios.
+
+⚠️ **Lo que esto deja como pregunta abierta:** hay más RPC con retorno `jsonb` y su interfaz a mano
+(`register_sale_payment`, `register_sale_void`, `register_purchase`). Ninguna está verificada contra
+su `jsonb_build_object`. Es la misma clase y no la buscamos todavía.

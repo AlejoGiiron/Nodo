@@ -97,7 +97,7 @@ export function useRegisterDebtPayment() {
       if (error) throw error
       return data as unknown as RegisterDebtPaymentResult
     },
-    onSuccess: (result, { paymentMethod }) => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['debts'] })
       queryClient.invalidateQueries({ queryKey: ['orders'] })
       queryClient.invalidateQueries({ queryKey: ['debt_payments'] })
@@ -108,7 +108,13 @@ export function useRegisterDebtPayment() {
         style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0,
       }).format(result.saldo_restante)
 
-      if (paymentMethod === 'cash' && !result.shift_open) {
+      // 🔴 `requiere_conciliacion`, no `!jornada_abierta`: la RPC ya decidió si
+      //    este abono quedó pendiente de conciliar, y esa es la fuente. Derivarlo
+      //    acá sería reimplementar la regla en un segundo lugar (R1).
+      //    ⚠️ Antes decía `!result.shift_open` — una clave que la RPC NUNCA
+      //    devolvió. `undefined` es falsy, así que el aviso de degradación salía
+      //    SIEMPRE que el método era efectivo, incluso con el ingreso creado.
+      if (result.requiere_conciliacion) {
         // Inequívoco: el abono SÍ quedó; lo único que NO pasó es el ingreso de
         // caja (no hay turno al cual atribuirlo).
         toast(

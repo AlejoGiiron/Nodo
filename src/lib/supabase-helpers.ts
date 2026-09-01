@@ -1065,11 +1065,21 @@ export const getDebtPayments = (orderId: string) =>
     .order('created_at', { ascending: false })
 
 // Resultado de register_debt_payment (el jsonb que retorna la RPC).
+//
+// 🔴 ESTA INTERFAZ SE ESCRIBE A MANO Y NADA LA VERIFICA. `rpc()` devuelve `Json`,
+//    así que TS valida los accesos contra ESTO, no contra la función. Si una
+//    clave no coincide, el compilador aprueba una lectura que en runtime da
+//    `undefined` — y `undefined` es falsy, así que el código toma la rama
+//    equivocada EN SILENCIO. Es R1 punto 5 fuera de database.types.ts.
+//    Pasó: decía `shift_open` y la RPC devuelve `jornada_abierta`. Ver BITACORA.
+//    Las cinco claves de abajo se copiaron del `jsonb_build_object` de la
+//    migración `clientes_y_cartera` el 2026-09-01. Al tocar la RPC, tocar esto.
 export interface RegisterDebtPaymentResult {
   new_status: string                 // 'paid' | 'partial'
   saldo_restante: number
   cash_movement_created: boolean
-  shift_open: boolean
+  jornada_abierta: boolean
+  requiere_conciliacion: boolean
 }
 
 // Registra un abono de forma atómica (valida saldo, y si es efectivo con turno
