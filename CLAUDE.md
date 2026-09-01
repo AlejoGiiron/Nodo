@@ -596,6 +596,40 @@ cero, y esperar cero es el error que ya documentamos en la verificación de marc
 los satélites**. Los cinco ítems que faltaban salieron de un solo grep corrido **después** del
 borrado, no antes.
 
+#### 🔴 Corolario — lo que NO es una referencia de código, NINGÚN verificador lo mira
+
+*Agregado el 2026-09-01. Cuatro formas encontradas en una sola poda, todas invisibles para `tsc`,
+para ESLint y para un grep de símbolos.*
+
+`tsc` sigue referencias: un import, un tipo, una llamada. **Lo que vive dentro de un string, de un
+patrón o de un texto no es una referencia** — es carga útil, y nadie la resuelve hasta que se
+ejecuta. Al podar, esos lugares quedan apuntando a cosas que ya no existen y **el repo entero se ve
+verde**.
+
+**DÓNDE VIVE EL RIESGO — la lista, para revisarla a mano después de podar:**
+
+| Lugar | Por qué es invisible | Caso medido |
+|---|---|---|
+| **Strings de consulta** (`select` de PostgREST, SQL por texto) | son texto hasta que PostgREST los resuelve | `getSalesHistory`/`getSaleDetail` pedían `type` y `waiter_name`, columnas muertas |
+| **Regex** | un cuantificador hace que la cadena literal **no exista** | `/G-?Vento/i` en `global-setup`: ningún reemplazo de marca la vio |
+| **Copy de UI** | afirma cosas del producto, y el compilador solo ve un string | ⬇️ ver abajo |
+| **Cuerpos de llamadas entre procesos** (Edge Functions, webhooks) | el emisor y el receptor no comparten compilador | `create-user` exigía `restaurant_id` mientras `src` y los tests mandaban `sede_id` |
+| **Mensajes de error** | describen un mundo que cambió | el guard que culpa al servidor por un renombre |
+| **Seeds y fixtures** | insertan valores literales | `status: 'preparing'`, valor que el enum ya no tiene |
+
+🔴 **El de UI merece mención propia, porque es el único que ve un cliente.** `LoginPage` prometía
+**"Gestión de mesas y comandas en tiempo real"** — la primera pantalla del producto, afirmando dos
+módulos que acababan de dejar de existir. No hay test que falle por eso: la aplicación funciona
+perfecto **mintiendo**.
+
+**LO ACCIONABLE, y es trabajo manual porque no hay alternativa:** después de podar, abrir y leer
+esos seis lugares. No hay verificador que los cubra, así que el paso no se puede delegar a un exit
+code. Un `grep` de la palabra del módulo ayuda a encontrarlos —ver el corolario de arriba— pero
+**leerlos es el trabajo**.
+
+⚠️ Y el corolario del corolario: **un verde después de una poda mide menos de lo que parece.**
+Mide que las referencias resuelven. No mide que los strings digan la verdad.
+
 ⚠️ **Lo que esta regla NO dice.** No dice "no borres nada": dice que **el que borra tiene que
 mostrar la enumeración**. Un `grep` que vuelve vacío es una demostración válida y barata. Lo que
 deja de valer es *"esto suena a restaurante"*, que es la única evidencia que se usó las cuatro

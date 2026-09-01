@@ -792,3 +792,47 @@ menos incomoda; uno con 46 líneas se lee como trabajo terminado.
 **Lo accionable:** cuando enumeres una columna, buscá **la escritura**, no el nombre —`insert`,
 `update`, el objeto que se manda— porque ahí aparece el identificador real. Fue exactamente lo que
 lo destapó: buscar dónde se ESCRIBE el valor, no dónde se NOMBRA.
+
+
+---
+
+## 2026-09-01 · Predecir el número ANTES de medirlo es lo que convierte un conteo en verificación
+
+**El caso.** Al sacar tres columnas del catálogo de `sentry.test.ts`, `pnpm test:unit` pasó de
+**280 a 269**. Antes de correrlo había predicho **−9**: tres columnas × tres bloques
+`it.each(PROHIBIDAS)`.
+
+Medido: **−11**. Los dos que sobraban obligaron a buscar, y ahí apareció un **cuarto** bloque que
+la primera lectura no había visto:
+
+```ts
+it.each(PROHIBIDAS.filter((c) => typeof c.ejemplo === 'number'))(...)
+```
+
+De las tres columnas quitadas, **dos tenían ejemplo numérico** —`kitchen_pin` (1234) y
+`estimated_delivery_minutes` (30)— y `delivery_address` no. **9 + 2 = 11.** Cierra.
+
+### 🔴 Lo que vale no es la aritmética: es de dónde salió la pregunta
+
+Los dos tests faltantes **no aparecieron leyendo el archivo**. Aparecieron al **comparar un número
+medido contra un número esperado**. Si no hubiera predicho nada, `269 passed` se habría leído como
+verde —lo era— y nadie habría tenido motivo para buscar.
+
+> **Un conteo que no se predijo no es una verificación: es una observación.**
+> Se vuelve verificación cuando existe un número esperado con el que pueda discrepar.
+
+Es la clase **"indistinguible de"** funcionando en la dirección correcta, y por eso vale escribirla
+como criterio y no como anécdota. Esa clase dice que un estado defectuoso puede emitir la misma
+señal que el sano —un test que no corre se ve igual que uno que pasa—. **La predicción es el
+mecanismo que rompe el empate**: la señal deja de ser "verde/rojo" y pasa a ser "coincide / no
+coincide con lo que dije antes de mirar".
+
+### Cómo se aplica, que es barato
+
+Antes de correr una suite después de un cambio que agrega o quita casos: **escribí el número que
+esperás y de dónde sale.** Si coincide, el verde vale. Si no, tenés una pregunta concreta —"¿de
+dónde salen estos dos?"— en vez de una sensación.
+
+⚠️ Y funciona en las dos direcciones. Medir **menos** de lo predicho es cobertura que se perdió sin
+querer; medir **más** es un caso que no sabías que existía. Las dos son información, y las dos se
+pierden si el único criterio es que el exit code sea 0.
