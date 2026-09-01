@@ -620,30 +620,90 @@ tener el número clavado en dos lados era exactamente R1.
 
 ---
 
-## 2026-08-31 · El suite unitario decía "256 passed" y un archivo entero no corría
+## 2026-08-31 · Una CLASE nueva: el estado defectuoso que produce la misma señal que el sano
 
-**Encontrado al poner el tripwire, y es lo que le habría quitado el valor.**
+**Encontrado al poner el tripwire del catálogo, y es lo que le habría quitado todo el valor.**
 
-`pnpm test:unit` salía **exit 1**, pero el resumen decía `Tests 256 passed (256)`. Los dos datos
-eran ciertos: el archivo `src/hooks/useSubscriptionStatus.test.ts` **no fallaba, no se colectaba**
-— `(0 test)`. Sus **24 tests no corrían desde que existen en este repo**, y el resumen no los
-extraña porque no puede contar lo que nunca se cargó.
+`pnpm test:unit` salía **exit 1** y el resumen decía `Tests 256 passed (256)`. **Los dos datos eran
+ciertos.** El archivo `src/hooks/useSubscriptionStatus.test.ts` **no fallaba: no se colectaba** —
+`(0 test)`. Sus **24 tests no corrieron nunca en este repo**, y el resumen no los extraña porque
+**no puede contar lo que no se cargó**.
+
+| | antes | después |
+|---|---|---|
+| tests que el repo creía tener | **256** | **280** |
+| archivos | 4 de 5 | 5 de 5 |
+| exit | 1 | 0 |
+
+**La diferencia son 24 tests que este repo creía tener.**
 
 **La causa.** `resolveNotice` es una función pura, pero vive en un módulo que arrastra
 `useAuth → AuthContext → src/lib/supabase`, y ese crea el cliente **en la carga del módulo**. Sin
 `.env` presente eso tira `supabaseUrl is required` antes de que exista un solo test. No es una
 particularidad de esta máquina: **en CI y en cualquier clon recién hecho no hay `.env`.**
 
-Se mockeó el **cliente**, nunca la función bajo prueba: `vi.mock('@/lib/supabase')`. Resultado:
-**280 tests, 5 archivos, exit 0** — 24 tests recuperados.
+Se mockeó el **cliente**, nunca la función bajo prueba: `vi.mock('@/lib/supabase')`.
 
-🔴 **Por qué esto era urgente y no un arreglo de paso.** El tripwire del catálogo vive en ese mismo
-suite. **Un rojo permanente esconde a los rojos nuevos**: si `pnpm test:unit` sale 1 siempre, el
-día que el catálogo cambie en silencio nadie va a notar la diferencia. Es la misma forma que la
-deuda 23.3 —una clave inexistente y una denegada devuelven las dos `false`, y por eso son
-**indistinguibles**—: lo que rompe el mecanismo no es la ausencia de señal, es que la señal **ya
-esté encendida por otra cosa**.
+### 🔴 La clase, que es lo que hay que retener: **INDISTINGUIBLE DE**
 
-⚠️ Y el resumen verde con exit rojo es primo de R9: **el número que te muestran no es el que
-pensás**. Acá ni siquiera hubo tubería — alcanzó con leer la línea de "Tests" y no la de "Test
-Files".
+> **Un test que no corre es indistinguible de uno que pasa, si solo mirás el verde.**
+
+No es un caso: es una **clase**, y ya van dos en este proyecto.
+
+| Caso | Estado sano | Estado defectuoso | Señal de los dos |
+|---|---|---|---|
+| El suite unitario | el test corre y pasa | el archivo no se colecta | **no aparece en rojo** |
+| `can(string)` — deuda 23.3 | la clave existe y está denegada | la clave **no existe** | **`false`** |
+
+En los dos, lo que falla no es la falta de señal: es que **el estado malo emite exactamente la
+señal del estado bueno**. Por eso no se detecta mirando más fuerte — mirar más fuerte devuelve lo
+mismo—. Se detecta **cambiando qué se mira**: la línea `Test Files` en vez de la línea `Tests`; el
+tipo de la clave en vez de su valor de retorno.
+
+**Lo accionable, y es una pregunta sola:** ante un verde, preguntá **qué señal produciría el estado
+defectuoso**. Si es la misma, no tenés una verificación: tenés una coincidencia. Es el corolario de
+R4 —*una verificación que no podía haber salido mal no es una verificación*— aplicado al caso donde
+**sí puede salir mal, pero sale igual**.
+
+### Por qué esto era urgente y no un arreglo de paso
+
+El tripwire del catálogo vive en ese mismo suite. **Un rojo permanente esconde a los rojos
+nuevos**: si `pnpm test:unit` sale 1 siempre, el día que el catálogo cambie en silencio nadie va a
+notar la diferencia.
+
+### Relación con R9, y en qué se le escapa
+
+Es la misma familia —**el resultado que te muestran no es el que pensás**— pero **R9 no lo cubre**.
+R9 habla de tuberías (`| tail` devuelve el exit de `tail`) y de notificaciones de tarea en segundo
+plano: casos donde algo **intermedia** el resultado. Acá **no hay intermediario**: el runner reporta
+con total fidelidad **sobre un conjunto que no incluye lo que vos creías que incluía**. El engaño no
+está en el canal, está en el **denominador**.
+
+⚠️ Y alcanzó con leer la línea equivocada del mismo resumen: `Tests 256 passed` en vez de
+`Test Files 1 failed | 4 passed`.
+
+### Enumeración en Vento — el mismo defecto, latente
+
+Verificado **ejecutando**, no leyendo (2026-08-31, `develop` `d848852`):
+
+| | Vento | Nodo (antes del arreglo) |
+|---|---|---|
+| Cadena de imports del test | idéntica (`useAuth → AuthContext → @/lib/supabase`, cliente en carga de módulo) | idéntica |
+| `vi.mock` en el test | **no tiene** | no tenía |
+| `.env` en la máquina | **existe** | **no existe** |
+| `pnpm test:unit` | **285 passed, 4 archivos, exit 0** | 256 passed, 4 de 5 archivos, exit 1 |
+
+**El defecto está en los dos repos.** En Vento no se manifiesta por una razón que no es del código:
+**ahí hay un `.env`**. Es la definición de latente — el repo depende de un archivo que no está en
+git para que su suite se colecte entera.
+
+🔴 **Y la pregunta que abrió esto —"¿CI los estaba contando como pasando?"— tiene una respuesta que
+no esperaba: NO HAY CI. En ninguno de los dos.** Enumerado: no hay `.github/`, ni `.gitlab-ci.yml`,
+ni Husky; el único `vercel.json` de cada repo tiene **solo un rewrite de SPA**, y el build de Vercel
+corre `vite build`, no la suite. Así que nadie estuvo reportando verde sobre un suite incompleto:
+**nadie estuvo reportando nada.**
+
+⚠️ **Eso no achica el hallazgo, lo mueve de lugar.** Deja de ser "CI miente" y pasa a ser una
+**precondición de la deuda #5**: el día que se escriban los checks de árbol, el primero habría dado
+verde sobre un suite al que le faltaba un archivo entero — y ese verde habría sido la evidencia
+fundacional de que "los tests pasan".

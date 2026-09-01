@@ -749,6 +749,31 @@ pantalla nueva**.
 - Los tests corren en serie (`workers: 1`) por compartir backend.
 - Leer R8, R9 y R10 antes de interpretar cualquier resultado de suite.
 
+**🔴 UN ROJO QUE NO NOMBRA QUÉ CAMBIÓ CUESTA EL DIAGNÓSTICO ENTERO DE NUEVO.**
+*Medido el 2026-08-31, escribiendo el tripwire del catálogo de permisos.*
+
+La forma **obvia** de escribir una aserción sobre una colección produce el rojo que **no dirige**.
+Comparar el catálogo contra su lista fijada con `toEqual` detecta la sustitución de una clave por
+otra, sí — y la reporta así:
+
+```
+AssertionError: expected [ Array(21) ] to deeply equal [ Array(21) ]
+```
+
+Los dos números están bien. El test tiene razón y aun así **manda a mirar el lugar equivocado**,
+que es el mismo perfil que R6. La versión que dirige cuesta una línea más y se asierta sobre un
+**string construido con los nombres**, no sobre la colección:
+
+```
+Expected: "claves que DESAPARECIERON del catálogo: ninguna"
+Received: "claves que DESAPARECIERON del catálogo: ventas.anular"
+```
+
+**La regla:** un test no termina cuando se pone rojo con el defecto puesto — termina cuando **el
+mensaje del rojo nombra qué cambió**. Hay que trabajar activamente para que dirija; por defecto no
+lo hace. Corolario práctico: al auditar por mutación (R10), **leé el mensaje**, no solo el
+`✓`/`×` — el mutante puede morir y el rojo ser inútil igual.
+
 ---
 
 ## Estado
