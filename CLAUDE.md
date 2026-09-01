@@ -203,6 +203,20 @@ en Vento.
 4. **`payment_method` — de 4 lados a 8.** No estaba en el inventario original de Vento. Vigilar
    desde el primer commit.
 
+5b. **🔴 EL RETORNO `jsonb` DE UNA RPC vs su interfaz escrita a mano.** *Lado nuevo, agregado el
+   2026-09-01 tras un caso medido.* `supabase.rpc()` devuelve `Json`, así que el resultado se
+   castea a una interfaz de `src/lib/supabase-helpers.ts` — y **TS valida los accesos contra esa
+   interfaz, no contra la función**. Los lados son tres: el `jsonb_build_object` de la migración,
+   la interfaz, y el consumidor.
+   ⚠️ **Y NO es el mismo caso que el punto 5, es peor:** una **tabla** mal tipada suele reventar en
+   la primera consulta —la columna no existe y PostgREST lo dice—. Un **`jsonb` mal tipado no
+   revienta: devuelve `undefined`, que es falsy, así que el código ELIGE UNA RAMA.** El error no se
+   manifiesta como error sino como *comportamiento distinto*.
+   📋 **Cómo se audita, y es mecánico:** comparar las claves del `return jsonb_build_object` de cada
+   RPC contra su interfaz. Enumerado el 2026-09-01: `register_debt_payment` tenía `shift_open`
+   declarado y jamás enviado (bug real, corregido), `register_sale_void` declara `was_fiado` y no lo
+   manda, y `register_purchase` manda `cash_movement_id` sin declararlo.
+
 5. **`src/types/database.types.ts` escrito a mano vs la BD real.** El CLI de Vento da 403 de
    management y varias entradas se agregaron a mano. Los tipos pueden divergir del esquema **sin
    que `tsc` lo note** — el proxy exacto que R4 prohíbe confundir con la cosa real. En Nodo:
@@ -439,6 +453,23 @@ Al escribir una garantía, **nombrá el mecanismo y su límite**. "Está aislado
 
 **Modo de fallo:** tres archivos del repo decían la verdad y el único que mentía era el documento
 de planificación — **y ganó**. Una nota que tranquiliza mal es peor que una que dirige mal.
+
+🔴 **LA MISMA REGLA MEDIDA DESDE EL OTRO LADO (2026-09-01):**
+
+> **Una advertencia falsa induce el error que dice prevenir.**
+
+En el caso #13 una **garantía falsa** tranquilizaba de más. Acá una **advertencia falsa** alarma de
+más: la UI del abono decía *"el efectivo no entró a caja"* **cuando sí había entrado**, y la
+reacción natural de un cajero ante ese cartel es **registrar el ingreso a mano** — o sea, duplicarlo.
+El aviso no falla omitiendo: **falla causando**.
+
+Las dos mitades son el mismo principio: **una afirmación falsa en el punto de decisión le gana al
+código correcto.** No importa que la base esté impecable si la pantalla dice lo contrario; el que
+actúa es la persona, y la persona lee la pantalla.
+
+⚠️ Corolario para escribir avisos: un mensaje de degradación tiene que salir de **la misma fuente
+que decidió degradar**, no de una condición re-derivada en el cliente. Acá la RPC ya devolvía
+`requiere_conciliacion`; el cliente lo estaba recalculando —mal— desde otra clave.
 
 → **Evidencia:** repo de Vento, caso #13.
 

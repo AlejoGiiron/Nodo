@@ -1429,3 +1429,43 @@ un campo **que no consumía nadie**: la bandera que aprobamos para el camino deg
 ⚠️ **Lo que esto deja como pregunta abierta:** hay más RPC con retorno `jsonb` y su interfaz a mano
 (`register_sale_payment`, `register_sale_void`, `register_purchase`). Ninguna está verificada contra
 su `jsonb_build_object`. Es la misma clase y no la buscamos todavía.
+
+
+## 2026-09-01 · Enumeración completa de la clase: 3 desajustes, 1 peligroso
+
+Diff mecánico de **todas** las RPC que devuelven `jsonb`: claves del `return jsonb_build_object`
+contra la interfaz escrita a mano.
+
+| Interfaz | RPC | Resultado |
+|---|---|---|
+| `RegisterDebtPaymentResult` | `register_debt_payment` | ✅ coinciden (corregido hoy) |
+| `SaleVoidResult` | `register_sale_void` | 🔴 **declara `was_fiado` y la RPC NO lo manda** |
+| `RegisterPurchaseResult` | `register_purchase` | ⚠️ la RPC manda `cash_movement_id` y TS no lo declara |
+| *(sin interfaz)* | `register_sale_payment` | ✅ sin riesgo: el consumidor solo mira `error` |
+| `AssignOrderNumberResult` | — | **falso positivo**: no es de una RPC, es la forma de retorno de un helper propio |
+
+### El peligroso explica el fallo que íbamos a atacar después
+
+`anular-venta.spec.ts:291` hace `expect(...was_fiado).toBe(true)` — y la RPC **nunca envía esa
+clave**. Ese es exactamente el `Expected: true, Received: undefined` que teníamos pendiente.
+
+⚠️ **La enumeración lo encontró antes de llegar a él.** Es la diferencia entre arreglar de a uno y
+mirar la clase: el mismo diff que salió de `fiado` ya contenía el diagnóstico de `anular-venta`.
+
+**Por qué falta `was_fiado`:** `register_sale_void` vive en la migración `ventas`, y
+`orders.payment_status` / `customer_id` los agrega **`clientes_y_cartera`, que corre después**.
+Cuando se escribió la función, el concepto de fiado **todavía no existía en el esquema**. No es un
+descuido de tipeo: es una dependencia de orden que se llevó puesta una clave.
+
+### El inofensivo, y por qué se anota igual
+
+`register_purchase` manda `cash_movement_id` y la interfaz no lo declara. **Hoy no rompe nada**
+—nadie lo lee— pero la asimetría importa: *TS declara y la RPC no manda* → `undefined` y una rama
+equivocada; *la RPC manda y TS no declara* → el dato existe y **nadie puede usarlo sin castear**.
+El primero miente, el segundo desperdicia.
+
+### Lo que la enumeración descartó
+
+Sospechábamos que un desajuste podía estar detrás de los timeouts de `arqueo`, `compras` e
+`historiales`. **No lo está:** las tres RPC que esos specs usan están limpias o sin interfaz.
+Descartar una hipótesis con un diff mecánico es barato y evita perseguirla tres veces.
