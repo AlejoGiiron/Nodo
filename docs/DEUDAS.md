@@ -126,6 +126,20 @@ y no se espera que las haya pronto — es la razón por la que el producto no se
 
 **Modo oscuro.** No hay decisión todavía; depende de la Entrega 1 del design system.
 
+**Backup de staging — POSPUESTO (2026-08-31), no resuelto.** Staging **no se respalda**: se
+recrea desde `supabase/migrations/` más un seed, así que **no hay dato que perder**. Eso es lo
+que hace barata la postergación.
+
+⚠️ **Lo que queda abierto es el riesgo INVERSO, y es el que importa:** que el volumen de staging
+entre **por accidente** al ciclo nocturno de producción y lo haga fallar. No es simétrico — el
+primer riesgo (perder staging) no le cuesta nada a nadie; el segundo rompe el backup de
+producción, y el daño real no es el backup fallado sino que alguien **aprenda a ignorar ese
+error**. Ver `docs/staging/README.md` §4.
+
+⛔ **Y no se sabe cuál de los dos aplica hasta leer el script del Ubuntu** (deuda #31): si toma
+volúmenes con un patrón tipo `supabase_*`, `gnexo_staging_db` queda afuera solo; si usa `*db*`,
+entra. **Pendiente de dato, no decidido.**
+
 **G-Centro como tercer producto.** G-Centro ya nació multi-producto. Enumerar qué falta para que G-Nexo entre — pero **en su propio hilo**, no acá.
 
 ⚠️ **Y ahora el esquema base LO PRESUPONE (2026-08-31).** `supabase/02b-suscripcion.sql` deja
