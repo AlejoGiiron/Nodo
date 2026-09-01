@@ -541,6 +541,61 @@ corta de dejar una venta armada. La línea `seeds y tests → ¿quién la puebla
 lee corta. **Va leída ancha: ¿quién la usa para LLEGAR a otra cosa?** Una pieza sin consumidor de
 producto puede seguir siendo el único camino por el que otra cosa arma su estado inicial.
 
+#### 🔴 Corolario — enumerar QUÉ depende no alcanza: enumerá DE QUÉ PROPIEDAD depende
+
+*Agregado el 2026-09-01, después de que una enumeración correcta produjera un plan imposible.*
+
+La regla de arriba pide enumerar **qué cuelga** de la pieza. Este corolario agrega la segunda mitad:
+
+> **¿Por qué esa pieza no se puede reemplazar por otra?**
+
+Sin esa pregunta, la enumeración identifica bien la **dependencia** y describe mal su **naturaleza**
+— y sobre esa descripción se toman decisiones que no se pueden ejecutar.
+
+**Caso medido.** Al enumerar la poda de mesas se encontró que `tests/helpers/tables.ts` era fixture
+de tres specs de módulos que **sobreviven**. La dependencia estaba **bien identificada**. Lo que se
+escribió sobre ella fue *"la mesa era el camino más corto para dejar una venta armada"* — o sea
+**comodidad**. Sobre esa lectura se aprobó reemplazarla por un helper sobre el POS.
+
+**Era falso, y de la peor manera: la mesa era el ÚNICO FLUJO DE DOS FASES.** Los tres tests miden
+que el stock se descuenta en el alta y el cobro no lo vuelve a tocar; en el POS alta y cobro son un
+paso atómico, así que el helper habría producido **tres tests verdes por construcción**. Una
+comodidad se reemplaza; una **propiedad estructural**, no.
+
+**Lo accionable, en dos preguntas y en este orden:**
+
+1. ¿Qué depende de esto? → la enumeración de siempre.
+2. **¿Qué propiedad de esto usa cada dependiente, y existe en otro lado?** → si la respuesta es
+   "es más corto", es comodidad: reemplazable. Si es "es el único que hace X", es estructura: al
+   borrarla, **lo que depende de X no se migra, se pierde** — y eso se decide, no se descubre.
+
+✅ **El corolario ya se usó en su primer día:** de los cuatro tests que usaban la mesa, tres se
+borraron (dependían de las dos fases) y **uno se migró al POS** — el clamp del vale al 100%, que
+usaba la mesa solo de andamio. La misma enumeración, hecha con la segunda pregunta, separó lo que
+la primera juntaba.
+
+#### 🔴 Corolario — después de borrar, grepeá la palabra del módulo y LEÉ el residuo
+
+*Agregado el 2026-09-01. Primer caso en que falló la ENUMERACIÓN, no la clasificación.*
+
+> **Un módulo satélite no se llama como el módulo del que cuelga.**
+
+Al podar Delivery, la enumeración previa decía "tres archivos y dos ediciones mecánicas". Faltaba
+**el módulo de repartidores entero** (~205 líneas en `ConfigPage`), 7 helpers, dos campos de
+configuración de sede y un aviso sonoro. La tabla `couriers` **ni siquiera existe en el esquema
+base**.
+
+**Por qué se escapó:** la enumeración grepeó los nombres de las **páginas**
+(`KitchenPage|DeliveryPage|TablesPage`) y los conceptos del **esquema** (`order_type`, `table_id`,
+`preparing`). **`courier` no estaba en ninguna de las dos listas** — y no podía estar, porque nadie
+sabía que existía.
+
+**Lo accionable, y cuesta un comando:** después de borrar, correr
+`grep -rn "<palabra del módulo>" src/` y **leer la salida**. ⚠️ **No para que dé cero** —nunca da
+cero, y esperar cero es el error que ya documentamos en la verificación de marca—: para **descubrir
+los satélites**. Los cinco ítems que faltaban salieron de un solo grep corrido **después** del
+borrado, no antes.
+
 ⚠️ **Lo que esta regla NO dice.** No dice "no borres nada": dice que **el que borra tiene que
 mostrar la enumeración**. Un `grep` que vuelve vacío es una demostración válida y barata. Lo que
 deja de valer es *"esto suena a restaurante"*, que es la única evidencia que se usó las cuatro

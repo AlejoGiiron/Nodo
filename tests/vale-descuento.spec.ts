@@ -2,19 +2,16 @@ import { test, expect, type Page } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { loginAsOwner } from './helpers/auth'
-import { openTableAndAddItems } from './helpers/tables'
 import { openShiftIfClosed, closeShiftIfOpen } from './helpers/shift'
 
-// Vale descuento / ruletazo. Corre en LAB. Cubre: vale en Mesa y POS (persiste
+// Vale descuento / ruletazo. Corre en LAB. Cubre: vale en el POS (persiste
 // kind='vale' + fixed, baja el total, el pago cuadra), descuento normal ≠ vale,
-// idempotencia del descuento de mesa (subtotal recuperado), el vale en el arqueo
+// el vale en el arqueo
 // (informativo, no altera el cuadre), el reporte mensual, el clamp del vale que
 // excede el total, y el borde del vale-sin-monto.
 
 const PRODUCT = 'Lab Coctel'
 const PRICE = 18000
-
-const SUFFIX = Date.now().toString().slice(-6)
 const parseCOP = (t: string) => Number(t.replace(/[^\d]/g, ''))
 
 // ── Supabase directo (RLS del owner) ──────────────────────────────────
@@ -101,30 +98,6 @@ async function payNequiAndFinish(page: Page): Promise<number> {
   return n
 }
 
-// Crea una mesa dedicada, la abre y le agrega 1 PRODUCT (subtotal = PRICE).
-async function setupMesaWithItem(page: Page, mesaName: string) {
-  await page.goto('/mesas')
-  await page.getByRole('button', { name: 'Configurar' }).click()
-  await page.getByPlaceholder('Mesa 1').fill(mesaName)
-  await page.getByRole('button', { name: 'Crear mesa' }).click()
-  await expect(page.getByText(mesaName)).toBeVisible()
-
-  await openTableAndAddItems(page, mesaName)
-  await page.getByRole('button').filter({ has: page.getByText(PRODUCT, { exact: true }) }).first().click()
-  await expect(page.getByTestId('item-config-modal')).toBeVisible()
-  await page.getByTestId('item-config-confirm').click()
-  await page.getByRole('button', { name: 'Agregar a la mesa' }).click()
-  await expect(page.getByRole('button', { name: 'Agregar a la mesa' })).toHaveCount(0)
-  await expect(page.getByText('Sin ítems — agrega productos')).toHaveCount(0)
-}
-
-async function openMesaCheckout(page: Page, mesaName: string) {
-  await page.goto('/mesas')
-  await page.getByRole('button', { name: new RegExp(mesaName) }).click()
-  await page.getByRole('button', { name: 'Cobrar' }).click()
-  await expect(page.getByText(`${mesaName} · Total a cobrar`)).toBeVisible()
-}
-
 async function readVouchersKPI(page: Page): Promise<number> {
   await page.goto('/reportes')
   await expect(page.getByTestId('report-vouchers')).toBeVisible({ timeout: 15_000 })
@@ -133,33 +106,6 @@ async function readVouchersKPI(page: Page): Promise<number> {
 
 // ── Suite ───────────────────────────────────────────────────────────────
 test.describe.serial('Vale descuento / ruletazo', () => {
-  test('MESA: vale baja el total, persiste kind=vale/fixed y el pago cuadra', async ({ page }) => {
-    const MESA = `Mesa Vale ${SUFFIX}`
-    await loginAsOwner(page)
-    await page.goto('/ventas')
-    await closeShiftIfOpen(page)
-    await openShiftIfClosed(page, 0)
-
-    await setupMesaWithItem(page, MESA)
-    await openMesaCheckout(page, MESA)
-
-    // Vale de 5.000 sobre 18.000 → total 13.000.
-    await page.getByTestId('discount-vale-toggle').check()
-    await page.getByTestId('discount-amount').fill('5000')
-    await page.getByTestId('discount-reason').fill(`Ruletazo ${SUFFIX}`)
-    await expect(page.getByTestId('checkout-total')).toContainText('13.000')
-
-    const n = await payNequiAndFinish(page)
-
-    const order = await orderByNumber(n)
-    expect(order.total).toBe(PRICE - 5000)          // 13.000
-    expect(order.discount_amount).toBe(5000)
-    expect(order.discount_type).toBe('fixed')       // vale ⇒ fixed
-    expect(order.discount_kind).toBe('vale')
-    // El subtotal invariante se recupera de total + discount_amount.
-    expect(order.total + order.discount_amount).toBe(PRICE)
-  })
-
   test('POS: vale baja el total, persiste kind=vale/fixed', async ({ page }) => {
     await loginAsOwner(page)
     await page.goto('/ventas')
@@ -260,19 +206,24 @@ test.describe.serial('Vale descuento / ruletazo', () => {
     expect(after - before).toBe(7000)
   })
 
+  // MIGRADO DE MESA AL POS el 2026-09-01, y la distinción es la que importa: los
+  // otros tres tests de mesa se borraron porque probaban el invariante
+  // anti-doble-descuento, que NO EXISTE en el POS (alta y cobro son un solo paso
+  // atómico). Éste no depende de esa propiedad: su sujeto es el CLAMP del vale al
+  // 100%, y el POS lo reproduce idéntico. Borrarlo habría perdido cobertura real.
   test('VENTA GRATIS: vale 100% (total 0) → clamp + se cierra sin pago, queda registrada', async ({ page }) => {
-    const MESA = `Mesa Clamp ${SUFFIX}`
     await loginAsOwner(page)
     await page.goto('/ventas')
     await openShiftIfClosed(page, 0)
 
-    await setupMesaWithItem(page, MESA)
-    await openMesaCheckout(page, MESA)
+    await addProductPOS(page)
 
     // Vale 25.000 sobre 18.000 → clamp a 18.000 (input) y total 0 (no negativo).
     await page.getByTestId('discount-vale-toggle').check()
     await page.getByTestId('discount-amount').fill('25000')
     await expect(page.getByTestId('discount-amount')).toHaveValue('18.000')
+
+    await page.getByRole('button', { name: 'Cobrar' }).click()
     await expect(page.getByTestId('checkout-total')).toContainText('$ 0')
 
     // Se cierra SIN pago: continuar dispara handleConfirm que salta el pago.
@@ -311,21 +262,10 @@ test.describe.serial('Vale descuento / ruletazo', () => {
     expect(order.discount_type).toBeNull()
   })
 
-  test('limpieza: cerrar turno y borrar las mesas creadas', async ({ page }) => {
+  test('limpieza: cerrar turno', async ({ page }) => {
     page.on('dialog', (d) => d.accept())
     await loginAsOwner(page)
     await page.goto('/ventas')
     await closeShiftIfOpen(page)
-
-    await page.goto('/mesas')
-    await page.getByRole('button', { name: 'Configurar' }).click()
-    for (const name of [`Mesa Vale ${SUFFIX}`, `Mesa Clamp ${SUFFIX}`]) {
-      const del = page.locator('div')
-        .filter({ has: page.getByText(name, { exact: true }) })
-        .filter({ has: page.getByTitle('Eliminar mesa') })
-        .last()
-        .getByTitle('Eliminar mesa')
-      if (await del.count() > 0) await del.click()
-    }
   })
 })

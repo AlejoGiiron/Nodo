@@ -2,22 +2,19 @@ import { test, expect, type Page } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { createClient } from '@supabase/supabase-js'
 import { loginAsOwner } from './helpers/auth'
-import { openTableAndAddItems } from './helpers/tables'
 import { openShiftIfClosed, closeShiftIfOpen } from './helpers/shift'
 
 // Pago mixto (dividir el cobro entre varios métodos). Corre contra el LAB.
 // - Producto compuesto seeded "Lab Coctel" (18.000) que descuenta 1 "Lab Vaso"
-//   (insumo con tracking) por venta → permite verificar que NO hay doble
-//   descuento de stock al cobrar una mesa mixta.
+//   (insumo con tracking) por venta.
+// ⚠️ El caso "sin doble descuento de stock" YA NO ESTA acá: solo era observable
+//    con alta y cobro en dos momentos, y eso murió con mesas. En el POS son un
+//    paso atómico. Ver deuda #33 — vuelve con el flujo de pedidos.
 // - Verifica el registro (2 filas payments), que el efectivo entra a caja y el
 //   nequi no (cuadre por método), la validación bloqueante Σ≠total, que la
 //   venta simple no se rompe, y que el fiado no se cruza con el split.
 
 const PRODUCT = 'Lab Coctel'
-const INSUMO = 'Lab Vaso'
-
-const SUFFIX = Date.now().toString().slice(-6)
-const MESA = `Mesa Mixto ${SUFFIX}`
 
 // "$ 18.000" → 18000
 const parseCOP = (text: string): number => Number(text.replace(/[^\d]/g, ''))
@@ -106,16 +103,6 @@ async function readShiftSales(page: Page): Promise<Record<string, number>> {
   await page.getByRole('button', { name: 'Cancelar' }).click()
   await expect(page.getByText('Cerrar turno de caja')).toHaveCount(0)
   return res
-}
-
-// Lee el stock de un insumo desde Inventario → Niveles.
-async function readStock(page: Page, name: string): Promise<number> {
-  await page.goto('/inventario')
-  await page.getByTestId('inventory-tab-levels').click()
-  await page.getByPlaceholder('Buscar insumo...').fill(name)
-  const row = page.getByTestId('stock-level-row').filter({ hasText: name })
-  await expect(row).toBeVisible()
-  return Number(await row.getByTestId('stock-level-qty').innerText())
 }
 
 function orderNumberFromBanner(text: string): number {
@@ -244,67 +231,6 @@ test.describe.serial('Pago mixto (pago dividido)', () => {
     expect(pays[0].amount).toBe(total)
   })
 
-  test('MESA: cierre mixto registra pagos, sin doble descuento de stock', async ({ page }) => {
-    await loginAsOwner(page)
-    await page.goto('/ventas')
-    await openShiftIfClosed(page, 0)
-
-    // Stock del insumo ANTES de todo.
-    const before = await readStock(page, INSUMO)
-
-    // Crear una mesa dedicada.
-    await page.goto('/mesas')
-    await page.getByRole('button', { name: 'Configurar' }).click()
-    await page.getByPlaceholder('Mesa 1').fill(MESA)
-    await page.getByRole('button', { name: 'Crear mesa' }).click()
-    await expect(page.getByText(MESA)).toBeVisible()
-
-    // Abrir la mesa y abrir el picker.
-    await openTableAndAddItems(page, MESA)
-
-    // Agregar 1 Lab Coctel → AQUÍ baja el stock del insumo (una vez).
-    await page.getByRole('button').filter({ has: page.getByText(PRODUCT, { exact: true }) }).first().click()
-    await expect(page.getByTestId('item-config-modal')).toBeVisible()
-    await page.getByTestId('item-config-confirm').click()
-    await page.getByRole('button', { name: 'Agregar a la mesa' }).click()
-    // El picker cierra SOLO tras commitear la RPC (alta + descuento de stock).
-    await expect(page.getByRole('button', { name: 'Agregar a la mesa' })).toHaveCount(0)
-    await expect(page.getByText('Sin ítems — agrega productos')).toHaveCount(0)
-
-    const afterAdd = await readStock(page, INSUMO)
-    expect(afterAdd).toBe(before - 1)
-
-    // Cerrar la mesa con pago MIXTO.
-    await page.goto('/mesas')
-    await page.getByRole('button', { name: new RegExp(MESA) }).click()
-    await page.getByRole('button', { name: 'Cobrar' }).click()
-    const total = parseCOP(await page.getByTestId('checkout-total').innerText())
-    await page.getByTestId('pay-split-toggle').click()
-    const { cash, nequi } = await fillSplitCashNequi(page, total)
-    await expect(page.getByTestId('checkout-confirm')).toBeEnabled()
-    await page.getByTestId('checkout-confirm').click()
-    const banner = page.getByText(/Venta #\d+ registrada/)
-    await expect(banner).toBeVisible({ timeout: 15_000 })
-    const n = orderNumberFromBanner(await banner.innerText())
-
-    // Anti doble-descuento: cobrar NO vuelve a tocar stock.
-    const afterClose = await readStock(page, INSUMO)
-    expect(afterClose).toBe(afterAdd)
-    expect(afterClose).toBe(before - 1)
-
-    // Se registraron los 2 pagos de la mesa.
-    const pays = await paymentsForOrder(n)
-    expect(pays).toHaveLength(2)
-    const byMethod = Object.fromEntries(pays.map((p) => [p.method, p.amount]))
-    expect(byMethod['cash']).toBe(cash)
-    expect(byMethod['nequi']).toBe(nequi)
-
-    // La mesa quedó LIBERADA (al hacer click pide abrir).
-    await page.goto('/mesas')
-    await page.getByRole('button', { name: new RegExp(MESA) }).click()
-    await expect(page.getByRole('button', { name: 'Abrir mesa' })).toBeVisible()
-  })
-
   test('El fiado NO se cruza con el split (no hay opción de fiado al dividir)', async ({ page }) => {
     await loginAsOwner(page)
     await page.goto('/ventas')
@@ -327,21 +253,11 @@ test.describe.serial('Pago mixto (pago dividido)', () => {
     await expect(page.getByTestId('pay-method-fiado')).toHaveCount(0)
   })
 
-  test('limpieza: cerrar turno y borrar la mesa creada', async ({ page }) => {
+  test('limpieza: cerrar turno', async ({ page }) => {
     page.on('dialog', (d) => d.accept())
     await loginAsOwner(page)
 
     await page.goto('/ventas')
     await closeShiftIfOpen(page)
-
-    // Borrado best-effort de la mesa (la orden quedó 'delivered' y la mesa libre).
-    await page.goto('/mesas')
-    await page.getByRole('button', { name: 'Configurar' }).click()
-    const del = page.locator('div')
-      .filter({ has: page.getByText(MESA, { exact: true }) })
-      .filter({ has: page.getByTitle('Eliminar mesa') })
-      .last()
-      .getByTitle('Eliminar mesa')
-    if (await del.count() > 0) await del.click()
   })
 })

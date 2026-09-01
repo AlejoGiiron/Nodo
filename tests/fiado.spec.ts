@@ -1,6 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
 import { loginAsOwner, loginAsCashier } from './helpers/auth'
-import { openTableAndAddItems } from './helpers/tables'
 import { openShiftIfClosed, closeShiftIfOpen } from './helpers/shift'
 
 // Producto compuesto seeded (Lab Coctel = 18.000) que descuenta 1 "Lab Vaso"
@@ -11,7 +10,6 @@ const INSUMO = 'Lab Vaso'
 const SUFFIX = Date.now().toString().slice(-6)
 const CLIENTE = `E2E Fiado ${SUFFIX}`
 const CLIENTE_G = `E2E Grupo ${SUFFIX}`
-const MESA = `Mesa Fiado ${SUFFIX}`
 
 // Órdenes del cliente-grupo (compartidas entre los tests de agrupación).
 let gN1 = 0
@@ -300,72 +298,6 @@ test.describe.serial('Fiado / Cartera', () => {
     await expect(row.getByTestId('sale-row-method')).toContainText('Fiado')
   })
 
-  test('vender a fiado desde una MESA: pending, mesa liberada y SIN doble descuento de stock', async ({ page }) => {
-    await loginAsOwner(page)
-
-    // Cobrar una mesa exige turno abierto (aunque el fiado no toque caja).
-    await page.goto('/ventas')
-    await openShiftIfClosed(page, 0)
-
-    // Stock del insumo ANTES de cualquier cosa.
-    const before = await readStock(page, INSUMO)
-
-    // Crear una mesa dedicada (evita colisión con mesas seeded ocupadas).
-    await page.goto('/mesas')
-    await page.getByRole('button', { name: 'Configurar' }).click()
-    await page.getByPlaceholder('Mesa 1').fill(MESA)
-    await page.getByRole('button', { name: 'Crear mesa' }).click()
-    await expect(page.getByText(MESA)).toBeVisible()
-
-    // Abrir la mesa y abrir el picker.
-    await openTableAndAddItems(page, MESA)
-
-    // Agregar 1 Lab Coctel a la mesa → AQUÍ se descuenta el stock del insumo.
-    await page.getByRole('button').filter({ has: page.getByText(PRODUCT, { exact: true }) }).first().click()
-    await expect(page.getByTestId('item-config-modal')).toBeVisible()
-    await page.getByTestId('item-config-confirm').click()
-    await page.getByRole('button', { name: 'Agregar a la mesa' }).click()
-
-    // CLAVE de sincronía: el picker se cierra SOLO tras commitear
-    // addOrderItemsWithExtras (alta atómica + descuento de stock). Esperar ese
-    // cierre y que el panel ya no diga "Sin ítems" evita que readStock navegue y
-    // aborte la RPC en vuelo (si no, el ítem no se inserta y el stock no baja).
-    await expect(page.getByRole('button', { name: 'Agregar a la mesa' })).toHaveCount(0)
-    await expect(page.getByText('Sin ítems — agrega productos')).toHaveCount(0)
-
-    // El stock bajó EXACTAMENTE 1 al agregar el ítem (etapa b).
-    const afterAdd = await readStock(page, INSUMO)
-    expect(afterAdd).toBe(before - 1)
-
-    // Cerrar la mesa a FIADO.
-    await page.goto('/mesas')
-    await page.getByRole('button', { name: new RegExp(MESA) }).click()
-    await page.getByRole('button', { name: 'Cobrar' }).click()
-    await page.getByTestId('pay-method-fiado').click()
-    await page.getByTestId('customer-search').fill(CLIENTE)
-    await page.getByTestId('customer-option').filter({ hasText: CLIENTE }).first().click()
-    await page.getByTestId('checkout-continue').click()
-    const banner = page.getByText(/Venta #\d+ registrada/)
-    await expect(banner).toBeVisible({ timeout: 15_000 })
-    const n = Number((await banner.innerText()).match(/#(\d+)/)![1])
-
-    // CLAVE — garantía anti doble-descuento: cerrar a fiado NO vuelve a tocar
-    // stock. El stock sigue en (before - 1), NO en (before - 2).
-    const afterClose = await readStock(page, INSUMO)
-    expect(afterClose).toBe(afterAdd)
-    expect(afterClose).toBe(before - 1)
-
-    // La deuda quedó pendiente, ligada al cliente (visible en su detalle).
-    await page.goto('/fiado')
-    await selectCustomer(page, CLIENTE)
-    await expect(creditRow(page, n)).toBeVisible()
-
-    // La mesa quedó LIBERADA: al hacer click pide abrir (mesa libre).
-    await page.goto('/mesas')
-    await page.getByRole('button', { name: new RegExp(MESA) }).click()
-    await expect(page.getByRole('button', { name: 'Abrir mesa' })).toBeVisible()
-  })
-
   test('gating: el cajero TAMBIÉN puede operar fiado (decisión de producto)', async ({ page }) => {
     await loginAsCashier(page)
     // El cajero ve la entrada de Fiado en el sidebar...
@@ -397,17 +329,5 @@ test.describe.serial('Fiado / Cartera', () => {
         await expect(page.getByTestId('customer-row').filter({ hasText: name })).toHaveCount(0)
       }
     }
-
-    // Borrado best-effort de la mesa creada (la orden a fiado quedó 'delivered'
-    // y la mesa libre, así que no debería estar bloqueada). No se hard-assertea:
-    // el borrado puede depender de residuos del estado compartido del lab.
-    await page.goto('/mesas')
-    await page.getByRole('button', { name: 'Configurar' }).click()
-    const del = page.locator('div')
-      .filter({ has: page.getByText(MESA, { exact: true }) })
-      .filter({ has: page.getByTitle('Eliminar mesa') })
-      .last()
-      .getByTitle('Eliminar mesa')
-    if (await del.count() > 0) await del.click()
   })
 })
