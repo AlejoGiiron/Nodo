@@ -122,5 +122,11 @@ y no se espera que las haya pronto — es la razón por la que el producto no se
 
 **Modo oscuro.** No hay decisión todavía; depende de la Entrega 1 del design system.
 
-**G-Centro como tercer producto.** G-Centro ya nació multi-producto. Enumerar qué falta para que
-G-Nexo entre — pero **en su propio hilo**, no acá.
+**G-Centro como tercer producto.** G-Centro ya nació multi-producto. Enumerar qué falta para que G-Nexo entre — pero **en su propio hilo**, no acá.
+
+⚠️ **Y ahora el esquema base LO PRESUPONE (2026-08-31).** `supabase/02b-suscripcion.sql` deja
+`subscription_status` con default `active` y escribible **solo** por la Edge Function con service
+role — es decir, por G-Centro. Sin G-Centro conectado, el estado nunca cambia: el sistema opera
+siempre en `active`, que es fail-closed en la direccion correcta (nadie se degrada solo) pero
+tambien significa que **hoy no hay quien suspenda a nadie**. Sigue siendo trabajo de su propio
+hilo; lo que cambia es que dejo de ser opcional para el modelo de negocio.

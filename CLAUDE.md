@@ -181,9 +181,14 @@ en G-Vento.
    que más justifica extraerse a paquete real. G-Nexo arranca con la versión **corregida**, no con
    la que tiene huecos.
 
-3. **Enum `subscription_status` — ahora 6 lados, TRES REPOS.** Ya eran 4 lados y 2 repos entre
+3. **`subscription_status` — 6 lados, TRES REPOS.** ⚠️ **Corregido el 2026-08-31: NO es un enum**, es `text` con `CHECK`. Se verifico leyendo el SQL; la version anterior de esta nota decia "enum" y dirigia mal justo donde importa, porque la asimetria enum/CHECK es la que decide si sumar un estado es caro. Ampliar el CHECK es un `drop`/`add constraint` trivial, y la decision ya venia tomada de G-Vento por esa misma razon. Ya eran 4 lados y 2 repos entre
    G-Vento y G-Centro; G-Nexo agrega los suyos. **No existe ningún mecanismo que garantice el
    aviso.** El aviso a G-Centro va ANTES del deploy, no después. **Paquete real.**
+   📋 Lados **dentro de este repo**, enumerados el 2026-08-31 y **consistentes entre si**: el CHECK
+   de `supabase/02b-suscripcion.sql` · `ESTADOS` en `supabase/functions/aplicar-estado/index.ts` ·
+   `ESTADOS` en `tests/suscripcion-estado.spec.ts` · `resolveNotice()` en
+   `src/hooks/useSubscriptionStatus.ts`, que maneja solo 2 de los 5 **a proposito y con test que lo
+   asevera**. ⚠️ `src/types/database.types.ts` lo tipa como `string`: TS **no** atrapa un valor invalido.
 
 4. **`payment_method` — de 4 lados a 8.** No estaba en el inventario original de G-Vento. Vigilar
    desde el primer commit.
