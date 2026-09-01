@@ -23,7 +23,11 @@ test.describe.serial('Caja', () => {
 
     // Ingreso seleccionado por defecto: motivo en texto libre.
     await page.getByTestId('movement-amount').fill('20000')
-    await page.getByTestId('movement-reason-in').fill('Ingreso de prueba E2E')
+    // ⚠️ El modal de movimientos se reescribio para mandar `categoria`: el
+    //    motivo dejo de ser texto libre y paso a ser CATEGORIA (allowlist) +
+    //    DETALLE. `reason` ya no es la fuente de los reportes, es detalle.
+    await page.getByTestId('movement-categoria').selectOption('otro')
+    await page.getByTestId('movement-detalle').fill('Ingreso de prueba E2E')
     await page.getByTestId('movement-submit').click()
 
     await expect(page.getByText('Ingreso de prueba E2E')).toBeVisible()
@@ -38,7 +42,7 @@ test.describe.serial('Caja', () => {
     await page.getByRole('button', { name: 'Egreso', exact: true }).click()
 
     // El motivo ahora es un SELECT poblado con config.cash_out_reasons.
-    const select = page.getByTestId('movement-reason-out')
+    const select = page.getByTestId('movement-categoria')
     await expect(select).toBeVisible()
     await select.selectOption({ index: 1 }) // primer motivo real (índice 0 = placeholder)
     const chosen = (await select.locator('option:checked').textContent())?.trim() ?? ''
@@ -62,7 +66,7 @@ test.describe.serial('Caja', () => {
     await expect(page.getByText('Movimientos manuales', { exact: true })).toBeVisible()
 
     await page.getByRole('button', { name: 'Egreso', exact: true }).click()
-    const select = page.getByTestId('movement-reason-out')
+    const select = page.getByTestId('movement-categoria')
     await select.selectOption({ index: 1 })
     const chosen = (await select.locator('option:checked').textContent())?.trim() ?? ''
     await page.getByTestId('movement-amount').fill('5000000')

@@ -104,9 +104,14 @@ async function addMovement(page: Page, kind: 'in' | 'out', amount: number) {
   await expect(page.getByText('Movimientos manuales', { exact: true })).toBeVisible()
   if (kind === 'out') {
     await page.getByRole('button', { name: 'Egreso', exact: true }).click()
-    await page.getByTestId('movement-reason-out').selectOption({ index: 1 })
+    // ⚠️ El modal de movimientos se reescribio para mandar `categoria`: el
+    //    motivo dejo de ser texto libre y paso a ser CATEGORIA (allowlist) +
+    //    DETALLE. `reason` ya no es la fuente de los reportes, es detalle.
+    await page.getByTestId('movement-categoria').selectOption('gasto')
   } else {
-    await page.getByTestId('movement-reason-in').fill(`Ingreso arqueo ${SUFFIX}`)
+    await page.getByTestId('movement-categoria').selectOption('otro')
+    // 'otro' EXIGE detalle (chk_otro_exige_detalle): sin esto la RPC rechaza.
+    await page.getByTestId('movement-detalle').fill(`Ingreso arqueo ${SUFFIX}`)
   }
   await page.getByTestId('movement-amount').fill(String(amount))
   await page.getByTestId('movement-submit').click()

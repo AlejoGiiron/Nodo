@@ -562,7 +562,7 @@ export const getCancelledSales = (sedeId: string, from?: string, to?: string) =>
   let q = supabase
     .from('orders')
     .select(
-      `id, order_number, created_at, type, customer_name, total, payment_status, ` +
+      `id, order_number, created_at, canal, customer_name, total, payment_status, ` +
         `cancelled_at, cancel_reason, ` +
         `payments(method, amount), profiles!orders_created_by_fkey(full_name), ` +
         `canceller:profiles!orders_cancelled_by_fkey(full_name)`,

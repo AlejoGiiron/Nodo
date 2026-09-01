@@ -24,8 +24,9 @@ async function registrarEgreso(page: import('@playwright/test').Page) {
   await page.getByRole('button', { name: 'Movimientos' }).click()
   await expect(page.getByText('Movimientos manuales', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Egreso', exact: true }).click()
-  await page.getByTestId('movement-reason-out').selectOption({ label: 'Otro' })
-  await page.getByTestId('movement-reason-custom').fill(REASON)
+  // Ver la nota de arqueo.spec: categoria + detalle, no motivo libre.
+  await page.getByTestId('movement-categoria').selectOption('otro')
+  await page.getByTestId('movement-detalle').fill(REASON)
   await page.getByTestId('movement-amount').fill(String(EGRESO))
   await page.getByTestId('movement-submit').click()
   await expect(page.getByText(REASON)).toBeVisible()

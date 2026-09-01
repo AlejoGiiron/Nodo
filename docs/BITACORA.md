@@ -1508,3 +1508,61 @@ Queda 1 fallo (`UI: con filtro de método, la anulada sale de la lista`) y 1 sin
 hizo el renombre turno→jornada**: son 24 archivos, es una decisión de alcance, y hacerlo dentro de
 un turno dedicado a otra cosa es cómo se cuelan los renombres a medias — que es justo el defecto
 que este caso destapó.
+
+
+## 2026-09-01 · 🔴 Los "timeouts" no eran timeouts — y mi scorecard le dio crédito a la predicción equivocada
+
+**La pregunta era la correcta: ¿se cuelgan en el mismo punto o en puntos distintos?** La respuesta
+es *puntos distintos*, pero la conclusión que sigue **no** es "es lentitud".
+
+| Spec | Se colgó en |
+|---|---|
+| `arqueo` | `movement-reason-in`.**fill()** |
+| `historiales` | `movement-reason-out`.**selectOption({label:'Otro'})** |
+| `compras` | `invoice-payment-method`.**selectOption()** |
+
+Los tres esperando **un control de formulario que no existe**. Y dos de ellos en el mismo campo con
+operaciones **incompatibles entre sí** —uno `fill` de input, otro `selectOption` de select—, que ya
+era la pista: no pueden ser los dos correctos contra el mismo DOM.
+
+**La causa:** `MovementsModal` se reescribió para mandar `categoria`, y los testids cambiaron —
+`movement-reason-in`/`-out`/`-custom` pasaron a `movement-categoria` + `movement-detalle`. **Lo
+reescribí yo y no actualicé los specs.**
+
+### La lección, que es sobre cómo se lee un timeout
+
+> **Un timeout no es un síntoma de lentitud: es cómo Playwright reporta "no encontré el elemento"
+> cuando la acción tiene auto-waiting.**
+
+`fill()` y `selectOption()` esperan al locator hasta agotar el timeout **del test**, no el del
+locator. El mensaje —`Test timeout of 30000ms exceeded`— **no nombra el locator**: hay que abrir el
+`Test source` del artefacto para ver la línea. Por eso tres fallos de "elemento inexistente" se
+disfrazaron de problema de rendimiento.
+
+### 🔴 Y esto corrige el scorecard de la predicción
+
+En la lectura anterior conté **6 de 15 como aciertos de la predicción #7 (timeouts/flakes de
+entorno, confianza BAJA)**. **Era falso.** Eran de la #3 —*specs que tocan lo que cambió*, confianza
+alta— disfrazados por el mecanismo de arriba.
+
+**El scorecard corregido es peor para mí y mejor para el método:**
+
+- **#7 (entorno, baja)**: no acertó. Le di crédito por coincidencia de síntoma.
+- **#3 (specs de lo podado/cambiado, alta)**: acertó **mucho más** de lo contado — `rbac` ×3,
+  `config`, `arqueo`, `historiales`, `compras`, y las tres de `anular-venta`.
+
+⚠️ **Lo que esto enseña sobre evaluar predicciones:** clasifiqué por **síntoma** (*"falló por
+timeout"*) en vez de por **causa** (*"falló porque el DOM cambió"*), y el síntoma es justo lo que la
+predicción NO decía. **Una predicción se evalúa contra la causa; evaluarla contra el síntoma la
+premia o la castiga por azar.**
+
+Es la misma familia que "clasificar leyendo el nombre no es clasificar": clasifiqué leyendo el
+mensaje de error.
+
+### Estado
+
+`arqueo`, `historiales` y `anular-venta` pasan. **27 passed / 1 failed / 3 did not run** en los
+cuatro specs juntos. Queda `caja: registrar egreso con motivo de la lista configurable`, que prueba
+una **lista de motivos configurable por sede** — reemplazada a propósito por la allowlist fija de
+`categoria`. Ese test verifica una función que se decidió eliminar; es decisión de producto, no un
+arreglo.
