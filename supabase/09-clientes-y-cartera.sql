@@ -90,6 +90,7 @@ create table public.debt_payments (
   amount           numeric(12, 2)        not null check (amount > 0),
   payment_method   public.payment_method not null,
   cash_movement_id uuid                  references public.cash_movements on delete set null,
+  requiere_conciliacion boolean          not null default false,
   created_by       uuid                  references public.profiles on delete set null,
   created_at       timestamptz           not null default now()
 );
@@ -102,6 +103,18 @@ comment on column public.debt_payments.cash_movement_id is
   'Ingreso de caja generado por el abono, si aplica. Nullable y `set null`: el '
   'abono es plata que el cliente pago y tiene que sobrevivir aunque el '
   'movimiento de caja no.';
+comment on column public.debt_payments.requiere_conciliacion is
+  'true = entro efectivo que NO pudo registrarse en caja porque no habia '
+  'jornada abierta. Queda pendiente de conciliar a mano. '
+  '🔴 POR QUE EXISTE, si ya esta cash_movement_id: porque ese null significa '
+  'DOS COSAS DISTINTAS — "no correspondia movimiento" (el abono fue por '
+  'transferencia o tarjeta) y "correspondia y no se pudo" (efectivo sin '
+  'jornada). Solo la segunda necesita conciliacion. Un valor que significa dos '
+  'cosas no es un dato: es el mismo error de clase que `reason` cumpliendo dos '
+  'funciones en caja. Esta columna separa la segunda. '
+  'NOT NULL con default false a proposito: si fuera nullable, el "no se" '
+  'volveria a colapsar con el "no" y el filtro de pendientes mentiria POR '
+  'OMISION. Lo que no se marco explicitamente como pendiente, no lo esta.';
 comment on column public.debt_payments.payment_method is
   'Usa el ENUM payment_method, no una copia. Es el contrato de R1 punto 4 y '
   'este es uno de sus lados legitimos.';
@@ -111,27 +124,154 @@ create index idx_debt_payments_sede_created
   on public.debt_payments (sede_id, created_at desc);
 
 
--- ============================================================
--- ⛔ FALTA `register_debt_payment` — DECISION DE NEGOCIO ABIERTA
+-- ------------------------------------------------------------
+-- register_debt_payment
 --
--- La compra (archivo 08) RECHAZA si no hay jornada abierta. La simetria diria
--- que el abono tambien, pero un abono es plata que ENTRA, y rechazarlo deja al
--- cliente sin poder pagar su deuda porque la caja esta cerrada. No es lo mismo
--- impedir que salga plata que impedir que entre.
+-- 🔴 ASIMETRIA DELIBERADA CON LA COMPRA (decidido el 2026-08-31)
+-- El archivo 08 RECHAZA la compra si no hay jornada abierta. Acá NO se
+-- rechaza, y la asimetria es el punto, no un descuido:
 --
--- ── QUE HACE HOY EL HEREDADO (enumerado, no supuesto) ─────────────────────
--- NO es fail-open silencioso, que es lo que yo esperaba encontrar:
---   · registra el abono igual;
---   · NO crea el movimiento de caja (deja cash_movement_id nulo);
---   · devuelve `shift_open: false` en el jsonb;
---   · y el frontend (useDebts) MUESTRA una advertencia explicita:
---     "Abono registrado. El efectivo no entro a caja (sin turno abierto)."
+--   · Rechazar una SALIDA de plata protege la caja.
+--   · Rechazar una ENTRADA no protege nada: el cliente ya vino a pagar, y su
+--     deuda seguiria viva por un motivo administrativo.
+--   · Y lo peor: si el cajero no puede registrar el abono, la salida natural es
+--     recibir la plata igual y anotarla despues. Un rechazo que empuja al
+--     usuario FUERA del sistema es peor que una degradacion que lo mantiene
+--     adentro.
 --
--- O sea: degradacion DECLARADA y visible, no silenciosa. Esa es la diferencia
--- con el caso de la compra, donde no habia ningun aviso.
+-- Lo que el heredado ya hacia bien y se conserva: la degradacion es DECLARADA
+-- —devuelve `jornada_abierta:false` y el front avisa "el efectivo no entro a
+-- caja"—, no silenciosa. Esa era la diferencia real con el caso de la compra,
+-- donde no habia ningun aviso.
 --
--- La decision queda al usuario. Escrito acá para que el hueco no se pierda.
--- ============================================================
+-- Lo que se AGREGA: `requiere_conciliacion`. El aviso vivia solo en un toast,
+-- que se cierra y se olvida; ahora queda en el dato.
+--
+-- ⛔ DESCARTADO: crear el movimiento al abrir la jornada siguiente. Diferiria
+--    plata a otro dia y romperia R7 — la frontera del dia en America/Bogota
+--    dejaria de coincidir con cuando entro el efectivo, y el cierre del dia
+--    siguiente mostraria un ingreso que no ocurrio ese dia. Cambiaria un
+--    descuadre VISIBLE por uno plausible y equivocado, que es el peor negocio
+--    que este proyecto conoce.
+-- ------------------------------------------------------------
+create or replace function public.register_debt_payment(
+  p_order_id       uuid,
+  p_amount         numeric,
+  p_payment_method text
+) returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_sede_id       uuid := get_my_sede_id();
+  v_order_total   numeric(12, 2);
+  v_pay_status    text;
+  v_customer_name text;
+  v_order_number  int;
+  v_paid          numeric(12, 2);
+  v_saldo         numeric(12, 2);
+  v_new_paid      numeric(12, 2);
+  v_new_saldo     numeric(12, 2);
+  v_new_status    text;
+  v_jornada_id    uuid;
+  v_cash_amount   integer;
+  v_cash_mov_id   uuid    := null;
+  v_conciliar     boolean := false;
+begin
+  if v_sede_id is null then
+    raise exception 'No tienes una sede activa';
+  end if;
+  if not has_permission('fiado.gestionar') then
+    raise exception 'No autorizado para registrar abonos de cartera';
+  end if;
+  if p_amount is null or p_amount <= 0 then
+    raise exception 'El abono debe ser mayor a cero';
+  end if;
+  if p_payment_method is null
+     or p_payment_method not in ('cash', 'card', 'transfer', 'nequi') then
+    raise exception 'Metodo de pago invalido: %', coalesce(p_payment_method, '(null)');
+  end if;
+
+  select o.total, o.payment_status, o.order_number, c.name
+    into v_order_total, v_pay_status, v_order_number, v_customer_name
+  from public.orders o
+  left join public.customers c on c.id = o.customer_id
+  where o.id = p_order_id and o.sede_id = v_sede_id;
+
+  if not found then
+    raise exception 'La venta no existe o no pertenece a tu sede';
+  end if;
+  if v_pay_status not in ('pending', 'partial') then
+    raise exception 'La venta no tiene saldo pendiente';
+  end if;
+
+  -- El saldo se DERIVA, nunca se lee de una columna: un saldo persistido se
+  -- desincroniza en silencio.
+  select coalesce(sum(amount), 0) into v_paid
+  from public.debt_payments
+  where order_id = p_order_id;
+
+  v_saldo := v_order_total - v_paid;
+
+  if p_amount > v_saldo then
+    raise exception 'El abono (%) excede el saldo pendiente (%)', p_amount, v_saldo;
+  end if;
+
+  -- Efectivo → ingreso de caja si hay jornada abierta. Si NO la hay, el abono
+  -- se registra igual y queda MARCADO para conciliar. Ver la cabecera.
+  if p_payment_method = 'cash' then
+    select id into v_jornada_id
+    from public.jornadas
+    where sede_id = v_sede_id and closed_at is null
+    limit 1;   -- idx_jornadas_una_abierta_por_sede garantiza a lo sumo una
+
+    v_cash_amount := round(p_amount)::integer;
+
+    if v_jornada_id is not null and v_cash_amount > 0 then
+      insert into public.cash_movements
+        (jornada_id, sede_id, type, categoria, amount, reason, created_by)
+      values
+        (v_jornada_id, v_sede_id, 'in', 'abono_cliente', v_cash_amount,
+         'Abono de ' || coalesce(v_customer_name, 'cliente')
+           || coalesce(' (venta #' || v_order_number || ')', ''),
+         auth.uid())
+      returning id into v_cash_mov_id;
+    else
+      -- Entro efectivo y NO pudo registrarse en caja. Esto es lo que separa
+      -- este null del null legitimo de una transferencia.
+      v_conciliar := true;
+    end if;
+  end if;
+
+  insert into public.debt_payments
+    (sede_id, order_id, amount, payment_method, cash_movement_id,
+     requiere_conciliacion, created_by)
+  values
+    (v_sede_id, p_order_id, p_amount, p_payment_method::public.payment_method,
+     v_cash_mov_id, v_conciliar, auth.uid());
+
+  v_new_paid   := v_paid + p_amount;
+  v_new_saldo  := v_order_total - v_new_paid;
+  v_new_status := case when v_new_saldo <= 0 then 'paid' else 'partial' end;
+
+  update public.orders
+     set payment_status = v_new_status
+   where id = p_order_id;
+
+  return jsonb_build_object(
+    'new_status',            v_new_status,
+    'saldo_restante',        v_new_saldo,
+    'cash_movement_created', (v_cash_mov_id is not null),
+    'jornada_abierta',       (v_jornada_id is not null),
+    'requiere_conciliacion', v_conciliar
+  );
+end;
+$$;
+
+revoke execute on function public.register_debt_payment(uuid, numeric, text) from public;
+revoke execute on function public.register_debt_payment(uuid, numeric, text) from anon;
+grant  execute on function public.register_debt_payment(uuid, numeric, text) to authenticated;
 
 
 -- RLS habilitada aca; policies en el 11 (ver la cabecera del archivo 02).
