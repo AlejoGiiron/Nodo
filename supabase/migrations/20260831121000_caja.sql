@@ -1,13 +1,13 @@
 -- ============================================================
--- G-Nexo — Esquema base · 10 · Caja: jornadas y movimientos
+-- Nodo — Esquema base · 10 · Caja: jornadas y movimientos
 --
--- ORIGEN: G-Vento `d848852`:
+-- ORIGEN: Vento `d848852`:
 --   · cash_shifts            ← schema.sql, seccion 3      → renombrada `jornadas`
 --   · columnas de cierre     ← caja-cierre-cuadre.sql, shift-reconciliation.sql
 --   · set_shift_closed_at    ← shift-closed-at-server-time.sql
 --   · movement_type, cash_movements ← cash-movements.sql
 --
--- R5: no aplicado en G-Nexo (base vacia). Desde el primer `db push`, R5 manda.
+-- R5: no aplicado en Nodo (base vacia). Desde el primer `db push`, R5 manda.
 --
 -- ── POR QUE ESTO EXISTE, CONTRA EL PLAN ORIGINAL ───────────────────────────
 -- El documento de traspaso ponia los turnos en la poda. Se revirtio con
@@ -49,7 +49,7 @@ create table public.jornadas (
 );
 
 comment on table public.jornadas is
-  'Apertura y cierre de caja de una sede. Ex cash_shifts: en G-Vento era el '
+  'Apertura y cierre de caja de una sede. Ex cash_shifts: en Vento era el '
   'turno de un mesero, aca es el cierre del dia del mostrador.';
 comment on column public.jornadas.expected_amount is
   'Efectivo esperado al cierre = apertura + ventas en efectivo + ingresos - egresos. '
@@ -62,7 +62,7 @@ comment on column public.jornadas.close_reconciliation is
   'esperado de una jornada cerrada sumaria pagos de jornadas posteriores. '
   'Es el mismo motivo por el que el costo se congela en la linea de venta.';
 
--- 🔴 UN SOLO indice, no dos. En G-Vento habia DOS indices unicos parciales
+-- 🔴 UN SOLO indice, no dos. En Vento habia DOS indices unicos parciales
 -- identicos sobre la misma tabla, columna y predicado, con nombres distintos:
 -- idx_cash_shifts_one_open (schema.sql) e idx_one_open_shift_per_store
 -- (sale-void.sql). Hallazgo H3 del inventario. Aca va uno.
@@ -132,7 +132,7 @@ create type public.movement_type as enum ('in', 'out');
 -- cash_movements
 --
 -- ── POR QUE `categoria` EXISTE, Y POR QUE NO ALCANZABA CON `reason` ────────
--- En G-Vento la unica clasificacion era `reason`, TEXTO LIBRE not null.
+-- En Vento la unica clasificacion era `reason`, TEXTO LIBRE not null.
 -- Enumerado el 2026-08-31, el resultado fue peor que "poco estructurado":
 --
 --   · Los egresos tenian allowlist (config.cash_out_reasons: 'Compra de

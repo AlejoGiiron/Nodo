@@ -1,7 +1,7 @@
 -- ============================================================
--- G-Nexo — Esquema base · 02b · Estado de suscripción de la organización
+-- Nodo — Esquema base · 02b · Estado de suscripción de la organización
 --
--- ORIGEN: G-Vento `d848852`, supabase/organization-subscription.sql (clase A:
+-- ORIGEN: Vento `d848852`, supabase/organization-subscription.sql (clase A:
 -- base técnica, viaja tal cual).
 --
 -- 🔴 CUARTA ENMIENDA AL PLAN DE 12, y la encontró la verificación de RPC del
@@ -13,7 +13,7 @@
 -- `handle_updated_at`, ambos de la migracion `organizaciones_y_sedes`. Va en archivo propio y no dentro
 -- del 02 porque es un dominio distinto y así se ve al leerlo.
 --
--- R5: no aplicado en G-Nexo (base vacía). Desde el primer `db push`, R5 manda.
+-- R5: no aplicado en Nodo (base vacía). Desde el primer `db push`, R5 manda.
 --
 -- ── POR QUE ACTIVA DESDE EL ARRANQUE ───────────────────────────────────────
 -- Es la pieza que decide si una organización puede operar. Arrancar
@@ -35,7 +35,7 @@
 --      como `string` — o sea que TS NO atrapa un valor inválido.)
 --
 -- 🔴 NO ES UN ENUM DE POSTGRES, es `text` con CHECK — pese a que R1 punto 3 lo
---    llama "enum". La decisión ya estaba tomada en G-Vento y por NUESTRA misma
+--    llama "enum". La decisión ya estaba tomada en Vento y por NUESTRA misma
 --    razón, escrita ahí: "es una bandera COMPARTIDA ENTRE DOS REPOS — ampliar
 --    un CHECK es un drop/add trivial, ampliar un enum es ALTER TYPE". No hay
 --    nada que bajar a CHECK: ya lo es, y por eso sumar un estado no crea

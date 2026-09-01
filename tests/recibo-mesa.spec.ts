@@ -19,7 +19,7 @@ async function stubPrint(page: Page) {
     ;(window as unknown as { __ticketPrinted: string | null }).__ticketPrinted = null
     window.print = () => {
       ;(window as unknown as { __ticketPrinted: string | null }).__ticketPrinted =
-        document.getElementById('gnexo-sale-ticket-content')?.innerHTML ?? null
+        document.getElementById('nodo-sale-ticket-content')?.innerHTML ?? null
     }
   })
 }

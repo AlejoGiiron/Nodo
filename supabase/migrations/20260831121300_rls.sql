@@ -1,11 +1,11 @@
 -- ============================================================
--- G-Nexo — Esquema base · 11 · Row Level Security: todas las policies
+-- Nodo — Esquema base · 11 · Row Level Security: todas las policies
 --
--- ORIGEN: consolidado de G-Vento `d848852` (schema.sql seccion 9,
+-- ORIGEN: consolidado de Vento `d848852` (schema.sql seccion 9,
 -- multi-tenant-rbac, product-extras, inventory-recipes, compras-proveedores,
 -- fiado-clientes, restaurants-sedes-rls, profiles-*-rls).
 --
--- R5: no aplicado en G-Nexo (base vacia). Desde el primer `db push`, R5 manda.
+-- R5: no aplicado en Nodo (base vacia). Desde el primer `db push`, R5 manda.
 --
 -- ── POR QUE TODO JUNTO ─────────────────────────────────────────────────────
 -- RLS ya quedo HABILITADA en cada archivo al crear su tabla. Una tabla con RLS
@@ -13,7 +13,7 @@
 -- fail-closed. Este archivo solo ABRE lo que corresponde.
 --
 -- ── EL CAMBIO MAS IMPORTANTE RESPECTO DEL HEREDADO ─────────────────────────
--- 🔴 En G-Vento las policies gatean por `get_my_role() = 'admin'` — el ENUM —
+-- 🔴 En Vento las policies gatean por `get_my_role() = 'admin'` — el ENUM —
 --    y NO por `has_permission()`. Esa es la causa mecanica del residuo medido:
 --    6 permisos del catalogo no gateaban nada y fallaban ABIERTO. El catalogo
 --    existia y no enforceaba: era decoracion.

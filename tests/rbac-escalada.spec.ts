@@ -34,7 +34,7 @@ function loadEnv(path: string) {
 loadEnv('.env'); loadEnv('.env.test')
 
 const anon = () =>
-  createClient(process.env.VITE_GNEXO_SUPABASE_URL!, process.env.VITE_GNEXO_SUPABASE_ANON_KEY!, {
+  createClient(process.env.VITE_NODO_SUPABASE_URL!, process.env.VITE_NODO_SUPABASE_ANON_KEY!, {
     auth: { persistSession: false },
   })
 

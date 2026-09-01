@@ -18,7 +18,7 @@
 -- ============================================================
 
 -- ============================================================
--- G-Vento — SEMILLA DE DEMO ("Sede Demo", organización LAB)
+-- Vento — SEMILLA DE DEMO ("Sede Demo", organización LAB)
 --
 -- Crea una sede con aspecto de negocio REAL en funcionamiento: menú completo,
 -- inventario coherente, 14 días de ventas numeradas con sus turnos cerrados y

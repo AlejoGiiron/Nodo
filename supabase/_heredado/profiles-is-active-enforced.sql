@@ -1,5 +1,5 @@
 -- ============================================================
--- G-Vento — PRIORIDAD 2: hacer efectivo profiles.is_active
+-- Vento — PRIORIDAD 2: hacer efectivo profiles.is_active
 --
 -- ⚠️  NO APLICAR sin haber corrido antes la VERIFICACION 2 (ver abajo) y
 --     SIN haber aplicado protect-profile-self-escalation.sql.

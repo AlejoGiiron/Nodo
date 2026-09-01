@@ -55,12 +55,12 @@ proyecto. No son inocuos:
 
 ## ⚠️ Puerto dedicado — NO correr contra otra app
 
-Los tests usan un **puerto dedicado de G-Nexo: `5180`** (no el `5173` por defecto
-de Vite). Playwright **siempre levanta su propio servidor de gvento ahí**
+Los tests usan un **puerto dedicado de Nodo: `5180`** (no el `5173` por defecto
+de Vite). Playwright **siempre levanta su propio servidor de Nodo ahí**
 (`reuseExistingServer: false` + `--strictPort`), así nunca se conecta por accidente
 a otra app que esté ocupando un puerto.
 
-Esto importa porque **G-Mura y G-Nexo pueden correr en paralelo**: G-Mura suele
+Esto importa porque **Mura y Nodo pueden correr en paralelo**: Mura suele
 ocupar el `5173`. Si los tests apuntaran a un puerto compartido con
 `reuseExistingServer`, Playwright se conectaría a la app equivocada (login falla,
 o peor, mutarías datos del proyecto incorrecto). Salvaguardas:
@@ -68,13 +68,13 @@ o peor, mutarías datos del proyecto incorrecto). Salvaguardas:
 - **Puerto dedicado `5180` + `strictPort`**: si está ocupado, la corrida **falla
   ruidosamente** en vez de servir/conectarse a otra cosa.
 - **Health check** (`tests/global-setup.ts`): antes de la suite verifica que el HTML
-  servido contiene el marcador `G-Nexo`; si no, **aborta**.
+  servido contiene el marcador `Nodo`; si no, **aborta**.
 
 No hace falta tener un `pnpm dev` corriendo a mano: Playwright lo arranca en `5180`.
 
 ## Requisitos
 
-- El `.env` del proyecto con `VITE_GNEXO_SUPABASE_URL` y `VITE_GNEXO_SUPABASE_ANON_KEY`
+- El `.env` del proyecto con `VITE_NODO_SUPABASE_URL` y `VITE_NODO_SUPABASE_ANON_KEY`
   (los tests usan el backend real de Supabase, contra la org **LAB**). El health
   check de `global-setup.ts` también los lee para verificar la organización.
 - Las dos cuentas de prueba de la org LAB: **owner.test** y **cajero.test**

@@ -1,12 +1,12 @@
-# Staging de G-Nexo — stack separado, todavía SIN levantar
+# Staging de Nodo — stack separado, todavía SIN levantar
 
 *2026-08-31. **Nada de esto se ejecutó.** Los archivos están para leerse antes de que corran.*
 
-El primer `db push` de G-Nexo va acá, **no** al proyecto de Supabase en la nube. Hasta hoy todo
+El primer `db push` de Nodo va acá, **no** al proyecto de Supabase en la nube. Hasta hoy todo
 eran archivos y todo era reversible; el push es el primer acto irreversible, con 15 migraciones que
 nunca corrieron juntas.
 
-⛔ **El Ubuntu sirve a G-Vento en PRODUCCIÓN. No se toca sin que lo mires.**
+⛔ **El Ubuntu sirve a Vento en PRODUCCIÓN. No se toca sin que lo mires.**
 
 ---
 
@@ -16,14 +16,14 @@ La intuición dice "el peligro es que staging escriba en la base de producción"
 menor**: bases distintas, volúmenes distintos, credenciales distintas.
 
 El riesgo real es más tonto y más grave: **un compose copiado levanta Kong en el puerto 8000**, que
-es donde ya escucha G-Vento. A partir de ahí el reverse proxy del host resuelve a staging, y la API
+es donde ya escucha Vento. A partir de ahí el reverse proxy del host resuelve a staging, y la API
 de producción responde con datos de prueba **sin que nada falle**. No hay error, no hay caída: hay
 un cliente real mirando un catálogo que no es el suyo.
 
 Por eso el override redefine puertos **antes que ninguna otra cosa**, y por eso el `-p
-gnexo-staging` no es opcional.
+nodo-staging` no es opcional.
 
-| Servicio | G-Vento (prod) | G-Nexo (staging) |
+| Servicio | Vento (prod) | Nodo (staging) |
 |---|---|---|
 | Kong HTTP | 8000 | **8100** |
 | Kong HTTPS | 8443 | **8543** |
@@ -50,14 +50,14 @@ servicio arranca con los puertos de producción. Por eso el primer paso es diffe
 ss -ltnp | grep -E ':(8100|8543|5533|3100|4100)\b'   # debe volver vacío
 
 # 2. Ver la configuración FINAL resuelta, sin levantar nada.
-docker compose -p gnexo-staging \
+docker compose -p nodo-staging \
   -f /ruta/al/supabase/docker/docker-compose.yml \
   -f docs/staging/docker-compose.staging.yml \
   --env-file docs/staging/.env.staging \
   config | grep -A3 'ports:'
 
 # 3. Recién ahí, levantar.
-docker compose -p gnexo-staging ... up -d
+docker compose -p nodo-staging ... up -d
 ```
 
 ⚠️ El paso 2 es el que convierte esto en revisable: `config` **imprime lo que se va a ejecutar**
@@ -72,22 +72,22 @@ la reversión.
 
 ```bash
 # Parar y borrar SOLO staging. El -p acota todo a este proyecto.
-docker compose -p gnexo-staging down
+docker compose -p nodo-staging down
 
 # Borrar también sus datos (recrear desde cero):
-docker compose -p gnexo-staging down -v
-docker volume rm gnexo_staging_db     # por si quedó huérfano
+docker compose -p nodo-staging down -v
+docker volume rm nodo_staging_db     # por si quedó huérfano
 ```
 
-🔴 **Nunca correr `docker compose down` sin `-p gnexo-staging`.** Sin el project name, Compose usa
-el default del directorio y puede parar los contenedores de G-Vento. Ese es el comando que hay que
+🔴 **Nunca correr `docker compose down` sin `-p nodo-staging`.** Sin el project name, Compose usa
+el default del directorio y puede parar los contenedores de Vento. Ese es el comando que hay que
 mirar dos veces.
 
 **Verificación después de revertir** — producción sigue en pie:
 
 ```bash
-docker ps --format '{{.Names}}\t{{.Ports}}' | grep -v gnexo-staging
-curl -sf http://localhost:8000/ >/dev/null && echo "G-Vento OK"
+docker ps --format '{{.Names}}\t{{.Ports}}' | grep -v nodo-staging
+curl -sf http://localhost:8000/ >/dev/null && echo "Vento OK"
 ```
 
 ---
@@ -107,7 +107,7 @@ es el daño real:** el día que falle de verdad, también se va a ignorar.
 
 ⛔ **PENDIENTE DE DATO — no está verificado, y por eso no se escribe como hecho.**
 
-Si el script de backup toma volúmenes **por patrón**, el nombre `gnexo_staging_db` decide si entra
+Si el script de backup toma volúmenes **por patrón**, el nombre `nodo_staging_db` decide si entra
 o no. Un patrón `supabase_*` **no** lo tomaría; uno `*db*` **sí**. **No sé cuál usa**: no leí ese
 script.
 

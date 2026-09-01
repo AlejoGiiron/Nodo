@@ -1,11 +1,11 @@
 -- ============================================================
--- G-Nexo — Esquema base · 04 · Funciones auxiliares de identidad y permisos
+-- Nodo — Esquema base · 04 · Funciones auxiliares de identidad y permisos
 --
--- ORIGEN: G-Vento `d848852`. Las cuatro son la v2 de
+-- ORIGEN: Vento `d848852`. Las cuatro son la v2 de
 -- supabase/profiles-is-active-enforced.sql (paso 0, pares 2 a 5), que es la que
 -- exige is_active. Ver docs/paso-0-funciones-duplicadas.md.
 --
--- R5: no aplicado en G-Nexo (base vacia). Desde el primer `db push`, R5 manda.
+-- R5: no aplicado en Nodo (base vacia). Desde el primer `db push`, R5 manda.
 --
 -- ── POR QUE LAS CUATRO VAN JUNTAS ──────────────────────────────────────────
 -- Es un defecto de CLASE (R3), no cuatro funciones parecidas. Arreglar
@@ -41,7 +41,7 @@ begin;
 -- elegido la v1 y roto a los owners.
 --
 -- ⚠️ Que una clave este en el catalogo NO prueba que algo este protegido. En
---    G-Vento 6 permisos no gateaban nada y fallaban ABIERTO. Cada clave nueva
+--    Vento 6 permisos no gateaban nada y fallaban ABIERTO. Cada clave nueva
 --    necesita su `can()` que la consuma (deuda #23).
 -- ------------------------------------------------------------
 create or replace function public.has_permission(perm text)

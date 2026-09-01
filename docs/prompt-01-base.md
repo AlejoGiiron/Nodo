@@ -10,12 +10,12 @@
 ## El prompt
 
 ```
-Contexto: estoy arrancando G-Nexo, un fork de G-Vento para distribuidoras y
+Contexto: estoy arrancando Nodo, un fork de Vento para distribuidoras y
 mayoristas. Leé CLAUDE.md antes de hacer nada; las reglas R0–R10 aplican a todo
 este trabajo y las voy a citar por número.
 
 Este prompt cubre tres pasos del RUNBOOK (docs/RUNBOOK-arranque.md): verificar el
-entorno, copiar la base de G-Vento y dejar el conteo previo. NO se poda nada acá.
+entorno, copiar la base de Vento y dejar el conteo previo. NO se poda nada acá.
 No hay funcionalidad nueva, así que no corresponde spec de Playwright en este
 prompt.
 
@@ -37,32 +37,32 @@ paso 2. Aplica R4: verificar contra la cosa real, no contra un proxy.
     - Edit sobre supabase/*.sql
     - Bash con heredoc sobre supabase/*.sql
     - Bash sin SQL (debe callar)
-    Este chequeo no es opcional: en G-Vento el mismo script salió MUDO la primera
+    Este chequeo no es opcional: en Vento el mismo script salió MUDO la primera
     vez y leyéndolo se veía perfecto.
 
 1.4 Validá .claude/settings.json: JSON parseable y con un matcher "Write|Edit|Bash"
     en hooks.PreToolUse.
 
 1.5 Verificá que el CLI de Supabase NO dé 403 de management contra el proyecto de
-    G-Nexo: `supabase gen types typescript --project-id <ID>` a un archivo
+    Nodo: `supabase gen types typescript --project-id <ID>` a un archivo
     temporal. Criterio: archivo no vacío y sin 403. Si da 403, PARÁ y reportá — es
-    la deuda que en G-Vento dejó database.types.ts escrito a mano divergiendo del
+    la deuda que en Vento dejó database.types.ts escrito a mano divergiendo del
     esquema sin que tsc lo notara.
 
 
-PASO 2 — Copiar la base de G-Vento.
+PASO 2 — Copiar la base de Vento.
 
-2.1 Clonar G-Vento rama develop, commit d848852, con --single-branch. NO hacer
+2.1 Clonar Vento rama develop, commit d848852, con --single-branch. NO hacer
     fork en GitHub: ataría los dos repos y cruzaría los PR.
 
-2.2 Borrar .git del clon. Historia nueva, no la de G-Vento: el blame del código
+2.2 Borrar .git del clon. Historia nueva, no la de Vento: el blame del código
     heredado apuntaría a decisiones sobre mesas y cocina que acá no aplican, y la
-    historia contiene nombres y datos de clientes de G-Vento.
+    historia contiene nombres y datos de clientes de Vento.
 
-2.3 REEMPLAZAR (no fusionar) la documentación con la de G-Nexo que ya está en este
+2.3 REEMPLAZAR (no fusionar) la documentación con la de Nodo que ya está en este
     directorio: CLAUDE.md, docs/BITACORA.md, docs/DEUDAS.md, docs/RUNBOOK-arranque.md,
     docs/brief-*.md, .claude/, .env.example.
-    Los equivalentes de G-Vento se BORRAN. Su CLAUDE.md, su bitácora y sus deudas
+    Los equivalentes de Vento se BORRAN. Su CLAUDE.md, su bitácora y sus deudas
     son estado ajeno y no viajan. Su docs/BITACORA.md tiene 1560 líneas: no lo
     mezcles con el nuestro.
 
@@ -111,7 +111,7 @@ REGLAS DE SALIDA
 | Los 4 casos del hook dan >0, >0, >0, 0 | El hook no está mudo |
 | `supabase gen types` produce archivo sin 403 | La deuda #2 se cierra |
 | `restaurant_id` ≈ 1.010 ocurrencias | El diagnóstico sigue vigente |
-| `docs/` tiene solo los archivos de G-Nexo | No se coló estado ajeno |
+| `docs/` tiene solo los archivos de Nodo | No se coló estado ajeno |
 | La tabla quedó escrita en `BITACORA.md` | Hay línea base para verificar la poda |
 
 Si `restaurant_id` da muy distinto de 1.010, **no sigas**. El diagnóstico se midió sobre 39.351

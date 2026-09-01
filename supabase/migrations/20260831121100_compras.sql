@@ -1,16 +1,16 @@
 -- ============================================================
--- G-Nexo — Esquema base · 08 · Compras a proveedor
+-- Nodo — Esquema base · 08 · Compras a proveedor
 --
--- ORIGEN: G-Vento `d848852`, supabase/compras-proveedores.sql y
+-- ORIGEN: Vento `d848852`, supabase/compras-proveedores.sql y
 -- supabase/compra-no-toca-caja.sql. Paso 0, par 7: gana la v2
 -- (compra-no-toca-caja) por su ESTRUCTURA — pero su REGLA se invierte, porque
--- la regla del cliente de G-Nexo es la contraria. Ver docs/paso-0-...md.
+-- la regla del cliente de Nodo es la contraria. Ver docs/paso-0-...md.
 --
--- R5: no aplicado en G-Nexo (base vacia). Desde el primer `db push`, R5 manda.
+-- R5: no aplicado en Nodo (base vacia). Desde el primer `db push`, R5 manda.
 --
 -- ── LA REGLA DEL CLIENTE (2026-08-31) Y POR QUE INVIERTE LA HEREDADA ───────
--- G-Vento:  la compra NO toca la caja; el egreso lo hace el cajero a mano.
--- G-Nexo:   la compra SALE DE LA CAJA DEL DIA, siempre. Si el efectivo no
+-- Vento:  la compra NO toca la caja; el egreso lo hace el cajero a mano.
+-- Nodo:   la compra SALE DE LA CAJA DEL DIA, siempre. Si el efectivo no
 --           alcanza, se inyecta plata con un ingreso (categoria 'base') y con
 --           eso se paga. No existe "pagada por fuera".
 --
@@ -103,10 +103,10 @@ create index idx_purchase_invoice_items_product on public.purchase_invoice_items
 -- ── EL CAMBIO FAIL-CLOSED, Y NO ES UN BUG DEL ORIGINAL ────────────────────
 -- La version heredada creaba el movimiento de caja solo `if v_shift_id is not
 -- null`: sin turno abierto, la compra se registraba igual y NO tocaba la caja,
--- en silencio. Con la regla de G-Vento eso era coherente (la caja la movia el
+-- en silencio. Con la regla de Vento eso era coherente (la caja la movia el
 -- cajero a mano).
 --
--- Con la regla de G-Nexo pasa a ser fail-open: una compra que DEBIA salir de
+-- Con la regla de Nodo pasa a ser fail-open: una compra que DEBIA salir de
 -- caja y no salio descuadra el cierre sin un solo error. Por eso acá se
 -- RECHAZA. Se invierte por la decision del cliente, no porque el original
 -- estuviera mal.

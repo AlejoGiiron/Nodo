@@ -1,5 +1,5 @@
 -- ============================================================
--- G-Vento — organization_id de profiles: fix de raiz + backfill + invariante
+-- Vento — organization_id de profiles: fix de raiz + backfill + invariante
 --
 -- ⚠️  NO APLICAR sin correr antes la VERIFICACION PREVIA (punto 5, abajo).
 --

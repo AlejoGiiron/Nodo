@@ -1,5 +1,5 @@
 -- ============================================================
--- G-Vento — Onboarding de una ORGANIZACIÓN nueva (cliente nuevo)
+-- Vento — Onboarding de una ORGANIZACIÓN nueva (cliente nuevo)
 --
 -- Crea la estructura MÍNIMA para que una org opere, siguiendo el molde
 -- de lab-seed.sql pero SIN datos de prueba (catálogo VACÍO: el owner lo

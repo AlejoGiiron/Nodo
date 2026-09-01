@@ -23,7 +23,7 @@ const MESA = `Mesa Mixto ${SUFFIX}`
 const parseCOP = (text: string): number => Number(text.replace(/[^\d]/g, ''))
 
 // ── Supabase directo (verificación de las filas payments) ─────────────
-// VITE_GNEXO_* (backend del lab) viven en .env; playwright.config solo carga
+// VITE_NODO_* (backend del lab) viven en .env; playwright.config solo carga
 // .env.test. Cargamos ambos aquí para consultar la BD con RLS del owner.
 function loadEnv(path: string) {
   try {
@@ -42,8 +42,8 @@ type Pay = { method: string; amount: number }
 // (RLS: solo la sede activa). Prueba directa de "una fila por método".
 async function paymentsForOrder(orderNumber: number): Promise<Pay[]> {
   const client = createClient(
-    process.env.VITE_GNEXO_SUPABASE_URL!,
-    process.env.VITE_GNEXO_SUPABASE_ANON_KEY!,
+    process.env.VITE_NODO_SUPABASE_URL!,
+    process.env.VITE_NODO_SUPABASE_ANON_KEY!,
   )
   const { error: authErr } = await client.auth.signInWithPassword({
     email: process.env.E2E_OWNER_EMAIL!,

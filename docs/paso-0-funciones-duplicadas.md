@@ -61,7 +61,7 @@ suponía, y en dos gana **con cambios**, no tal cual.
 **Gana la del `fix`.** Sin `SECURITY DEFINER`, el `select` sobre `restaurants` pasa por RLS y la
 función evalúa **datos filtrados por el observador** — y la organización de una sede es la misma la
 mire quien la mire (**R6**). El modo de fallo es rechazar operaciones válidas con un mensaje que
-apunta al lugar equivocado. Ya se pagó una vez en G-Vento; ese archivo **es** la evidencia de R6.
+apunta al lugar equivocado. Ya se pagó una vez en Vento; ese archivo **es** la evidencia de R6.
 
 Y agrega los `revoke execute`, que en una función `SECURITY DEFINER` no es cosmético: Postgres
 concede `EXECUTE` a `PUBLIC` por defecto en toda función nueva.
@@ -131,13 +131,13 @@ si se recibiera, un metadata mal armado crearía un perfil en la organización e
 | retorno | `{invoice_id, total, cash_movement_created, shift_open}` | `{invoice_id, total}` |
 | factura, ítems, stock, `cost_price` | sí | sí (igual) |
 
-**No la decidí yo: la diferencia no es un defecto técnico, es una regla del cliente de G-Vento**
+**No la decidí yo: la diferencia no es un defecto técnico, es una regla del cliente de Vento**
 ("el efectivo que sale del cajón lo registra el cajero como egreso MANUAL, que admite monto
 parcial"). Heredar en silencio una decisión de negocio ajena es exactamente la premisa que el
 diagnóstico advierte.
 
 ✅ **Respuesta (2026-08-31): entra la v2, y la regla queda como premisa A RECONFIRMAR con el
-cliente de G-Nexo, no como hecho.**
+cliente de Nodo, no como hecho.**
 
 **Evidencia técnica que respalda la elección, independiente de la regla:** el frontend heredado
 **ya está alineado con la v2** — `RegisterPurchaseResult` en `src/lib/supabase-helpers.ts` es
@@ -158,12 +158,12 @@ interfaz, todavía dice *"si es efectivo con turno abierto, genera el egreso de 
 
 **Gana `order-items-stock-recipes`** por la auditoría: sin `stock_movements` el stock cambia y
 **no queda rastro de por qué**, que es el fallo silencioso de siempre. Pero no entra tal cual,
-porque su rama `composite` depende de `product_components` — clasificado **B (recetas)**, y G-Nexo
+porque su rama `composite` depende de `product_components` — clasificado **B (recetas)**, y Nodo
 no tiene recetas.
 
 ✅ **Respuesta (2026-08-31): la rama `composite` SE CONSERVA, renombrada a bulto/unidad.**
 
-**Razón:** `CLAUDE.md` ya dice que en G-Nexo **la unidad de compra difiere de la de venta** —se
+**Razón:** `CLAUDE.md` ya dice que en Nodo **la unidad de compra difiere de la de venta** —se
 compra por bulto, se vende por unidad—, y eso es **estructuralmente el mismo mecanismo**: un
 producto que al moverse descuenta N unidades de otro. La receta y el bulto son la misma relación
 con distinto nombre de negocio.
@@ -180,7 +180,7 @@ nombre, hay que mirar qué cuelga de él.**
 1. `product_components` deja de descartarse: entra al archivo `07-inventario.sql` renombrado.
    `docs/plan-esquema-base.md` §2 y §4.1 quedan desactualizados en ese punto.
 2. La regla "la compra no toca la caja" es **premisa heredada a reconfirmar**, no decisión de
-   G-Nexo. Va a deudas.
+   Nodo. Va a deudas.
 3. El comentario obsoleto de `registerPurchase` se corrige al consolidar.
 4. Las seis funciones que **no** se preguntaron ganan todas por el mismo eje —**hacia dónde
    fallan**—, no por ser más nuevas. Si aparece una novena duplicada, ése es el eje a aplicar.

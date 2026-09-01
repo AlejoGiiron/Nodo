@@ -1,14 +1,14 @@
 -- ============================================================
--- G-Nexo — Esquema base · 05 · Catalogo (categorias y productos)
+-- Nodo — Esquema base · 05 · Catalogo (categorias y productos)
 --
--- ORIGEN: consolidado de G-Vento `d848852`:
+-- ORIGEN: consolidado de Vento `d848852`:
 --   · categories, products      ← schema.sql, seccion 3
 --   · products.stock_qty sin check ← products-allow-negative-stock.sql
 --   · products.min_stock        ← inventory-min-stock.sql
 --   · products.kind             ← inventory-recipes.sql
 --   · products.cost_price       ← compras-proveedores.sql  (semantica ADAPTADA, ver abajo)
 --
--- R5: no aplicado en G-Nexo (base vacia). Desde el primer `db push`, R5 manda.
+-- R5: no aplicado en Nodo (base vacia). Desde el primer `db push`, R5 manda.
 --
 -- NO viaja `routes_to_kitchen` (cocina, clase B). Enumeracion en la migracion `organizaciones_y_sedes`.
 -- ============================================================
@@ -73,7 +73,7 @@ comment on column public.products.stock_qty is
   'mostrador en vez de registrar el faltante. No agregar el check.';
 
 -- ── cost_price: SEMANTICA ADAPTADA, no copiada ──────────────────────────────
--- En G-Vento el comentario dice "ultimo costo conocido". En G-Nexo el metodo de
+-- En Vento el comentario dice "ultimo costo conocido". En Nodo el metodo de
 -- costeo decidido es PROMEDIO PONDERADO MOVIL (deuda #18): el cliente describe
 -- un solo costo por producto, lo que descarta PEPS y lotes, y frente a "ultimo
 -- costo" el promedio evita que una compra cara desplome la utilidad en el papel.
@@ -88,8 +88,8 @@ comment on column public.products.cost_price is
 
 comment on column public.products.kind is
   'simple = tiene stock propio. composite = no tiene stock propio; al venderse '
-  'explota product_components y descuenta sus componentes. En G-Nexo composite '
-  'es el BULTO que se vende por unidad (ver migracion `inventario`); en G-Vento era la '
+  'explota product_components y descuenta sus componentes. En Nodo composite '
+  'es el BULTO que se vende por unidad (ver migracion `inventario`); en Vento era la '
   'receta. Mismo mecanismo, otro nombre de negocio.';
 
 comment on column public.products.min_stock is

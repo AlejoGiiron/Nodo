@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react'
 import { AlertTriangle, CalendarClock, X } from 'lucide-react'
 import { useSubscriptionStatus, type EstadoConAviso } from '@/hooks/useSubscriptionStatus'
 
-const STORAGE_KEY = 'gnexo:suscripcion:descartado'
+const STORAGE_KEY = 'nodo:suscripcion:descartado'
 
 interface Descarte {
   estado: string

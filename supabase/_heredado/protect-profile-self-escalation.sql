@@ -1,5 +1,5 @@
 -- ============================================================
--- G-Vento — PRIORIDAD 1: cerrar la escalada por auto-edición de profiles
+-- Vento — PRIORIDAD 1: cerrar la escalada por auto-edición de profiles
 --
 -- Del diagnóstico: la policy "profiles: editar el propio" (UPDATE) no acota
 -- COLUMNAS. Su WITH CHECK solo valida que restaurant_id pertenezca a

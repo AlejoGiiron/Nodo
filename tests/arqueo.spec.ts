@@ -30,7 +30,7 @@ loadEnv('.env.test')
 let _client: SupabaseClient | null = null
 async function db(): Promise<SupabaseClient> {
   if (_client) return _client
-  const c = createClient(process.env.VITE_GNEXO_SUPABASE_URL!, process.env.VITE_GNEXO_SUPABASE_ANON_KEY!)
+  const c = createClient(process.env.VITE_NODO_SUPABASE_URL!, process.env.VITE_NODO_SUPABASE_ANON_KEY!)
   const { error } = await c.auth.signInWithPassword({
     email: process.env.E2E_OWNER_EMAIL!, password: process.env.E2E_OWNER_PASSWORD!,
   })
@@ -131,7 +131,7 @@ test.describe.serial('Arqueo multi-método', () => {
       ;(window as unknown as { __arqueoPrinted: string | null }).__arqueoPrinted = null
       window.print = () => {
         ;(window as unknown as { __arqueoPrinted: string | null }).__arqueoPrinted =
-          document.getElementById('gnexo-cash-report-content')?.innerHTML ?? null
+          document.getElementById('nodo-cash-report-content')?.innerHTML ?? null
       }
     })
   })

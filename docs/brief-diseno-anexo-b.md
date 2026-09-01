@@ -1,4 +1,4 @@
-# G-Nexo · Anexo B al brief de diseño — Cadena de costos
+# Nodo · Anexo B al brief de diseño — Cadena de costos
 
 *2026-08-31. El cliente firmó: se abre el alcance completo.*
 

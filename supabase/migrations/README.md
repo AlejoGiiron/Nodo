@@ -1,6 +1,6 @@
-# `supabase/migrations/` — el esquema base de G-Nexo
+# `supabase/migrations/` — el esquema base de Nodo
 
-15 migraciones consolidadas de G-Vento `d848852`. Es **el** esquema de G-Nexo: lo que está en
+15 migraciones consolidadas de Vento `d848852`. Es **el** esquema de Nodo: lo que está en
 `supabase/_heredado/` no se aplica.
 
 ---

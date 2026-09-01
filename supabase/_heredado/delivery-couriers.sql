@@ -1,5 +1,5 @@
 -- ============================================================
--- G-Vento — Delivery: Couriers + extensiones a orders
+-- Vento — Delivery: Couriers + extensiones a orders
 -- Ejecutar en: Supabase Dashboard > SQL Editor
 -- ============================================================
 

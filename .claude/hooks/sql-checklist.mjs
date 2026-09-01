@@ -2,14 +2,14 @@
 // ============================================================
 // Hook PreToolUse — checklist antes de escribir SQL en supabase/
 //
-// ORIGEN: copiado de G-Vento el 2026-08-31 (rama develop, d848852). El
-// MECANISMO viaja literal; el ESTADO de G-Vento (conteos de permisos, permisos
-// inertes, deudas de ese repo) NO viaja y está reemplazado por el de G-Nexo.
+// ORIGEN: copiado de Vento el 2026-08-31 (rama develop, d848852). El
+// MECANISMO viaja literal; el ESTADO de Vento (conteos de permisos, permisos
+// inertes, deudas de ese repo) NO viaja y está reemplazado por el de Nodo.
 //
-// POR QUÉ EXISTE: en G-Vento, en 20 días, 13 errores tenían su lección YA
+// POR QUÉ EXISTE: en Vento, en 20 días, 13 errores tenían su lección YA
 // escrita en el repo (CLAUDE.md, un docblock o un spec) — dato al 2026-08-31;
 // el conteo aparece como 9, 11 y 13 en tres documentos distintos, verificar
-// contra docs/BITACORA.md de G-Vento antes de citarlo. No fallamos en saber:
+// contra docs/BITACORA.md de Vento antes de citarlo. No fallamos en saber:
 // fallamos en CONVOCAR lo que sabíamos, en el momento de decidir. Este hook
 // trae las 4 preguntas al instante exacto en que se escribe el SQL, que es el
 // único momento en que sirven.
@@ -21,19 +21,19 @@
 // a propósito es ruido, y entrena a ignorar avisos.
 //
 // LO QUE UN HOOK NO PUEDE HACER: detectar OMISIONES. Un hook dispara cuando
-// tocás un archivo; en G-Vento el fallo documentado fue un seed que quedó
+// tocás un archivo; en Vento el fallo documentado fue un seed que quedó
 // congelado PORQUE NADIE LO TOCÓ. Para eso va un check de árbol en CI
 // (`regenerar && git diff --exit-code`), no un hook. Los dos mecanismos son
 // complementarios y ninguno reemplaza al otro.
 //
-// POR QUÉ node Y NO jq: jq NO estaba instalado en la máquina de G-Vento
+// POR QUÉ node Y NO jq: jq NO estaba instalado en la máquina de Vento
 // (verificado allá). El patrón canónico de hooks lo usa, así que copiarlo habría
 // dado un hook MUDO. node es la dependencia más segura: si falta, el proyecto no
 // compila. ⚠️ Igual corré `command -v node` acá antes de confiar (R4: "es el
 // patrón canónico" no es evidencia de que funcione en ESTA máquina).
 //
 // POR QUÉ TAMBIÉN `Bash` Y NO SOLO `Write|Edit`: porque el flujo real escribe
-// SQL por Bash. En G-Vento (2026-08-25) se creó un seed con un heredoc
+// SQL por Bash. En Vento (2026-08-25) se creó un seed con un heredoc
 // (`cat > ... <<EOF`) y se editó con `python3 - <<PY`: dos escrituras que un hook
 // limitado a Write|Edit no habría visto. Enumerar las herramientas que uno
 // recuerda en vez de cubrir la CLASE ("escribir en supabase/*.sql") es
@@ -61,7 +61,7 @@
 //      → el hook está bien escrito pero no carga. Se arregla abriendo `/hooks`
 //      una vez, o reiniciando.
 //
-// ⛔ SIN VERIFICAR EN G-NEXO. En G-Vento este script salió MUDO la primera vez
+// ⛔ SIN VERIFICAR EN NODO. En Vento este script salió MUDO la primera vez
 //    —un .mjs con `require`, envuelto en un try/catch que devolvía '' con exit 0—
 //    y leyéndolo se veía perfecto. Copiarlo NO alcanza. Probar los 4 casos:
 //    Write, Edit y Bash-con-heredoc sobre supabase/*.sql (deben disparar), y un
@@ -89,7 +89,7 @@ Si hay DELETE/UPDATE/DROP: además begin/commit, y contar filas ANTES de tocarla
 const OBJETIVO = /supabase\/[^\s"'`;|&)]*\.sql/i
 
 // 🔴 `import`, NO `require`. Este archivo es .mjs = módulo ES, donde `require`
-//    NO EXISTE. La primera versión de G-Vento lo usaba dentro de un try/catch
+//    NO EXISTE. La primera versión de Vento lo usaba dentro de un try/catch
 //    que devolvía '' al fallar, así que el hook salía con código 0 SIN INYECTAR
 //    NADA: mudo, exitoso y completamente invisible. Lo cazó el pipe-test (10 de
 //    10 casos callados, incluidos los 6 que debían disparar) — leyendo el código
@@ -103,7 +103,7 @@ const OBJETIVO = /supabase\/[^\s"'`;|&)]*\.sql/i
 // POR QUE NO MATCHEA POR RUTA: enumerar los archivos conocidos seria enumerar
 // INSTANCIAS, que es el defecto de clase que este hook existe para prevenir. Un
 // `.sql` nuevo con cualquier nombre que haga `update roles set permissions` no
-// matchearia, y ese es justamente el caso que mordio en G-Vento:
+// matchearia, y ese es justamente el caso que mordio en Vento:
 // `ventas.historial` se sembro con un update de una pasada y `onboard-org.sql`
 // quedo congelado.
 //
@@ -143,8 +143,8 @@ function tocaCatalogoDePermisos(texto) {
 
 const CHECKLIST_PERMISOS = `⚠️ Estás tocando el CATÁLOGO DE PERMISOS RBAC — y ESTO SE GENERA.
 
-Arquitectura heredada de G-Vento (allá pasó de 7 lados a 2, después de que las 4
-copias del seed divergieran). G-Nexo nace con la fuente única puesta:
+Arquitectura heredada de Vento (allá pasó de 7 lados a 2, después de que las 4
+copias del seed divergieran). Nodo nace con la fuente única puesta:
 
   FUENTE     src/lib/permissions.ts   (PERMISSION_GROUPS + SYSTEM_ROLES)
   GENERADO   supabase/seed-system-roles.sql   ← NO EDITAR A MANO
@@ -154,7 +154,7 @@ Los seeds NO llevan listas de permisos: llaman a seed_system_roles(v_org). Si es
 por escribir un array de permisos dentro de un .sql, casi seguro estás en el archivo
 equivocado — editá permissions.ts y regenerá.
 
-DISEÑO A NO ROMPER (viene medido de G-Vento):
+DISEÑO A NO ROMPER (viene medido de Vento):
  · admin = ALL_PERMISSION_KEYS DERIVADO, nunca enumerado. Enumerarlo fue lo que
    dejó las 4 copias con 16/20/18/23 permisos según el archivo.
  · seed_system_roles NO es SECURITY DEFINER, y revoca también a \`authenticated\`:
@@ -176,11 +176,11 @@ LO QUE ESTO **NO** ARREGLA, dicho explícitamente:
  · Una migración APLICADA es registro histórico, no fuente (R5). Su comentario-
    catálogo queda desactualizado a propósito. No editar.
  · Que una clave esté en el catálogo NO es evidencia de que algo esté protegido.
-   En G-Vento 6 permisos del catálogo no gateaban nada y fallaban ABIERTO. Al
+   En Vento 6 permisos del catálogo no gateaban nada y fallaban ABIERTO. Al
    agregar una clave acá, verificá que exista el \`can()\` que la consume.
 
-⛔ TRIPWIRE PENDIENTE: en G-Vento, tests/roles.spec.ts clava el tamaño del catálogo
-   con toBe(N) para que un cambio silencioso salga rojo. G-Nexo todavía no tiene el
+⛔ TRIPWIRE PENDIENTE: en Vento, tests/roles.spec.ts clava el tamaño del catálogo
+   con toBe(N) para que un cambio silencioso salga rojo. Nodo todavía no tiene el
    suyo. Ponerlo con el primer catálogo real.`
 
 import fs from 'node:fs'

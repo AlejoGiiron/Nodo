@@ -14,16 +14,16 @@ if (existsSync(ENV_FILE)) {
   }
 }
 
-// Puerto DEDICADO de G-Vento para E2E (no el 5173 por defecto de Vite, que puede
-// estar ocupado por otra app — p. ej. G-Mura). Playwright SIEMPRE levanta su
-// propio servidor de gvento aquí (reuseExistingServer:false + strictPort), así
+// Puerto DEDICADO de Vento para E2E (no el 5173 por defecto de Vite, que puede
+// estar ocupado por otra app — p. ej. Mura). Playwright SIEMPRE levanta su
+// propio servidor de vento aquí (reuseExistingServer:false + strictPort), así
 // nunca se conecta por accidente a otra app. Ver tests/README.md.
 export const E2E_PORT = 5180
 const BASE_URL = `http://localhost:${E2E_PORT}`
 
 export default defineConfig({
   testDir: './tests',
-  // Health check (defensa en profundidad): aborta si el servidor no es G-Vento.
+  // Health check (defensa en profundidad): aborta si el servidor no es Vento.
   globalSetup: './tests/global-setup.ts',
   timeout: 30_000,
   expect: { timeout: 10_000 },
@@ -45,7 +45,7 @@ export default defineConfig({
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
   ],
-  // SIEMPRE levanta el dev server de gvento en el puerto dedicado. strictPort
+  // SIEMPRE levanta el dev server de vento en el puerto dedicado. strictPort
   // hace que falle ruidosamente si el puerto está ocupado, en vez de servir/
   // conectarse a otra cosa.
   webServer: {

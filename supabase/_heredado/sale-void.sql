@@ -1,5 +1,5 @@
 -- ============================================================
--- G-Vento — Anulación de ventas (Fase 1 BD): rastro + permiso + candados
+-- Vento — Anulación de ventas (Fase 1 BD): rastro + permiso + candados
 --
 -- Prepara el terreno para anular ventas del TURNO ACTUAL (la RPC
 -- register_sale_void llega en la Fase 2). Esta migración es ADITIVA PURA

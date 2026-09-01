@@ -1,5 +1,5 @@
 // ============================================================
-// G-Vento — Edge Function `aplicar-estado`
+// Vento — Edge Function `aplicar-estado`
 //
 // G-Centro (panel de suscripciones, repo y BD aparte) llama a esta función para
 // escribir el estado de suscripción en organizations. Es el ÚNICO camino de
@@ -9,7 +9,7 @@
 //
 // ── AUTENTICACIÓN: HMAC, NO JWT ─────────────────────────────────────────────
 // El llamante es un SERVIDOR, no un usuario. Las alternativas eran:
-//   · Compartirle a G-Centro el service_role key de G-Vento — NO: esa llave
+//   · Compartirle a G-Centro el service_role key de Vento — NO: esa llave
 //     abre la base ENTERA, sin límite de alcance ni forma de rotarla sin
 //     romper todo lo demás. Una integración no debe pedir la llave maestra.
 //   · HMAC con secreto dedicado — SÍ: alcance limitado a este endpoint,

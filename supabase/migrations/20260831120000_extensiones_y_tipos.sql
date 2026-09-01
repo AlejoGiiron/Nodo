@@ -1,11 +1,11 @@
 -- ============================================================
--- G-Nexo — Esquema base · 01 · Extensiones y tipos enumerados
+-- Nodo — Esquema base · 01 · Extensiones y tipos enumerados
 --
--- ORIGEN: consolidado de G-Vento `d848852`, seccion "2. TIPOS ENUMERADOS" de
+-- ORIGEN: consolidado de Vento `d848852`, seccion "2. TIPOS ENUMERADOS" de
 -- supabase/schema.sql. Ver docs/plan-esquema-base.md.
 --
 -- POR QUE ESTO NO VIOLA R5: R5 protege las migraciones APLICADAS. Estos
--- archivos no estan aplicados en G-Nexo — la base del proyecto esta vacia
+-- archivos no estan aplicados en Nodo — la base del proyecto esta vacia
 -- (verificado 2026-08-31, cero tablas en gen types). Son archivos, no
 -- migraciones ejecutadas. 🔴 A PARTIR DEL PRIMER `db push` ESO DEJA DE SER
 -- CIERTO y R5 aplica con todo su peso: lo que siga va en archivo nuevo.
@@ -45,19 +45,19 @@ create extension if not exists "uuid-ossp";
 -- `roles` (permisos finos, generado desde src/lib/permissions.ts): este enum es
 -- el rol grueso que heredamos y que varias policies usan directamente.
 --
--- SALE 'waiter': G-Nexo no tiene mozos. Se va AHORA porque despues no se puede
+-- SALE 'waiter': Nodo no tiene mozos. Se va AHORA porque despues no se puede
 -- (no hay drop value). ⚠️ src/ todavia lo nombra —useUsers, supabase-helpers y
 -- enumFromRoleName en ConfigPage, que mapea el rol 'mozo' a 'waiter'—: eso se
 -- limpia en la poda de src/.
 --
--- NO se agregan roles nuevos todavia: el catalogo propio de G-Nexo es la deuda
+-- NO se agregan roles nuevos todavia: el catalogo propio de Nodo es la deuda
 -- #23 y va DESPUES del esquema, porque las claves se derivan de las tablas que
 -- existan. Agregar valores despues es barato; por eso se puede esperar.
 create type public.user_role as enum ('admin', 'cashier');
 
 -- Estado de la venta.
 -- SALEN 'preparing' y 'ready': son estados de COCINA (comanda -> listo para
--- servir) y G-Nexo no tiene cocina. En un mostrador la venta se cobra y se
+-- servir) y Nodo no tiene cocina. En un mostrador la venta se cobra y se
 -- entrega en el mismo acto.
 -- ⚠️ src/ los consulta hoy en supabase-helpers, useDelivery y useDeliveryCount.
 -- Se limpia en la poda de src/.
@@ -74,16 +74,16 @@ create type public.payment_method as enum ('cash', 'card', 'transfer', 'nequi');
 -- ------------------------------------------------------------
 -- Tipos que NO se crean, dichos en negativo a proposito
 -- ------------------------------------------------------------
--- `table_status` ('free','occupied','reserved') — mesas. G-Nexo no tiene.
+-- `table_status` ('free','occupied','reserved') — mesas. Nodo no tiene.
 --    Enumerado en la clase B del plan; nada fuera de mesas lo referencia.
 --
 -- `order_type` ('dine_in','takeaway','delivery') — el eje entero es de
---    restaurante: comer aca / llevar / domicilio. G-Nexo vende sobre mostrador
+--    restaurante: comer aca / llevar / domicilio. Nodo vende sobre mostrador
 --    y NO tiene rutas ni despacho (ver CLAUDE.md, Alcance). La columna
 --    orders.type desaparece con el tipo; se documenta en la migracion `ventas`.
 --
 -- Se anotan en NEGATIVO porque un tipo ausente no deja rastro: sin esta nota,
--- el proximo que compare este esquema con el de G-Vento no sabe si falta por
+-- el proximo que compare este esquema con el de Vento no sabe si falta por
 -- decision o por olvido.
 
 commit;

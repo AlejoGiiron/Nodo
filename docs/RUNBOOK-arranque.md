@@ -1,4 +1,4 @@
-# G-Nexo — Runbook de arranque
+# Nodo — Runbook de arranque
 
 *2026-08-31. Orden de ejecución. Cada paso dice cómo saber que salió bien.*
 
@@ -25,7 +25,7 @@ distinto cada vez que se abre — perfil exacto del fallo silencioso de R7. Ver 
 **0.2 · Nombre de la entidad sede → `sede_id`.** El repo heredado ya usa la palabra: el permiso
 `sedes.gestionar` existe en el catálogo y R6 dice *"la organización de una sede es la misma la mire
 quien la mire"*. Renombrar no inventa vocabulario, alinea la columna con lo que el proyecto ya
-dice. En G-Vento "restaurant" es cierto; acá sería falso, y un nombre falso dirige mal.
+dice. En Vento "restaurant" es cierto; acá sería falso, y un nombre falso dirige mal.
 
 ⚠️ Con la estrategia de copiar el repo completo el rename **no es gratis**: son 1.010 ocurrencias
 en 77 archivos. Se ejecuta en el **paso 5.1**, después de podar, en un commit solo. Criterio de
@@ -52,7 +52,7 @@ printf '%s' '{"tool_input":{"file_path":"supabase/x.sql","new_string":"delete fr
 printf '%s' '{"tool_input":{"command":"cat > supabase/s.sql <<EOF\nselect 1;\nEOF"}}'      | node .claude/hooks/sql-checklist.mjs | wc -c
 printf '%s' '{"tool_input":{"command":"pnpm test:e2e"}}'                                    | node .claude/hooks/sql-checklist.mjs | wc -c
 ```
-**Criterio:** los tres primeros > 0 bytes, el cuarto = 0. En G-Vento el script salió mudo la
+**Criterio:** los tres primeros > 0 bytes, el cuarto = 0. En Vento el script salió mudo la
 primera vez y leyéndolo se veía perfecto.
 
 **1.3 · Settings válido.**
@@ -64,9 +64,9 @@ console.log("OK")'
 
 **1.4 · El CLI de Supabase no da 403.**
 ```bash
-supabase gen types typescript --project-id <id-de-gnexo> > /tmp/types-prueba.ts
+supabase gen types typescript --project-id <id-de-nodo> > /tmp/types-prueba.ts
 ```
-**Criterio:** archivo no vacío y sin 403. Si da 403, resolvelo **ahora**. En G-Vento ese 403 es lo
+**Criterio:** archivo no vacío y sin 403. Si da 403, resolvelo **ahora**. En Vento ese 403 es lo
 que dejó `database.types.ts` escrito a mano y divergiendo del esquema sin que `tsc` lo notara.
 
 ---
@@ -77,25 +77,25 @@ que dejó `database.types.ts` escrito a mano y divergiendo del esquema sin que `
 nueva:
 
 ```bash
-git clone --branch develop --single-branch <url-gvento> gnexo
-cd gnexo
+git clone --branch develop --single-branch <url-vento> nodo
+cd nodo
 rm -rf .git
 ```
 
 Ahora **reemplazá** —no fusiones— con la carpeta que ya tenés armada:
 `CLAUDE.md`, `docs/BITACORA.md`, `docs/DEUDAS.md`, `docs/brief-*.md`, `.claude/`, `.env.example`.
-Borrá los de G-Vento. Su `CLAUDE.md`, su bitácora y sus deudas **no viajan**: son estado ajeno.
+Borrá los de Vento. Su `CLAUDE.md`, su bitácora y sus deudas **no viajan**: son estado ajeno.
 
 ```bash
 rm -rf .env.local node_modules dist
 git init && git add -A
-git commit -m "chore: base copiada de G-Vento develop d848852"
-git remote add origin <url-gnexo> && git push -u origin develop
+git commit -m "chore: base copiada de Vento develop d848852"
+git remote add origin <url-nodo> && git push -u origin develop
 ```
 
-**Por qué historia nueva y no la de G-Vento:** el `git blame` del código heredado apuntaría a
+**Por qué historia nueva y no la de Vento:** el `git blame` del código heredado apuntaría a
 decisiones sobre mesas y cocina que acá no aplican, y los mensajes de commit hablan de un negocio
-que no es este. Además la historia contiene nombres y datos de clientes de G-Vento.
+que no es este. Además la historia contiene nombres y datos de clientes de Vento.
 
 ---
 
@@ -154,7 +154,7 @@ repo**. Borrarlo rompe vender. **Se renombra, no se borra** — a algo neutro co
 
 Acá termina lo mecánico. Estos cambios necesitan diseño, no find/replace:
 
-1. **Descuento de stock: de receta a directo.** G-Vento descuenta ingredientes por receta. Una
+1. **Descuento de stock: de receta a directo.** Vento descuenta ingredientes por receta. Una
    distribuidora vende la misma unidad que compró.
 2. **Conversión unidad de compra → unidad de venta.** Se compra un bulto, se venden 50 unidades. No
    existe en un POS de bar.

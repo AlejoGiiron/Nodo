@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-# G-Nexo — STAGING · ¿el override matchea el compose real?
+# Nodo — STAGING · ¿el override matchea el compose real?
 #
 # 🔴 ESTE ES EL UNICO CHEQUEO QUE SEPARA "levantar staging" DE "tirar
 #    produccion". Se ejecuta una vez, de noche, por alguien apurado.

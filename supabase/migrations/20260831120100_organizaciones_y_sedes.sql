@@ -1,19 +1,19 @@
 -- ============================================================
--- G-Nexo — Esquema base · 02 · Organizaciones, sedes y roles
+-- Nodo — Esquema base · 02 · Organizaciones, sedes y roles
 --
--- ORIGEN: consolidado de G-Vento `d848852`:
+-- ORIGEN: consolidado de Vento `d848852`:
 --   · public.restaurants      ← supabase/schema.sql, seccion 3
 --   · organizations/roles/user_stores ← supabase/multi-tenant-rbac.sql
 --   · handle_updated_at       ← supabase/schema.sql, seccion 6
 -- Ver docs/plan-esquema-base.md y docs/paso-0-funciones-duplicadas.md.
 --
--- R5: no aplicado en G-Nexo (base vacia). Desde el primer `db push`, R5 manda.
+-- R5: no aplicado en Nodo (base vacia). Desde el primer `db push`, R5 manda.
 --
 -- ── EL RENOMBRE: restaurants -> sedes ───────────────────────────────────────
--- Decidido en R1 punto 7. En G-Vento "restaurant" es CIERTO; aca seria FALSO, y
+-- Decidido en R1 punto 7. En Vento "restaurant" es CIERTO; aca seria FALSO, y
 -- un nombre falso dirige mal. No inventa vocabulario: el repo heredado YA dice
 -- "sede" —el permiso `sedes.gestionar` existe, R6 habla de "la organizacion de
--- una sede", y el propio comentario de organizations en G-Vento dice "agrupa
+-- una sede", y el propio comentario de organizations en Vento dice "agrupa
 -- las sedes (restaurants)"—. Este archivo alinea la tabla con la palabra que el
 -- proyecto ya usa.
 --
@@ -74,7 +74,7 @@ create trigger trg_organizations_updated_at
 -- ------------------------------------------------------------
 -- sedes — ex `restaurants`
 --
--- organization_id es NOT NULL DESDE EL ARRANQUE. En G-Vento nacio nullable y
+-- organization_id es NOT NULL DESDE EL ARRANQUE. En Vento nacio nullable y
 -- se endurecia al final del seed, porque alla habia datos vivos que migrar.
 -- Aca no hay datos: la ventana en que una sede podia existir sin organizacion
 -- no tiene ninguna razon de existir, y esa ventana es justamente por donde se
@@ -118,7 +118,7 @@ create trigger trg_sedes_updated_at
 -- 🔴 La columna `permissions` se puebla SOLO via seed_system_roles(), que se
 --    GENERA desde src/lib/permissions.ts con `pnpm gen:rbac`. Ningun archivo
 --    del esquema base escribe una lista de permisos a mano: eso es lo que dejo
---    las 4 copias de G-Vento con 16/20/18/23 permisos segun el archivo, y lo
+--    las 4 copias de Vento con 16/20/18/23 permisos segun el archivo, y lo
 --    que el `update roles set permissions` de sale-void.sql hacia (hallazgo H4
 --    del plan; no viaja).
 -- ------------------------------------------------------------

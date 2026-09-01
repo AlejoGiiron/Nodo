@@ -1,10 +1,10 @@
-# G-Nexo — Bitácora
+# Nodo — Bitácora
 
 **Cuándo se lee:** cuando una regla de `CLAUDE.md` te parezca discutible, o necesites el contexto
 de una decisión. **No** antes de trabajar — para eso está `CLAUDE.md`.
 
 Acá vive la **evidencia medida** de cada regla y el detalle de cada fase y sesión. La separación
-existe porque en G-Vento se auditaron 36 afirmaciones verificables del documento único: 28 eran
+existe porque en Vento se auditaron 36 afirmaciones verificables del documento único: 28 eran
 correctas y **las 8 falsas eran todas de estado**, ninguna de regla. El registro es la parte que se
 pudre, y estaba mezclado con lo que hay que leer siempre.
 
@@ -18,22 +18,22 @@ la consulta.
 
 **Pendiente de decisión y de copia.**
 
-Las once reglas (R0–R10) se copiaron literales de G-Vento el 2026-08-31, pero **su evidencia no**.
-Hoy el `CLAUDE.md` de G-Nexo apunta a `docs/BITACORA.md` del repo de G-Vento (rama `develop`,
-`d848852`; también existe `docs/reglas-de-clase` en origin, viva hasta que G-Nexo termine de
+Las once reglas (R0–R10) se copiaron literales de Vento el 2026-08-31, pero **su evidencia no**.
+Hoy el `CLAUDE.md` de Nodo apunta a `docs/BITACORA.md` del repo de Vento (rama `develop`,
+`d848852`; también existe `docs/reglas-de-clase` en origin, viva hasta que Nodo termine de
 copiar).
 
-**Eso es una referencia cruzada entre repos y se va a pudrir.** La bitácora de G-Vento tiene 1.560
+**Eso es una referencia cruzada entre repos y se va a pudrir.** La bitácora de Vento tiene 1.560
 líneas, va a seguir creciendo y sus títulos van a cambiar. Es el problema de "citá el símbolo, no
 el número de línea", a escala de repositorio.
 
 **Recomendación:** copiar acá, **congelada y atribuida**, la evidencia de las once reglas. Y **no**
-copiar el registro de fases y sesiones de G-Vento. El corte: la evidencia que sostiene una regla
+copiar el registro de fases y sesiones de Vento. El corte: la evidencia que sostiene una regla
 viaja con la regla; la historia de sesiones de otro producto, no.
 
 Secciones a traer, según los punteros del `CLAUDE.md`:
 
-| Regla | Sección en la bitácora de G-Vento |
+| Regla | Sección en la bitácora de Vento |
 |---|---|
 | R1 | *"FASE 1 — estado de suscripción"* (el aviso a G-Centro) |
 | R2 | *"Filtros de privacidad: ALLOWLIST por clave, nunca deny-list"* |
@@ -47,14 +47,14 @@ Secciones a traer, según los punteros del `CLAUDE.md`:
 
 ---
 
-## 2026-08-31 · Fork desde G-Vento
+## 2026-08-31 · Fork desde Vento
 
 Primera sesión. No hay código todavía.
 
 ### Medido
 
-**Pipe-test del hook `sql-checklist.mjs`, 10 casos.** Copiado de G-Vento, con el estado de ese repo
-reemplazado por el de G-Nexo. Verificación en banco (Node v22, no la máquina de trabajo):
+**Pipe-test del hook `sql-checklist.mjs`, 10 casos.** Copiado de Vento, con el estado de ese repo
+reemplazado por el de Nodo. Verificación en banco (Node v22, no la máquina de trabajo):
 
 | Caso | Esperado | Resultado |
 |---|---|---|
@@ -74,13 +74,13 @@ reemplazado por el de G-Nexo. Verificación en banco (Node v22, no la máquina d
 
 ✅ **Ya no falta: corre en la máquina real.** Ver *"El hook corre en la máquina real"* más abajo, en
 los hallazgos de esta misma sesión. Se conserva esta línea porque la advertencia sigue siendo
-cierta como razón: en G-Vento este script salió mudo la primera vez y
+cierta como razón: en Vento este script salió mudo la primera vez y
 leyéndolo se veía perfecto. Verificación en banco no es verificación en el entorno (R4).
 
 ### Línea base del repo copiado
 
 *Pasos 1 y 2 del runbook, ejecutados a mano el 2026-08-31. Repo en `develop`, base copiada de
-G-Vento `d848852`. Para reconfirmar cualquier fila, los comandos del **paso 3** de
+Vento `d848852`. Para reconfirmar cualquier fila, los comandos del **paso 3** de
 `docs/RUNBOOK-arranque.md`.*
 
 | Qué | Medido | Diagnóstico | Δ |
@@ -104,7 +104,7 @@ citarlos: se vuelven a tomar para compararlos.
 ### Hallazgos
 
 **El índice de reglas del documento de traspaso estaba mal en cuatro de diez entradas.** Se detectó
-al comparar contra el `CLAUDE.md` real de G-Vento, antes de escribir nada:
+al comparar contra el `CLAUDE.md` real de Vento, antes de escribir nada:
 
 - Decía "las 10 reglas". Son **once** (R0–R10).
 - *"No afirmar sin medir"* no es una regla numerada; es la convención de "Cómo se escribe una nota".
@@ -113,18 +113,18 @@ al comparar contra el `CLAUDE.md` real de G-Vento, antes de escribir nada:
   límites de día sobre timestamps UTC.
 - Faltaban cuatro reglas reales: **R0**, **R3**, **R5** y **R7**.
 
-Si las reglas se hubieran redactado desde ese índice, G-Nexo nacía con una regla inventada sobre
+Si las reglas se hubieran redactado desde ese índice, Nodo nacía con una regla inventada sobre
 idempotencia y sin R3 — justo la que explica por qué un arreglo no llega solo a sus hermanas.
 **Es la novena afirmación de estado falsa, y también era de estado.** La decisión de exigir copia
 literal en vez de redactar desde el índice es lo que lo evitó (R4: no verificar contra un proxy).
 
-**La nota falsa del monorepo sigue sin corregirse en G-Vento.** Su `CLAUDE.md` declara `apps/pos`,
+**La nota falsa del monorepo sigue sin corregirse en Vento.** Su `CLAUDE.md` declara `apps/pos`,
 `apps/store`, `apps/mobile`, `packages/shared` y `pnpm workspaces`. El diagnóstico ya determinó
-que nada de eso existe. Anotado acá porque G-Nexo hereda de ese archivo y la afirmación pudo haber
-viajado. **Acción abierta en G-Vento.**
+que nada de eso existe. Anotado acá porque Nodo hereda de ese archivo y la afirmación pudo haber
+viajado. **Acción abierta en Vento.**
 
 **El conteo de errores repetidos no cierra entre documentos:** el traspaso dice 9, el `CLAUDE.md`
-de G-Vento dice 11, el cierre dice 13 y numera los casos #11 a #14. Los tres son incompatibles.
+de Vento dice 11, el cierre dice 13 y numera los casos #11 a #14. Los tres son incompatibles.
 Sin resolver — ver `docs/DEUDAS.md`.
 
 **El conteo de `shift` está contaminado por `Array.prototype.shift()`.** 37 archivos es la palabra,
@@ -139,10 +139,10 @@ callar. Esto cierra el límite de R4 sobre artefactos generados —"el archivo q
 no es el que git materializa"— porque la prueba se corrió **después de un checkout**, no en la
 sesión que escribió el archivo. El commit `chore: forzar LF en los hooks` es lo que lo sostiene.
 
-**El remote quedó apuntando a G-Vento por error y no se subió nada.** `git remote add` **falla en
+**El remote quedó apuntando a Vento por error y no se subió nada.** `git remote add` **falla en
 vez de sobrescribir**, así que el push nunca salió. Es fail-closed (R2) operando en un lugar donde
 nadie lo estaba buscando: si el comando hubiera sido idempotente y "amable", la historia nueva de
-G-Nexo terminaba empujada contra el repo del producto hermano. Vale anotarlo como precedente
+Nodo terminaba empujada contra el repo del producto hermano. Vale anotarlo como precedente
 positivo de la clase, no solo como anécdota.
 
 **`scripts/gen-rbac-sql.mjs` arma la ruta de `tsc` a mano** (`node_modules/typescript/bin/tsc`) en
@@ -150,16 +150,16 @@ vez de resolver el binario y verificar que existe. Frágil con pnpm —que no ap
 `node_modules`— y en CI. Es **el mismo patrón que el `jq` del hook** (R4): copiar un camino que
 funciona en una máquina y asumir que existe en todas. Pasa a deuda.
 
-**El directorio temporal de ese script todavía se llama `gvento-rbac-*`.** No es una instancia
+**El directorio temporal de ese script todavía se llama `vento-rbac-*`.** No es una instancia
 suelta: es **cadena de marca heredada**, y la pregunta correcta (R3) es "¿tiene hermanas?" en todo
-el repo —`gvento`, `GVento`, `G-Vento`—, no "¿arreglo esta línea?". Pasa a deuda, y se ejecuta
+el repo —`vento`, `Vento`, `Vento`—, no "¿arreglo esta línea?". Pasa a deuda, y se ejecuta
 junto con el rename de `restaurant_id` para no hacer dos pasadas sobre los mismos archivos.
 
 **El hook corre en la máquina real — y la prueba fue accidental.** No hizo falta un test: durante
 la sesión de documentación del 2026-08-31 el hook **disparó 3 veces**, inyectando su texto en el
 contexto. Eso cierra la deuda #1 con evidencia más fuerte que el pipe-test, porque prueba la
 **cadena entera** —`settings.json` leído por el harness, matcher `Write|Edit|Bash` activo, Node
-encontrado, script no mudo—, y el eslabón que falló en G-Vento era justamente ese: en un pipe-test
+encontrado, script no mudo—, y el eslabón que falló en Vento era justamente ese: en un pipe-test
 el script lo invocás vos; acá lo invoca el harness. Un mecanismo se verifica en el camino por el
 que va a correr, no en uno parecido (R4).
 
@@ -172,11 +172,11 @@ R2 prohíbe. Primero se mide.
 
 ### Decisiones
 
-- **Nombre:** G-Nexo. Provisional hasta whois + SIC (clases 9 y 42). Se descartaron G-Ship
+- **Nombre:** Nodo. Provisional hasta whois + SIC (clases 9 y 42). Se descartaron G-Ship
   (promete despacho, que no existe en el producto), G-Cenit (Cenit es la filial de logística de
   hidrocarburos de Ecopetrol), G-Surti (quemado por Surtimax/Surtimayorista) y G-Abasto (se
   inclina a alimentos, deja afuera ferretería y repuestos).
-- **Numeración R0–R10 idéntica a la de G-Vento**, a propósito: las skills citan por número y
+- **Numeración R0–R10 idéntica a la de Vento**, a propósito: las skills citan por número y
   renumerar rompería la referencia cruzada entre los dos productos.
 - **El inventario de R1 sí se reescribe**, porque la propia regla lo marca como fechado y con su
   comando de reconfirmación. Es estado, no regla. Pasó de 4 contratos a 9.
@@ -209,7 +209,7 @@ puntos y cada uno solo agrava:
 2. **Tres** RPC leen el turno abierto, no una: `register_sale_void`, `register_debt_payment` y
    `register_purchase`. La premisa heredada decía que fiado era el único módulo con dependencia
    estructural; es el único con **FK**, pero los tres tienen dependencia de **comportamiento** y
-   los tres sobreviven en G-Nexo. Compras, además, es módulo del alcance firmado.
+   los tres sobreviven en Nodo. Compras, además, es módulo del alcance firmado.
 3. `payments` sigue sin `shift_id` — eso de la premisa **sí** era cierto. La premisa no era falsa;
    era **incompleta**, que es peor de detectar.
 
@@ -243,7 +243,7 @@ trabaja de acá en adelante:
 **Ocho funciones están definidas en dos archivos cada una**, y hoy gana la que se aplica última.
 Al consolidar, ese orden desaparece. Elegir mal no da error: da un `has_permission` que no
 verifica `is_active`, o un `enforce_profile_organization` sin `SECURITY DEFINER` — el fallo de R6,
-ya pagado una vez en G-Vento. Pasa a ser un **paso propio del prompt 3, antes de escribir el
+ya pagado una vez en Vento. Pasa a ser un **paso propio del prompt 3, antes de escribir el
 esquema**, con diff escrito para cada par.
 
 **Verificado contra el SQL, no contra la pista** (R4) — y las dos veces la pista se quedaba corta:
@@ -292,7 +292,7 @@ dentro de un JSON no es un escape válido. El hook **no** se comió el payload r
 nada: escribió `no pude parsear el payload del hook` por stderr y salió con código 1.
 
 Es el **modo de fallo nº1 de su propio docblock, funcionando en vivo** —*"el script revienta →
-RUIDOSO ✔"*— y el complemento exacto del bug que lo originó en G-Vento, donde un `catch` devolvía
+RUIDOSO ✔"*— y el complemento exacto del bug que lo originó en Vento, donde un `catch` devolvía
 la cadena vacía con exit 0 y el hook quedaba mudo, exitoso e invisible. Acá el contrato roto se
 anunció. **La diferencia entre los dos comportamientos son tres líneas de diseño**, y ésta es la
 primera vez que se la ve actuar contra un payload realmente malformado en vez de uno fabricado para
@@ -324,7 +324,7 @@ regla sin su historial se discute como opinión.
 | 1 | **extras** | suena a bar (aderezos, toppings) | `add_order_items_with_extras` es el **único camino de alta de ítems** del repo y donde se descuenta stock | **se renombra** — borrarlo rompía vender |
 | 2 | **`waiter_performance`** | "waiter" = mozo | une por `o.created_by` contra `profiles`: mide **usuarios**, no mozos. De mesas no tiene nada | **se renombra** a `user_performance` |
 | 3 | **turnos** | turno = cambio de mesero | `cash_movements.shift_id` es `not null` con `on delete cascade`; **3 RPC** leen el turno abierto; borrarlos deja los abonos de cartera **sin rastro de caja, en silencio** | **se renombran** a jornada/caja |
-| 4 | **recetas** (`product_components`) | G-Nexo no tiene recetas | es la relación "un producto que al moverse descuenta N de otro" — o sea **bulto→unidad**, que G-Nexo **sí** necesita: se compra por bulto, se vende por unidad | **se renombra** |
+| 4 | **recetas** (`product_components`) | Nodo no tiene recetas | es la relación "un producto que al moverse descuenta N de otro" — o sea **bulto→unidad**, que Nodo **sí** necesita: se compra por bulto, se vende por unidad | **se renombra** |
 
 **Cuatro de cuatro.** En los cuatro casos la evidencia a favor de podar era **el nombre**, y en los
 cuatro el nombre venía del vertical de origen mientras el mecanismo venía del problema — y el
@@ -397,7 +397,7 @@ ahí son archivos y editarlos es gratis. Después son migraciones aplicadas y R5
 falte se arregla con una migración nueva, no editando.
 
 Esto **no se agrega al texto de R5** a propósito. La numeración y la redacción de las once reglas
-son idénticas a las de G-Vento porque las skills citan por número (ver R1); tocar el cuerpo de R5
+son idénticas a las de Vento porque las skills citan por número (ver R1); tocar el cuerpo de R5
 acá crearía un contrato divergente, que es exactamente el criterio con el que se acepto la
 divergencia del ledger: **instrumentar puede divergir; el texto de la regla, no.** El corolario
 vive acá y en `docs/plan-esquema-base.md`.
@@ -424,7 +424,7 @@ sumar un estado es barato o caro, y esa asimetría se aplicó **tres veces** en 
 alguien hubiera planificado "bajar `subscription_status` de enum a CHECK", habría planificado un
 trabajo que no existe.
 
-⚠️ **Ironía útil:** la decisión de usar `CHECK` ya estaba tomada en G-Vento **y por nuestro mismo
+⚠️ **Ironía útil:** la decisión de usar `CHECK` ya estaba tomada en Vento **y por nuestro mismo
 argumento**, escrito en el archivo heredado: *"es una bandera compartida entre dos repos: ampliar
 un CHECK es un drop/add trivial, ampliar un enum es ALTER TYPE"*. O sea que redescubrimos un
 razonamiento que ya estaba, porque la nota de estado nos decía lo contrario del código.
@@ -445,8 +445,8 @@ simplemente **no dice nada**, que a los efectos del contrato es lo mismo.
 
 ## 2026-08-31 · El contrato de variables de entorno estaba roto ANTES de tocarlo
 
-Al renombrar la marca heredada aparecio que **el codigo leia `VITE_GVENTO_SUPABASE_URL` mientras
-`CLAUDE.md` y `.env.example` declaraban `VITE_GNEXO_SUPABASE_URL`**. Un `.env` escrito siguiendo la
+Al renombrar la marca heredada aparecio que **el codigo leia `VITE_VENTO_SUPABASE_URL` mientras
+`CLAUDE.md` y `.env.example` declaraban `VITE_NODO_SUPABASE_URL`**. Un `.env` escrito siguiendo la
 documentacion no conectaba con nada.
 
 **No lo introdujo el renombre: ya estaba, desde que se escribio el documento.** Cinco dias con dos
@@ -460,7 +460,7 @@ repo: describia **la intencion** de quien lo escribio. Las dos se ven identicas 
 se distinguen ejecutando.
 
 ⚠️ **Y el agravante que hace de esto un caso y no una anecdota: NO habia una sola fuente
-equivocada, habia dos de acuerdo entre si.** `CLAUDE.md` y `.env.example` decian ambos `GNEXO`. Dos
+equivocada, habia dos de acuerdo entre si.** `CLAUDE.md` y `.env.example` decian ambos `NODO`. Dos
 lados coincidiendo se lee como confirmacion — pero los dos eran documentos, y **ningun documento
 ejecuta**. La coincidencia entre dos declaraciones no es evidencia: es la misma afirmacion escrita
 dos veces.
@@ -482,9 +482,9 @@ este renombre:
 
 | Declara `.env.example` | Lee el codigo |
 |---|---|
-| `VITE_GNEXO_SUPABASE_URL` | ✅ ahora `VITE_GNEXO_SUPABASE_URL` |
-| `VITE_GNEXO_SUPABASE_ANON_KEY` | ✅ ahora `VITE_GNEXO_SUPABASE_ANON_KEY` |
-| `VITE_GNEXO_SENTRY_DSN` | 🔴 `VITE_SENTRY_DSN` — **nunca van a coincidir** |
+| `VITE_NODO_SUPABASE_URL` | ✅ ahora `VITE_NODO_SUPABASE_URL` |
+| `VITE_NODO_SUPABASE_ANON_KEY` | ✅ ahora `VITE_NODO_SUPABASE_ANON_KEY` |
+| `VITE_NODO_SENTRY_DSN` | 🔴 `VITE_SENTRY_DSN` — **nunca van a coincidir** |
 
 Y el modo de fallo de ese tercero es peor que el de los otros dos: si el DSN no llega, **Sentry
 simplemente no inicializa**. No hay error, no hay pantalla rota — hay ausencia de reportes, que se

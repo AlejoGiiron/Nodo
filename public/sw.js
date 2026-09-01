@@ -1,4 +1,4 @@
-const CACHE = 'gvento-kds-v1'
+const CACHE = 'vento-kds-v1'
 
 self.addEventListener('install', (e) => {
   self.skipWaiting()

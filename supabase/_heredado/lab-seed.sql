@@ -1,5 +1,5 @@
 -- ============================================================
--- G-Vento — Semilla del LABORATORIO de pruebas E2E
+-- Vento — Semilla del LABORATORIO de pruebas E2E
 --
 -- Crea un ecosistema de pruebas AISLADO de los datos reales (org "G-10")
 -- reutilizando la arquitectura multi-tenant existente: una organización

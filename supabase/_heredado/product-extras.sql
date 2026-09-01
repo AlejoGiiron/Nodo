@@ -1,5 +1,5 @@
 -- ============================================================
--- G-Vento — Extras (subproductos reutilizables)
+-- Vento — Extras (subproductos reutilizables)
 -- Parte 1: catálogo por sede + asignación a productos + extras por línea.
 -- La selección en POS/Mesas y el descuento de inventario van en una
 -- migración/feature posterior (prompt 2).

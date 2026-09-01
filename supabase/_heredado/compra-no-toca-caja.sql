@@ -1,5 +1,5 @@
 -- ============================================================
--- G-Vento — Compra NO toca la caja (fix de raíz)
+-- Vento — Compra NO toca la caja (fix de raíz)
 --
 -- Regla del cliente: registrar una compra NUNCA debe generar un egreso de
 -- caja automático. El efectivo que sale del cajón lo registra el cajero como

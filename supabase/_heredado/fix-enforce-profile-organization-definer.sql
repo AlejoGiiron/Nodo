@@ -1,5 +1,5 @@
 -- ============================================================
--- G-Vento — FIX: enforce_profile_organization debe ser SECURITY DEFINER
+-- Vento — FIX: enforce_profile_organization debe ser SECURITY DEFINER
 --
 -- Migracion NUEVA. No edita profiles-organization-invariant.sql (ya aplicada).
 --

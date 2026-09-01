@@ -9,7 +9,7 @@
 -- ============================================================
 
 -- ============================================================
--- G-Vento — SEMILLA DE DEMO · CAFETERÍA ("Café Aroma")
+-- Vento — SEMILLA DE DEMO · CAFETERÍA ("Café Aroma")
 --
 -- Variante de demo-seed.sql para un negocio de MOSTRADOR: se pide en barra y
 -- se lleva. Sin mesas, sin domicilios, sin cocina.

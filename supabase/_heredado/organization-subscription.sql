@@ -1,8 +1,8 @@
 -- ============================================================
--- G-Vento — FASE 1: estado de suscripción escrito por G-Centro
+-- Vento — FASE 1: estado de suscripción escrito por G-Centro
 --
 -- ARQUITECTURA: G-Centro (panel de suscripciones, repo y BD aparte) ESCRIBE
--- una bandera en organizations; G-Vento solo LEE. Si G-Centro se cae, el POS
+-- una bandera en organizations; Vento solo LEE. Si G-Centro se cae, el POS
 -- sigue vendiendo — por eso el default es 'active' y NO hay NOT NULL sin
 -- default: la ausencia de información nunca puede degradar a un cliente.
 --
@@ -156,7 +156,7 @@ alter table public.organizations
     check (subscription_status in
       ('active', 'expiring', 'grace', 'restricted', 'suspended'));
 
--- Mensaje que G-Vento mostrará al usuario (español). El nombre de la columna va
+-- Mensaje que Vento mostrará al usuario (español). El nombre de la columna va
 -- en inglés como todo el esquema; el CONTENIDO en español es lo mismo que
 -- `notes` o `cancel_reason`.
 alter table public.organizations

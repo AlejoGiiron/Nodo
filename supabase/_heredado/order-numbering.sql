@@ -1,8 +1,8 @@
 -- ============================================================
--- G-Vento — Numeración secuencial de ventas (por sede)
+-- Vento — Numeración secuencial de ventas (por sede)
 --
 -- Da a cada venta COMPLETADA un número correlativo legible (#1, #2, …)
--- independiente por sede. Inspirado en cómo lo maneja G-Mura.
+-- independiente por sede. Inspirado en cómo lo maneja Mura.
 --
 -- Decisiones:
 --   • orders.order_number es NULLABLE: solo las ventas cobradas reciben

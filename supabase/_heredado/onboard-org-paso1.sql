@@ -1,5 +1,5 @@
 -- ============================================================
--- G-Vento — Onboarding de ORGANIZACIÓN NUEVA · PASO 1 de 3
+-- Vento — Onboarding de ORGANIZACIÓN NUEVA · PASO 1 de 3
 --            (estructura: organización + sede + roles)
 --
 -- 🔴 ESTO NO ES UNA MIGRACIÓN. No define ni altera esquema.

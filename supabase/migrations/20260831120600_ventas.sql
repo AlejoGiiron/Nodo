@@ -1,16 +1,16 @@
 -- ============================================================
--- G-Nexo — Esquema base · 06 · Ventas
+-- Nodo — Esquema base · 06 · Ventas
 --
--- ORIGEN: consolidado de G-Vento `d848852`:
+-- ORIGEN: consolidado de Vento `d848852`:
 --   · orders, order_items, payments ← schema.sql, seccion 3
 --   · columnas de anulacion         ← sale-void.sql
 --   · store_sequences, next_order_number ← order-numbering.sql
 --
--- R5: no aplicado en G-Nexo (base vacia). Desde el primer `db push`, R5 manda.
+-- R5: no aplicado en Nodo (base vacia). Desde el primer `db push`, R5 manda.
 --
 -- ── LO QUE NO VIAJA, Y POR QUE ─────────────────────────────────────────────
 --   · orders.type (order_type)  → el eje dine_in/takeaway/delivery es de
---     restaurante. G-Nexo vende sobre mostrador y no tiene rutas ni despacho.
+--     restaurante. Nodo vende sobre mostrador y no tiene rutas ni despacho.
 --   · orders.table_id y chk_dine_in_has_table → mesas.
 --   · orders.waiter_name        → mozos.
 --   · el `update roles set permissions` de sale-void.sql → hallazgo H4: el
@@ -69,7 +69,7 @@ create trigger trg_orders_updated_at
 comment on column public.orders.discount_amount is
   'Descuento aplicado en COP, ya reflejado en orders.total. 0 = sin descuento. '
   'Persiste el descuento REAL: derivarlo como subtotal - total es una '
-  'estimacion, y esa deuda ya se pago una vez en G-Vento.';
+  'estimacion, y esa deuda ya se pago una vez en Vento.';
 comment on column public.orders.discount_type is
   'Como se ingreso: pct | fixed. null si no hubo descuento.';
 
@@ -83,7 +83,7 @@ comment on column public.orders.discount_type is
 --   Consumidores: supabase-helpers (applyDiscount, idempotente), SalesHistory,
 --   y 4 filas de la tabla de 74 columnas de sentry.test.ts (R1 punto 6).
 --
---   NO VIAJAN (mecanica promocional de G-Vento): discount_kind con su valor
+--   NO VIAJAN (mecanica promocional de Vento): discount_kind con su valor
 --   'vale' (el "ruletazo"), la constraint chk_vale_is_fixed y el indice parcial
 --   idx_orders_vale. Sus consumidores —getVouchersTotal en shiftCalc, el KPI
 --   "total regalado" de useReports y CloseShiftModal— son TODOS features del
@@ -92,7 +92,7 @@ comment on column public.orders.discount_type is
 -- ⚠️ Asimetria que hace barata esta decision, al reves que con los enums:
 --    discount_kind se restringia con un CHECK, no con un tipo enumerado. Un
 --    CHECK se amplia con un `alter table` trivial. Si aparece una promocion en
---    G-Nexo, la columna vuelve sin recrear nada.
+--    Nodo, la columna vuelve sin recrear nada.
 --
 -- ⏳ PENDIENTE QUE SIGUE ABIERTO: orders.payment_status y orders.customer_id
 --    (cartera) se agregan en la migracion `clientes_y_cartera`, cuando exista la tabla customers.

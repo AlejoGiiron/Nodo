@@ -1,4 +1,4 @@
-# G-Nexo — contexto del proyecto
+# Nodo — contexto del proyecto
 
 > **Los tres archivos, y cuándo se lee cada uno:**
 >
@@ -8,14 +8,24 @@
 > | [`docs/BITACORA.md`](docs/BITACORA.md) | cuando una regla te parezca discutible, o necesites contexto | la evidencia medida de cada regla + el detalle de cada fase y sesión |
 > | [`docs/DEUDAS.md`](docs/DEUDAS.md) | **al planificar** | deudas vigentes + ideas pospuestas (NO son backlog) |
 >
-> Estructura heredada de G-Vento, donde se separaron el 2026-08-26 porque de 36 afirmaciones
+> Estructura heredada de Vento, donde se separaron el 2026-08-26 porque de 36 afirmaciones
 > auditadas, **las 8 falsas eran todas de ESTADO** y ninguna de regla: el registro es la parte
 > que se pudre, y estaba mezclado con lo que hay que leer siempre.
 
-> **Nombre provisional.** Pendiente: whois de `gnexo.co` / `gnexo.com` y consulta de marca en el
-> SIC, clases 9 y 42 — existen al menos tres empresas de software colombianas con la raíz "Nexo".
-> Reemplazos evaluados si sale apretado: `G-Nodo`, `G-Lazo`. Cambiar el nombre hoy toca este
-> título y las variables de entorno. Después, no (ver R1 y el caso `restaurant_id` × 1.010).
+> **Nombre FIJADO: Nodo.** Se verificó el riesgo marcario y por eso no lleva prefijo: en
+> Colombia hay al menos cuatro entidades activas con raíz "Nexo" —Nexos Software S.A.S.
+> (Envigado), Nexosoft (Bogotá), Nexo Logistics SAS, Nexos Group— y el cruce software +
+> logística es nuestro terreno exacto. Agregar una letra no lo resolvía: **la SIC evalúa
+> similitud fonética y conceptual, no la cadena literal.**
+>
+> ⛔ **Pendiente: el registro formal en la SIC, clases 9 y 42.** La verificación de riesgo
+> no es un registro.
+>
+> **Convención de la familia, definitiva.** Los productos son la raíz sola, sin prefijo ni
+> guion: **Vento · Mura · Cresco · Nodo**. La pertenencia a la casa la da el endoso, no una
+> letra: hacia afuera se dice **"Nodo, de Giiron"**. En código, repos, paquetes, rutas y
+> variables de entorno va **`nodo`** en minúscula, sin guion y sin "g". La marca madre se
+> escribe siempre **Giiron**, con doble i.
 
 ---
 
@@ -25,7 +35,7 @@ Sistema de mostrador, catálogo, clientes y cartera para negocios que mantienen 
 referencias y venden sobre un mostrador, algunos a crédito: distribuidoras, mayoristas,
 comercializadoras, ferreterías, droguerías, repuestos, aseo, alimentos, bebidas, consumo masivo.
 
-Forkeado de G-Vento (POS de restaurantes) en agosto de 2026.
+Forkeado de Vento (POS de restaurantes) en agosto de 2026.
 
 **El producto es horizontal.** Ningún módulo, tabla, permiso o texto de UI debe asumir un
 vertical concreto. Si una pantalla dice "distribuidora", está mal: la misma pantalla la usa una
@@ -34,11 +44,11 @@ ferretería.
 **Alcance (2026-08-31, tras la firma del primer cliente):** base técnica + catálogo + clientes +
 cartera + pedidos + **compras, inventario, gastos y utilidades**. La condición que mantenía a estos
 cuatro afuera era "hasta que haya cliente firmado", y se cumplió. ≈30.000 líneas.
-**Se agrega respecto de G-Vento:** preventa, cupo de crédito, pedidos por WhatsApp/teléfono.
+**Se agrega respecto de Vento:** preventa, cupo de crédito, pedidos por WhatsApp/teléfono.
 **No existe y no está planeado:** rutas propias, despacho, tracking. El cliente carga y se lleva.
 
-🔴 **Inventario y compras NO viajan tal cual desde G-Vento.** Están en el **43,3% de zona gris**,
-no en el 21,7% que se copia. Tres diferencias medidas: G-Vento descuenta stock **por receta**
+🔴 **Inventario y compras NO viajan tal cual desde Vento.** Están en el **43,3% de zona gris**,
+no en el 21,7% que se copia. Tres diferencias medidas: Vento descuenta stock **por receta**
 (`add_order_items_with_extras`) y acá no hay recetas; la **unidad de compra difiere de la de venta**
 (se compra por bulto, se vende por unidad) y eso no existe en un bar; y el **costo por producto** se
 recalcula en cada compra en vez de derivarse de una receta. Tratarlos como copia es exactamente la
@@ -48,10 +58,10 @@ premisa que el diagnóstico advierte.
 
 **Una app Vite única.** No hay `apps/`, no hay `packages/shared`, no hay `pnpm-workspace.yaml`.
 
-Se anota en negativo a propósito: el `CLAUDE.md` de G-Vento afirma ser un monorepo con
+Se anota en negativo a propósito: el `CLAUDE.md` de Vento afirma ser un monorepo con
 `apps/pos`, `apps/store`, `apps/mobile` y `packages/shared`, y **esa afirmación es falsa** — fue
 la novena nota de estado falsa encontrada en ese repo y al 2026-08-31 sigue sin corregirse allá.
-G-Cresco sí es un monorepo con pnpm workspaces; **eso no aplica acá**. Si algún día G-Nexo
+Cresco sí es un monorepo con pnpm workspaces; **eso no aplica acá**. Si algún día Nodo
 necesita uno, será una decisión tomada y fechada, no una herencia asumida.
 
 ## Stack tecnológico
@@ -88,21 +98,21 @@ necesita uno, será una decisión tomada y fechada, no una herencia asumida.
 
 Esta sección existe desde el día uno a propósito. Cuando un cliente haga algo que al mirar los
 datos parezca una anomalía y sea en realidad una decisión suya, se anota **acá y antes** de que
-alguna sesión lo "descubra" y proponga arreglarlo. En G-Vento pasó exactamente eso.
+alguna sesión lo "descubra" y proponga arreglarlo. En Vento pasó exactamente eso.
 
-**No se hereda nada de esta sección de G-Vento.** Los comportamientos de G-10 y Salchimelo —las
+**No se hereda nada de esta sección de Vento.** Los comportamientos de G-10 y Salchimelo —las
 mesas abiertas usadas como cuenta corriente interna, por ejemplo— son estado de negocio ajeno.
 
 ---
 
 ## 🔴 REGLAS DE CLASE — leer ANTES de trabajar (esto es lo único obligatorio)
 
-> **Copiadas literales de G-Vento el 2026-08-31.** La numeración R0–R10 se mantiene idéntica a
+> **Copiadas literales de Vento el 2026-08-31.** La numeración R0–R10 se mantiene idéntica a
 > propósito: las skills citan las reglas **por número**, y renumerarlas rompería las referencias
 > cruzadas entre los dos productos. Lo único que cambia es el **inventario de R1**, que es estado
 > y por lo tanto se reconstruye para este repo.
 >
-> G-Nexo nace con esto puesto. A G-Vento le costó veinte días y once errores repetidos llegar acá.
+> Nodo nace con esto puesto. A Vento le costó veinte días y once errores repetidos llegar acá.
 
 Once reglas. Son la **forma corta**: accionables solas, sin abrir la evidencia. Cada una dice su
 **modo de fallo**, porque los once errores repetidos del proyecto hermano no vinieron de
@@ -113,7 +123,7 @@ palabras que uno grepearía (`allowlist`, `fail-open`, `por-id`, `validar-vs-for
 > **🔴 POR QUÉ UN RECORDATORIO NO ALCANZA — y el hook sí.** Un recordatorio que se puede **leer
 > sin contestar se salta en silencio**; uno que **exige respuesta deja la omisión visible**. Esa
 > es la diferencia real entre este bloque y el hook `PreToolUse`, y no es de contenido: los dos
-> dicen lo mismo. Es de **distancia entre la carga y la decisión**. Medido en G-Vento el
+> dicen lo mismo. Es de **distancia entre la carga y la decisión**. Medido en Vento el
 > 2026-08-26: CLAUDE.md estaba cargado y decía "allowlist, nunca deny-list", y el guard deny-list
 > igual se escribió — 200 líneas después de empezar la tarea, sin volver a mirar. Una skill habría
 > tenido el mismo destino: **se carga al empezar la tarea, no cuando tomás la decisión.** Corolario
@@ -155,34 +165,34 @@ flujo se cae**. No hay error, no hay test rojo: hay una pantalla vacía meses de
 **📋 INVENTARIO DE LOS CONTRATOS VIVOS HOY.** *Al 2026-08-31. Para reconfirmarlo,
 `grep -rln '<un valor del contrato>' src/ supabase/ tests/`.*
 
-En G-Nexo el problema es **más grave que un fork normal**: los dos productos se parecen mucho y,
+En Nodo el problema es **más grave que un fork normal**: los dos productos se parecen mucho y,
 según el propio prospecto, **no se espera que diverjan** en los próximos meses. Un defecto
 arreglado en un lugar **no llega solo a su hermano** — nueve repeticiones en veinte días, medido
-en G-Vento.
+en Vento.
 
-1. **Catálogo de permisos RBAC.** **NO se comparte** el catálogo con G-Vento: G-Nexo necesita el
+1. **Catálogo de permisos RBAC.** **NO se comparte** el catálogo con Vento: Nodo necesita el
    suyo. Lo que se copia es el **generador**, que allá ya está hecho y aplicado (2026-08-31):
    7 lados pasaron a 2. Fuente `SYSTEM_ROLES` en `src/lib/permissions.ts`; salida, la función
    `seed_system_roles(p_org)` que los seeds llaman. **No** son bloques generados y pegados: una
    copia generada se edita a mano igual de fácil que una escrita a mano.
    Diseño a replicar sin cambios: `admin = ALL_PERMISSION_KEYS` **derivado**, nunca enumerado
-   (enumerarlo dejó las 4 copias de G-Vento con 16/20/18/23); la función **no** es
+   (enumerarlo dejó las 4 copias de Vento con 16/20/18/23); la función **no** es
    `SECURITY DEFINER` y revoca también a `authenticated`; dos guards fail-closed (`p_org` null y
    organización inexistente).
    🔴 **La verificación es un check de CI (`regenerar && git diff --exit-code`), NO un hook.** Un
    hook dispara cuando tocás un archivo, y el fallo documentado fue un seed congelado **porque
    nadie lo tocó**. Un hook no detecta omisiones; el check de árbol sí.
-   ⚠️ Residuo heredado a no repetir: en G-Vento, `ventas.anular` **no estaba en
+   ⚠️ Residuo heredado a no repetir: en Vento, `ventas.anular` **no estaba en
    `PERMISSION_GROUPS`**, así que se enforceaba pero no se podía conceder desde la UI de Roles.
    ⚠️ Y una clave en el catálogo **no** es evidencia de que algo esté protegido: allá 6 permisos
    no gateaban nada y fallaban **abierto**.
 
-2. **Filtro de PII de Sentry.** Ya triplicado en G-Vento y **con drift medido**. Es el contrato
-   que más justifica extraerse a paquete real. G-Nexo arranca con la versión **corregida**, no con
+2. **Filtro de PII de Sentry.** Ya triplicado en Vento y **con drift medido**. Es el contrato
+   que más justifica extraerse a paquete real. Nodo arranca con la versión **corregida**, no con
    la que tiene huecos.
 
-3. **`subscription_status` — 6 lados, TRES REPOS.** ⚠️ **Corregido el 2026-08-31: NO es un enum**, es `text` con `CHECK`. Se verifico leyendo el SQL; la version anterior de esta nota decia "enum" y dirigia mal justo donde importa, porque la asimetria enum/CHECK es la que decide si sumar un estado es caro. Ampliar el CHECK es un `drop`/`add constraint` trivial, y la decision ya venia tomada de G-Vento por esa misma razon. Ya eran 4 lados y 2 repos entre
-   G-Vento y G-Centro; G-Nexo agrega los suyos. **No existe ningún mecanismo que garantice el
+3. **`subscription_status` — 6 lados, TRES REPOS.** ⚠️ **Corregido el 2026-08-31: NO es un enum**, es `text` con `CHECK`. Se verifico leyendo el SQL; la version anterior de esta nota decia "enum" y dirigia mal justo donde importa, porque la asimetria enum/CHECK es la que decide si sumar un estado es caro. Ampliar el CHECK es un `drop`/`add constraint` trivial, y la decision ya venia tomada de Vento por esa misma razon. Ya eran 4 lados y 2 repos entre
+   Vento y G-Centro; Nodo agrega los suyos. **No existe ningún mecanismo que garantice el
    aviso.** El aviso a G-Centro va ANTES del deploy, no después. **Paquete real.**
    📋 Lados **dentro de este repo**, enumerados el 2026-08-31 y **consistentes entre si**: el CHECK
    de `supabase/02b-suscripcion.sql` · `ESTADOS` en `supabase/functions/aplicar-estado/index.ts` ·
@@ -190,18 +200,18 @@ en G-Vento.
    `src/hooks/useSubscriptionStatus.ts`, que maneja solo 2 de los 5 **a proposito y con test que lo
    asevera**. ⚠️ `src/types/database.types.ts` lo tipa como `string`: TS **no** atrapa un valor invalido.
 
-4. **`payment_method` — de 4 lados a 8.** No estaba en el inventario original de G-Vento. Vigilar
+4. **`payment_method` — de 4 lados a 8.** No estaba en el inventario original de Vento. Vigilar
    desde el primer commit.
 
-5. **`src/types/database.types.ts` escrito a mano vs la BD real.** El CLI de G-Vento da 403 de
+5. **`src/types/database.types.ts` escrito a mano vs la BD real.** El CLI de Vento da 403 de
    management y varias entradas se agregaron a mano. Los tipos pueden divergir del esquema **sin
-   que `tsc` lo note** — el proxy exacto que R4 prohíbe confundir con la cosa real. En G-Nexo:
+   que `tsc` lo note** — el proxy exacto que R4 prohíbe confundir con la cosa real. En Nodo:
    verificar que el CLI funcione **antes** de escribir la primera migración.
 
-6. **Tabla de columnas de `src/lib/sentry.test.ts` vs el esquema real.** En G-Vento son 74
+6. **Tabla de columnas de `src/lib/sentry.test.ts` vs el esquema real.** En Vento son 74
    entradas. Agregar una columna al esquema obliga a agregarla ahí, en la misma sesión.
 
-7. **Nombre de la entidad sede — `sede_id`. DECIDIDO el 2026-08-31.** En G-Vento no se renombra:
+7. **Nombre de la entidad sede — `sede_id`. DECIDIDO el 2026-08-31.** En Vento no se renombra:
    `restaurant_id` × 1.010 en 77 archivos, y allá "restaurant" es **cierto**. Acá sería **falso**, y
    un nombre falso dirige mal. Además el repo heredado **ya usa la palabra "sede"**: el permiso
    `sedes.gestionar` existe en el catálogo y R6 dice textualmente *"la organización de una sede es
@@ -223,17 +233,17 @@ en G-Vento.
 
 9. **Los hooks mismos.** `.claude/settings.json` y `.claude/hooks/sql-checklist.mjs` viven ahora
    en dos repos con la misma lógica y nada que los sincronice. No estaba en el inventario de
-   G-Vento porque allá era un solo lado. Si arreglás el matcheo de permisos en un repo, **no
+   Vento porque allá era un solo lado. Si arreglás el matcheo de permisos en un repo, **no
    llega solo al otro**.
-   🔴 **YA DIVERGEN — decisión tomada el 2026-08-31, no un descuido.** G-Nexo le agregó al hook un
-   **ledger de disparos** (`.claude/hook-ledger.jsonl`, ignorado por git) y G-Vento **no lo tiene**.
+   🔴 **YA DIVERGEN — decisión tomada el 2026-08-31, no un descuido.** Nodo le agregó al hook un
+   **ledger de disparos** (`.claude/hook-ledger.jsonl`, ignorado por git) y Vento **no lo tiene**.
    Se aceptó la divergencia porque el ledger es un **instrumento de medición** de la deuda #22, no
-   una mejora del mecanismo: medir en un repo alcanza, y el volumen de disparos de G-Vento no es
-   comparable con el de G-Nexo. ⚠️ **El corolario es la parte que importa:** cuando la deuda #22 se
+   una mejora del mecanismo: medir en un repo alcanza, y el volumen de disparos de Vento no es
+   comparable con el de Nodo. ⚠️ **El corolario es la parte que importa:** cuando la deuda #22 se
    resuelva y el cambio sea al **matcheo**, ese sí va a los dos repos. La regla práctica que queda:
    **instrumentar puede divergir; corregir, no.**
 
-→ **Evidencia:** repo de G-Vento, `docs/BITACORA.md` → *"FASE 1 — estado de suscripción"*.
+→ **Evidencia:** repo de Vento, `docs/BITACORA.md` → *"FASE 1 — estado de suscripción"*.
 
 ---
 
@@ -247,7 +257,7 @@ escribir, y lo que no está en la lista no existe hasta que estalla. La allowlis
 que se nota. Corolario: **un `catch` que convierte un error en `''` es fail-open** — el error
 tiene que salir ruidoso.
 
-→ **Evidencia:** repo de G-Vento, `docs/BITACORA.md` → *"Filtros de privacidad: ALLOWLIST por
+→ **Evidencia:** repo de Vento, `docs/BITACORA.md` → *"Filtros de privacidad: ALLOWLIST por
 clave, nunca deny-list"* · en código: el guard de `supabase/demo-seed-cafeteria.sql`.
 
 ---
@@ -260,10 +270,10 @@ arreglá las hermanas **en el mismo commit** aunque estén en verde.
 **Modo de fallo:** la instancia huérfana estalla meses después y **nadie la asocia con este
 arreglo**, así que se paga el diagnóstico entero de nuevo.
 
-⚠️ **En G-Nexo esta regla cruza el límite del repo.** Mientras los dos productos se parezcan, la
-pregunta "¿tiene hermanas?" incluye a G-Vento. Ver R1.
+⚠️ **En Nodo esta regla cruza el límite del repo.** Mientras los dos productos se parezcan, la
+pregunta "¿tiene hermanas?" incluye a Vento. Ver R1.
 
-→ **Evidencia:** repo de G-Vento, `docs/BITACORA.md` → *"Un defecto de CLASE se barre en toda la
+→ **Evidencia:** repo de Vento, `docs/BITACORA.md` → *"Un defecto de CLASE se barre en toda la
 suite, no solo donde estalló"* — locator de `anular-venta`, las 15 copias del patrón inerte, y el
 caso #11 (el hook mudo).
 
@@ -276,10 +286,10 @@ prueba el SQL** — triggers, RLS y vistas solo se verifican ejecutando con dato
 copiar un patrón de referencia, `command -v` sus dependencias.
 
 **Modo de fallo:** el proxy dice OK y concluís que funciona. **"Es el patrón canónico" no es
-evidencia de que funcione acá:** `jq` no estaba instalado en la máquina de G-Vento y el hook habría
+evidencia de que funcione acá:** `jq` no estaba instalado en la máquina de Vento y el hook habría
 nacido mudo si se copiaba el ejemplo oficial.
 
-**⚠️ Límite de esta regla, descubierto en G-Vento el 2026-08-31:** sobre **artefactos
+**⚠️ Límite de esta regla, descubierto en Vento el 2026-08-31:** sobre **artefactos
 generados**, el archivo que acabás de escribir **no es el que git materializa** — con `autocrlf`
 son distintos. Un check de artefacto se valida **después de un checkout**, no en la sesión que lo
 creó. El defecto del CRLF mordió al parche que lo documentaba, en el mismo turno.
@@ -300,8 +310,8 @@ Y hay algo peor que la falta de evidencia: **leer una declaración falsa la conf
 la deja igual de intacta y un poco más creíble, porque ahora "ya la revisamos". Un documento no se
 audita releyéndolo; se audita ejecutando contra él.
 
-**Caso medido (2026-08-31).** `CLAUDE.md` y `.env.example` declaraban `VITE_GNEXO_SUPABASE_URL`
-mientras el código leía `VITE_GVENTO_SUPABASE_URL`. **Dos documentos de acuerdo entre sí, cinco
+**Caso medido (2026-08-31).** `CLAUDE.md` y `.env.example` declaraban `VITE_NODO_SUPABASE_URL`
+mientras el código leía `VITE_VENTO_SUPABASE_URL`. **Dos documentos de acuerdo entre sí, cinco
 días**, leídos muchas veces —para escribir el esquema, para citar R1, para el runbook— y ninguna
 lectura lo destapó. Lo destapó **enumerar qué consume el código y comparar**. Un `.env` escrito
 siguiendo la documentación no conectaba con nada.
@@ -315,7 +325,7 @@ grepearon los nombres —eso son otra vez dos declaraciones—: se compiló con 
 buscó **el valor en el bundle**, y después se recompiló con el nombre viejo para confirmar que
 **el centinela desaparecía**. Recién ahí el verde valía algo.
 
-→ **Evidencia:** *"Aprendizajes de proyectos hermanos"* más abajo · repo de G-Vento,
+→ **Evidencia:** *"Aprendizajes de proyectos hermanos"* más abajo · repo de Vento,
 `docs/BITACORA.md` → *"Trampas de TERMINAL"*.
 
 ---
@@ -339,9 +349,9 @@ quien la mire. Corolario: un trigger de invariante **VALIDA, no fuerza**; forzar
 silencio y el resultado pasa a depender del orden de disparo.
 
 **Modo de fallo:** rechaza operaciones válidas con un mensaje que **apunta al lugar equivocado**.
-En G-Vento fue fail-closed por suerte, no por diseño.
+En Vento fue fail-closed por suerte, no por diseño.
 
-→ **Evidencia:** repo de G-Vento, `supabase/fix-enforce-profile-organization-definer.sql` ·
+→ **Evidencia:** repo de Vento, `supabase/fix-enforce-profile-organization-definer.sql` ·
 `docs/BITACORA.md` → grepear `enforce_profile_organization`.
 
 ---
@@ -354,7 +364,7 @@ nunca sobre el timestamp crudo. Aplica a reportes, arqueo, cartera, cortes y see
 **Modo de fallo:** **no revienta.** Da un número plausible y equivocado, y el cliente lo detecta
 antes que vos. Es el perfil exacto de fallo silencioso que se paga caro.
 
-→ **Evidencia:** repo de G-Vento, `docs/BITACORA.md` → *"Detalle Vale descuento / ruletazo"*
+→ **Evidencia:** repo de Vento, `docs/BITACORA.md` → *"Detalle Vale descuento / ruletazo"*
 (grepear `getVouchersTotal`).
 
 ---
@@ -367,7 +377,7 @@ trace, y recién ahí re-correr.
 **Modo de fallo:** Playwright **borra `test-results/` al arrancar**. Re-correr destruye la única
 evidencia — y un flake, por definición, no se reproduce a pedido.
 
-→ **Evidencia:** repo de G-Vento, `docs/BITACORA.md` → *"ANTE UN FALLO: LEER LOS ARTEFACTOS ANTES
+→ **Evidencia:** repo de Vento, `docs/BITACORA.md` → *"ANTE UN FALLO: LEER LOS ARTEFACTOS ANTES
 DE RE-CORRER"*.
 
 ---
@@ -381,7 +391,7 @@ código **dentro** del archivo de salida y grepealo.
 **Modo de fallo:** verde falso anunciado como verdadero. Medido: la notificación dijo *"exit code
 0"* **4 de 4 veces, con dos suites rojas**.
 
-→ **Evidencia:** repo de G-Vento, `docs/BITACORA.md` → *"Trampas de TERMINAL — el síntoma no señala
+→ **Evidencia:** repo de Vento, `docs/BITACORA.md` → *"Trampas de TERMINAL — el síntoma no señala
 la causa"*.
 
 ---
@@ -395,23 +405,23 @@ negativo en la misma aserción—. Los tests que verifican *ausencia de redacci�
 fallar contra un no-op: son legítimos y van MARCADOS.
 
 **Modo de fallo:** el test pasa **por la razón equivocada** y da confianza sin cobertura. Medido en
-G-Vento: de 246 tests, **25 sobrevivieron al mutante y 58 más eran invisibles para él**.
+Vento: de 246 tests, **25 sobrevivieron al mutante y 58 más eran invisibles para él**.
 
-**⚠️ Límite de esta regla, descubierto en G-Vento el 2026-08-31:** un mutante **no encuentra lo
+**⚠️ Límite de esta regla, descubierto en Vento el 2026-08-31:** un mutante **no encuentra lo
 que la fixture no reproduce**. "Los 4 mutantes murieron" prueba que los tests miran al sujeto, no
 que las entradas cubran el mundo. La cobertura de entradas se audita aparte.
 
-→ **Evidencia:** repo de G-Vento, `docs/BITACORA.md` → *"Auditar una suite por MUTACIÓN, no
+→ **Evidencia:** repo de Vento, `docs/BITACORA.md` → *"Auditar una suite por MUTACIÓN, no
 leyéndola"*.
 
 ---
 
 ### R? · UNA GARANTÍA FALSA DONDE SE DECIDE LE GANA A TRES ADVERTENCIAS DONDE SE CODEA
 
-⛔ **Regla nueva, sin número asignado.** Salió del caso #13 de G-Vento el 2026-08-31 y todavía no
+⛔ **Regla nueva, sin número asignado.** Salió del caso #13 de Vento el 2026-08-31 y todavía no
 tiene número allá. **No la numero acá por mi cuenta:** las skills citan por número y R1 es
 exactamente sobre esto — asignarle un R11 unilateral crea un contrato divergente entre los dos
-repos el primer día. Numerarla en G-Vento primero, después acá.
+repos el primer día. Numerarla en Vento primero, después acá.
 
 Al escribir una garantía, **nombrá el mecanismo y su límite**. "Está aislado" no es verificable;
 "aislado por RLS + credenciales, y el check mira la organización, no la base" sí.
@@ -419,11 +429,11 @@ Al escribir una garantía, **nombrá el mecanismo y su límite**. "Está aislado
 **Modo de fallo:** tres archivos del repo decían la verdad y el único que mentía era el documento
 de planificación — **y ganó**. Una nota que tranquiliza mal es peor que una que dirige mal.
 
-→ **Evidencia:** repo de G-Vento, caso #13.
+→ **Evidencia:** repo de Vento, caso #13.
 
 ---
 
-## Aprendizajes de proyectos hermanos (G-Quota, G-Vento)
+## Aprendizajes de proyectos hermanos (G-Quota, Vento)
 
 Reglas duras traídas de los hermanos — aplican a todo el trabajo en este repo:
 
@@ -432,8 +442,8 @@ Reglas duras traídas de los hermanos — aplican a todo el trabajo en este repo
   contra la base, no contra la intuición.
 - **TIPOS GENERADOS, NO A MANO:** regenerar `database.types.ts` con
   `supabase gen types typescript` después de cada migración. Los 129 errores de tipos de la Fase 0
-  de G-Vento vinieron justamente de tipos escritos a mano y desincronizados con la BD (vistas sin
-  `Relationships`). **Verificar que el CLI funcione antes de la primera migración** — en G-Vento da
+  de Vento vinieron justamente de tipos escritos a mano y desincronizados con la BD (vistas sin
+  `Relationships`). **Verificar que el CLI funcione antes de la primera migración** — en Vento da
   403 de management y por eso terminaron a mano.
 - **MIGRACIONES NUEVAS, NUNCA EDITAR LAS APLICADAS:** todo cambio de esquema va en un archivo nuevo
   dentro de `supabase/`. Jamás modificar una migración que ya se aplicó.
@@ -449,7 +459,7 @@ Reglas duras traídas de los hermanos — aplican a todo el trabajo en este repo
 
 ---
 
-## Herencia de G-Vento
+## Herencia de Vento
 
 ### Lo que viaja
 
@@ -482,7 +492,7 @@ seeds y tests  → ¿quién la puebla?
 ```
 
 Si algo aparece: **no se borra — se renombra**, y el nombre nuevo sale de lo que la pieza *hace* en
-G-Nexo, no de lo que se llamaba en G-Vento.
+Nodo, no de lo que se llamaba en Vento.
 
 ```
 cocina  → tiene interruptor (uses_kitchen / routes_to_kitchen). Verificar qué cuelga igual.
@@ -542,8 +552,8 @@ que dice algo falso con toda confianza.
 | Nombre | Qué nombra afuera | Si se renombraba |
 |---|---|---|
 | `owner.test@gvento.com` · `cajero.test@gvento.com` | Cuentas que **existen en el backend del lab** | `tests/README.md` pasaba de cierto a **falso**: instrucciones para entrar con un usuario inexistente. |
-| `src/design-system.md` — *"G-Vento Design System"* | La identidad de **otro producto**. G-Nexo necesita el suyo (CLAUDE.md) | El título afirmaría que ese es el design system de G-Nexo. Un **pendiente honesto** se convertiría en una **nota falsa**. |
-| `VITE_GVENTO_SUPABASE_URL` | Una clave del `.env` de cada máquina, **fuera de git** | ✅ Sí se renombró — pero **no alcanzaba con el código**: exige que cada quien cambie su `.env`, y por eso se pidió confirmación en vez de darlo por cerrado. |
+| `src/design-system.md` — *"Vento Design System"* | La identidad de **otro producto**. Nodo necesita el suyo (CLAUDE.md) | El título afirmaría que ese es el design system de Nodo. Un **pendiente honesto** se convertiría en una **nota falsa**. |
+| `VITE_VENTO_SUPABASE_URL` | Una clave del `.env` de cada máquina, **fuera de git** | ✅ Sí se renombró — pero **no alcanzaba con el código**: exige que cada quien cambie su `.env`, y por eso se pidió confirmación en vez de darlo por cerrado. |
 
 **La distinción operativa**, que es lo que hay que aplicar: preguntá **dónde vive la otra punta**.
 
@@ -563,13 +573,13 @@ cambios: productos, inventario, clientes, fiado, compras, reportes.
 
 ### Premisas que los datos contradijeron
 
-Se creyeron ciertas en G-Vento y no lo eran. Van acá porque son el tipo de error que se repite.
+Se creyeron ciertas en Vento y no lo eran. Van acá porque son el tipo de error que se repite.
 
 1. **"Sacar turnos toca el cobro" — NO.** `payments` no tiene `shift_id`; la pertenencia al turno
    es temporal. El acoplamiento son dos `if (!isShiftOpen)` de UI.
    **Pero sí toca la cartera:** `debt_payments.cash_movement_id` es FK real a `cash_movements`, y
    `register_debt_payment` busca el turno abierto. El único módulo con dependencia estructural al
-   turno es fiado — justo el que sobrevive como cartera en G-Nexo.
+   turno es fiado — justo el que sobrevive como cartera en Nodo.
 
 2. **🔴 "Extras" NO es opcional.** `add_order_items_with_extras` es el **único camino de alta de
    ítems del repo** y donde se descuenta stock por receta. Borrarlo por sonar a bar **rompe
@@ -597,7 +607,7 @@ real.
 
 - Un `settings.json` malformado desactiva **todas** las settings del archivo, permisos incluidos.
 - Un script generado por heredoc puede quedar sintácticamente válido y **semánticamente muerto**.
-  Pasó tres veces en G-Vento: `require` en un `.mjs`, `\b` interpretado como byte `0x08`, `\\`
+  Pasó tres veces en Vento: `require` en un `.mjs`, `\b` interpretado como byte `0x08`, `\\`
   colapsado.
 - **Verificación obligatoria tras generar un hook:** `node --check` + grep de bytes de control.
   Y `command -v` de cada dependencia antes de copiar un patrón de referencia (R4: `jq` no estaba).
@@ -606,14 +616,14 @@ real.
 
 ### Estado
 
-`settings.json` y `sql-checklist.mjs` copiados de G-Vento el 2026-08-31 (rama `develop`,
-`d848852`). El **mecanismo** viaja literal; el **estado** de G-Vento (conteos del catálogo, los
-6 permisos inertes, sus deudas) fue reemplazado por el de G-Nexo.
+`settings.json` y `sql-checklist.mjs` copiados de Vento el 2026-08-31 (rama `develop`,
+`d848852`). El **mecanismo** viaja literal; el **estado** de Vento (conteos del catálogo, los
+6 permisos inertes, sus deudas) fue reemplazado por el de Nodo.
 
 ✅ **Ledger de disparos activo desde el 2026-08-31** (`.claude/hook-ledger.jsonl`, fuera de git):
 cada disparo anota fecha, herramienta y qué regla matcheó. Es el instrumento de la deuda #22.
 ⚠️ Registra **disparos, no invocaciones**: da volumen y mezcla de clases, **no una tasa** — para eso
-falta el denominador. Y **diverge de G-Vento a propósito** (R1 punto 9).
+falta el denominador. Y **diverge de Vento a propósito** (R1 punto 9).
 
 Verificado en banco: `node --check` limpio, sin bytes de control, ningún `require`; 10 casos de
 pipe-test — Write, Edit, Bash-heredoc, ruta Windows, `update roles set permissions` en un `.txt`
@@ -622,7 +632,7 @@ payload vacío y un `.tsx` **callan**.
 
 ✅ **Corre en la máquina real (2026-08-31).** No por un test: disparó 3 veces dentro de una sesión
 real, lo que prueba la cadena entera —settings leído por el harness, matcher activo, Node
-encontrado, script no mudo—. En G-Vento el script salió mudo la primera vez y
+encontrado, script no mudo—. En Vento el script salió mudo la primera vez y
 leyéndolo se veía perfecto — y esa advertencia se conserva como razón, no como pendiente.
 ⛔ **Falta el tripwire** `tests/roles.spec.ts` que clave el tamaño del catálogo.
 
@@ -635,7 +645,7 @@ leyéndolo se veía perfecto — y esa advertencia se conserva como razón, no c
 **Criterio de división:** las reglas viven en este archivo; el **procedimiento** vive en las
 skills. Cada skill **cita las reglas por número y no las repite** — repetirlas violaría R1.
 
-Por eso la numeración R0–R10 es idéntica a la de G-Vento: una skill que dice "ver R2" tiene que
+Por eso la numeración R0–R10 es idéntica a la de Vento: una skill que dice "ver R2" tiene que
 significar lo mismo en los dos repos.
 
 ---
@@ -643,8 +653,8 @@ significar lo mismo en los dos repos.
 ## Variables de entorno requeridas
 
 ```
-VITE_GNEXO_SUPABASE_URL=
-VITE_GNEXO_SUPABASE_ANON_KEY=
+VITE_NODO_SUPABASE_URL=
+VITE_NODO_SUPABASE_ANON_KEY=
 ```
 
 Ver `.env.example` para la lista completa.
@@ -653,7 +663,7 @@ Ver `.env.example` para la lista completa.
 
 ## Cómo se escribe una nota en este documento (convención)
 
-Salió de auditar las 36 afirmaciones verificables del documento de G-Vento contra el código
+Salió de auditar las 36 afirmaciones verificables del documento de Vento contra el código
 (2026-08-26). **Las 28 correctas eran reglas y mecanismos. Las 8 falsas eran TODAS afirmaciones de
 ESTADO** — qué rama tiene qué, cuántos tests hay, qué código existe hoy. Ninguna regla resultó
 falsa. El estado es lo que se pudre, así que se escribe distinto.
@@ -685,7 +695,7 @@ falsa. El estado es lo que se pudre, así que se escribe distinto.
 
 ## Design System
 
-⛔ **G-Nexo necesita el suyo.** El de G-Vento (`src/design-system.md`, acento emerald `#10b981`,
+⛔ **Nodo necesita el suyo.** El de Vento (`src/design-system.md`, acento emerald `#10b981`,
 layout POS 60/40) es la identidad de otro producto y **no se copia tal cual**.
 
 Lo que sí viaja es el **mecanismo**: un archivo `src/design-system.md` con los valores exactos de
@@ -716,18 +726,18 @@ Todo lo de esta sección caduca. Preferí siempre el comando sobre el dato.
 
 | Qué | Estado |
 |---|---|
-| Nombre | Provisional. Pendiente whois + SIC. |
+| Nombre | **Fijado: Nodo** (2026-08-31), tras verificar riesgo marcario. ⛔ Falta el registro en la SIC, clases 9 y 42. |
 | Repo | Creado (2026-08-31). |
 | Proyecto de Supabase | Creado (2026-08-31). Verificar que el CLI **no** dé 403 antes de la primera migración. |
 | Vercel | No existe. |
 | Sentry | No existe. Proyecto propio, con el filtro de PII ya corregido. |
-| Origen de la copia | G-Vento rama `develop`, `d848852`. También `docs/reglas-de-clase` en origin, viva hasta terminar de copiar. |
-| Conteo de errores repetidos en G-Vento | **Discrepante:** el traspaso dice 9, su `CLAUDE.md` dice 11, el cierre dice 13 y numera los casos #11–#14. Resolver contra `docs/BITACORA.md` antes de citarlo. |
+| Origen de la copia | Vento rama `develop`, `d848852`. También `docs/reglas-de-clase` en origin, viva hasta terminar de copiar. |
+| Conteo de errores repetidos en Vento | **Discrepante:** el traspaso dice 9, su `CLAUDE.md` dice 11, el cierre dice 13 y numera los casos #11–#14. Resolver contra `docs/BITACORA.md` antes de citarlo. |
 | `settings.json` + hooks | Copiados, verificados en banco y **corriendo en la máquina real** (2026-08-31): disparó 3 veces en sesión. ⛔ Las 3 fueron falsos positivos — tasa de ruido sin medir (deuda 22). |
-| G-Centro | Ya nació multi-producto. Enumerar qué falta para que G-Nexo entre como tercer producto — **en su propio hilo**. |
+| G-Centro | Ya nació multi-producto. Enumerar qué falta para que Nodo entre como tercer producto — **en su propio hilo**. |
 | `settings.json` + hooks | Copiados y verificados en banco. ⛔ Falta correrlos en la máquina real. |
-| Generador de RBAC | **Ya viajó** (2026-08-31). Existen `scripts/gen-rbac-sql.mjs` y `supabase/seed-system-roles.sql`; `pnpm gen:rbac:check` da **exit 0**. ⛔ Falta que ese check corra en **CI** (deuda 5) y ⛔ falta el **catálogo propio** (deuda 23): las 23 claves de `SYSTEM_ROLES` siguen siendo las de G-Vento (`cocina.*`, `mesas.*`, `delivery.*`). Viajó el mecanismo, no el contenido. Reconfirmar con `grep -oE "'[a-z_]+\.[a-z_]+'" src/lib/permissions.ts \| sort -u \| wc -l`. |
+| Generador de RBAC | **Ya viajó** (2026-08-31). Existen `scripts/gen-rbac-sql.mjs` y `supabase/seed-system-roles.sql`; `pnpm gen:rbac:check` da **exit 0**. ⛔ Falta que ese check corra en **CI** (deuda 5) y ⛔ falta el **catálogo propio** (deuda 23): las 23 claves de `SYSTEM_ROLES` siguen siendo las de Vento (`cocina.*`, `mesas.*`, `delivery.*`). Viajó el mecanismo, no el contenido. Reconfirmar con `grep -oE "'[a-z_]+\.[a-z_]+'" src/lib/permissions.ts \| sort -u \| wc -l`. |
 | Design system | ⛔ Pendiente. |
 | Tripwire del catálogo (`tests/roles.spec.ts`) | ⛔ Pendiente. |
-| Regla nueva sin número | ⛔ Numerarla en G-Vento primero. |
+| Regla nueva sin número | ⛔ Numerarla en Vento primero. |
 | Las 5 skills | ⛔ Pendientes. |

@@ -88,7 +88,7 @@ export function LoginPage() {
             boxShadow: '0 0 0 1px rgba(255,255,255,.08) inset, 0 8px 20px rgba(16,185,129,.25)',
           }}>G</div>
           <div>
-            <div style={{ fontWeight: 700, fontSize: 18, color: '#f8fafc', letterSpacing: -0.3 }}>G-Nexo</div>
+            <div style={{ fontWeight: 700, fontSize: 18, color: '#f8fafc', letterSpacing: -0.3 }}>Nodo</div>
             <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 1 }}>POS · Sedes</div>
           </div>
         </div>
@@ -125,7 +125,7 @@ export function LoginPage() {
 
         {/* Footer */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11.5, color: '#64748b', position: 'relative', zIndex: 1 }}>
-          <div>© 2026 G-Nexo</div>
+          <div>© 2026 Nodo</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
             Sistema operativo · v2.4.1

@@ -1,7 +1,7 @@
 -- ============================================================
--- G-Nexo — Esquema base · 03 · Perfiles y auth
+-- Nodo — Esquema base · 03 · Perfiles y auth
 --
--- ORIGEN: consolidado de G-Vento `d848852`. Versiones tomadas segun
+-- ORIGEN: consolidado de Vento `d848852`. Versiones tomadas segun
 -- docs/paso-0-funciones-duplicadas.md (pares 1 y 6):
 --   · profiles                     ← schema.sql + multi-tenant-rbac.sql (organization_id,
 --                                    role_id) + config-profile-active.sql (is_active)
@@ -10,11 +10,11 @@
 --   · protect_owner_role           ← protect-owner-role.sql
 --   · protect_profile_self_escalation ← protect-profile-self-escalation.sql
 --
--- R5: no aplicado en G-Nexo (base vacia). Desde el primer `db push`, R5 manda.
+-- R5: no aplicado en Nodo (base vacia). Desde el primer `db push`, R5 manda.
 --
 -- ── POR QUE enforce_profile_organization ES SECURITY DEFINER ────────────────
 -- Es R6 en persona, y el archivo del que sale ES la evidencia de esa regla en
--- G-Vento. Sin el modificador, el `select` sobre sedes pasa por RLS y la
+-- Vento. Sin el modificador, el `select` sobre sedes pasa por RLS y la
 -- funcion evalua DATOS FILTRADOS POR EL OBSERVADOR — pero la organizacion de
 -- una sede es la misma la mire quien la mire. El modo de fallo es rechazar
 -- operaciones validas con un mensaje que apunta al lugar equivocado. Alla salio

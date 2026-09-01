@@ -1,4 +1,8 @@
-# G-Nexo Design System
+# Vento Design System
+
+> ⛔ **Esto es el design system de VENTO, no de Nodo.** Viajo con el fork y se conserva como
+> referencia de otro producto. Nodo necesita el suyo (ver CLAUDE.md → Design System).
+> El titulo dice Vento a proposito: ponerle Nodo lo convertiria en una afirmacion falsa.
 Valores exactos extraídos del handoff de Claude Design (Login V1 + POS V2 aprobados).
 Usar estos valores en cualquier pantalla nueva para mantener coherencia visual.
 

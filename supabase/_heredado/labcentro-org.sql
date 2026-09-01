@@ -15,7 +15,7 @@
 --     service role y por lo tanto no depende de RLS ni de que haya usuarios).
 --
 -- 🔴 LIMITACIÓN QUE HAY QUE SABER ANTES DE USARLA: sin sede y sin usuarios,
--- NADIE PUEDE INICIAR SESIÓN en LabCentro, así que el banner de G-Vento
+-- NADIE PUEDE INICIAR SESIÓN en LabCentro, así que el banner de Vento
 -- **no se puede ver** para esta organización. Este tenant sirve para probar el
 -- lado de ESCRITURA (crear contrato, vincular, escribir la bandera), no el de
 -- LECTURA. Para verificar que una bandera produce efecto visible hay que usar
@@ -25,13 +25,13 @@
 --
 -- ── SOBRE "MARCARLA COMO TENANT DE LABORATORIO" ─────────────────────────────
 -- ⚠️ Se hace lo que se puede, y conviene ser explícito sobre qué NO es:
--- **G-Vento no tiene ningún concepto de "organización de prueba".** No hay
+-- **Vento no tiene ningún concepto de "organización de prueba".** No hay
 -- columna `is_test`, ni vistas de cobranza, ni reportes que crucen
 -- organizaciones — cada consulta está acotada por RLS a la organización propia.
--- O sea que del lado de G-Vento NO HAY NINGÚN LUGAR del que haya que excluirla.
+-- O sea que del lado de Vento NO HAY NINGÚN LUGAR del que haya que excluirla.
 -- El marcador en `config` es DOCUMENTACIÓN dentro de la fila: sirve para que
 -- quien mire la tabla entienda qué es, y para poder filtrarla a mano. Ningún
--- código lo lee. Si algún día G-Vento gana una vista multi-organización, ESTE
+-- código lo lee. Si algún día Vento gana una vista multi-organización, ESTE
 -- es el marcador que hay que respetar.
 -- La exclusión real de cobranza vive del lado de G-Centro (`es_prueba = true`).
 --

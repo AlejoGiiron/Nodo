@@ -1,7 +1,7 @@
 -- ============================================================
--- G-Nexo — Esquema base · 06b · RPC de venta: cobro y anulacion
+-- Nodo — Esquema base · 06b · RPC de venta: cobro y anulacion
 --
--- ORIGEN: G-Vento `d848852`, supabase/register-sale-payment.sql y
+-- ORIGEN: Vento `d848852`, supabase/register-sale-payment.sql y
 -- supabase/register-sale-void.sql.
 --
 -- 🔴 ESTE ARCHIVO NO ESTABA EN EL PLAN DE 12 — es la TERCERA enmienda, y la
@@ -14,7 +14,7 @@
 --    verificacion de que toda RPC nombrada en el plan exista— esta en
 --    docs/plan-esquema-base.md.
 --
--- R5: no aplicado en G-Nexo (base vacia). Desde el primer `db push`, R5 manda.
+-- R5: no aplicado en Nodo (base vacia). Desde el primer `db push`, R5 manda.
 --
 -- ── IDEMPOTENCIA: COMO LA RESUELVE EL HEREDADO, Y QUE NO RESUELVE ─────────
 -- Verificado antes de escribir, no inventado. Las dos se protegen por RECHAZO
@@ -41,7 +41,7 @@ begin;
 -- 🔴 CAMBIO: el gate pasa de `get_my_role() in ('admin','cashier')` a
 --    `has_permission('pos.vender')`. El propio archivo heredado lo pedia:
 --    "Deuda anotada: pasar a has_permission cuando se elimine el enum". Y es la
---    causa mecanica del residuo de G-Vento —las policies miraban el enum, asi
+--    causa mecanica del residuo de Vento —las policies miraban el enum, asi
 --    que el catalogo no enforceaba nada—. Coherente con la migracion `rls`.
 -- ------------------------------------------------------------
 create or replace function public.register_sale_payment(

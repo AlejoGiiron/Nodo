@@ -2,7 +2,7 @@ import { request, type FullConfig } from '@playwright/test'
 import { createClient } from '@supabase/supabase-js'
 import { readFileSync, existsSync } from 'node:fs'
 
-// Puerto dedicado de G-Nexo (debe coincidir con E2E_PORT de playwright.config.ts).
+// Puerto dedicado de Nodo (debe coincidir con E2E_PORT de playwright.config.ts).
 const BASE_URL = 'http://localhost:5180'
 
 // Organización del LABORATORIO. Los tests SOLO deben correr contra esta org.
@@ -11,7 +11,7 @@ const LAB_ORG = 'LAB'
 /**
  * Carga variables de un archivo .env (sin dotenv) en process.env, sin pisar las
  * ya definidas. playwright.config.ts ya cargó .env.test; aquí necesitamos las
- * credenciales del backend (VITE_GNEXO_*) que viven en .env.
+ * credenciales del backend (VITE_NODO_*) que viven en .env.
  */
 function loadEnvFile(file: string): void {
   if (!existsSync(file)) return
@@ -24,23 +24,23 @@ function loadEnvFile(file: string): void {
 }
 
 /**
- * Health check #1 — la app servida es G-Nexo (no otra app en el puerto).
+ * Health check #1 — la app servida es Nodo (no otra app en el puerto).
  */
 async function checkServedAppIsGnexo(): Promise<void> {
   const ctx = await request.newContext()
   try {
     const res = await ctx.get(BASE_URL)
     const html = await res.text()
-    if (!/G-?Vento/i.test(html)) {
+    if (!/Nodo/i.test(html)) {
       throw new Error(
-        `[E2E health check] El servidor en ${BASE_URL} NO es G-Nexo ` +
-        `(marcador "G-Nexo" no encontrado en el HTML servido). ¿Hay otra app ` +
-        `(p. ej. G-Mura) ocupando el puerto? Se aborta la suite para no correr ` +
+        `[E2E health check] El servidor en ${BASE_URL} NO es Nodo ` +
+        `(marcador "Nodo" no encontrado en el HTML servido). ¿Hay otra app ` +
+        `(p. ej. Mura) ocupando el puerto? Se aborta la suite para no correr ` +
         `contra el proyecto equivocado.`,
       )
     }
     // eslint-disable-next-line no-console
-    console.log('[E2E health check] OK — la app servida es G-Nexo.')
+    console.log('[E2E health check] OK — la app servida es Nodo.')
   } finally {
     await ctx.dispose()
   }
@@ -53,22 +53,22 @@ async function checkServedAppIsGnexo(): Promise<void> {
  * datos) y NO debe tocar producción.
  *
  * Hace login real con E2E_OWNER_EMAIL contra el mismo Supabase que usa la app
- * (VITE_GNEXO_*), consulta su organización (RLS solo deja ver la propia) y
+ * (VITE_NODO_*), consulta su organización (RLS solo deja ver la propia) y
  * aborta si no es LAB.
  */
 async function checkCredentialsAreLab(): Promise<void> {
   loadEnvFile('.env')
   loadEnvFile('.env.test')
 
-  const url = process.env.VITE_GNEXO_SUPABASE_URL
-  const anonKey = process.env.VITE_GNEXO_SUPABASE_ANON_KEY
+  const url = process.env.VITE_NODO_SUPABASE_URL
+  const anonKey = process.env.VITE_NODO_SUPABASE_ANON_KEY
   const email = process.env.E2E_OWNER_EMAIL
   const password = process.env.E2E_OWNER_PASSWORD
 
   if (!url || !anonKey) {
     throw new Error(
-      '[E2E health check] Faltan VITE_GNEXO_SUPABASE_URL / ' +
-      'VITE_GNEXO_SUPABASE_ANON_KEY (revisa .env). No se puede verificar la ' +
+      '[E2E health check] Faltan VITE_NODO_SUPABASE_URL / ' +
+      'VITE_NODO_SUPABASE_ANON_KEY (revisa .env). No se puede verificar la ' +
       'organización de las credenciales de prueba.',
     )
   }
@@ -117,7 +117,7 @@ async function checkCredentialsAreLab(): Promise<void> {
 
 /**
  * Health check previo a la suite (defensa en profundidad):
- *  1. La app servida en BASE_URL es G-Nexo (no otra app en el puerto).
+ *  1. La app servida en BASE_URL es Nodo (no otra app en el puerto).
  *  2. Las credenciales de prueba pertenecen a la organización LAB (no a datos
  *     reales). Aborta la corrida si cualquiera falla.
  */

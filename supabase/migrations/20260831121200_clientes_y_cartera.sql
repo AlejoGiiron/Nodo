@@ -1,10 +1,10 @@
 -- ============================================================
--- G-Nexo — Esquema base · 09 · Clientes y cartera (por cobrar)
+-- Nodo — Esquema base · 09 · Clientes y cartera (por cobrar)
 --
--- ORIGEN: G-Vento `d848852`, supabase/fiado-clientes.sql.
+-- ORIGEN: Vento `d848852`, supabase/fiado-clientes.sql.
 -- "Fiado" pasa a llamarse CARTERA: mismo mecanismo, palabra del negocio nuevo.
 --
--- R5: no aplicado en G-Nexo (base vacia). Desde el primer `db push`, R5 manda.
+-- R5: no aplicado en Nodo (base vacia). Desde el primer `db push`, R5 manda.
 --
 -- ⛔ ESTE ARCHIVO ESTA INCOMPLETO A PROPOSITO: falta `register_debt_payment`.
 --    La razon esta al final, y NO es un olvido: hay una decision abierta sobre

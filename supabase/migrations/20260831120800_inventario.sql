@@ -1,12 +1,12 @@
 -- ============================================================
--- G-Nexo — Esquema base · 07 · Inventario
+-- Nodo — Esquema base · 07 · Inventario
 --
--- ORIGEN: G-Vento `d848852`, supabase/inventory-recipes.sql.
+-- ORIGEN: Vento `d848852`, supabase/inventory-recipes.sql.
 -- Decision del paso 0, par 8: `product_components` SE CONSERVA — es la relacion
--- bulto->unidad, que G-Nexo si necesita (se compra por bulto, se vende por
+-- bulto->unidad, que Nodo si necesita (se compra por bulto, se vende por
 -- unidad). Ver docs/paso-0-funciones-duplicadas.md.
 --
--- R5: no aplicado en G-Nexo (base vacia). Desde el primer `db push`, R5 manda.
+-- R5: no aplicado en Nodo (base vacia). Desde el primer `db push`, R5 manda.
 --
 -- ── HALLAZGO AL CONSOLIDAR: no habia nada que renombrar ─────────────────────
 -- El paso 0 decidio "conservar renombrado a bulto/unidad". Al escribirlo se ve
@@ -45,8 +45,8 @@ comment on table public.stock_movements is
 comment on column public.stock_movements.type is
   'sale (venta) · adjustment (ajuste manual) · return (devolucion/reverso) · '
   'purchase (entrada por compra). Allowlist: lo que no esta, no entra. '
-  '⚠️ purchase se agrega aca porque en G-Nexo la compra es un modulo del '
-  'alcance firmado; en G-Vento register_purchase escribia con otro type.';
+  '⚠️ purchase se agrega aca porque en Nodo la compra es un modulo del '
+  'alcance firmado; en Vento register_purchase escribia con otro type.';
 comment on column public.stock_movements.reference_id is
   'FK LOGICO, no declarado: para type=sale apunta a orders.id; para '
   'type=purchase, a la factura de compra. No hay FK real porque apunta a '
@@ -60,8 +60,8 @@ create index idx_stock_movements_product      on public.stock_movements (product
 -- product_components — relacion bulto -> unidad
 --
 -- Un producto `composite` no tiene stock propio: al venderse, explota esta
--- tabla y descuenta sus componentes. En G-Vento era la receta de un plato; en
--- G-Nexo es el bulto que se vende por unidad. Mismo mecanismo, otro negocio.
+-- tabla y descuenta sus componentes. En Vento era la receta de un plato; en
+-- Nodo es el bulto que se vende por unidad. Mismo mecanismo, otro negocio.
 -- ------------------------------------------------------------
 create table public.product_components (
   id           uuid        primary key default gen_random_uuid(),
@@ -77,7 +77,7 @@ create table public.product_components (
 comment on table public.product_components is
   'Descomposicion de un nivel: que producto y en que cantidad consume un '
   'producto compuesto al venderse. qty = unidades del componente por UNA unidad '
-  'del padre. Caso tipico en G-Nexo: un bulto que se vende por unidad suelta.';
+  'del padre. Caso tipico en Nodo: un bulto que se vende por unidad suelta.';
 
 create index idx_product_components_parent on public.product_components (parent_id);
 
@@ -156,7 +156,7 @@ grant  execute on function public.adjust_stock(uuid, integer, text) to authentic
 --
 --   Y extras no se puede resolver de contrabando: es el caso #1 de los cuatro
 --   que sostenian peso (CLAUDE.md dice "extras: AL FINAL, y renombrando en vez
---   de borrando"). Que pasa a ser en G-Nexo —adiciones, variantes, presentaciones—
+--   de borrando"). Que pasa a ser en Nodo —adiciones, variantes, presentaciones—
 --   es una decision de producto, no una de esquema.
 --
 -- Escribir la RPC sin la rama de extras la dejaria incompleta en silencio, que

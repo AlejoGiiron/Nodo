@@ -1,10 +1,10 @@
 -- ============================================================
--- G-Nexo — Esquema base · 12 · Vistas de reportes
+-- Nodo — Esquema base · 12 · Vistas de reportes
 --
--- ORIGEN: G-Vento `d848852`, supabase/reports-views.sql (clase C: viaja con
+-- ORIGEN: Vento `d848852`, supabase/reports-views.sql (clase C: viaja con
 -- cambios). Ultimo archivo del esquema base.
 --
--- R5: no aplicado en G-Nexo (base vacía). Desde el primer `db push`, R5 manda.
+-- R5: no aplicado en Nodo (base vacía). Desde el primer `db push`, R5 manda.
 --
 -- ── security_invoker = true — LO MAS IMPORTANTE DE ESTE ARCHIVO ────────────
 -- Sin esto, una vista corre con los permisos de su DUEÑO y NO aplica el RLS de
@@ -29,7 +29,7 @@ begin;
 -- 1 · daily_sales_summary — ventas por dia y metodo de pago
 --
 -- CAMBIO: se cae la dimension `order_type`. El eje dine_in/takeaway/delivery no
--- existe en G-Nexo (migracion `extensiones_y_tipos`).
+-- existe en Nodo (migracion `extensiones_y_tipos`).
 --
 -- 🔴 CAMBIO DE FONDO: la exclusion de anuladas pasa de `status != 'cancelled'`
 --    a `cancelled_at is null`. Las dos marcan el mismo hecho, y tener DOS
@@ -131,7 +131,7 @@ group by
 --
 -- 🔴 EL RENOMBRE NO ES COSMETICO: esta vista NUNCA midio mozos. Une por
 --    `o.created_by` contra `profiles`, o sea que mide QUIEN REGISTRO LA VENTA.
---    De mesas no tiene nada. El nombre mentia ya en G-Vento (hallazgo H7).
+--    De mesas no tiene nada. El nombre mentia ya en Vento (hallazgo H7).
 --    Es el segundo caso —despues de product_components— en que lo especifico
 --    de bar estaba en la etiqueta y no en la pieza.
 -- ------------------------------------------------------------

@@ -1,5 +1,5 @@
 -- ============================================================
--- G-Vento — Onboarding de ORGANIZACIÓN NUEVA · PASO 3 de 3
+-- Vento — Onboarding de ORGANIZACIÓN NUEVA · PASO 3 de 3
 --            (completar el profile del owner: role_id + user_stores)
 --
 -- 🔴 ESTO NO ES UNA MIGRACIÓN. Correr DESPUÉS de onboard-org-paso1.sql y de

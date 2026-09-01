@@ -1,5 +1,5 @@
 -- ============================================================
--- G-Vento POS — Schema SQL
+-- Vento POS — Schema SQL
 -- Ejecutar en: Supabase Dashboard > SQL Editor
 -- ============================================================
 

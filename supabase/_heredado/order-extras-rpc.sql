@@ -1,5 +1,5 @@
 -- ============================================================
--- G-Vento — Extras parte 2: RPC atómica para vender con extras
+-- Vento — Extras parte 2: RPC atómica para vender con extras
 --
 -- Inserta order_items + order_item_extras y descuenta stock de los
 -- productos vinculados, todo en UNA transacción. Si algo falla, nada

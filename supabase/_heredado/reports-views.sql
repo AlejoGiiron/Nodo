@@ -1,5 +1,5 @@
 -- ============================================================
--- G-Vento POS — Vistas de Reportes
+-- Vento POS — Vistas de Reportes
 -- Ejecutar en: Supabase Dashboard > SQL Editor
 -- ============================================================
 -- RLS: las vistas usan security_invoker = true (PostgreSQL 15+).

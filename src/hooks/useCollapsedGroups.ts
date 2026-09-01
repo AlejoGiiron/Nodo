@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 
-const STORAGE_KEY = 'gnexo:sidebar:collapsed-groups'
+const STORAGE_KEY = 'nodo:sidebar:collapsed-groups'
 
 function read(): Set<string> {
   try {

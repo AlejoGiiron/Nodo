@@ -1,7 +1,7 @@
 {
-  "name": "G-Vento Cocina KDS",
+  "name": "Vento Cocina KDS",
   "short_name": "KDS",
-  "description": "Pantalla de cocina para G-Vento POS",
+  "description": "Pantalla de cocina para Vento POS",
   "start_url": "/cocina",
   "scope": "/",
   "display": "standalone",

@@ -1,5 +1,5 @@
 -- ============================================================
--- G-Vento — Compras / Proveedores (F5) · Parte 1: BD
+-- Vento — Compras / Proveedores (F5) · Parte 1: BD
 --
 -- MVP aprobado:
 --   • Proveedores (suppliers) por sede.

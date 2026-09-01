@@ -1,5 +1,5 @@
 -- ============================================================
--- G-Vento — Permitir stock negativo en products
+-- Vento — Permitir stock negativo en products
 --
 -- Por qué:
 --   El stock de insumos es una ESTIMACIÓN, no una verdad de caja. En un bar

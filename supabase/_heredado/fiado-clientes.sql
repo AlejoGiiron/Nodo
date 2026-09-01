@@ -1,5 +1,5 @@
 -- ============================================================
--- G-Vento — Fiado / Cuentas por cobrar + CRM básico · Parte 1: BD
+-- Vento — Fiado / Cuentas por cobrar + CRM básico · Parte 1: BD
 --
 -- MVP aprobado:
 --   • CRM básico: clientes (customers) por sede.

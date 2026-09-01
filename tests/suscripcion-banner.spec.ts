@@ -9,7 +9,7 @@ import { waitPosReady } from './helpers/pos'
 // FASE 2 — el banner que LEE la bandera de suscripción.
 //
 // Complementa a suscripcion-estado.spec.ts (Fase 1: nadie puede ESCRIBIR estas
-// columnas desde el cliente). Acá se prueba el otro lado: que G-Nexo las lea
+// columnas desde el cliente). Acá se prueba el otro lado: que Nodo las lea
 // y reaccione — y sobre todo, que NO reaccione cuando no debe.
 //
 // ── POR QUÉ SE ESCRIBE POR LA EDGE FUNCTION Y NO POR SERVICE ROLE ───────────
@@ -54,10 +54,10 @@ const SECRETO = process.env.E2E_GCENTRO_HMAC_SECRET
 // en vez de fallar (mismo criterio que el resto de la suite).
 test.skip(!SECRETO, 'Requiere E2E_GCENTRO_HMAC_SECRET (mismo valor que el de la función)')
 
-const CLAVE_DESCARTE = 'gnexo:suscripcion:descartado'
+const CLAVE_DESCARTE = 'nodo:suscripcion:descartado'
 
 const FN_URL = () =>
-  `${process.env.VITE_GNEXO_SUPABASE_URL}/functions/v1/${
+  `${process.env.VITE_NODO_SUPABASE_URL}/functions/v1/${
     process.env.E2E_APLICAR_ESTADO_FN ?? 'aplicar-estado'
   }`
 
@@ -105,8 +105,8 @@ const banner = (page: Page) => page.getByTestId('subscription-banner')
 
 test.beforeAll(async () => {
   owner = createClient(
-    process.env.VITE_GNEXO_SUPABASE_URL!,
-    process.env.VITE_GNEXO_SUPABASE_ANON_KEY!,
+    process.env.VITE_NODO_SUPABASE_URL!,
+    process.env.VITE_NODO_SUPABASE_ANON_KEY!,
     { auth: { persistSession: false } },
   )
   const { error } = await owner.auth.signInWithPassword(ownerCreds())

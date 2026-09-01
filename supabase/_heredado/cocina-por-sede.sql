@@ -1,5 +1,5 @@
 -- ============================================================
--- G-Vento — Control de cocina por sede y por producto
+-- Vento — Control de cocina por sede y por producto
 --
 -- Modelo de dos niveles para decidir qué va a cocina:
 --   1) restaurants.uses_kitchen  → la SEDE usa cocina o no

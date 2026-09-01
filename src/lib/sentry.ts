@@ -15,11 +15,11 @@
  *
  * Lo que NO es igual entre las dos copias, y está bien que no lo sea:
  * las áreas de `SentryArea`, las claves de `CLAVE_SENSIBLE` y
- * `CLAVE_PERMITIDA`, y el correlativo `#N` (solo G-Nexo tiene ventas
+ * `CLAVE_PERMITIDA`, y el correlativo `#N` (solo Nodo tiene ventas
  * numeradas). El REDACTOR —`scrubString`, `scrubEstricto` y `scrubSobre`— sí
  * debe ser idéntico.
  *
- * ⚠️ DIVERGENCIA CONOCIDA Y ABIERTA (2026-08-05). G-Nexo pasó el filtro de
+ * ⚠️ DIVERGENCIA CONOCIDA Y ABIERTA (2026-08-05). Nodo pasó el filtro de
  * DENY-LIST a ALLOWLIST por clave (ver el bloque de abajo). G-Centro sigue con
  * la deny-list y por lo tanto sigue fugando: PII numérica bajo cualquier clave
  * desconocida, y nombres propios en texto libre bajo una clave que no esté
@@ -54,7 +54,7 @@
  *   3. Expone helpers para el contexto multi-tenant y el reporte explícito.
  *
  * ─────────────────────────────────────────────────────────────────────────
- * PRIVACIDAD — G-Nexo maneja PII de los clientes de nuestros clientes
+ * PRIVACIDAD — Nodo maneja PII de los clientes de nuestros clientes
  * (nombres, teléfonos, deudas, consumos). Nada de eso puede salir del
  * navegador. La política está implementada, no solo documentada:
  *   · `sendDefaultPii: false` → sin IP del usuario ni cookies/headers.

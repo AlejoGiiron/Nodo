@@ -1,7 +1,7 @@
 # Prompt 2 para Claude Code — Inventario y clasificación del SQL heredado
 
 > **Este prompt no escribe SQL.** Produce el inventario y el plan. La consolidación va en el
-> prompt 3, después de que revises la clasificación. Motivo: el diagnóstico de G-Vento midió que el
+> prompt 3, después de que revises la clasificación. Motivo: el diagnóstico de Vento midió que el
 > peligro no está en el 24,6% que se borra sino en el **43,3% de zona gris** que parece viajar y
 > necesita cambios. Consolidar sin clasificar primero es entrar ciego justo ahí.
 >
@@ -18,19 +18,19 @@ produce un documento de inventario y plan. No corresponde spec de Playwright.
 DECISIÓN TOMADA QUE ENMARCA TODO ESTO (registrala en el documento que produzcas):
 
 Se eligió consolidar los .sql heredados en un esquema base limpio ANTES de
-aplicar nada, en vez de aplicar el esquema de G-Vento y después borrar mesas,
+aplicar nada, en vez de aplicar el esquema de Vento y después borrar mesas,
 cocina y turnos con migraciones.
 
 Esto NO viola R5. R5 dice que una migración APLICADA es inmutable. Los .sql
-heredados no están aplicados en G-Nexo: la base del proyecto de Supabase está
+heredados no están aplicados en Nodo: la base del proyecto de Supabase está
 VACÍA (verificado el 2026-08-31: cero tablas en la salida de gen types). Son
 archivos, no migraciones ejecutadas. Dejá esta justificación escrita, porque sin
 ella, en seis meses alguien va a ver SQL heredado editado y va a concluir que se
 rompió la regla.
 
-Motivo de la elección: con la otra opción, la historia de G-Nexo quedaría con
+Motivo de la elección: con la otra opción, la historia de Nodo quedaría con
 "creo mesas / borro mesas" para siempre, en un producto que nunca tuvo mesas. Y
-el catálogo de permisos de G-Nexo es distinto del de G-Vento, así que aplicar
+el catálogo de permisos de Nodo es distinto del de Vento, así que aplicar
 primero obligaría a una reconciliación por unión que con esta opción no existe.
 
 
@@ -56,7 +56,7 @@ justificación. Si un archivo cae en más de una, decilo explícitamente y desgl
 qué parte va a cuál: eso es zona gris y es lo más importante del documento.
 
   A. BASE TÉCNICA — viaja tal cual. Multi-tenant, RLS, RBAC, auth, patrones de
-     RPC. (En el diagnóstico de G-Vento: 21,7%)
+     RPC. (En el diagnóstico de Vento: 21,7%)
   B. DOMINIO DE BAR — se borra. Mesas, cocina, turnos. (24,6%)
   C. ZONA GRIS — sirve pero necesita cambios: productos, inventario, clientes,
      fiado, compras, reportes. (43,3%)
@@ -96,9 +96,9 @@ descarta. Sin escribir el SQL todavía.
 
 Dos cosas que el plan tiene que resolver explícitamente:
 
-  1. Qué pasa con los archivos que en G-Vento son registro histórico de
+  1. Qué pasa con los archivos que en Vento son registro histórico de
      migraciones ya aplicadas (por ejemplo multi-tenant-rbac.sql, cuyo
-     comentario-catálogo está desactualizado a propósito). En G-Nexo no son
+     comentario-catálogo está desactualizado a propósito). En Nodo no son
      historia de nada: decidí si su contenido entra al esquema base o se
      descarta, y justificalo.
   2. El catálogo de permisos NO se escribe a mano en ningún .sql. Es generado:

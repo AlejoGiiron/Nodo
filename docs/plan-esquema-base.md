@@ -1,4 +1,4 @@
-# G-Nexo — Inventario del SQL heredado y plan de esquema base
+# Nodo — Inventario del SQL heredado y plan de esquema base
 
 *2026-08-31. Producido por el prompt `docs/prompt-02-inventario-sql.md`. **Este documento no
 escribe SQL**: inventaría, clasifica y planifica. La consolidación va en el prompt 3.*
@@ -17,23 +17,23 @@ Al 2026-08-31: **48 archivos, 9.280 líneas** (46 `.sql` + 2 edge functions en T
 ## 0 · La decisión que enmarca todo esto, y por qué NO viola R5
 
 **Decisión:** los `.sql` heredados se consolidan en un esquema base limpio **antes** de aplicar
-nada, en vez de aplicar el esquema de G-Vento y después borrar mesas, cocina y turnos con
+nada, en vez de aplicar el esquema de Vento y después borrar mesas, cocina y turnos con
 migraciones.
 
 **Por qué no viola R5.** R5 dice que una migración **aplicada** es inmutable. Estos archivos **no
-están aplicados en G-Nexo**: la base del proyecto de Supabase está vacía (verificado el
+están aplicados en Nodo**: la base del proyecto de Supabase está vacía (verificado el
 2026-08-31, cero tablas en la salida de `gen types`; es la misma evidencia que cerró la deuda #2).
 Son **archivos, no migraciones ejecutadas**. La regla protege el registro de lo que ya le pasó a
 una base; acá no le pasó nada a ninguna base.
 
 Queda escrito porque dentro de seis meses alguien va a ver SQL heredado editado y va a concluir
 que se rompió la regla. El discriminador no es "el archivo es viejo" sino **"¿esto se ejecutó
-contra la base de este producto?"**. Para G-Nexo, hoy, la respuesta es no. **A partir del primer
+contra la base de este producto?"**. Para Nodo, hoy, la respuesta es no. **A partir del primer
 `supabase db push`, deja de serlo y R5 aplica con todo su peso.**
 
-**Por qué esta opción y no la otra:** con la otra, la historia de G-Nexo arrancaría con
+**Por qué esta opción y no la otra:** con la otra, la historia de Nodo arrancaría con
 "creo mesas / borro mesas" para siempre, en un producto que nunca tuvo mesas. Y como el catálogo
-de permisos de G-Nexo es distinto (deuda #23), aplicar primero obligaría a una reconciliación por
+de permisos de Nodo es distinto (deuda #23), aplicar primero obligaría a una reconciliación por
 unión que con esta opción sencillamente no existe.
 
 ---
@@ -146,11 +146,11 @@ nombre de archivo:
 | `cash_shifts`: tabla, 2 índices, trigger, 3 policies | 56 | **C** (era B; ver 4.4) |
 
 **`sale-void.sql` (97) cae en tres a la vez**: las columnas de anulación y su índice son **C** (la
-anulación sobrevive en G-Nexo), el `idx_one_open_shift_per_store` es **B** (turnos), y el
+anulación sobrevive en Nodo), el `idx_one_open_shift_per_store` es **B** (turnos), y el
 `update roles set permissions` no va a ninguna clase porque es un **defecto** — ver H4.
 
 **`inventory-recipes.sql` (219) es C entero — corregido el 2026-08-31.** `stock_movements` y
-`adjust_stock` son la base del inventario de G-Nexo. Y `product_components`, que estaba anotado
+`adjust_stock` son la base del inventario de Nodo. Y `product_components`, que estaba anotado
 como **B** por sonar a recetas, **pasa a C**: se conserva renombrado a la relación **bulto→unidad**
 (paso 0, par 8). La unidad de compra difiere de la de venta y es estructuralmente el mismo
 mecanismo. ⚠️ Los totales de 2.3 **no cambian**: el archivo ya estaba contado entero en C.
@@ -263,7 +263,7 @@ diciendo "es el único camino" sin nombrar el mecanismo que lo sostiene.
 dependencia estructural. Medido: `register_sale_void` **exige** turno abierto (la anulación solo
 aplica al turno actual), `register_debt_payment` lo busca, y `register_purchase` también. Fiado es
 el único con **FK**, pero los tres tienen **dependencia de comportamiento** y los tres sobreviven
-en G-Nexo. Sacar turnos toca a los tres, no a uno.
+en Nodo. Sacar turnos toca a los tres, no a uno.
 
 **H3 · Índice único duplicado sobre `cash_shifts`.** `idx_cash_shifts_one_open` (en `schema.sql`)
 e `idx_one_open_shift_per_store` (en `sale-void.sql`) son **el mismo índice con dos nombres**:
@@ -293,7 +293,7 @@ el riesgo principal de la consolidación.**
 **Modo de fallo, y por qué es el riesgo principal:** hoy el **orden de aplicación** decide cuál
 queda. Al consolidar ese orden **desaparece** y hay que elegir a mano. Elegir mal **no da error**:
 da un `has_permission` que no verifica `is_active`, un `enforce_profile_organization` que evalúa
-datos filtrados por RLS (el fallo de R6, ya pagado una vez en G-Vento), o un
+datos filtrados por RLS (el fallo de R6, ya pagado una vez en Vento), o un
 `add_order_items_with_extras` que no descuenta stock. Los cuatro fallan **callados**.
 **Regla para el prompt 3: de cada par entra la v2, y el archivo consolidado declara qué versión
 tomó y qué le agregaba a la anterior.**
@@ -343,13 +343,13 @@ igual (clase D), pero el plan deja dicho que **llamen a la RPC en vez de copiarl
 (**`cash_shifts` NO** — se renombra, ver 4.4); los 7 seeds de clase D; y los `fix-*` y `*-rls.sql`, cuyo contenido **no se pierde: se
 absorbe** como v2 en los archivos 3 y 4.
 
-### 4.2 · Qué pasa con los que en G-Vento son registro histórico
+### 4.2 · Qué pasa con los que en Vento son registro histórico
 
-`multi-tenant-rbac.sql`, `schema.sql`, los `fix-*` y los `*-rls.sql` son, **en G-Vento**, el
+`multi-tenant-rbac.sql`, `schema.sql`, los `fix-*` y los `*-rls.sql` son, **en Vento**, el
 registro de migraciones aplicadas: su valor allá es contar qué pasó y cuándo, y por eso su
 comentario-catálogo está desactualizado **a propósito** (R5).
 
-**En G-Nexo no son historia de nada**, porque nunca se aplicaron acá. Decisión: **su contenido
+**En Nodo no son historia de nada**, porque nunca se aplicaron acá. Decisión: **su contenido
 entra al esquema base ya consolidado, y los archivos no se conservan.**
 
 Justificación: conservarlos crearía **dos descripciones del mismo esquema** —el archivo
@@ -359,7 +359,7 @@ sobre el esquema de otro producto en otro momento. Una nota que dirige mal cuest
 ausente.
 
 ⚠️ Lo que sí se conserva es la **atribución**: cada archivo consolidado abre diciendo de qué
-archivos de G-Vento `d848852` salió y **qué versión** tomó de cada función redefinida (H5). Es lo
+archivos de Vento `d848852` salió y **qué versión** tomó de cada función redefinida (H5). Es lo
 único del registro histórico que tiene valor en este repo.
 
 ### 4.3 · El catálogo de permisos no se escribe a mano
@@ -374,7 +374,7 @@ Fuente `SYSTEM_ROLES` en `src/lib/permissions.ts` → `pnpm gen:rbac` →
 
 Es la **deuda #23** y va **después** de este plan, no ahora: las claves nuevas se derivan de las
 tablas que existan, no al revés. Tres condiciones que ya están escritas y son justo las que se
-olvidan: cada clave nueva necesita su `can()` que la consuma (en G-Vento 6 no gateaban nada y
+olvidan: cada clave nueva necesita su `can()` que la consuma (en Vento 6 no gateaban nada y
 fallaban **abierto**); toda clave enforzada tiene que estar en `PERMISSION_GROUPS` o no se puede
 conceder desde la UI (le pasó a `ventas.anular`); y `admin` sigue siendo `ALL_PERMISSION_KEYS`
 **derivado**, nunca enumerado.
@@ -383,7 +383,7 @@ conceder desde la UI (le pasó a `ventas.anular`); y `admin` sigue siendo `ALL_P
 
 ### 4.4 · Las dos decisiones que este plan dejaba abiertas — RESUELTAS el 2026-08-31
 
-✅ **1 · G-Nexo SÍ tiene turnos de caja. Se quedan, renombrados a jornada/caja.** Contradice el
+✅ **1 · Nodo SÍ tiene turnos de caja. Se quedan, renombrados a jornada/caja.** Contradice el
 documento de traspaso y el orden de poda original; **la evidencia mandó**. Las razones están
 medidas en 3.1.2 y H2: `cash_movements.shift_id` es `not null` con `on delete cascade`, tres RPC
 leen el turno abierto —incluida `register_purchase`, y compras está en el alcance firmado—, y
@@ -419,7 +419,7 @@ Dos ya están verificadas contra el SQL, y las dos muestran por qué el criterio
 
 | Función | Gana | Verificado |
 |---|---|---|
-| `enforce_profile_organization` | `fix-enforce-profile-organization-definer` | Es la única con `security definer`, **y además agrega los `revoke execute`**. ⚠️ `profiles-organization-invariant.sql` **sí contiene** un `security definer`, pero es de `handle_new_user`, otra función del mismo archivo: grepear el modificador sin mirar de quién es da la respuesta **contraria**. Es la evidencia de R6, ya pagada una vez en G-Vento. |
+| `enforce_profile_organization` | `fix-enforce-profile-organization-definer` | Es la única con `security definer`, **y además agrega los `revoke execute`**. ⚠️ `profiles-organization-invariant.sql` **sí contiene** un `security definer`, pero es de `handle_new_user`, otra función del mismo archivo: grepear el modificador sin mirar de quién es da la respuesta **contraria**. Es la evidencia de R6, ya pagada una vez en Vento. |
 | `has_permission` | `profiles-is-active-enforced` | Agrega **dos** cosas, no una: `p.is_active` **y** `r.permissions ? '*'`. Con la v1, un owner cuyo rol tiene el comodín `'*'` **se queda sin permisos**. Elegir por "la que verifica `is_active`" acierta por la razón incompleta. |
 
 Las otras seis —`add_order_items_with_extras`, `get_my_role`, `get_my_restaurant_id`,

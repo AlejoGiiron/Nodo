@@ -65,7 +65,7 @@ function loadEnv(path: string) {
 loadEnv('.env'); loadEnv('.env.test')
 
 const anon = () =>
-  createClient(process.env.VITE_GNEXO_SUPABASE_URL!, process.env.VITE_GNEXO_SUPABASE_ANON_KEY!, {
+  createClient(process.env.VITE_NODO_SUPABASE_URL!, process.env.VITE_NODO_SUPABASE_ANON_KEY!, {
     auth: { persistSession: false },
   })
 
@@ -212,7 +212,7 @@ test('el CHECK rechaza un estado fuera del enum', async () => {
   const key = process.env.E2E_SERVICE_ROLE_KEY
   test.skip(!key, 'Requiere E2E_SERVICE_ROLE_KEY para escribir como service role')
 
-  const svc = createClient(process.env.VITE_GNEXO_SUPABASE_URL!, key!, {
+  const svc = createClient(process.env.VITE_NODO_SUPABASE_URL!, key!, {
     auth: { persistSession: false },
   })
   const { error } = await svc
@@ -254,7 +254,7 @@ test('el CHECK rechaza un estado fuera del enum', async () => {
 // ============================================================================
 
 const FN_URL = () =>
-  `${process.env.VITE_GNEXO_SUPABASE_URL}/functions/v1/${
+  `${process.env.VITE_NODO_SUPABASE_URL}/functions/v1/${
     process.env.E2E_APLICAR_ESTADO_FN ?? 'aplicar-estado'
   }`
 

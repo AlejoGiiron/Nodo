@@ -1,4 +1,4 @@
-# G-Nexo · Brief de diseño — Entrega 1
+# Nodo · Brief de diseño — Entrega 1
 
 *Para la sesión de Claude Design. 2026-08-31.*
 
@@ -24,7 +24,7 @@ prometan.
 Una persona detrás de un mostrador, **ocho horas al día, todos los días**. Es un experto
 repetitivo: va a aprenderse la interfaz en una semana y después la va a usar sin mirarla.
 
-Esto invierte las decisiones del producto hermano G-Cresco, que optimiza para un usuario
+Esto invierte las decisiones del producto hermano Cresco, que optimiza para un usuario
 **ocasional**, en el campo, con guantes y a pleno sol — de ahí su escala tipográfica de hasta 52px
 y su FAB gigante. **Acá eso sería un error.** Lo que se optimiza es distinto:
 
@@ -57,16 +57,16 @@ En concreto:
 
 ---
 
-## 4. Distinguirse de G-Vento — y esto no es de marca
+## 4. Distinguirse de Vento — y esto no es de marca
 
-G-Nexo es un fork de G-Vento y ambos los mantiene **una sola persona**, en paralelo, con bases de
+Nodo es un fork de Vento y ambos los mantiene **una sola persona**, en paralelo, con bases de
 código que hoy se parecen mucho.
 
 Si las dos apps se ven iguales, se van a confundir: capturas de pantalla, pestañas de staging,
 issues de Sentry, sesiones de Claude Code. **La distinción visual es una salvaguarda operativa,
 no una decisión estética.**
 
-Por eso: **el acento de G-Nexo no es verde esmeralda.** G-Vento usa `#10b981` con sidebar oscuro
+Por eso: **el acento de Nodo no es verde esmeralda.** Vento usa `#10b981` con sidebar oscuro
 `#0f172a`. Elegí una dirección que se reconozca de un vistazo y a distancia, sin mirar el
 contenido.
 
@@ -139,7 +139,7 @@ Toda pantalla se diseña con estos, no solo el feliz:
 `error de validación` · `sin permiso` (secciones ocultas por rol) · **`cliente sin cupo
 disponible`** · **`cliente en mora`** · `dato insuficiente` ("—", nunca un número inventado)
 
-**No hay estado offline.** G-Cresco lo tiene porque captura en campo sin señal; G-Nexo opera en un
+**No hay estado offline.** Cresco lo tiene porque captura en campo sin señal; Nodo opera en un
 mostrador con conexión. No diseñes indicador de sincronización.
 
 ---
@@ -158,10 +158,10 @@ mostrador con conexión. No diseñes indicador de sincronización.
 
 ## 10. Qué entregar
 
-Igual que la Entrega 1 de G-Cresco, para que se pueda capturar como skill:
+Igual que la Entrega 1 de Cresco, para que se pueda capturar como skill:
 
 - **Tokens con valores exactos** (hex, radios, escala de espaciado, escala tipográfica), pensados
-  como fuente única. G-Nexo es una app Vite única, no un monorepo: los tokens van a CSS variables,
+  como fuente única. Nodo es una app Vite única, no un monorepo: los tokens van a CSS variables,
   sin capa de tema para React Native.
 - **Librería de componentes con sus estados**, no pantallas sueltas.
 - **La lista de estados de cada pantalla como prop editable**, para poder construir y probar cada

@@ -1,5 +1,5 @@
 -- ============================================================
--- G-Vento — Inventario por recetas (Parte 2 BD): descuento de stock al vender
+-- Vento — Inventario por recetas (Parte 2 BD): descuento de stock al vender
 --
 -- Extiende add_order_items_with_extras para que, en LA MISMA transacción que
 -- ya inserta order_items + order_item_extras y descuenta el stock de los extras

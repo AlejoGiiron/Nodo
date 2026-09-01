@@ -1,7 +1,7 @@
 -- ============================================================
--- G-Nexo — Esquema base · 07b · Extras y alta de items
+-- Nodo — Esquema base · 07b · Extras y alta de items
 --
--- ORIGEN: G-Vento `d848852`:
+-- ORIGEN: Vento `d848852`:
 --   · extras, product_extras, order_item_extras ← product-extras.sql
 --   · add_order_items_with_extras               ← order-items-stock-recipes.sql (v2)
 --
@@ -14,7 +14,7 @@
 --    order_items (06) y stock_movements (07). Se numera 07b para no renumerar
 --    lo ya commiteado.
 --
--- R5: no aplicado en G-Nexo (base vacia). Desde el primer `db push`, R5 manda.
+-- R5: no aplicado en Nodo (base vacia). Desde el primer `db push`, R5 manda.
 --
 -- ── ENUMERACION DE EXTRAS (regla de poda) — resultado: NEUTRAS ─────────────
 -- Columnas de las tres tablas: sede_id, name, price, linked_product_id,
@@ -24,7 +24,7 @@
 -- product_components, donde la pieza estaba bien y la etiqueta estaba en la
 -- documentacion.
 --
--- QUE ES UN EXTRA EN G-NEXO: un cargo por linea que no es un producto con stock
+-- QUE ES UN EXTRA EN NODO: un cargo por linea que no es un producto con stock
 -- propio. Casos reales de los nichos firmados: corte de lamina o tubo en
 -- ferreteria, envase retornable en bebidas, domicilio. `linked_product_id`
 -- —heredado y neutro— cubre justo el caso del envase, que SI es un producto con
@@ -126,7 +126,7 @@ create index idx_order_item_extras_order_item_id
 --
 -- DOS ADAPTACIONES sobre la v2 heredada, ninguna cosmetica:
 --
---  1. 🔴 GRABA unit_cost. La v2 no lo hacia porque en G-Vento la columna no
+--  1. 🔴 GRABA unit_cost. La v2 no lo hacia porque en Vento la columna no
 --     existia. Congela el costo al vender, leyendo products.cost_price en ese
 --     instante. Sin esto, la migracion `ventas` tendria la columna y nadie la llenaria:
 --     el peor de los mundos, porque el hueco se descubre cuando ya no se puede

@@ -1,4 +1,4 @@
-# G-Nexo · Addendum 1 al brief de diseño
+# Nodo · Addendum 1 al brief de diseño
 
 *Sobre la Entrega 1 en curso. 2026-08-31.*
 
@@ -86,7 +86,7 @@ vea a software de hace veinte años.
 
 ---
 
-## 4. La silueta todavía es la de G-Vento
+## 4. La silueta todavía es la de Vento
 
 Barra lateral oscura + contenido claro es exactamente el layout del producto hermano, que
 especifica su sidebar en `#0f172a`. Cambiar el acento a azul no alcanza: la silueta se reconoce

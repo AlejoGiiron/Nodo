@@ -50,8 +50,8 @@ let desactivadas: string[] = []
 
 test.beforeAll(async () => {
   db = createClient(
-    process.env.VITE_GNEXO_SUPABASE_URL!,
-    process.env.VITE_GNEXO_SUPABASE_ANON_KEY!,
+    process.env.VITE_NODO_SUPABASE_URL!,
+    process.env.VITE_NODO_SUPABASE_ANON_KEY!,
     { auth: { persistSession: false } },
   )
   const { error } = await db.auth.signInWithPassword(ownerCreds())

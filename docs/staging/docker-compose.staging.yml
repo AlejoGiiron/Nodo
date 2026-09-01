@@ -1,26 +1,26 @@
 # ============================================================
-# G-Nexo — STAGING · override de puertos, volúmenes y red
+# Nodo — STAGING · override de puertos, volúmenes y red
 #
 # ⛔ ESTE ARCHIVO NO SE HA EJECUTADO NUNCA. Está acá para leerse antes.
 #
 # 🔴 ES UN OVERRIDE, NO UN COMPOSE COMPLETO — y eso es deliberado.
 #
 # No conozco la versión exacta del `docker-compose.yml` oficial de Supabase que
-# corre hoy G-Vento en el Ubuntu. Escribir un compose completo de memoria
+# corre hoy Vento en el Ubuntu. Escribir un compose completo de memoria
 # produciría un archivo que PARECE autoritativo y que puede diferir del real en
 # imágenes, variables o servicios: la clase de artefacto que dirige mal.
 #
 # Entonces esto solo redefine lo que tiene que ser distinto, y se usa ASÍ:
 #
-#   docker compose -p gnexo-staging \
+#   docker compose -p nodo-staging \
 #     -f /ruta/al/supabase/docker/docker-compose.yml \
 #     -f docs/staging/docker-compose.staging.yml \
 #     --env-file docs/staging/.env.staging \
 #     up -d
 #
-# El `-p gnexo-staging` NO ES OPCIONAL: sin project name propio, Docker Compose
+# El `-p nodo-staging` NO ES OPCIONAL: sin project name propio, Docker Compose
 # reutiliza el default derivado del directorio y puede ADOPTAR los contenedores
-# de G-Vento como si fueran suyos. Un `down` posterior los pararía.
+# de Vento como si fueran suyos. Un `down` posterior los pararía.
 #
 # ⚠️ ANTES DE CORRERLO: diffear los nombres de servicio contra el compose real.
 #    Si upstream renombró un servicio, este override lo IGNORA en silencio —
@@ -34,27 +34,27 @@
 services:
 
   # ── Kong: la puerta de entrada. ES EL RIESGO PRINCIPAL ────────────────────
-  # Si esto queda en 8000/8443, staging se lleva por delante la API de G-Vento
+  # Si esto queda en 8000/8443, staging se lleva por delante la API de Vento
   # en producción. No es "se pisan los datos": es que el reverse proxy del host
   # empieza a resolver a staging sin que nadie lo note.
   kong:
     ports:
-      - "8100:8000/tcp"     # G-Vento usa 8000
-      - "8543:8443/tcp"     # G-Vento usa 8443
+      - "8100:8000/tcp"     # Vento usa 8000
+      - "8543:8443/tcp"     # Vento usa 8443
 
   # ── Postgres ──────────────────────────────────────────────────────────────
   # Puerto distinto Y volumen distinto. El volumen es lo que hace que "recrear
   # staging" no toque un byte de producción.
   db:
     ports:
-      - "5533:5432"         # G-Vento usa 5432
+      - "5533:5432"         # Vento usa 5432
     volumes:
-      - gnexo_staging_db:/var/lib/postgresql/data
+      - nodo_staging_db:/var/lib/postgresql/data
 
   # ── Studio ────────────────────────────────────────────────────────────────
   studio:
     ports:
-      - "3100:3000/tcp"     # G-Vento usa 3000
+      - "3100:3000/tcp"     # Vento usa 3000
 
   # ── Analytics / Logflare ──────────────────────────────────────────────────
   # Se incluye porque en varias versiones del compose oficial expone 4000 y es
@@ -65,6 +65,6 @@ services:
 
 volumes:
   # Volumen con nombre propio y prefijo del proyecto: no comparte nada con
-  # G-Vento. Borrarlo borra staging entero y nada más.
-  gnexo_staging_db:
-    name: gnexo_staging_db
+  # Vento. Borrarlo borra staging entero y nada más.
+  nodo_staging_db:
+    name: nodo_staging_db

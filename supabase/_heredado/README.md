@@ -1,8 +1,8 @@
-# `supabase/_heredado/` — SQL de G-Vento, **NO aplicable a G-Nexo**
+# `supabase/_heredado/` — SQL de Vento, **NO aplicable a Nodo**
 
-⛔ **Nada de esta carpeta se ejecuta. No es el esquema de G-Nexo.**
+⛔ **Nada de esta carpeta se ejecuta. No es el esquema de Nodo.**
 
-Son los 45 `.sql` heredados de G-Vento `d848852` que la consolidación **reemplazó**. El esquema
+Son los 45 `.sql` heredados de Vento `d848852` que la consolidación **reemplazó**. El esquema
 vigente son los archivos numerados de `supabase/` (`01-…` a `12-…`), más `seed-system-roles.sql`,
 que es **generado** desde `src/lib/permissions.ts` y sí está vigente.
 
@@ -33,7 +33,7 @@ momento consultarla deja de aportar, borrarla es un `git rm` y la historia queda
 
 | Qué | Dónde | Por qué |
 |---|---|---|
-| Esquema base | `supabase/01-…` a `12-…` | Es el esquema de G-Nexo. |
+| Esquema base | `supabase/01-…` a `12-…` | Es el esquema de Nodo. |
 | `seed-system-roles.sql` | `supabase/` | **Generado** desde `src/lib/permissions.ts` con `pnpm gen:rbac`. No se edita a mano. |
 | Edge functions | `supabase/functions/` | `create-user` y `aplicar-estado` viajaron sin cambios (clase A). |
 

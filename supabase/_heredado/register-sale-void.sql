@@ -1,5 +1,5 @@
 -- ============================================================
--- G-Vento — Anulación de ventas (Fase 2 BD): RPC register_sale_void
+-- Vento — Anulación de ventas (Fase 2 BD): RPC register_sale_void
 --
 -- Anula UNA venta del TURNO ACTUAL de forma ATÓMICA:
 --   • valida 6 guardas server-side EN ORDEN (nada se modifica hasta pasarlas)

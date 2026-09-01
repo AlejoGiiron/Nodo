@@ -1,5 +1,5 @@
 -- ============================================================
--- G-Vento — Inventario por recetas (BOM de un nivel)
+-- Vento — Inventario por recetas (BOM de un nivel)
 -- Parte 1 (BD): schema de inventario + ajuste manual de stock.
 --
 -- Modelo (coctelería):
@@ -140,7 +140,7 @@ create policy "product_components: borrar con permiso"
 -- 5. adjust_stock(p_product_id, p_qty, p_reason) → void
 --    Ajuste manual de inventario. qty CON SIGNO (+entrada / -salida).
 --    UPDATE de stock + INSERT del movimiento en UNA función (atómico):
---    no se hace en 2 llamadas del cliente (aprendizaje del spec G-Mura).
+--    no se hace en 2 llamadas del cliente (aprendizaje del spec Mura).
 --
 --    ¿Por qué SECURITY DEFINER?
 --      El UPDATE sobre products tiene RLS solo-admin; un usuario con permiso

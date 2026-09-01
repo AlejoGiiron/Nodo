@@ -1,5 +1,5 @@
 -- ============================================================
--- G-Vento — Blindaje del rol OWNER + invariante del comodín '*' (nivel BD)
+-- Vento — Blindaje del rol OWNER + invariante del comodín '*' (nivel BD)
 --
 -- Del diagnóstico: la RLS de public.roles permite UPDATE/DELETE de cualquier
 -- rol de la org a quien tenga 'roles.gestionar' (no mira is_system). Dos huecos:

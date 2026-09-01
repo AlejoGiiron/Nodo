@@ -64,7 +64,7 @@ const SECTIONS: { id: SectionId; label: string; icon: LucideIcon; permission?: s
 ]
 
 // Sugerencias de DETALLE, no categorías (ver la sección de Caja).
-// 'Domicilio' sale: G-Nexo no tiene reparto — el cliente carga y se lleva.
+// 'Domicilio' sale: Nodo no tiene reparto — el cliente carga y se lleva.
 const DEFAULT_CASH_OUT_REASONS = ['Mercado', 'Servicios', 'Papelería', 'Transporte']
 const DEFAULT_STATIONS = ['Cocina fría', 'Cocina caliente', 'Barra']
 
@@ -347,7 +347,7 @@ function SectionSede() {
       <div style={{ display: 'grid', gap: 16, gridTemplateColumns: '1fr 1fr', maxWidth: 560 }}>
         <div style={{ gridColumn: '1 / -1' }}>
           <FieldLabel>Nombre del sede</FieldLabel>
-          <TextInput value={name} onChange={setName} placeholder="G-Nexo Resto" testId="config-sede-name" />
+          <TextInput value={name} onChange={setName} placeholder="Nodo Resto" testId="config-sede-name" />
         </div>
         <div style={{ gridColumn: '1 / -1' }}>
           <FieldLabel>Dirección</FieldLabel>
@@ -385,7 +385,7 @@ function generatePassword(): string {
 function enumFromRoleName(name: string): 'admin' | 'cashier' {
   if (name === 'owner' || name === 'admin') return 'admin'
   // 🔴 El rol 'mozo' ya no mapea a nada: 'waiter' salio del enum user_role
-  // (G-Nexo no tiene mozos). Un rol RBAC llamado 'mozo' —si quedara alguno
+  // (Nodo no tiene mozos). Un rol RBAC llamado 'mozo' —si quedara alguno
   // heredado— cae en 'cashier', que es el MENOS privilegiado de los dos que
   // quedan. Fail-closed: ante un nombre que no reconocemos, el minimo.
   return 'cashier'

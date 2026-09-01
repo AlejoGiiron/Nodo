@@ -1,5 +1,5 @@
 -- ============================================================
--- G-Vento — Inventario por recetas (Parte 2 UI): umbral de stock mínimo
+-- Vento — Inventario por recetas (Parte 2 UI): umbral de stock mínimo
 --
 -- Agrega products.min_stock: umbral de alerta de "stock bajo". Solo tiene
 -- sentido para productos simple con stock_tracking=true (los insumos). Default

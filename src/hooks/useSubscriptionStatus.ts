@@ -68,10 +68,10 @@ export function resolveNotice(
 }
 
 /**
- * Lee la bandera de suscripción que escribe G-Centro. G-Nexo SOLO LEE.
+ * Lee la bandera de suscripción que escribe G-Centro. Nodo SOLO LEE.
  *
  * ── SIN REALTIME (decisión, no omisión) ─────────────────────────────────────
- * G-Nexo usa Realtime en cinco lugares y estaría disponible acá, pero una
+ * Nodo usa Realtime en cinco lugares y estaría disponible acá, pero una
  * bandera comercial que cambia una vez al mes no lo justifica: la latencia es
  * AMORTIGUACIÓN, no carencia. Una bandera que se actualiza sola en medio de un
  * cobro es exactamente el modo de fallo que cazamos con `checkoutOrder` en

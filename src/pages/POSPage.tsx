@@ -1339,7 +1339,7 @@ function CheckoutModal({
               orderId={orderId}
               orderNumber={orderNumber}
               receivedAmt={method === 'efectivo' ? receivedNum : undefined}
-              sedeName={sede?.name ?? 'G-Nexo'}
+              sedeName={sede?.name ?? 'Nodo'}
               sedeAddress={sede?.address}
             />
           </div>
@@ -1610,10 +1610,10 @@ export function POSPage() {
 
   // Inject print CSS
   useEffect(() => {
-    const existing = document.getElementById('gnexo-ticket-print')
+    const existing = document.getElementById('nodo-ticket-print')
     if (existing) return
     const style = document.createElement('style')
-    style.id = 'gnexo-ticket-print'
+    style.id = 'nodo-ticket-print'
     style.textContent = PRINT_CSS
     document.head.appendChild(style)
     return () => style.remove()
