@@ -4,7 +4,27 @@ import { useCashShift } from '@/hooks/useCashShift'
 import { useSedeConfig } from '@/hooks/useSedeConfig'
 import { availableCash } from '@/lib/shiftCalc'
 
-const OTHER_REASON = 'Otro'
+// ── Categorías de movimiento ────────────────────────────────────────────────
+// 🔴 Es una ALLOWLIST y está CRUZADA con el tipo: la constraint
+// chk_categoria_segun_tipo rechaza cualquier combinación que no esté acá.
+//
+// Solo se ofrecen las MANUALES. `compra` y `abono_cliente` también son válidas
+// en la base, pero las escriben register_purchase y register_debt_payment: si
+// el cajero pudiera elegirlas a mano, habría movimientos de compra sin factura
+// y abonos sin deuda — plata sin su hecho de negocio detrás.
+const CATEGORIAS = {
+  in: [
+    { valor: 'base', label: 'Base / inyección de efectivo' },
+    { valor: 'otro', label: 'Otro' },
+  ],
+  out: [
+    { valor: 'gasto', label: 'Gasto' },
+    { valor: 'retiro', label: 'Retiro de caja' },
+    { valor: 'otro', label: 'Otro' },
+  ],
+} as const
+
+const CATEGORIA_OTRO = 'otro'
 
 const formatCOP = (n: number) =>
   new Intl.NumberFormat('es-CO', {
@@ -27,29 +47,28 @@ export function MovementsModal({ onClose }: MovementsModalProps) {
   const { config } = useSedeConfig()
 
   const [type, setType] = useState<'in' | 'out'>('in')
+  const [categoria, setCategoria] = useState<string>('')
   const [rawAmount, setRawAmount] = useState('')
-  const [reason, setReason] = useState('')           // ingresos (texto libre)
-  const [outReason, setOutReason] = useState('')      // egresos (motivo de la lista)
-  const [customReason, setCustomReason] = useState('') // egresos: fallback "Otro"
+  const [reason, setReason] = useState('')   // DETALLE libre, ya no la clasificación
   const [overdraftPending, setOverdraftPending] = useState(false)
 
-  // Motivos de egreso configurables; siempre garantizamos la opción "Otro".
-  const configuredReasons = config.cash_out_reasons ?? []
-  const outReasonOptions = configuredReasons.includes(OTHER_REASON)
-    ? configuredReasons
-    : [...configuredReasons, OTHER_REASON]
+  // `config.cash_out_reasons` dejó de ser la lista de categorías: ahora son
+  // SUGERENCIAS de detalle para egresos. La categoría es fija en el esquema y
+  // no la edita el cliente — si pudiera inventarla, los reportes entre sedes y
+  // entre meses dejarían de ser comparables.
+  const sugerencias = config.cash_out_reasons ?? []
 
+  const categorias = CATEGORIAS[type]
   const amount = parseInt(rawAmount.replace(/\D/g, ''), 10) || 0
+  const detalle = reason.trim()
 
-  // Motivo efectivo según el tipo de movimiento.
-  const effectiveReason =
-    type === 'in'
-      ? reason.trim()
-      : outReason === OTHER_REASON
-        ? customReason.trim()
-        : outReason.trim()
-
-  const isValid = amount > 0 && effectiveReason.length > 0
+  // El detalle es obligatorio SOLO en 'otro', igual que la constraint
+  // chk_otro_exige_detalle: sin él ese bucket queda ciego, que es justo lo que
+  // la categoría vino a evitar. En las demás es opcional.
+  const isValid =
+    amount > 0 &&
+    categoria !== '' &&
+    (categoria !== CATEGORIA_OTRO || detalle.length > 0)
 
   // Efectivo disponible actual (apertura + ventas efectivo + ingresos − egresos previos).
   const movementsIn = movements.filter(m => m.type === 'in').reduce((s, m) => s + m.amount, 0)
@@ -65,8 +84,16 @@ export function MovementsModal({ onClose }: MovementsModalProps) {
   const resetForm = () => {
     setRawAmount('')
     setReason('')
-    setOutReason('')
-    setCustomReason('')
+    setCategoria('')
+    setOverdraftPending(false)
+  }
+
+  // Cambiar de ingreso a egreso invalida la categoría elegida: los dos
+  // allowlist son distintos y 'base' no existe para un egreso. Limpiarla evita
+  // mandar una combinación que la constraint rechazaría.
+  const cambiarTipo = (nuevo: 'in' | 'out') => {
+    setType(nuevo)
+    setCategoria('')
     setOverdraftPending(false)
   }
 
@@ -79,7 +106,12 @@ export function MovementsModal({ onClose }: MovementsModalProps) {
       return
     }
     try {
-      await addMovement({ type, amount, reason: effectiveReason })
+      await addMovement({
+        type,
+        amount,
+        categoria,
+        reason: detalle || null,   // null explícito: la columna es nullable
+      })
       resetForm()
     } catch {
       // error toast handled in hook
@@ -152,7 +184,7 @@ export function MovementsModal({ onClose }: MovementsModalProps) {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               <button
                 type="button"
-                onClick={() => { setType('in'); setOverdraftPending(false) }}
+                onClick={() => cambiarTipo('in')}
                 style={{
                   padding: '10px 12px', border: `2px solid ${type === 'in' ? '#10b981' : '#e5e7eb'}`,
                   borderRadius: 9, background: type === 'in' ? '#ecfdf5' : '#fff',
@@ -167,7 +199,7 @@ export function MovementsModal({ onClose }: MovementsModalProps) {
               </button>
               <button
                 type="button"
-                onClick={() => { setType('out'); setOverdraftPending(false) }}
+                onClick={() => cambiarTipo('out')}
                 style={{
                   padding: '10px 12px', border: `2px solid ${type === 'out' ? '#dc2626' : '#e5e7eb'}`,
                   borderRadius: 9, background: type === 'out' ? '#fef2f2' : '#fff',
@@ -208,51 +240,53 @@ export function MovementsModal({ onClose }: MovementsModalProps) {
               </div>
             </div>
 
-            {/* Reason */}
+            {/* Categoria — ALLOWLIST cruzada con el tipo */}
             <div>
               <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#334155', marginBottom: 6 }}>
-                Motivo <span style={{ color: '#dc2626' }}>*</span>
+                Categoría <span style={{ color: '#dc2626' }}>*</span>
               </label>
-              {type === 'in' ? (
-                <input
-                  type="text"
-                  data-testid="movement-reason-in"
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  placeholder="Ej: Venta externa, cambio de billetes..."
-                  style={inputStyle}
-                  onFocus={(e) => { e.currentTarget.style.borderColor = '#10b981' }}
-                  onBlur={(e) => { e.currentTarget.style.borderColor = '#e5e7eb' }}
-                />
-              ) : (
-                <>
-                  <select
-                    data-testid="movement-reason-out"
-                    value={outReason}
-                    onChange={(e) => setOutReason(e.target.value)}
-                    style={{ ...inputStyle, cursor: 'pointer', appearance: 'auto' }}
-                    onFocus={(e) => { e.currentTarget.style.borderColor = '#10b981' }}
-                    onBlur={(e) => { e.currentTarget.style.borderColor = '#e5e7eb' }}
-                  >
-                    <option value="" disabled>Selecciona un motivo...</option>
-                    {outReasonOptions.map((r) => (
-                      <option key={r} value={r}>{r}</option>
-                    ))}
-                  </select>
-                  {outReason === OTHER_REASON && (
-                    <input
-                      type="text"
-                      data-testid="movement-reason-custom"
-                      value={customReason}
-                      onChange={(e) => setCustomReason(e.target.value)}
-                      placeholder="Especifica el motivo..."
-                      style={{ ...inputStyle, marginTop: 8 }}
-                      autoFocus
-                      onFocus={(e) => { e.currentTarget.style.borderColor = '#10b981' }}
-                      onBlur={(e) => { e.currentTarget.style.borderColor = '#e5e7eb' }}
-                    />
-                  )}
-                </>
+              <select
+                data-testid="movement-categoria"
+                value={categoria}
+                onChange={(e) => setCategoria(e.target.value)}
+                style={{ ...inputStyle, cursor: 'pointer', appearance: 'auto' }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = '#10b981' }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = '#e5e7eb' }}
+              >
+                <option value="" disabled>Selecciona una categoría...</option>
+                {categorias.map((c) => (
+                  <option key={c.valor} value={c.valor}>{c.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Detalle libre. Obligatorio SOLO en 'otro' (chk_otro_exige_detalle) */}
+            <div>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#334155', marginBottom: 6 }}>
+                Detalle{' '}
+                {categoria === CATEGORIA_OTRO
+                  ? <span style={{ color: '#dc2626' }}>*</span>
+                  : <span style={{ color: '#94a3b8', fontWeight: 500 }}>(opcional)</span>}
+              </label>
+              <input
+                type="text"
+                data-testid="movement-detalle"
+                list={type === 'out' && sugerencias.length > 0 ? 'sugerencias-egreso' : undefined}
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder={
+                  categoria === CATEGORIA_OTRO
+                    ? 'Obligatorio: especifica de qué se trata...'
+                    : 'Ej: proveedor, factura, quién lo pidió...'
+                }
+                style={inputStyle}
+                onFocus={(e) => { e.currentTarget.style.borderColor = '#10b981' }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = '#e5e7eb' }}
+              />
+              {type === 'out' && sugerencias.length > 0 && (
+                <datalist id="sugerencias-egreso">
+                  {sugerencias.map((s) => <option key={s} value={s} />)}
+                </datalist>
               )}
             </div>
 

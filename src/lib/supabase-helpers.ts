@@ -801,11 +801,11 @@ export const getCashMovements = (shiftId: string) =>
   supabase
     .from('cash_movements')
     .select('*')
-    .eq('shift_id', shiftId)
+    .eq('jornada_id', shiftId)
     .order('created_at', { ascending: false })
 
 // Totales de ingresos/egresos de un turno (para reimprimir su arqueo). Los
-// cash_movements persisten por shift_id → re-leíbles tras el cierre sin snapshot.
+// cash_movements persisten por jornada_id → re-leíbles tras el cierre sin snapshot.
 export const getShiftMovementTotals = async (shiftId: string): Promise<{ in: number; out: number }> => {
   const { data, error } = await getCashMovements(shiftId)
   if (error) throw error
@@ -823,24 +823,24 @@ export const createCashMovement = (movement: TablesInsert<'cash_movements'>) =>
 
 export const getOpenShift = (sedeId: string) =>
   supabase
-    .from('cash_shifts')
+    .from('jornadas')
     .select('*')
     .eq('sede_id', sedeId)
     .is('closed_at', null)
     .maybeSingle()
 
-export const openShift = (shift: TablesInsert<'cash_shifts'>) =>
-  supabase.from('cash_shifts').insert(shift).select().single()
+export const openShift = (shift: TablesInsert<'jornadas'>) =>
+  supabase.from('jornadas').insert(shift).select().single()
 
 export const closeShift = (
   shiftId: string,
   data: Pick<
-    TablesUpdate<'cash_shifts'>,
+    TablesUpdate<'jornadas'>,
     'closing_amount' | 'closed_by' | 'closed_at' | 'expected_amount' | 'difference'
     | 'close_reconciliation' | 'close_comment'
   >,
 ) => supabase
-  .from('cash_shifts')
+  .from('jornadas')
   .update(data)
   .eq('id', shiftId)
   // Mismos joins que getClosedShifts: el comprobante del cierre usa los mismos
@@ -848,8 +848,8 @@ export const closeShift = (
   .select(
     'id, opening_amount, opened_at, opened_by, closing_amount, expected_amount, ' +
     'difference, closed_at, closed_by, close_reconciliation, close_comment, ' +
-    'abrio:profiles!cash_shifts_opened_by_fkey(full_name), ' +
-    'cerro:profiles!cash_shifts_closed_by_fkey(full_name)',
+    'abrio:profiles!jornadas_opened_by_fkey(full_name), ' +
+    'cerro:profiles!jornadas_closed_by_fkey(full_name)',
   )
   .single()
 
@@ -889,12 +889,12 @@ export const getClosedShifts = ({
   sedeId, userId, from, to, page, pageSize,
 }: ClosedShiftsFilters) => {
   let q = supabase
-    .from('cash_shifts')
+    .from('jornadas')
     .select(
       'id, opening_amount, opened_at, opened_by, closing_amount, expected_amount, ' +
       'difference, closed_at, closed_by, close_reconciliation, close_comment, ' +
-      'abrio:profiles!cash_shifts_opened_by_fkey(full_name), ' +
-      'cerro:profiles!cash_shifts_closed_by_fkey(full_name)',
+      'abrio:profiles!jornadas_opened_by_fkey(full_name), ' +
+      'cerro:profiles!jornadas_closed_by_fkey(full_name)',
       { count: 'exact' },
     )
     .eq('sede_id', sedeId)
@@ -914,7 +914,7 @@ export type CashOutRow = {
   reason: string
   created_at: string
   created_by: string
-  shift_id: string
+  jornada_id: string
   autor: { full_name: string | null } | null
 }
 
@@ -933,7 +933,7 @@ export const getCashOutMovements = ({
   let q = supabase
     .from('cash_movements')
     .select(
-      'id, amount, reason, created_at, created_by, shift_id, ' +
+      'id, amount, reason, created_at, created_by, jornada_id, ' +
       'autor:profiles!cash_movements_created_by_fkey(full_name)',
       { count: 'exact' },
     )

@@ -64,7 +64,7 @@ export function ShiftHistoryPage() {
   const canReprint = can('caja.cerrar')
 
   // Reimprime el comprobante desde el SNAPSHOT persistido (no recomputa el
-  // esperado → inmune al bug de ventana). Movimientos re-leídos por shift_id.
+  // esperado → inmune al bug de ventana). Movimientos re-leídos por jornada_id.
   // Mismo builder/print que el cierre → comprobante idéntico al original.
   const handleReprint = async (row: ClosedShiftRow) => {
     if (!row.close_reconciliation) return

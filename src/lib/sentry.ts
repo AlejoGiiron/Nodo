@@ -239,7 +239,7 @@ const CLAVE_PERMITIDA: Record<string, Forma> = {
   // lo que manda la regla del proyecto ("NO ASUMIR, CONFIRMAR CONTRA LA BD").
   id: 'uuid', orderId: 'uuid', order_id: 'uuid',
   sedeId: 'uuid', sede_id: 'uuid',
-  shiftId: 'uuid', shift_id: 'uuid',
+  shiftId: 'uuid', jornada_id: 'uuid',
   productId: 'uuid', product_id: 'uuid',
   invoiceId: 'uuid', invoice_id: 'uuid',
   userId: 'uuid', user_id: 'uuid',
@@ -258,7 +258,7 @@ const CLAVE_PERMITIDA: Record<string, Forma> = {
   // ── Arqueo: SOLO la diferencia, nunca los absolutos.
   // Una diferencia de caja dice "faltan 5.000" sin revelar cuánto vendió el
   // local. Los absolutos (expected/declared/total) se miran contra la BD con
-  // el shift_id, que sí viaja.
+  // el jornada_id, que sí viaja.
   difference: 'decimal', difference_total: 'decimal', diferencia: 'decimal',
 
   // ── Banderas de flujo. Dicen por qué rama pasó el cobro.

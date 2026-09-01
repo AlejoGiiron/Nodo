@@ -20,9 +20,11 @@ export type Database = {
           created_at: string
           created_by: string
           id: string
-          reason: string
+          categoria: string
+
+          reason: string | null
           sede_id: string
-          shift_id: string
+          jornada_id: string
           type: Database["public"]["Enums"]["movement_type"]
         }
         Insert: {
@@ -30,9 +32,11 @@ export type Database = {
           created_at?: string
           created_by: string
           id?: string
-          reason: string
+          categoria: string
+
+          reason: string | null
           sede_id: string
-          shift_id: string
+          jornada_id: string
           type: Database["public"]["Enums"]["movement_type"]
         }
         Update: {
@@ -40,9 +44,11 @@ export type Database = {
           created_at?: string
           created_by?: string
           id?: string
-          reason?: string
+          categoria?: string
+
+          reason?: string | null
           sede_id?: string
-          shift_id?: string
+          jornada_id?: string
           type?: Database["public"]["Enums"]["movement_type"]
         }
         Relationships: [
@@ -61,15 +67,15 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "cash_movements_shift_id_fkey"
-            columns: ["shift_id"]
+            foreignKeyName: "cash_movements_jornada_id_fkey"
+            columns: ["jornada_id"]
             isOneToOne: false
-            referencedRelation: "cash_shifts"
+            referencedRelation: "jornadas"
             referencedColumns: ["id"]
           },
         ]
       }
-      cash_shifts: {
+      jornadas: {
         Row: {
           close_comment: string | null
           close_reconciliation: Json | null
@@ -117,21 +123,21 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "cash_shifts_closed_by_fkey"
+            foreignKeyName: "jornadas_closed_by_fkey"
             columns: ["closed_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "cash_shifts_opened_by_fkey"
+            foreignKeyName: "jornadas_opened_by_fkey"
             columns: ["opened_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "cash_shifts_sede_id_fkey"
+            foreignKeyName: "jornadas_sede_id_fkey"
             columns: ["sede_id"]
             isOneToOne: false
             referencedRelation: "sedes"

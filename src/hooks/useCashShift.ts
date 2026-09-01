@@ -154,11 +154,13 @@ export function useCashShift() {
   const addMovementMutation = useMutation({
     meta: { area: 'caja' satisfies SentryArea },
     mutationFn: async (
-      movement: Pick<TablesInsert<'cash_movements'>, 'type' | 'amount' | 'reason'>,
+      // `categoria` es obligatoria: la constraint chk_categoria_segun_tipo la
+      // exige y la valida CRUZADA con `type`. Sin ella el insert se rechaza.
+      movement: Pick<TablesInsert<'cash_movements'>, 'type' | 'amount' | 'reason' | 'categoria'>,
     ) => {
       const { data, error } = await createCashMovement({
         ...movement,
-        shift_id: currentShift!.id,
+        jornada_id: currentShift!.id,
         sede_id: sedeId!,
         created_by: profile!.id,
       })

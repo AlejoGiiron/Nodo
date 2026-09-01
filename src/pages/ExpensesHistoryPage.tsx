@@ -162,7 +162,7 @@ export function ExpensesHistoryPage() {
                   </span>
                 </span>
                 <span style={{ fontSize: 12, color: '#94a3b8', fontFamily: 'monospace' }}>
-                  #{row.shift_id.slice(-6).toUpperCase()}
+                  #{row.jornada_id.slice(-6).toUpperCase()}
                 </span>
                 <span data-testid="expense-amount" style={{ textAlign: 'right', fontSize: 14, fontWeight: 700, color: '#dc2626', fontFamily: 'monospace' }}>
                   −{formatCOP(row.amount)}

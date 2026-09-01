@@ -33,7 +33,7 @@ export interface ShiftBalance {
 }
 
 // ─── Arqueo multi-método (snapshot que se persiste al cerrar) ──────
-// Se CONGELA al cerrar: payments no tiene shift_id y su ventana es solo
+// Se CONGELA al cerrar: payments no tiene jornada_id y su ventana es solo
 // temporal, así que recomputar el esperado de un turno cerrado sumaría pagos
 // posteriores. Por eso el esperado por método se snapshotea aquí.
 
