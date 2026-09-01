@@ -1086,7 +1086,29 @@ Con acceso de lectura directo (Management API, token con alcance de proyecto), e
 | Org `LAB` | — | 🔴 **CERO organizaciones** en toda la base |
 | Cuentas de Auth | — | 🔴 **CERO** |
 
-### 🔴 El hallazgo: un `create or replace` que se cree aplicado y no lo está
+### 🔴 El hallazgo: la clase "indistinguible de" en un reporte HUMANO
+
+**Atribución, porque importa quién lo encontró y dónde falló:** lo levantó Alejandro. Dijo **dos
+veces** que había aplicado `seed_system_roles`, y **ninguna de las dos quedó**. Leyó el banner verde
+del SQL Editor como confirmación — que es exactamente lo que ese banner invita a hacer.
+
+🔴 **Es la primera vez que esta clase aparece en un reporte HUMANO y no en una herramienta.** Las
+anteriores fueron un runner (un archivo que no se colectaba), un tipo (`can(string)`) y un conteo.
+Ésta es la más difícil de cazar por una razón simple:
+
+> **Nadie audita lo que le dice su interlocutor.** Un test que no corre al menos deja una línea rara
+> en el resumen; "ya lo apliqué" no deja nada — se integra al estado compartido como un hecho, y
+> todo lo que se construye encima hereda el supuesto.
+
+Y el mecanismo que lo produce es el mismo de siempre: **pegar un script y ver el banner verde no
+prueba que el objeto quedó.** El script pudo correrse contra otro proyecto, la pestaña pudo tener
+otra sesión, la selección pegada pudo quedar corta. El estado defectuoso emite la señal del sano.
+
+**Lo accionable, y es una regla corta:** *un objeto que ALGUIEN DICE haber aplicado se verifica
+contra el catálogo del sistema antes de construir encima.* No es desconfianza: es que el reporte y
+la realidad son dos cosas distintas, y solo una de las dos ejecuta. Cuesta una consulta a `pg_proc`.
+
+### El mecanismo, aparte de quién lo reportó
 
 Lo más caro no es que faltara la función: es que **se creía aplicada**. Pegar un script en el SQL
 Editor y ver el banner verde **no prueba que el objeto quedó** — el script puede haberse corrido
@@ -1120,3 +1142,44 @@ template. `pnpm db:push` lleva la bandera, así que el camino por defecto es el 
 2. `supabase/lab-seed-a.sql` → org `LAB`, sede `LAB Principal`, 3 roles.
 3. Verificación del RBAC **contra la base**, no contra el archivo:
    **admin = 21 · cajero = 8 · owner = comodín** — coincide exacto con `SYSTEM_ROLES`.
+
+
+---
+
+## 2026-09-01 · Las 11 RPC EJECUTADAS contra la base — y los dos guards que aparecieron
+
+`verificar-rpcs.sql` corrió contra la base ya migrada. **Exit 0, ninguna tiró
+`relation/column does not exist`.** Es la primera evidencia de que los cuerpos plpgsql resuelven —
+lo que el `db push` verde no dice, porque Postgres no valida el cuerpo al crear la función.
+
+### Las dos corridas que fallaron primero, y por qué son BUENAS noticias
+
+El discriminador que el propio script trae en la cabecera —*`relation/column does not exist` es un
+esquema roto; cualquier otro error es el script o un guard*— se usó dos veces el mismo día:
+
+| Error | Qué era |
+|---|---|
+| `El extra ... no esta asignado al producto` | **Guard correcto.** Mi fixture creó el extra sin `product_extras`. `add_order_items_with_extras` lo rechazó — y para llegar a rechazarlo, su cuerpo tuvo que resolver hasta la línea 128 |
+| `La suma de pagos (11000) no cuadra con el total (0)` | **Guard correcto.** La orden nacía en 0 y `add_order_items_with_extras` NO recalcula el total (lo calcula el cliente) |
+
+⚠️ **Un guard que se dispara es una función que resolvió.** Los dos "fallos" fueron, en realidad,
+las dos primeras confirmaciones de que el esquema funciona.
+
+🔴 **Y un detalle del segundo fixture que vale como lección de RLS:** el total no se puede corregir
+con un `update` después de impersonar. Sobre `orders` **no hay policy de UPDATE para
+`authenticated`** —esas escrituras las hacen las RPC—, así que el update afectaría **0 filas en
+silencio**. Hay que fijarlo antes de bajar de privilegios. Es la deuda #24 cerrada por
+construcción, vista desde adentro.
+
+### El control negativo, que es lo que hace válido al verde
+
+Un `perform public.rpc_que_no_existe(1)` devuelve:
+
+```
+ERROR: 42883: function public.rpc_que_no_existe(integer) does not exist
+```
+
+Así que **el rojo que buscábamos SÍ se ve**. Sin esa comprobación, el exit 0 habría sido un verde
+que no se sabe si podía salir mal — justo lo que el corolario de R4 prohíbe dar por bueno.
+
+Y el `rollback` no dejó nada: `select count(*) from products where name like 'VERIF%'` → **0**.

@@ -100,11 +100,23 @@ begin
   insert into public.suppliers (sede_id, name)
        values (v_sede, 'VERIF Proveedor') returning id into v_prov;
 
+  -- El extra tiene que estar ASIGNADO al producto: add_order_items_with_extras
+  -- rechaza un extra suelto, y con razon. Lo cazo la primera corrida de este
+  -- script — un guard haciendo su trabajo, no un esquema roto.
+  insert into public.product_extras (product_id, extra_id)
+       values (v_prod, v_extra) on conflict do nothing;
+
   insert into public.jornadas (sede_id, opened_by, opening_amount)
        values (v_sede, v_user, 50000) returning id into v_jorn;
 
+  -- El total se fija ACA, no despues: register_sale_payment exige que la suma de
+  -- pagos cuadre con orders.total, y add_order_items_with_extras NO recalcula el
+  -- total (lo calcula el cliente). 10000 del producto + 1000 del extra = 11000.
+  -- Ademas hay que fijarlo antes de impersonar: sobre `orders` no hay policy de
+  -- UPDATE para `authenticated` —las escribe la RPC— asi que un update posterior
+  -- afectaria 0 filas EN SILENCIO.
   insert into public.orders (sede_id, created_by, canal, status, total)
-       values (v_sede, v_user, 'mostrador', 'pending', 0) returning id into v_order;
+       values (v_sede, v_user, 'mostrador', 'pending', 11000) returning id into v_order;
 
   insert into public.orders (sede_id, created_by, canal, status, total, customer_id, payment_status)
        values (v_sede, v_user, 'mostrador', 'pending', 20000, v_cli, 'pending')

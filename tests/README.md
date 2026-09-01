@@ -124,11 +124,15 @@ perfiles antes de la cuenta. Ver la deuda #36.
 1. **`supabase/lab-seed-a.sql`** (Studio → SQL Editor). Crea la org `LAB`, la
    sede y los roles de sistema —vía `seed_system_roles`, sin enumerar permisos—
    e **imprime el UUID de la sede** con el metadata exacto a pegar.
-2. **Crear las cuentas** en Studio → Authentication → Users → *Add user*, con
-   **Auto Confirm User** activado (sin eso no pueden loguear) y el
-   **User Metadata** que imprimió el paso 1:
-   `owner.test@nodo.test` (`role: admin`) y `cajero.test@nodo.test`
-   (`role: cashier`).
+2. **Crear las cuentas.** 🔴 **NO desde el panel de Studio**: su diálogo
+   *Create a new user* no tiene campo de **User Metadata**, y `handle_new_user`
+   lo exige — una cuenta creada ahí es rechazada por el trigger. Verificado.
+   La vía es la **Auth Admin API**, que sí acepta `user_metadata`:
+   `POST https://<ref>.supabase.co/auth/v1/admin/users` con la `service_role`
+   key, `email_confirm: true` y
+   `user_metadata: {sede_id, role, full_name}` — el `sede_id` lo imprimió el
+   paso 1. `owner.test@nodo.test` va con `role: admin`;
+   `cajero.test@nodo.test` con `role: cashier`.
 3. **`supabase/lab-seed-b.sql`**. Reconcilia los `role_id` de RBAC —lo único
    que el trigger no puede saber—, los `user_stores`, la categoría, los tres
    productos y la receta.
