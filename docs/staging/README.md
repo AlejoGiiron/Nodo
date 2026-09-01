@@ -41,10 +41,9 @@ servicio arranca con los puertos de producción. Por eso el primer paso es diffe
 ## 2 · Orden de ejecución, cuando se decida correrlo
 
 ```bash
-# 0. QUÉ SERVICIOS EXISTEN REALMENTE en el compose que corre hoy.
-#    Si algún nombre del override no aparece acá, el override no aplica y hay
-#    que corregirlo ANTES de seguir.
-docker compose -f /ruta/al/supabase/docker/docker-compose.yml config --services
+# 0. ¿EL OVERRIDE MATCHEA EL COMPOSE REAL?  ← EL CHEQUEO QUE NO SE PUEDE SALTEAR
+#    Exit 0 = seguir · 3 = NO LEVANTAR · 2 = no se pudo determinar (fail-closed)
+./docs/staging/verificar-servicios.sh /ruta/al/supabase/docker/docker-compose.yml
 
 # 1. Qué puertos están ocupados HOY en el host. Ninguno de los de staging
 #    debe aparecer.
@@ -106,9 +105,16 @@ corrupto o simplemente grande rompe el ciclo nocturno, y el síntoma aparece com
 — alguien lo mira, ve que es staging, y aprende que ese error se puede ignorar. **Ese aprendizaje
 es el daño real:** el día que falle de verdad, también se va a ignorar.
 
-⚠️ **Exclusión explícita, no por omisión.** Si el script de backup toma volúmenes por patrón —algo
-como `supabase_*`— el volumen se llama `gnexo_staging_db` **a propósito**: no matchea. Pero eso hay
-que **verificarlo leyendo el script**, no suponerlo: un patrón `*db*` sí lo tomaría.
+⛔ **PENDIENTE DE DATO — no está verificado, y por eso no se escribe como hecho.**
+
+Si el script de backup toma volúmenes **por patrón**, el nombre `gnexo_staging_db` decide si entra
+o no. Un patrón `supabase_*` **no** lo tomaría; uno `*db*` **sí**. **No sé cuál usa**: no leí ese
+script.
+
+Esa frase —"no matchea"— era una **hipótesis con forma de dato**, que es exactamente lo que la
+convención de notas prohíbe escribir. Queda como pendiente hasta leer el script del Ubuntu.
+Mientras tanto, **la exclusión no está garantizada por el nombre**: está garantizada solo si el
+patrón resulta ser compatible, y eso se sabe leyendo, no razonando.
 
 ---
 
@@ -151,7 +157,8 @@ negar. Eso son los specs E2E, no el push.
 ## 6 · Lo que falta antes de poder correr esto
 
 - [ ] Confirmar la **ruta y versión** del `docker-compose.yml` oficial que corre hoy en el Ubuntu.
-- [ ] Diffear los **nombres de servicio** contra el override (paso 0).
+- [ ] Correr `./verificar-servicios.sh <compose real>` y que dé **exit 0**.
+- [ ] 🔴 **Leer el script de backup del Ubuntu** y confirmar con qué patrón toma volúmenes (§4).
 - [ ] Generar los secretos de `.env.staging` — **ninguno reutilizado**.
 - [ ] Verificar el **script de backup** y confirmar que no toma `gnexo_staging_db`.
 - [ ] Desplegar las **edge functions** (`create-user`, `aplicar-estado`) en el stack: el esquema
