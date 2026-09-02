@@ -780,6 +780,7 @@ function CartPanel({
           <Button
             size="pos"
             block
+            className="nodo-btn--sobre-tinta"
             disabled={items.length === 0}
             onClick={onCheckout}
           >

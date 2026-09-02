@@ -132,10 +132,19 @@ export function AppLayout() {
     .toUpperCase()
 
   return (
-    <div className="flex h-screen overflow-hidden bg-white">
+    <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg)' }}>
       {/* Sidebar */}
-      <aside className="w-56 flex-shrink-0 bg-slate-900 flex flex-col">
-        <div className="px-5 py-4 border-b border-slate-700/60 flex items-center gap-2.5">
+      {/* §5: 214px sobre --surface, con borde derecho --border. La barra deja de
+          ser un bloque oscuro: en Nodo el lienzo es claro y la navegación no
+          compite con el panel de cobro, que es lo único sobre tinta. */}
+      <aside
+        className="flex-shrink-0 flex flex-col"
+        style={{ width: 214, background: 'var(--surface)', borderRight: '1px solid var(--border)' }}
+      >
+        <div
+          className="px-4 py-4 flex items-center gap-2.5"
+          style={{ borderBottom: '1px solid var(--border-2)' }}
+        >
           {brandLogo && (
             <img
               src={brandLogo}
@@ -147,11 +156,16 @@ export function AppLayout() {
           <div className="min-w-0">
             <span
               data-testid="sidebar-brand-name"
-              className="block text-white font-bold text-lg tracking-tight truncate"
+              className="block font-semibold text-base tracking-tight truncate"
+              style={{ color: 'var(--ink)' }}
             >
               {brandName}
             </span>
-            <span className="block text-slate-400 text-xs mt-0.5">Sistema POS</span>
+            {/* El tenant arriba y el PRODUCTO abajo, sin fusionarse (anexo de la
+                skill). Decía "Sistema POS": describía la categoría, no el
+                producto — y en un repo forkeado de un POS de restaurantes eso
+                es justo lo que hay que dejar de decir. */}
+            <span className="block text-xs mt-0.5" style={{ color: 'var(--ink-3)' }}>Nodo</span>
           </div>
         </div>
 
@@ -168,7 +182,8 @@ export function AppLayout() {
                   onClick={() => toggle(group.id)}
                   aria-expanded={expanded}
                   data-testid={`group-header-${group.id}`}
-                  className="flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wide text-slate-500 hover:text-slate-300 transition-colors"
+                  className="flex items-center gap-2 w-full px-3 py-1.5 uppercase transition-colors"
+                  style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.04em', color: 'var(--ink-3)' }}
                 >
                   <ChevronDown
                     className={`w-3.5 h-3.5 flex-shrink-0 transition-transform ${expanded ? '' : '-rotate-90'}`}
@@ -185,8 +200,8 @@ export function AppLayout() {
                         className={({ isActive }) =>
                           `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                             isActive
-                              ? 'bg-slate-700 text-white'
-                              : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'
+                              ? 'nodo-nav nodo-nav--activo'
+                              : 'nodo-nav'
                           }`
                         }
                       >
@@ -201,10 +216,10 @@ export function AppLayout() {
           })}
         </nav>
 
-        <div className="p-2 border-t border-slate-700/60">
+        <div className="p-2" style={{ borderTop: '1px solid var(--border-2)' }}>
           <button
             onClick={handleSignOut}
-            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-slate-100 transition-colors"
+            className="nodo-nav flex items-center gap-3 w-full px-3 py-2.5 text-sm font-medium transition-colors"
           >
             <LogOut className="w-4 h-4 flex-shrink-0" />
             Cerrar sesión
@@ -215,7 +230,10 @@ export function AppLayout() {
       {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <header className="h-14 flex-shrink-0 flex items-center justify-between px-6 border-b border-slate-200 bg-white">
+        <header
+          className="flex-shrink-0 flex items-center justify-between px-6"
+          style={{ height: 56, borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}
+        >
           {/* Left: shift banner */}
           <ShiftBanner />
 
@@ -223,14 +241,17 @@ export function AppLayout() {
           <div className="flex items-center gap-3">
             <StoreSelector />
             <div className="text-right">
-              <p className="text-sm font-medium text-slate-900 leading-tight">
+              <p className="text-sm font-medium leading-tight" style={{ color: 'var(--ink)' }}>
                 {profile?.full_name ?? '—'}
               </p>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs" style={{ color: 'var(--ink-3)' }}>
                 {profile ? ROLE_LABELS[profile.role] : ''}
               </p>
             </div>
-            <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-semibold text-slate-600 select-none">
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold select-none"
+              style={{ background: 'var(--border)', color: 'var(--ink-2)' }}
+            >
               {initials ?? '?'}
             </div>
           </div>
@@ -282,7 +303,7 @@ export function AppLayout() {
         )}
 
         {/* Page content */}
-        <main className="flex-1 overflow-hidden bg-white">
+        <main className="flex-1 overflow-hidden" style={{ background: 'var(--surface)' }}>
           <Outlet />
         </main>
       </div>

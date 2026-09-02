@@ -42,7 +42,11 @@ loadEnv('.env'); loadEnv('.env.test')
 
 // Nombres REALES de G-10. No tocar por unos más cortos: el umbral es de ancho.
 const NOMBRES = ['Cocteles', 'Bebidas', 'Utensilios', 'Adiciones', 'Vaper']
-const SIDEBAR = 224
+// 214px desde el re-skin (§3 del design system). Era 224 (`w-56` de Tailwind).
+// El SUJETO del spec no cambió —el carrito no puede encogerse por tener muchas
+// categorías—; lo que cambió es una MEDIDA de la app que el spec necesita para
+// calcular el área útil. Si el sidebar se vuelve a mover, esta línea también.
+const SIDEBAR = 214
 
 let db: SupabaseClient
 let creadas: string[] = []

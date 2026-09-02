@@ -68,6 +68,16 @@
   cursor: not-allowed;
 }
 
+/* Apagado SOBRE TINTA. El estado deshabilitado del §4 esta definido para
+   superficie clara: --border-2 es casi blanco, y sobre --ink un boton apagado
+   quedaba MAS visible que uno habilitado — exactamente al reves de lo que el
+   estado significa. No se inventan tokens: se usan los on-dark que ya existen
+   con su significado declarado (relleno elevado sobre tinta / etiquetas). */
+.nodo-btn--sobre-tinta:disabled {
+  background: var(--on-dark-fill);
+  color: var(--on-dark-2);
+}
+
 /* ── Input ──────────────────────────────────────────────────────────────── */
 .nodo-input {
   width: 100%;
@@ -136,6 +146,23 @@
   color: var(--ink-4);
   cursor: not-allowed;
 }
+
+/* ── NavItem — §4. Estados: normal · hover · activo ──────────────────
+   El activo lleva la barra de 2px a la izquierda ADEMAS del fondo: el fondo
+   solo distingue mal para quien no separa bien los azules claros. */
+.nodo-nav {
+  border-radius: var(--r-2);
+  color: var(--ink-2);
+  transition: background-color 0.12s, color 0.12s;
+}
+.nodo-nav:hover { background: var(--surface-2); color: var(--ink); }
+.nodo-nav--activo {
+  background: var(--action-soft);
+  color: var(--action-on-soft);
+  font-weight: 600;
+  box-shadow: inset 2px 0 0 var(--action);
+}
+.nodo-nav--activo:hover { background: var(--action-soft); color: var(--action-on-soft); }
 
 /* ── Skeleton — barra que late, NUNCA un spinner en blanco ──────────────── */
 @keyframes nodo-shimmer {
