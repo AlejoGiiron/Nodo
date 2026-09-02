@@ -1,4 +1,14 @@
-# Nodo · Design System — Entrega 1
+# Nodo · Design System — Entrega 1 (ARCHIVO: versión ORIGINAL, superada)
+
+> ⛔ **NO ES LA FUENTE DE VERDAD. La fuente es la skill
+> `.claude/skills/nodo-design-system/SKILL.md`** (R1: un solo lado vivo).
+> Este archivo es la entrega original de Claude Design, conservada como
+> procedencia. La captura del 2026-09-01 le corrigió CUATRO afirmaciones que
+> chocaban con decisiones ya tomadas (método de costeo, el bloqueo de cierre por
+> `requiere_conciliacion`, el requisito cobrado-vs-vendido de Utilidades, y "la
+> ruta del conductor", que no existe en Nodo). **Esas correcciones viven SOLO en
+> la skill: leer este archivo como vigente dirige mal en esos cuatro puntos.**
+
 
 Fuente de verdad visual del producto. Nodo, de Giiron.
 Cerrada el 2026-09-01. Implementación: app Vite única, CSS variables en `:root`, sin capa de tema para React Native.
