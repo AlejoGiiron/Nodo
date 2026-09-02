@@ -973,10 +973,35 @@ reserva el relleno sólido `--danger` —su color más fuerte, y el único lugar
 previó una operación que el backend no tiene, y lo dijo con el color que se reserva para lo más
 grave.
 
+🔴 **Y HAY DOS CLASES DE HUECO, que se ven iguales y las resuelve gente distinta.**
+*Tercer refinamiento, 2026-09-02, re-skineando Inventario.*
+
+| | **hueco de ESQUEMA** | **hueco de PANTALLA** |
+|---|---|---|
+| Qué falta | el dato no existe en ninguna tabla | el dato existe y **nadie lo muestra** |
+| Quién lo resuelve | migración + RPC + tipos | una decisión de producto |
+| Cuánto SQL | una migración nueva (R5) | **cero** |
+| Urgencia | manda la columna (b): si se opera sin él, **se pierde** | ninguna — el dato se está guardando igual |
+
+**Los diez primeros huecos eran de esquema. El primero de pantalla apareció construyendo
+Inventario:** la maqueta muestra tres KPI de dinero —valor del inventario, referencias con
+existencia, productos sin costo— y la pantalla real muestra cuatro conteos; la tabla no tiene
+`COSTO` ni `VALOR`. **Los cinco se derivan de `stock_qty` y `cost_price`, que ya existen.**
+
+⚠️ **Por qué importa distinguirlos, y no es taxonomía:** meterlos en la misma lista los hace
+competir por la misma urgencia, y **no la tienen**. Un hueco de esquema que espera **pierde datos
+todos los días**; uno de pantalla espera gratis, porque el dato se sigue guardando. Confundirlos
+empuja a migrar cosas que no hacía falta migrar, y —peor— a postergar una migración detrás de una
+decisión de diseño.
+
+**Corolario para el re-skin:** un re-skin es **la misma información con el design system nuevo**.
+Agregar información es producto, y se anota como hueco de pantalla en vez de resolverse de paso.
+
 **Lo accionable:** al cerrar un módulo de esquema, listar los campos de la pantalla que lo va a
 consumir —aunque la pantalla no exista todavía— y cruzarlos contra las columnas. **Y listar también
 sus ACCIONES**, que es la mitad que casi se nos pasa: un botón dibujado es un verbo que alguien
-espera poder ejecutar. Cuesta una lista.
+espera poder ejecutar. Cuesta una lista. **Y al anotar cada hueco, decir de cuál de las dos clases
+es**, porque de eso depende quién lo resuelve.
 
 ---
 

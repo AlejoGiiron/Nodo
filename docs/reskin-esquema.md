@@ -62,6 +62,13 @@ dibujo.
 
 Leyenda: ✅ existe · 🔶 se deriva (no es columna, se calcula) · ❌ no existe.
 
+> 🔴 **DOS CLASES DE HUECO, y las resuelve gente distinta.** Un **hueco de esquema** (❌) es un dato
+> que no existe en ninguna tabla: se resuelve con migración + RPC, y **espera perdiendo datos**. Un
+> **hueco de pantalla** es un dato que **existe y nadie muestra**: se resuelve con una decisión, con
+> **cero SQL**, y **espera gratis** porque el dato se sigue guardando.
+> Los diez primeros de esta lista son de esquema. El primero de pantalla apareció construyendo
+> Inventario — ver la nota de esa sección.
+
 ### 1 · Mostrador
 
 | Campo dibujado | Estado | Origen |

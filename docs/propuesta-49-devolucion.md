@@ -87,6 +87,21 @@ propia, y auditoría de quién y cuándo.
 **No es un parche: es la misma tesis.** No se reescribe el pasado; se agrega un hecho nuevo con su
 fecha. El costo del inventario a partir de hoy es el que alguien declaró, con su nombre al lado.
 
+> ✅ **APROBADO el 2026-09-02, con dos condiciones que van EN LA FUNCIÓN.**
+>
+> **1 · Motivo obligatorio**, igual que `adjust_stock`. *Un costo declarado sin razón es un número
+> que nadie puede defender frente al dueño.* El guard es fail-closed: sin motivo, rechaza — no
+> completa con un texto por defecto, que sería forzar en vez de validar (R6).
+>
+> **2 · La función tiene que DECIR que el costo nuevo NO se propaga a las ventas ya cobradas.**
+> Esas tienen su `unit_cost` congelado en la línea (R1 punto 8) **y así debe ser**: se cobraron con
+> ese costo y su utilidad es un hecho ocurrido. Ajustar el costo corrige **de acá en adelante**.
+>
+> ⚠️ Sin esa nota **alguien va a esperar que las utilidades de ayer cambien**, va a ver que no
+> cambian, y va a reportarlo como bug. Es exactamente el perfil de la garantía que falta donde se
+> decide: el comportamiento es correcto y la expectativa es la equivocada, así que lo que hay que
+> arreglar es la expectativa — en el único lugar donde quien la tenga la va a leer.
+
 ---
 
 ## Lo que hay que decidir antes de escribir SQL
