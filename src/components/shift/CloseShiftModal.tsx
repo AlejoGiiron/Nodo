@@ -140,7 +140,7 @@ export function CloseShiftModal({ onClose }: CloseShiftModalProps) {
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div style={{
-        background: '#fff', borderRadius: 14,
+        background: 'var(--surface)', borderRadius: 14,
         width: 520, maxWidth: '100%',
         boxShadow: '0 25px 50px -12px rgba(0,0,0,.25)',
         overflow: 'hidden', maxHeight: '92vh',
@@ -357,7 +357,7 @@ export function CloseShiftModal({ onClose }: CloseShiftModalProps) {
                     value={declaredOther[r.method] ? formatCOP(r.declared).replace('$', '').trim() : ''}
                     onChange={(e) => setDeclaredOther((s) => ({ ...s, [r.method]: e.target.value.replace(/\D/g, '') }))}
                     placeholder="0"
-                    style={{ width: '100%', boxSizing: 'border-box', padding: '6px 8px', border: '1.5px solid var(--border)', borderRadius: 7, fontSize: 12.5, fontWeight: 600, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums', textAlign: 'right', outline: 'none', background: '#fff' }}
+                    style={{ width: '100%', boxSizing: 'border-box', padding: '6px 8px', border: '1.5px solid var(--border)', borderRadius: 7, fontSize: 12.5, fontWeight: 600, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums', textAlign: 'right', outline: 'none', background: 'var(--surface)' }}
                   />
                   <span
                     data-testid={`pay-diff-${r.method}`}
@@ -421,7 +421,7 @@ export function CloseShiftModal({ onClose }: CloseShiftModalProps) {
             onClick={onClose}
             style={{
               flex: 1, padding: '11px 16px',
-              border: '1.5px solid var(--border)', background: '#fff',
+              border: '1.5px solid var(--border)', background: 'var(--surface)',
               borderRadius: 9, cursor: 'pointer',
               fontSize: 13.5, fontWeight: 600, color: 'var(--ink-2)',
             }}

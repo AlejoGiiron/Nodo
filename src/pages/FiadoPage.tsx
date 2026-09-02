@@ -128,12 +128,23 @@ function DebtsTab({ onAbono }: { onAbono: (d: Debt) => void }) {
       <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
         {/* IZQUIERDA — clientes con deuda */}
         <div style={{ flex: '0 0 35%', maxWidth: '35%', display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, border: '1.5px solid var(--border)', borderRadius: 9, padding: '8px 12px', background: '#fff' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, border: '1.5px solid var(--border)', borderRadius: 9, padding: '8px 12px', background: 'var(--surface)' }}>
             <Search size={15} color="var(--ink-4)" />
             <input data-testid="debt-search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar cliente o teléfono" style={inputStyle} />
           </div>
 
-          <div style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', opacity: isLoading ? 0.6 : 1 }}>
+          {/* Leyenda ARRIBA, no al pie (§4, corregido el 2026-09-02): una
+              leyenda que explica un código de color va donde se ve el color.
+              Al pie de nueve filas queda debajo del pliegue — cumple la letra y
+              falla el propósito. Dice "Antigüedad", que es lo que la barra
+              mide: no "Vencido", que exigiría un plazo que no existe. */}
+          {filtered.length > 0 && (
+            <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-3)', overflow: 'hidden' }}>
+              <AgingBarLeyenda />
+            </div>
+          )}
+
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-3)', overflow: 'hidden', opacity: isLoading ? 0.6 : 1 }}>
             {filtered.length === 0 ? (
               <div style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--ink-4)', fontSize: 13 }}>
                 {isLoading ? 'Cargando...' : search.trim() ? 'Sin resultados' : 'No hay clientes con deuda'}
@@ -170,22 +181,18 @@ function DebtsTab({ onAbono }: { onAbono: (d: Debt) => void }) {
                 </button>
               )
             })}
-            {/* Leyenda OBLIGATORIA (§4): sin ella cuatro cuadros de colores no
-                dicen nada. Y dice "Antigüedad", que es lo que la barra mide —
-                no "Vencido", que exigiría un plazo que el esquema no tiene. */}
-            {filtered.length > 0 && <AgingBarLeyenda />}
           </div>
         </div>
 
         {/* DERECHA — detalle del cliente */}
         <div style={{ flex: 1, minWidth: 0 }}>
           {!selected ? (
-            <div style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 12, padding: '56px 16px', textAlign: 'center', color: 'var(--ink-4)' }}>
+            <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '56px 16px', textAlign: 'center', color: 'var(--ink-4)' }}>
               <UserRound size={30} style={{ margin: '0 auto 10px', display: 'block', opacity: 0.5 }} />
               <div style={{ fontSize: 13.5 }}>Selecciona un cliente para ver sus fiados</div>
             </div>
           ) : (
-            <div data-testid="customer-detail" style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+            <div data-testid="customer-detail" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
               {/* Cabecera del cliente */}
               <div style={{ padding: '18px 20px', borderBottom: '1px solid var(--border-2)', display: 'flex', alignItems: 'center', gap: 14 }}>
                 <div style={{ width: 46, height: 46, borderRadius: '50%', background: 'var(--action)', color: '#fff', display: 'grid', placeItems: 'center', fontSize: 15, fontWeight: 700, flexShrink: 0 }}>
@@ -273,7 +280,7 @@ function CustomersTab({ onEdit }: { onEdit: (c: Customer | 'new') => void }) {
           <Button onClick={() => onEdit('new')}><Plus size={15} /> Nuevo cliente</Button>
         </div>
       ) : (
-        <div style={{ border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', background: '#fff' }}>
+        <div style={{ border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', background: 'var(--surface)' }}>
           {customers.map((c, idx) => (
             <div key={c.id} data-testid="customer-row" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderBottom: idx < customers.length - 1 ? '1px solid var(--border-2)' : 'none' }}>
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -284,7 +291,7 @@ function CustomersTab({ onEdit }: { onEdit: (c: Customer | 'new') => void }) {
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 6 }}>
-                <button onClick={() => onEdit(c)} title="Editar" style={{ width: 30, height: 30, border: '1px solid var(--border)', background: '#fff', borderRadius: 7, cursor: 'pointer', color: 'var(--ink-3)', display: 'grid', placeItems: 'center' }}><Pencil size={13} /></button>
+                <button onClick={() => onEdit(c)} title="Editar" style={{ width: 30, height: 30, border: '1px solid var(--border)', background: 'var(--surface)', borderRadius: 7, cursor: 'pointer', color: 'var(--ink-3)', display: 'grid', placeItems: 'center' }}><Pencil size={13} /></button>
                 <button data-testid="customer-deactivate" onClick={() => handleDeactivate(c)} title="Desactivar" style={{ width: 30, height: 30, border: '1px solid var(--danger-soft)', background: 'var(--danger-soft)', borderRadius: 7, cursor: 'pointer', color: 'var(--debt)', display: 'grid', placeItems: 'center' }}><Trash2 size={13} /></button>
               </div>
             </div>

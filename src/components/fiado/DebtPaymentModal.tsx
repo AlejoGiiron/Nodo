@@ -23,7 +23,7 @@ const fieldLabel: React.CSSProperties = {
 }
 const inputStyle: React.CSSProperties = {
   width: '100%', padding: '10px 13px', border: '1.5px solid var(--border)', borderRadius: 9,
-  fontSize: 14, color: 'var(--ink)', outline: 'none', boxSizing: 'border-box', background: '#fff',
+  fontSize: 14, color: 'var(--ink)', outline: 'none', boxSizing: 'border-box', background: 'var(--surface)',
 }
 
 export function DebtPaymentModal({ debt, onClose }: DebtPaymentModalProps) {
@@ -51,7 +51,7 @@ export function DebtPaymentModal({ debt, onClose }: DebtPaymentModalProps) {
     >
       <div
         data-testid="debt-payment-modal"
-        style={{ background: '#fff', borderRadius: 14, width: 480, maxWidth: '100%', maxHeight: '92vh', boxShadow: 'var(--shadow-1)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
+        style={{ background: 'var(--surface)', borderRadius: 14, width: 480, maxWidth: '100%', maxHeight: '92vh', boxShadow: 'var(--shadow-1)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
       >
         {/* Header */}
         <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--border-2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>

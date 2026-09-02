@@ -485,7 +485,7 @@ function CartPanel({
   return (
     <div style={{
       flex: 1, display: 'flex', flexDirection: 'column',
-      background: '#fff', minWidth: 0, borderLeft: '1px solid var(--border)',
+      background: 'var(--surface)', minWidth: 0, borderLeft: '1px solid var(--border)',
     }}>
       {/* Header */}
       <div style={{ padding: '18px 22px 14px', borderBottom: '1px solid var(--border-2)' }}>
@@ -1253,7 +1253,7 @@ function CheckoutModal({
                   disabled={reintentandoNumero}
                   data-testid="retry-order-number"
                   style={{
-                    padding: '6px 14px', border: '1.5px solid var(--warning-700)', background: '#fff',
+                    padding: '6px 14px', border: '1.5px solid var(--warning-700)', background: 'var(--surface)',
                     borderRadius: 7, cursor: reintentandoNumero ? 'default' : 'pointer',
                     fontSize: 12, fontWeight: 600, color: 'var(--warning-on-soft)',
                     opacity: reintentandoNumero ? 0.6 : 1,
@@ -1267,7 +1267,7 @@ function CheckoutModal({
               <button
                 onClick={() => window.print()}
                 style={{
-                  padding: '10px 18px', border: '1.5px solid var(--border)', background: '#fff',
+                  padding: '10px 18px', border: '1.5px solid var(--border)', background: 'var(--surface)',
                   borderRadius: 9, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: 'var(--ink-2)',
                   display: 'flex', alignItems: 'center', gap: 6,
                 }}
@@ -1345,7 +1345,7 @@ function HoldLabelModal({ onConfirm, onClose }: {
       onClick={onClose}
     >
       <div
-        style={{ background: '#fff', borderRadius: 14, width: 420, maxWidth: '92%', boxShadow: '0 25px 50px -12px rgba(0,0,0,.25)', overflow: 'hidden' }}
+        style={{ background: 'var(--surface)', borderRadius: 14, width: 420, maxWidth: '92%', boxShadow: '0 25px 50px -12px rgba(0,0,0,.25)', overflow: 'hidden' }}
         onClick={(e) => e.stopPropagation()}
       >
         <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--border-2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -1380,7 +1380,7 @@ function HoldLabelModal({ onConfirm, onClose }: {
           <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
             <button
               onClick={onClose}
-              style={{ flex: 1, padding: '12px', border: '1.5px solid var(--border)', background: '#fff', borderRadius: 9, cursor: 'pointer', fontSize: 13.5, fontWeight: 600, color: 'var(--ink-2)' }}
+              style={{ flex: 1, padding: '12px', border: '1.5px solid var(--border)', background: 'var(--surface)', borderRadius: 9, cursor: 'pointer', fontSize: 13.5, fontWeight: 600, color: 'var(--ink-2)' }}
             >
               Cancelar
             </button>
@@ -1410,7 +1410,7 @@ function HeldOrdersPanel({ held, onResume, onDiscard, onClose }: {
       onClick={onClose}
     >
       <div
-        style={{ background: '#fff', borderRadius: 14, width: 460, maxWidth: '94%', maxHeight: '85%', boxShadow: '0 25px 50px -12px rgba(0,0,0,.25)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
+        style={{ background: 'var(--surface)', borderRadius: 14, width: 460, maxWidth: '94%', maxHeight: '85%', boxShadow: '0 25px 50px -12px rgba(0,0,0,.25)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
         onClick={(e) => e.stopPropagation()}
       >
         <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
@@ -1483,7 +1483,7 @@ function ResumeConflictDialog({ onKeep, onDiscardCurrent, onCancel }: {
       onClick={onCancel}
     >
       <div
-        style={{ background: '#fff', borderRadius: 14, width: 420, maxWidth: '92%', boxShadow: '0 25px 50px -12px rgba(0,0,0,.25)', overflow: 'hidden', padding: 22 }}
+        style={{ background: 'var(--surface)', borderRadius: 14, width: 420, maxWidth: '92%', boxShadow: '0 25px 50px -12px rgba(0,0,0,.25)', overflow: 'hidden', padding: 22 }}
         onClick={(e) => e.stopPropagation()}
       >
         <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)', marginBottom: 6 }}>
@@ -1507,7 +1507,7 @@ function ResumeConflictDialog({ onKeep, onDiscardCurrent, onCancel }: {
           </button>
           <button
             onClick={onCancel}
-            style={{ width: '100%', padding: '11px', border: '1.5px solid var(--border)', background: '#fff', borderRadius: 9, cursor: 'pointer', fontSize: 13.5, fontWeight: 600, color: 'var(--ink-2)' }}
+            style={{ width: '100%', padding: '11px', border: '1.5px solid var(--border)', background: 'var(--surface)', borderRadius: 9, cursor: 'pointer', fontSize: 13.5, fontWeight: 600, color: 'var(--ink-2)' }}
           >
             Cancelar
           </button>
@@ -1793,7 +1793,7 @@ export function POSPage() {
               data-testid="pos-category-tabs-fade"
               style={{
                 position: 'absolute', top: 0, bottom: 2, right: 0, width: 36,
-                background: 'linear-gradient(to left, #fff 25%, rgba(255,255,255,0))',
+                background: 'linear-gradient(to left, var(--surface-3) 25%, transparent)',
                 pointerEvents: 'none',
               }}
             />

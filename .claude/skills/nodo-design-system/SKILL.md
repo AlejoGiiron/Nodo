@@ -285,7 +285,22 @@ Estados: **holgado · ajustado · consumido · excedido por la venta en curso ·
 Dos tramos en una barra de 8px: consumido en `--action` (o `--warning-700` ≥80%, `--debt` ≥95%) y venta en curso en `--action-500` al 55% de opacidad. Muestra "Disponible ahora − esta venta → Queda tras esta venta". Sin dato: `—` y nota de invitación.
 
 ### AgingBar
-Cuatro casillas de 16×16, radio 2px, escala `--d1`…`--d4`, apagadas en `--border-2`. Junto a los días en `tabular-nums`. Leyenda obligatoria al pie de la tabla.
+Cuatro casillas de 16×16, radio 2px, escala `--d1`…`--d4`, apagadas en `--border-2`. Junto a los días en `tabular-nums`. Leyenda obligatoria.
+
+> **[CORREGIDO 2026-09-02 — la leyenda va ARRIBA de la lista, no al pie.]** La entrega decía "al pie
+> de la tabla". Medido en la implementación: con nueve clientes la leyenda queda **debajo del
+> pliegue**, así que cumple la letra y falla el propósito.
+>
+> **La razón, que generaliza a cualquier leyenda:** una leyenda que explica un CÓDIGO DE COLOR va
+> donde se ve el color. Al pie sirve para una nota al margen —una aclaración que se consulta
+> después—; un código de color hay que poder decodificarlo **mientras se mira la primera fila**, no
+> después de recorrer todas.
+
+> **[COMPORTAMIENTO FIJADO 2026-09-02 — se encienden TODOS los tramos con deuda, no solo el de la
+> más vieja.]** Un cliente con una deuda de 5 días y otra de 95 tiene las dos cosas. Encender solo
+> `--d4` diría "este cliente está a +90" y esconde que **la mayoría de su saldo es reciente** — que
+> es exactamente lo que cambia si conviene llamarlo o esperar. El número en `tabular-nums` al lado
+> sigue siendo el de la MÁS VIEJA, que es el peor caso.
 
 > **[DECISIÓN 2026-09-01 — la columna `VENCIDO` de Cartera NO SE PINTA todavía.]** La AgingBar
 > calcula **antigüedad** (días desde `created_at` de la orden) y eso sí existe. **"Vencido" exige un

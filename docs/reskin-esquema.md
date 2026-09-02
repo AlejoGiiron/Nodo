@@ -28,6 +28,11 @@ falta ninguno por haberlo mirado ahí. La tabla de abajo se lee como verificada 
 
 **27 tablas y vistas** en el esquema. Lo que sigue es campo por campo.
 
+⚠️ **Lo que esta tabla NO contesta, y aparecio despues:** enumerar columnas dice *dónde se
+guarda* cada dato — no dice *cómo llega*. El bloqueo de arranque más grande (no hay import masivo
+de catálogo, deuda 50) es invisible para este método por construcción. Ver
+`docs/balance-esquema-alta.md`.
+
 ---
 
 ## Resumen: 10 huecos, en 6 pantallas — **1 ya cerrado**

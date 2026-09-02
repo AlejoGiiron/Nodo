@@ -1984,3 +1984,37 @@ del contraste se pone roja**. El mutante muere.
   pintar** (deuda 46). Enciende **todos** los tramos con deuda, no solo el de la más vieja: un
   cliente con una deuda de 5 días y otra de 95 tiene las dos cosas, y mostrar solo la peor esconde
   que la mayoría es reciente.
+
+
+## 2026-09-02 · `requiere_conciliacion`: las DOS puntas del mismo contrato, rotas al revés, con quince días entre una y otra
+
+Van juntas porque **por separado cada una parece un descuido y juntas son una clase**.
+
+| | 2026-08-18 · la punta que ESCRIBE | 2026-09-02 · la punta que LEE |
+|---|---|---|
+| **Qué pasaba** | El cliente derivaba el aviso de `!result.shift_open`, una clave que la RPC **nunca mandó** | El select de abonos **nunca pidió** `requiere_conciliacion`, que la RPC **sí manda** |
+| **Cómo fallaba** | `undefined` es falsy ⇒ el aviso salía **SIEMPRE** con método efectivo | El estado obligatorio del §6 **no se podía mostrar nunca** |
+| **Dirección** | MIENTE — y peor: **inducía a duplicar el ingreso a mano** | CALLA — el dato correcto, invisible |
+| **Quién lo notó** | un test que esperaba el camino feliz | dibujar la pantalla que lo tenía que mostrar |
+
+La segunda es más difícil de encontrar que la primera. La primera **grita** (un aviso falso en
+pantalla); la segunda es una ausencia, y **una ausencia no tiene síntoma**: la pantalla se ve
+completa, el flujo funciona, los tests pasan. Solo aparece cuando alguien pregunta *"¿y dónde se
+ve esto?"* — y esa pregunta la hizo el diseño, no el código.
+
+### 🔴 Lo accionable, y es una regla de dos partes
+
+> **Cuando una RPC devuelve una bandera, verificá LAS DOS PUNTAS: que la mande, y que alguien la
+> lea. Ninguna sola prueba nada.**
+
+- Que **la mande** y nadie la lea ⇒ el estado existe y es invisible. Falla **callando**.
+- Que **la lean** y no la mande ⇒ `undefined` es falsy, el código elige rama. Falla **mintiendo**.
+
+⚠️ Y las dos se ven idénticas desde `tsc`: una interfaz que declara la clave compila igual mande la
+RPC o no, y un select que no la pide compila igual. **El compilador no mira ninguna de las dos
+puntas.** El único chequeo posible es el mecánico que ya está escrito en R1 punto 5b: comparar las
+claves del `jsonb_build_object` contra la interfaz **y contra los selects**.
+
+*(La tercera punta, que este caso agregó: una bandera puede vivir además en una **columna**, y
+entonces hay que verificar que el select la pida. `register_debt_payment` la manda en el retorno Y
+la persiste; el retorno se leía, la columna no.)*

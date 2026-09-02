@@ -30,7 +30,7 @@ const fieldLabel: React.CSSProperties = {
 }
 const inputStyle: React.CSSProperties = {
   width: '100%', padding: '10px 13px', border: '1.5px solid var(--border)', borderRadius: 9,
-  fontSize: 14, color: 'var(--ink)', outline: 'none', boxSizing: 'border-box', background: '#fff',
+  fontSize: 14, color: 'var(--ink)', outline: 'none', boxSizing: 'border-box', background: 'var(--surface)',
 }
 
 let lineSeq = 0
@@ -114,7 +114,7 @@ export function NewInvoiceModal({ onClose, onNeedSupplier }: NewInvoiceModalProp
     >
       <div
         data-testid="new-invoice-modal"
-        style={{ background: '#fff', borderRadius: 14, width: 720, maxWidth: '100%', maxHeight: '92vh', boxShadow: 'var(--shadow-1)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
+        style={{ background: 'var(--surface)', borderRadius: 14, width: 720, maxWidth: '100%', maxHeight: '92vh', boxShadow: 'var(--shadow-1)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
       >
         {/* Header */}
         <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--border-2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
@@ -265,7 +265,7 @@ export function NewInvoiceModal({ onClose, onNeedSupplier }: NewInvoiceModalProp
             <button
               data-testid="invoice-add-item"
               onClick={() => setLines(ls => [...ls, newLine()])}
-              style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', border: '1.5px dashed var(--ink-4)', background: '#fff', borderRadius: 9, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: 'var(--ink-2)' }}
+              style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', border: '1.5px dashed var(--ink-4)', background: 'var(--surface)', borderRadius: 9, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: 'var(--ink-2)' }}
             >
               <Plus size={14} /> Agregar ítem
             </button>
@@ -285,7 +285,7 @@ export function NewInvoiceModal({ onClose, onNeedSupplier }: NewInvoiceModalProp
             <span data-testid="invoice-total" style={{ fontSize: 22, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--ink)' }}>{formatoCOP(total)}</span>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
-            <button onClick={onClose} style={{ padding: '11px 18px', border: '1.5px solid var(--border)', background: '#fff', borderRadius: 9, cursor: 'pointer', fontSize: 13.5, fontWeight: 600, color: 'var(--ink-2)' }}>Cancelar</button>
+            <button onClick={onClose} style={{ padding: '11px 18px', border: '1.5px solid var(--border)', background: 'var(--surface)', borderRadius: 9, cursor: 'pointer', fontSize: 13.5, fontWeight: 600, color: 'var(--ink-2)' }}>Cancelar</button>
             <button
               data-testid="invoice-submit"
               onClick={handleSubmit}

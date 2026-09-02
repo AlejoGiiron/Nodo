@@ -16,8 +16,10 @@
  *    una columna ausente — misma familia que la advertencia falsa que induce el
  *    error que dice prevenir.
  *
- * ⚠️ La leyenda al pie de la tabla es OBLIGATORIA (§4): sin ella cuatro cuadros
- *    de colores no dicen nada.
+ * ⚠️ La leyenda es OBLIGATORIA (§4) y va ARRIBA de la lista, no al pie
+ *    — corregido en la skill el 2026-09-02: una leyenda que explica un código de
+ *    color va donde se ve el color. Al pie de nueve filas queda debajo del
+ *    pliegue: cumple la letra y falla el propósito.
  */
 
 import { TRAMOS, tramoDe, diasDeAntiguedad } from '@/lib/antiguedad'
@@ -66,7 +68,7 @@ export function AgingBar({
   )
 }
 
-/** Leyenda obligatoria (§4). Va al pie de la tabla que use AgingBar. */
+/** Leyenda obligatoria (§4). Va ARRIBA de la lista que use AgingBar. */
 export function AgingBarLeyenda() {
   return (
     <div

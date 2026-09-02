@@ -14,7 +14,7 @@ const fieldLabel: React.CSSProperties = {
 }
 const inputStyle: React.CSSProperties = {
   width: '100%', padding: '10px 13px', border: '1.5px solid var(--border)', borderRadius: 9,
-  fontSize: 14, color: 'var(--ink)', outline: 'none', boxSizing: 'border-box', background: '#fff',
+  fontSize: 14, color: 'var(--ink)', outline: 'none', boxSizing: 'border-box', background: 'var(--surface)',
 }
 
 export function SupplierFormModal({ supplier, onClose }: SupplierFormModalProps) {
@@ -47,7 +47,7 @@ export function SupplierFormModal({ supplier, onClose }: SupplierFormModalProps)
     >
       <div
         data-testid="supplier-form-modal"
-        style={{ background: '#fff', borderRadius: 14, width: 480, maxWidth: '100%', maxHeight: '90vh', boxShadow: 'var(--shadow-1)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
+        style={{ background: 'var(--surface)', borderRadius: 14, width: 480, maxWidth: '100%', maxHeight: '90vh', boxShadow: 'var(--shadow-1)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
       >
         <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--border-2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
           <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink)', margin: 0 }}>
@@ -82,7 +82,7 @@ export function SupplierFormModal({ supplier, onClose }: SupplierFormModalProps)
         </div>
 
         <div style={{ padding: '14px 22px', borderTop: '1px solid var(--border-2)', display: 'flex', gap: 10, justifyContent: 'flex-end', flexShrink: 0 }}>
-          <button onClick={onClose} style={{ padding: '10px 20px', border: '1.5px solid var(--border)', borderRadius: 9, background: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: 'var(--ink-2)' }}>Cancelar</button>
+          <button onClick={onClose} style={{ padding: '10px 20px', border: '1.5px solid var(--border)', borderRadius: 9, background: 'var(--surface)', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: 'var(--ink-2)' }}>Cancelar</button>
           <button
             data-testid="supplier-save"
             onClick={handleSave}

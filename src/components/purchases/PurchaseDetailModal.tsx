@@ -21,7 +21,7 @@ export function PurchaseDetailModal({ invoiceId, onClose }: PurchaseDetailModalP
     >
       <div
         data-testid="purchase-detail-modal"
-        style={{ background: '#fff', borderRadius: 14, width: 560, maxWidth: '100%', maxHeight: '90vh', boxShadow: 'var(--shadow-1)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
+        style={{ background: 'var(--surface)', borderRadius: 14, width: 560, maxWidth: '100%', maxHeight: '90vh', boxShadow: 'var(--shadow-1)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
       >
         <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--border-2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
           <div>
