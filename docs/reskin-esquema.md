@@ -158,6 +158,14 @@ Leyenda: ✅ existe · 🔶 se deriva (no es columna, se calcula) · ❌ no exis
 | Badge `Sin costo` | 🔶 | `cost_price is null` |
 | Pestaña Movimientos | ✅ | `stock_movements` |
 
+> ⚠️ **HUECO DE FUNCIONALIDAD, no de datos — encontrado el 2026-09-02 re-skineando la pantalla.**
+> Los tres KPI de la maqueta son de DINERO —valor del inventario, referencias con existencia,
+> productos sin costo— y la pantalla real muestra **cuatro conteos**: insumos con inventario, sin
+> stock, stock bajo, en negativo. La tabla tampoco tiene `COSTO` ni `VALOR`.
+> **Los cinco se derivan de datos que YA EXISTEN** (`stock_qty`, `cost_price`): no falta esquema,
+> falta pantalla. No se agregaron en el re-skin porque eso es información NUEVA, y el re-skin es
+> misma información con el design system. Queda como decisión de producto.
+
 ### 7 · Clientes
 
 | Campo dibujado | Estado | Origen |

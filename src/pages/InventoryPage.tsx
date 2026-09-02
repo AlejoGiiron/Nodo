@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import {
-  Search, X, Plus, Boxes, PackageX, AlertTriangle, TrendingDown,
+  Search, X, Plus,
   ChevronLeft, ChevronRight, ArrowDownCircle, ArrowUpCircle, RotateCcw, SlidersHorizontal,
 } from 'lucide-react'
 import { useProducts } from '@/hooks/useProducts'
@@ -10,6 +10,10 @@ import type { ProductWithCategory } from '@/stores/cartStore'
 import type { StockMovementType } from '@/lib/supabase-helpers'
 // Regla ÚNICA de estado de inventario, compartida con el POS (antes duplicada).
 import { stockStatus, type StockStatus } from '@/lib/stockStatus'
+import { Badge, type BadgeTone } from '@/components/ui/Badge'
+import { Button } from '@/components/ui/Button'
+import { KpiCard } from '@/components/ui/KpiCard'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 const PAGE_SIZE = 25
 
@@ -23,37 +27,24 @@ const fmtDateTime = (iso: string) =>
   }).format(new Date(iso))
 
 // ─── Status badge ────────────────────────────────────────────────
+// Segundo badge inline absorbido por la primitiva (§4). Los tonos son ROLES:
+// 🔴 `negative` y `out` eran el MISMO rojo, y no son lo mismo. Sin stock es un
+//    estado normal del catálogo — hay productos que se acaban. Existencia
+//    NEGATIVA significa que se vendió más de lo que el sistema creía tener:
+//    ahí hay algo mal contado, y eso sí es `danger`.
+//    Darles el mismo color le quitaba al segundo su única señal.
 function StatusBadge({ status, stock }: { status: StockStatus; stock: number }) {
-  const map = {
-    negative: { bg: '#fef2f2', fg: '#b91c1c', label: `Reponer (${stock})` },
-    out: { bg: '#fef2f2', fg: '#b91c1c', label: 'Sin stock' },
-    low: { bg: '#fffbeb', fg: '#92400e', label: 'Stock bajo' },
-    ok: { bg: '#ecfdf5', fg: '#065f46', label: 'Disponible' },
+  const cfg: Record<StockStatus, { tone: BadgeTone; label: string }> = {
+    negative: { tone: 'danger', label: `Reponer (${stock})` },
+    out: { tone: 'neutral', label: 'Sin stock' },
+    low: { tone: 'warning', label: 'Stock bajo' },
+    ok: { tone: 'success', label: 'Disponible' },
     // La tabla pre-filtra a simple+tracking, así que este caso no se alcanza;
     // se cubre igual para no depender de un cast sobre el filtro.
-    untracked: { bg: '#f8fafc', fg: '#94a3b8', label: 'Sin inventario' },
-  }[status]
-  return (
-    <span
-      data-testid="stock-status-badge"
-      style={{ padding: '3px 9px', borderRadius: 8, background: map.bg, color: map.fg, fontSize: 11, fontWeight: 700 }}
-    >
-      {map.label}
-    </span>
-  )
-}
-
-// ─── KPI card ────────────────────────────────────────────────────
-function KpiCard({ icon, label, value, tone }: { icon: React.ReactNode; label: string; value: number; tone: string }) {
-  return (
-    <div style={{ flex: 1, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: '14px 16px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: tone }}>
-        {icon}
-        <span style={{ fontSize: 11.5, fontWeight: 600, color: '#64748b' }}>{label}</span>
-      </div>
-      <div style={{ fontSize: 26, fontWeight: 700, color: '#0f172a', fontFamily: 'monospace', marginTop: 6 }}>{value}</div>
-    </div>
-  )
+    untracked: { tone: 'neutral', label: 'Sin inventario' },
+  }
+  const { tone, label } = cfg[status]
+  return <Badge tone={tone} data-testid="stock-status-badge">{label}</Badge>
 }
 
 // ─── Niveles tab ─────────────────────────────────────────────────
@@ -98,23 +89,35 @@ function LevelsTab({ products, onAdjust }: { products: ProductWithCategory[]; on
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* KPIs */}
       <div style={{ display: 'flex', gap: 12 }}>
-        <KpiCard icon={<Boxes size={15} />} label="Insumos con inventario" value={summary.total} tone="#10b981" />
-        <KpiCard icon={<PackageX size={15} />} label="Sin stock (0)" value={summary.out} tone="#64748b" />
-        <KpiCard icon={<AlertTriangle size={15} />} label="Stock bajo" value={summary.low} tone="#f59e0b" />
-        <KpiCard icon={<TrendingDown size={15} />} label="En negativo" value={summary.negative} tone="#dc2626" />
+        {/* Segunda copia de KpiCard, muerta: ahora es la primitiva del §4. Y los
+            tonos pasan a ser ROLES — "en negativo" es lo único que pide una
+            decisión ya (se contó mal), "stock bajo" advierte, y los otros dos
+            son cifras de trabajo. Antes los cuatro llevaban color de acento sin
+            que el color significara nada distinto. */}
+        {/* ⚠️ LA MAQUETA MUESTRA OTROS TRES KPI, y son de DINERO: valor del
+            inventario, referencias con existencia, productos sin costo. Los
+            tres se DERIVAN de datos que ya existen (`stock_qty`, `cost_price`)
+            — no falta esquema, falta pantalla. No se agregan acá porque esto es
+            un RE-SKIN: misma información, con el design system. Información
+            nueva es su propia decisión. Anotado como hueco de FUNCIONALIDAD, no
+            de datos, en docs/reskin-esquema.md. */}
+        <KpiCard etiqueta="Insumos con inventario" valor={summary.total} />
+        <KpiCard etiqueta="Sin stock (0)" valor={summary.out} />
+        <KpiCard etiqueta="Stock bajo" valor={summary.low} tono={summary.low > 0 ? 'warning' : 'normal'} />
+        <KpiCard etiqueta="En negativo" valor={summary.negative} tono={summary.negative > 0 ? 'debt' : 'normal'} />
       </div>
 
       {/* Search + filter */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 9, padding: '8px 12px', width: 240 }}>
-          <Search size={15} color="#94a3b8" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 9, padding: '8px 12px', width: 240 }}>
+          <Search size={15} color="var(--ink-4)" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Buscar insumo..."
-            style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 13, color: '#0f172a' }}
+            style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 13, color: 'var(--ink)' }}
           />
-          {query && <button onClick={() => setQuery('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 0, display: 'grid', placeItems: 'center' }}><X size={13} /></button>}
+          {query && <button onClick={() => setQuery('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink-4)', padding: 0, display: 'grid', placeItems: 'center' }}><X size={13} /></button>}
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
           {FILTERS.map(f => (
@@ -123,9 +126,9 @@ function LevelsTab({ products, onAdjust }: { products: ProductWithCategory[]; on
               onClick={() => setFilter(f.value)}
               style={{
                 padding: '7px 12px', borderRadius: 8, fontSize: 12.5, fontWeight: 600, cursor: 'pointer',
-                border: `1px solid ${filter === f.value ? '#10b981' : '#e2e8f0'}`,
-                background: filter === f.value ? '#ecfdf5' : '#fff',
-                color: filter === f.value ? '#065f46' : '#64748b',
+                border: `1px solid ${filter === f.value ? 'var(--action)' : 'var(--border)'}`,
+                background: filter === f.value ? 'var(--action-soft)' : 'var(--surface)',
+                color: filter === f.value ? 'var(--success-on-soft)' : 'var(--ink-3)',
               }}
             >
               {f.label}
@@ -135,10 +138,10 @@ function LevelsTab({ products, onAdjust }: { products: ProductWithCategory[]; on
       </div>
 
       {/* Table */}
-      <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, overflow: 'hidden' }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
-            <tr style={{ background: '#f8fafc', textAlign: 'left', color: '#64748b', fontSize: 11.5 }}>
+            <tr style={{ background: 'var(--surface-2)', textAlign: 'left', color: 'var(--ink-3)', fontSize: 11.5 }}>
               <th style={{ padding: '10px 16px', fontWeight: 600 }}>Insumo</th>
               <th style={{ padding: '10px 16px', fontWeight: 600 }}>Categoría</th>
               <th style={{ padding: '10px 16px', fontWeight: 600, textAlign: 'right' }}>Stock</th>
@@ -149,23 +152,23 @@ function LevelsTab({ products, onAdjust }: { products: ProductWithCategory[]; on
           </thead>
           <tbody>
             {filtered.length === 0 ? (
-              <tr><td colSpan={6} style={{ padding: '40px 16px', textAlign: 'center', color: '#94a3b8' }}>Sin insumos que coincidan</td></tr>
+              <tr><td colSpan={6} style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--ink-4)' }}>Sin insumos que coincidan</td></tr>
             ) : filtered.map(p => {
               const st = stockStatus(p)
               const stock = p.stock_qty ?? 0
               return (
-                <tr key={p.id} data-testid="stock-level-row" style={{ borderTop: '1px solid #f1f5f9' }}>
-                  <td style={{ padding: '11px 16px', fontWeight: 600, color: '#0f172a' }}>{p.name}</td>
-                  <td style={{ padding: '11px 16px', color: '#64748b' }}>{p.categories?.name ?? '—'}</td>
-                  <td data-testid="stock-level-qty" style={{ padding: '11px 16px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: stock < 0 ? '#b91c1c' : '#0f172a' }}>{stock}</td>
-                  <td style={{ padding: '11px 16px', textAlign: 'right', fontFamily: 'monospace', color: '#94a3b8' }}>{p.min_stock}</td>
+                <tr key={p.id} data-testid="stock-level-row" style={{ borderTop: '1px solid var(--border-2)' }}>
+                  <td style={{ padding: '11px 16px', fontWeight: 600, color: 'var(--ink)' }}>{p.name}</td>
+                  <td style={{ padding: '11px 16px', color: 'var(--ink-3)' }}>{p.categories?.name ?? '—'}</td>
+                  <td data-testid="stock-level-qty" style={{ padding: '11px 16px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: stock < 0 ? 'var(--danger-on-soft)' : 'var(--ink)' }}>{stock}</td>
+                  <td style={{ padding: '11px 16px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--ink-4)' }}>{p.min_stock}</td>
                   <td style={{ padding: '11px 16px' }}><StatusBadge status={st} stock={stock} /></td>
                   <td style={{ padding: '8px 16px', textAlign: 'right' }}>
                     <button
                       data-testid="stock-level-adjust"
                       onClick={() => onAdjust(p.id)}
                       title="Ajustar stock"
-                      style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid #e5e7eb', background: '#fff', cursor: 'pointer', color: '#334155', fontSize: 12, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 5 }}
+                      style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', cursor: 'pointer', color: 'var(--ink-2)', fontSize: 12, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 5 }}
                     >
                       <SlidersHorizontal size={12} /> Ajustar
                     </button>
@@ -181,11 +184,21 @@ function LevelsTab({ products, onAdjust }: { products: ProductWithCategory[]; on
 }
 
 // ─── Movimientos tab ─────────────────────────────────────────────
-const MOV_META: Record<string, { bg: string; fg: string; label: string; icon: React.ReactNode }> = {
-  sale: { bg: '#eff6ff', fg: '#1e40af', label: 'Venta', icon: <ArrowDownCircle size={12} /> },
-  adjustment: { bg: '#f5f3ff', fg: '#6d28d9', label: 'Ajuste', icon: <SlidersHorizontal size={12} /> },
-  return: { bg: '#ecfdf5', fg: '#065f46', label: 'Devolución', icon: <RotateCcw size={12} /> },
-  purchase: { bg: '#ecfdf5', fg: '#047857', label: 'Compra', icon: <ArrowUpCircle size={12} /> },
+// 🔴 LOS CUATRO TIPOS VAN EN NEUTRO, y es una decisión, no pereza.
+//    Antes cada uno tenía su color —venta azul, ajuste VIOLETA, compra y
+//    devolución verdes—. El violeta no existe en el design system, y los otros
+//    tres usaban familias que sí significan algo (acción, confirmación) para
+//    codificar algo que NO es un estado ni una acción: es una categoría.
+//    §8 dice que lo que no está no se infiere, y no hay paleta de "clases de
+//    movimiento".
+//    Además el color era redundante: LA CANTIDAD YA LLEVA EL SIGNO, que es el
+//    único eje que importa mirando la tabla — entró o salió. Un color por tipo
+//    compite con esa señal en vez de reforzarla.
+const MOV_META: Record<string, { label: string; icon: React.ReactNode }> = {
+  sale: { label: 'Venta', icon: <ArrowDownCircle size={12} /> },
+  adjustment: { label: 'Ajuste', icon: <SlidersHorizontal size={12} /> },
+  return: { label: 'Devolución', icon: <RotateCcw size={12} /> },
+  purchase: { label: 'Compra', icon: <ArrowUpCircle size={12} /> },
 }
 
 function MovementsTab() {
@@ -215,7 +228,7 @@ function MovementsTab() {
   ]
 
   const inputStyle: React.CSSProperties = {
-    padding: '7px 10px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12.5, color: '#0f172a', outline: 'none',
+    padding: '7px 10px', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12.5, color: 'var(--ink)', outline: 'none',
   }
 
   return (
@@ -229,9 +242,9 @@ function MovementsTab() {
               onClick={() => { setType(t.value); setPage(0) }}
               style={{
                 padding: '7px 12px', borderRadius: 8, fontSize: 12.5, fontWeight: 600, cursor: 'pointer',
-                border: `1px solid ${type === t.value ? '#10b981' : '#e2e8f0'}`,
-                background: type === t.value ? '#ecfdf5' : '#fff',
-                color: type === t.value ? '#065f46' : '#64748b',
+                border: `1px solid ${type === t.value ? 'var(--action)' : 'var(--border)'}`,
+                background: type === t.value ? 'var(--action-soft)' : 'var(--surface)',
+                color: type === t.value ? 'var(--success-on-soft)' : 'var(--ink-3)',
               }}
             >
               {t.label}
@@ -240,16 +253,16 @@ function MovementsTab() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <input type="date" value={from} onChange={(e) => { setFrom(e.target.value); setPage(0) }} style={inputStyle} />
-          <span style={{ color: '#94a3b8', fontSize: 12 }}>→</span>
+          <span style={{ color: 'var(--ink-4)', fontSize: 12 }}>→</span>
           <input type="date" value={to} onChange={(e) => { setTo(e.target.value); setPage(0) }} style={inputStyle} />
         </div>
       </div>
 
       {/* Table */}
-      <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, overflow: 'hidden', opacity: isFetching ? 0.6 : 1, transition: 'opacity .15s' }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', opacity: isFetching ? 0.6 : 1, transition: 'opacity .15s' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
-            <tr style={{ background: '#f8fafc', textAlign: 'left', color: '#64748b', fontSize: 11.5 }}>
+            <tr style={{ background: 'var(--surface-2)', textAlign: 'left', color: 'var(--ink-3)', fontSize: 11.5 }}>
               <th style={{ padding: '10px 16px', fontWeight: 600 }}>Fecha</th>
               <th style={{ padding: '10px 16px', fontWeight: 600 }}>Tipo</th>
               <th style={{ padding: '10px 16px', fontWeight: 600 }}>Producto</th>
@@ -260,28 +273,28 @@ function MovementsTab() {
           </thead>
           <tbody>
             {isLoading ? (
-              <tr><td colSpan={6} style={{ padding: '40px 16px', textAlign: 'center', color: '#94a3b8' }}>Cargando...</td></tr>
+              <tr><td colSpan={6} style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--ink-4)' }}>Cargando...</td></tr>
             ) : rows.length === 0 ? (
-              <tr><td colSpan={6} style={{ padding: '40px 16px', textAlign: 'center', color: '#94a3b8' }}>Sin movimientos en el período</td></tr>
+              <tr><td colSpan={6} style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--ink-4)' }}>Sin movimientos en el período</td></tr>
             ) : rows.map(m => {
-              const meta = MOV_META[m.type] ?? { bg: '#f1f5f9', fg: '#64748b', label: m.type, icon: null }
+              const meta = MOV_META[m.type] ?? { bg: 'var(--border-2)', fg: 'var(--ink-3)', label: m.type, icon: null }
               const ref = (m.type === 'sale' || m.type === 'purchase') && m.reference_id
                 ? `#${m.reference_id.slice(0, 8)}`
                 : (m.notes ?? '—')
               return (
-                <tr key={m.id} data-testid="stock-movement-row" style={{ borderTop: '1px solid #f1f5f9' }}>
-                  <td style={{ padding: '11px 16px', color: '#64748b', fontFamily: 'monospace', fontSize: 12 }}>{fmtDateTime(m.created_at)}</td>
+                <tr key={m.id} data-testid="stock-movement-row" style={{ borderTop: '1px solid var(--border-2)' }}>
+                  <td style={{ padding: '11px 16px', color: 'var(--ink-3)', fontVariantNumeric: 'tabular-nums', fontSize: 12 }}>{fmtDateTime(m.created_at)}</td>
                   <td style={{ padding: '11px 16px' }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 9px', borderRadius: 8, background: meta.bg, color: meta.fg, fontSize: 11, fontWeight: 700 }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 9px', borderRadius: 8, fontSize: 11, fontWeight: 700 }}>
                       {meta.icon}{meta.label}
                     </span>
                   </td>
-                  <td style={{ padding: '11px 16px', fontWeight: 600, color: '#0f172a' }}>{m.products?.name ?? '—'}</td>
-                  <td data-testid="stock-movement-qty" style={{ padding: '11px 16px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: m.qty >= 0 ? '#059669' : '#dc2626' }}>
+                  <td style={{ padding: '11px 16px', fontWeight: 600, color: 'var(--ink)' }}>{m.products?.name ?? '—'}</td>
+                  <td data-testid="stock-movement-qty" style={{ padding: '11px 16px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: m.qty >= 0 ? 'var(--success-700)' : 'var(--danger)' }}>
                     {m.qty >= 0 ? '+' : '−'}{Math.abs(m.qty)}
                   </td>
-                  <td style={{ padding: '11px 16px', color: '#64748b' }}>{m.profiles?.full_name ?? '—'}</td>
-                  <td style={{ padding: '11px 16px', color: '#94a3b8', fontFamily: 'monospace', fontSize: 12 }}>{ref}</td>
+                  <td style={{ padding: '11px 16px', color: 'var(--ink-3)' }}>{m.profiles?.full_name ?? '—'}</td>
+                  <td style={{ padding: '11px 16px', color: 'var(--ink-4)', fontVariantNumeric: 'tabular-nums', fontSize: 12 }}>{ref}</td>
                 </tr>
               )
             })}
@@ -291,20 +304,20 @@ function MovementsTab() {
 
       {/* Pagination */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: 12.5, color: '#64748b' }}>{total} movimiento{total !== 1 ? 's' : ''}</span>
+        <span style={{ fontSize: 12.5, color: 'var(--ink-3)' }}>{total} movimiento{total !== 1 ? 's' : ''}</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button
             onClick={() => setPage(p => Math.max(0, p - 1))}
             disabled={page === 0}
-            style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', cursor: page === 0 ? 'not-allowed' : 'pointer', color: '#334155', opacity: page === 0 ? 0.4 : 1, display: 'grid', placeItems: 'center' }}
+            style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', cursor: page === 0 ? 'not-allowed' : 'pointer', color: 'var(--ink-2)', opacity: page === 0 ? 0.4 : 1, display: 'grid', placeItems: 'center' }}
           >
             <ChevronLeft size={15} />
           </button>
-          <span style={{ fontSize: 12.5, color: '#64748b', fontFamily: 'monospace' }}>{page + 1} / {pageCount}</span>
+          <span style={{ fontSize: 12.5, color: 'var(--ink-3)', fontVariantNumeric: 'tabular-nums' }}>{page + 1} / {pageCount}</span>
           <button
             onClick={() => setPage(p => (p + 1 < pageCount ? p + 1 : p))}
             disabled={page + 1 >= pageCount}
-            style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', cursor: page + 1 >= pageCount ? 'not-allowed' : 'pointer', color: '#334155', opacity: page + 1 >= pageCount ? 0.4 : 1, display: 'grid', placeItems: 'center' }}
+            style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', cursor: page + 1 >= pageCount ? 'not-allowed' : 'pointer', color: 'var(--ink-2)', opacity: page + 1 >= pageCount ? 0.4 : 1, display: 'grid', placeItems: 'center' }}
           >
             <ChevronRight size={15} />
           </button>
@@ -329,46 +342,23 @@ export function InventoryPage() {
   const openAdjust = (id: string | null) => { setPreselectedId(id); setAdjustOpen(true) }
 
   return (
-    <div style={{ height: '100%', overflow: 'auto', background: '#f8fafc', fontFamily: 'Inter, system-ui, sans-serif', color: '#0f172a' }}>
-      {/* Header */}
-      <div style={{ background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '20px 28px 0', position: 'sticky', top: 0, zIndex: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: '#10b981', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>Administración</div>
-            <h1 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', letterSpacing: -0.5, margin: 0 }}>Inventario</h1>
-            <p style={{ fontSize: 13, color: '#64748b', marginTop: 3, marginBottom: 0 }}>Niveles de stock y movimientos por sede</p>
-          </div>
-          <button
-            data-testid="inventory-adjust-btn"
-            onClick={() => openAdjust(null)}
-            style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '10px 18px', border: 'none', background: '#10b981', borderRadius: 10, cursor: 'pointer', fontSize: 13.5, fontWeight: 700, color: '#fff', boxShadow: '0 6px 16px rgba(16,185,129,.35)', flexShrink: 0 }}
-          >
-            <Plus size={16} strokeWidth={2.5} /> Ajuste manual
-          </button>
-        </div>
-
-        {/* Tabs */}
-        <div style={{ display: 'flex', gap: 4 }}>
-          {([
-            { value: 'levels' as const, label: 'Niveles de stock', testid: 'inventory-tab-levels' },
-            { value: 'movements' as const, label: 'Movimientos', testid: 'inventory-tab-movements' },
-          ]).map(t => (
-            <button
-              key={t.value}
-              data-testid={t.testid}
-              onClick={() => setTab(t.value)}
-              style={{
-                padding: '10px 16px', border: 'none', background: 'none', cursor: 'pointer',
-                fontSize: 14, fontWeight: tab === t.value ? 700 : 500,
-                color: tab === t.value ? '#0f172a' : '#64748b',
-                borderBottom: `3px solid ${tab === t.value ? '#10b981' : 'transparent'}`,
-              }}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-      </div>
+    <div style={{ height: '100%', overflow: 'auto', background: 'var(--bg)', color: 'var(--ink)' }}>
+      {/* Tercera pantalla con el patrón: sin eyebrow, --fs-head, tabs del §4. */}
+      <PageHeader
+        titulo="Inventario"
+        descripcion="existencias y movimientos"
+        accion={
+          <Button data-testid="inventory-adjust-btn" onClick={() => openAdjust(null)}>
+            <Plus size={15} /> Ajuste manual
+          </Button>
+        }
+        tabs={[
+          { id: 'levels', label: 'Existencias', testid: 'inventory-tab-levels' },
+          { id: 'movements', label: 'Movimientos', testid: 'inventory-tab-movements' },
+        ]}
+        tabActivo={tab}
+        onTab={(id) => setTab(id as 'levels' | 'movements')}
+      />
 
       {/* Content */}
       <div style={{ padding: '24px 28px' }}>
