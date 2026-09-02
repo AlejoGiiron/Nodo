@@ -350,6 +350,28 @@ grepearon los nombres —eso son otra vez dos declaraciones—: se compiló con 
 buscó **el valor en el bundle**, y después se recompiló con el nombre viejo para confirmar que
 **el centinela desaparecía**. Recién ahí el verde valía algo.
 
+**🔴 LA VUELTA QUE FALTABA: CUANDO HAY UN BUILD DE POR MEDIO, EL FUENTE TAMBIÉN ES UN PROXY.**
+*Medido el 2026-09-02, y es la sexta falla de instrumento del proyecto.*
+
+Leer el código fuente se siente como leer "la cosa real" — es lo que escribimos, está ahí. **Pero
+entre el fuente y lo que corre hay un compilador que agrega, quita y transforma.** Con Tailwind,
+PostCSS o cualquier generador, la pregunta *"¿esto existe?"* **no se contesta en el fuente**.
+
+**El caso.** El skeleton de Configuración usaba `animation: 'pulse 1.5s infinite'`. Escribí que ese
+keyframe "no está definido en esta app, así que la barra está quieta" — grepeando `index.css`,
+`tailwind.config.js` y `ui.css`, donde efectivamente no aparece. **Era falso.** Compilar y grepear
+`dist/assets/index-*.css` mostró `@keyframes pulse` presente: **Tailwind lo emite y la config no lo
+dice.** El skeleton anduvo siempre.
+
+⚠️ **Y el matiz que lo hace peor que las otras cinco: la afirmación falsa estaba A MI FAVOR.**
+Decía que algo no andaba —o sea, que mi cambio arreglaba algo— y por eso **nadie tenía motivo para
+dudarla**. Una afirmación que te da la razón no la revisa nadie, empezando por vos. Las falsas que
+se atrapan son las que molestan.
+
+**Lo accionable, y es corto:** para preguntas sobre CSS, animaciones, variables, polyfills o
+cualquier cosa que un build pueda inyectar o podar, **la fuente de verdad es el artefacto
+compilado**, no el archivo. `pnpm build` y grepear `dist/` cuesta veinte segundos.
+
 **🔴 EL CASO PARTICULAR QUE MÁS ENGAÑA — y ya es la TERCERA vez que un control negativo salva
 una verificación en este proyecto:**
 
@@ -674,6 +696,7 @@ estábamos contando.*
 | `grep -coE '#[0-9a-fA-F]{6}'` | hexes por archivo | **solo los de seis dígitos**: no veía `#fff` | **enumerando**: cinco pantallas "en cero" tenían 47 blancos |
 | **un script propio de migración** | insertar imports al final del bloque | matcheaba `^import .*$` y **partía un import MULTILÍNEA por la mitad** | `tsc`, en el acto |
 | una consulta SQL de diagnóstico | vendido vs cobrado por día | el `left join` a `payments` **multiplicaba `o.total`** por cada pago: una venta mixta contaba doble | **un número no cerró con otro ya conocido**: 165 órdenes donde la app decía 158 |
+| grepear el FUENTE por un `@keyframes` | si la animación existía | el fuente no ve lo que **Tailwind emite en el build** | **compilando** y grepeando `dist/assets/*.css` |
 
 **Los tres daban un número creíble.** Ninguno daba error, ninguno se veía roto, y los tres
 sostenían una afirmación que se escribió en un commit como si fuera un hecho medido.
