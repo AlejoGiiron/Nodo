@@ -16,14 +16,14 @@ interface ProductCardProps {
 
 export function ProductCard({ product, onEdit, onDeactivate }: ProductCardProps) {
   const [confirmingDeactivate, setConfirmingDeactivate] = useState(false)
-  const color = product.categories?.color ?? '#94a3b8'
+  const color = product.categories?.color ?? 'var(--ink-4)'
 
   return (
     <div
       data-testid="product-grid-card"
       style={{
-      background: '#fff',
-      border: '1px solid #e5e7eb',
+      background: 'var(--surface)',
+      border: '1px solid var(--border)',
       borderRadius: 14,
       overflow: 'hidden',
       display: 'flex',
@@ -51,7 +51,7 @@ export function ProductCard({ product, onEdit, onDeactivate }: ProductCardProps)
             gap: 6,
           }}>
             <ImageIcon size={28} color={`${color}80`} strokeWidth={1.5} />
-            <span style={{ fontSize: 10.5, color: `${color}90`, fontFamily: 'monospace', letterSpacing: -0.2 }}>
+            <span style={{ fontSize: 10.5, color: `${color}90`, fontVariantNumeric: 'tabular-nums', letterSpacing: -0.2 }}>
               {product.name.substring(0, 12).toUpperCase()}
             </span>
           </div>
@@ -64,16 +64,28 @@ export function ProductCard({ product, onEdit, onDeactivate }: ProductCardProps)
           background: color,
         }} />
 
-        {/* Stock badge — rojo si hay sobreventa (negativo) */}
+        {/* 🔴 EL ÚLTIMO badge inline del proyecto. Los tonos son ROLES, y acá
+            corrigen la misma confusión que en Inventario: existencia NEGATIVA
+            es `danger` —se vendió más de lo que el sistema creía tener, algo
+            está mal contado— y cualquier otra cantidad es un dato normal, en
+            neutro. Antes el negativo era rojo sólido y el resto una tinta
+            semitransparente al 65%, que no es un token.
+            ⚠️ Y el comentario va ACÁ ARRIBA, no adentro del `&&`: una rama de
+            `&&` o de un ternario admite UNA expresión, y un bloque de
+            comentario JSX no lo es. Segunda vez que lo escribo mal — la
+            primera fue en el ternario del buscador del Mostrador — y las dos
+            las agarró tsc en el acto. */}
         {product.stock_tracking && (
           <div
             data-testid="stock-badge"
             style={{
               position: 'absolute', top: 10, right: 8,
-              padding: '2px 7px', borderRadius: 8,
-              background: (product.stock_qty ?? 0) < 0 ? '#dc2626' : 'rgba(15,23,42,.65)',
-              fontSize: 10.5, fontWeight: 700,
-              color: '#fff', fontFamily: 'monospace',
+              padding: '2px 7px', borderRadius: 999,
+              background: (product.stock_qty ?? 0) < 0 ? 'var(--danger-soft)' : 'var(--border-2)',
+              border: `1px solid ${(product.stock_qty ?? 0) < 0 ? 'var(--danger-soft)' : 'var(--border)'}`,
+              fontSize: 10.5, fontWeight: 600,
+              color: (product.stock_qty ?? 0) < 0 ? 'var(--danger-on-soft)' : 'var(--ink-2)',
+              fontVariantNumeric: 'tabular-nums',
               display: 'flex', alignItems: 'center', gap: 4,
             }}
           >
@@ -86,12 +98,12 @@ export function ProductCard({ product, onEdit, onDeactivate }: ProductCardProps)
         {!product.is_active && (
           <div style={{
             position: 'absolute', inset: 0,
-            background: 'rgba(15,23,42,.55)',
+            background: 'var(--overlay)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             <span style={{
               padding: '4px 10px', borderRadius: 8,
-              background: 'rgba(15,23,42,.8)', color: '#f1f5f9',
+              background: 'rgba(15,23,42,.8)', color: 'var(--border-2)',
               fontSize: 11, fontWeight: 600, letterSpacing: 0.5,
               textTransform: 'uppercase',
             }}>Inactivo</span>
@@ -115,13 +127,13 @@ export function ProductCard({ product, onEdit, onDeactivate }: ProductCardProps)
           </div>
         )}
 
-        <div style={{ fontSize: 14.5, fontWeight: 600, color: '#0f172a', letterSpacing: -0.2, lineHeight: 1.25, marginTop: 2 }}>
+        <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--ink)', letterSpacing: -0.2, lineHeight: 1.25, marginTop: 2 }}>
           {product.name}
         </div>
 
         {product.description && (
           <div style={{
-            fontSize: 12, color: '#94a3b8', lineHeight: 1.35,
+            fontSize: 12, color: 'var(--ink-4)', lineHeight: 1.35,
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
             {product.description}
@@ -135,7 +147,7 @@ export function ProductCard({ product, onEdit, onDeactivate }: ProductCardProps)
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 5,
               padding: '3px 8px', borderRadius: 8,
-              background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c',
+              background: 'var(--danger-soft)', border: '1px solid var(--danger-soft)', color: 'var(--danger-on-soft)',
               fontSize: 11, fontWeight: 600, width: 'fit-content', marginTop: 2,
             }}
           >
@@ -145,7 +157,7 @@ export function ProductCard({ product, onEdit, onDeactivate }: ProductCardProps)
         )}
 
         <div style={{ marginTop: 'auto', paddingTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', fontFamily: 'monospace', letterSpacing: -0.4 }}>
+          <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums', letterSpacing: -0.4 }}>
             {formatCOP(product.price)}
           </span>
 
@@ -155,13 +167,13 @@ export function ProductCard({ product, onEdit, onDeactivate }: ProductCardProps)
               title="Editar"
               style={{
                 width: 30, height: 30, borderRadius: 8,
-                border: '1px solid #e5e7eb', background: '#fff',
-                cursor: 'pointer', color: '#64748b',
+                border: '1px solid var(--border)', background: 'var(--surface)',
+                cursor: 'pointer', color: 'var(--ink-3)',
                 display: 'grid', placeItems: 'center',
                 transition: 'all .12s',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#10b981'; e.currentTarget.style.color = '#10b981' }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.color = '#64748b' }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--action)'; e.currentTarget.style.color = 'var(--action)' }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--ink-3)' }}
             >
               <Pencil size={13} />
             </button>
@@ -172,13 +184,13 @@ export function ProductCard({ product, onEdit, onDeactivate }: ProductCardProps)
                 title="Desactivar"
                 style={{
                   width: 30, height: 30, borderRadius: 8,
-                  border: '1px solid #e5e7eb', background: '#fff',
-                  cursor: 'pointer', color: '#64748b',
+                  border: '1px solid var(--border)', background: 'var(--surface)',
+                  cursor: 'pointer', color: 'var(--ink-3)',
                   display: 'grid', placeItems: 'center',
                   transition: 'all .12s',
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#fecaca'; e.currentTarget.style.color = '#dc2626' }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.color = '#64748b' }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--danger-soft)'; e.currentTarget.style.color = 'var(--danger)' }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--ink-3)' }}
               >
                 <Archive size={13} />
               </button>
@@ -188,8 +200,8 @@ export function ProductCard({ product, onEdit, onDeactivate }: ProductCardProps)
                   onClick={() => setConfirmingDeactivate(false)}
                   style={{
                     height: 30, padding: '0 8px', borderRadius: 8,
-                    border: '1px solid #e5e7eb', background: '#fff',
-                    cursor: 'pointer', color: '#64748b', fontSize: 11.5, fontWeight: 600,
+                    border: '1px solid var(--border)', background: 'var(--surface)',
+                    cursor: 'pointer', color: 'var(--ink-3)', fontSize: 11.5, fontWeight: 600,
                   }}
                 >
                   No
@@ -198,8 +210,8 @@ export function ProductCard({ product, onEdit, onDeactivate }: ProductCardProps)
                   onClick={() => { setConfirmingDeactivate(false); onDeactivate() }}
                   style={{
                     height: 30, padding: '0 8px', borderRadius: 8,
-                    border: 'none', background: '#fef2f2',
-                    cursor: 'pointer', color: '#dc2626', fontSize: 11.5, fontWeight: 700,
+                    border: 'none', background: 'var(--danger-soft)',
+                    cursor: 'pointer', color: 'var(--danger)', fontSize: 11.5, fontWeight: 700,
                   }}
                 >
                   Sí, desactivar

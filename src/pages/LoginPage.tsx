@@ -60,15 +60,15 @@ export function LoginPage() {
   return (
     <div
       className="flex overflow-hidden"
-      style={{ width: '100vw', height: '100vh', fontFamily: 'Inter, system-ui, sans-serif', background: '#fff', color: '#0f172a' }}
+      style={{ width: '100vw', height: '100vh', fontFamily: 'inherit', background: 'var(--surface)', color: 'var(--ink)' }}
     >
       {/* PANEL IZQUIERDO — 40% slate-900 */}
       <div
         className="flex flex-col"
         style={{
           flex: '0 0 40%',
-          background: '#0f172a',
-          color: '#f1f5f9',
+          background: 'var(--ink)',
+          color: 'var(--border-2)',
           padding: '40px 44px',
           position: 'relative',
           overflow: 'hidden',
@@ -82,24 +82,24 @@ export function LoginPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative', zIndex: 1 }}>
           <div style={{
             width: 44, height: 44, borderRadius: 11,
-            background: 'linear-gradient(135deg, #10b981, #059669)',
+            background: 'linear-gradient(135deg, var(--action), var(--success-700))',
             display: 'grid', placeItems: 'center',
-            color: '#fff', fontWeight: 800, fontSize: 20,
+            color: 'var(--surface)', fontWeight: 800, fontSize: 20,
             boxShadow: '0 0 0 1px rgba(255,255,255,.08) inset, 0 8px 20px rgba(16,185,129,.25)',
           }}>G</div>
           <div>
-            <div style={{ fontWeight: 700, fontSize: 18, color: '#f8fafc', letterSpacing: -0.3 }}>Nodo</div>
-            <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 1 }}>POS · Sedes</div>
+            <div style={{ fontWeight: 700, fontSize: 18, color: 'var(--surface-2)', letterSpacing: -0.3 }}>Nodo</div>
+            <div style={{ fontSize: 11.5, color: 'var(--ink-3)', marginTop: 1 }}>POS · Sedes</div>
           </div>
         </div>
 
         {/* Contenido central */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', zIndex: 1 }}>
-          <h1 style={{ fontSize: 38, fontWeight: 800, color: '#f8fafc', margin: 0, letterSpacing: -1.2, lineHeight: 1.05 }}>
+          <h1 style={{ fontSize: 38, fontWeight: 800, color: 'var(--surface-2)', margin: 0, letterSpacing: -1.2, lineHeight: 1.05 }}>
             Bienvenido<br />
-            <span style={{ color: '#10b981' }}>de vuelta.</span>
+            <span style={{ color: 'var(--action)' }}>de vuelta.</span>
           </h1>
-          <p style={{ fontSize: 14, color: '#94a3b8', marginTop: 14, marginBottom: 0, lineHeight: 1.55, maxWidth: 340 }}>
+          <p style={{ fontSize: 14, color: 'var(--ink-4)', marginTop: 14, marginBottom: 0, lineHeight: 1.55, maxWidth: 340 }}>
             Ingresa a tu turno y comienza a facturar. Todo lo que tu sede necesita, en un solo lugar.
           </p>
 
@@ -110,35 +110,35 @@ export function LoginPage() {
                 <div style={{
                   width: 32, height: 32, borderRadius: 8,
                   background: 'rgba(16,185,129,.12)',
-                  color: '#10b981',
+                  color: 'var(--action)',
                   display: 'grid', placeItems: 'center',
                   border: '1px solid rgba(16,185,129,.22)',
                   flexShrink: 0,
                 }}>
                   <Icon size={15} />
                 </div>
-                <div style={{ fontSize: 13, color: '#cbd5e1' }}>{text}</div>
+                <div style={{ fontSize: 13, color: 'var(--ink-4)' }}>{text}</div>
               </div>
             ))}
           </div>
         </div>
 
         {/* Footer */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11.5, color: '#64748b', position: 'relative', zIndex: 1 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11.5, color: 'var(--ink-3)', position: 'relative', zIndex: 1 }}>
           <div>© 2026 Nodo</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--action)', display: 'inline-block' }} />
             Sistema operativo · v2.4.1
           </div>
         </div>
       </div>
 
       {/* PANEL DERECHO — 60% blanco */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '40px 48px', background: '#fff' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '40px 48px', background: 'var(--surface)' }}>
         {/* Ayuda */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', fontSize: 12.5, color: '#64748b' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', fontSize: 12.5, color: 'var(--ink-3)' }}>
           ¿Necesitas ayuda?
-          <span style={{ color: '#10b981', fontWeight: 600, marginLeft: 6 }}>Contactar soporte</span>
+          <span style={{ color: 'var(--action)', fontWeight: 600, marginLeft: 6 }}>Contactar soporte</span>
         </div>
 
         {/* Formulario centrado */}
@@ -146,13 +146,13 @@ export function LoginPage() {
           <form onSubmit={handleSubmit}>
             {/* Encabezado */}
             <div>
-              <div style={{ fontSize: 11, fontWeight: 600, color: '#10b981', textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 8 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--action)', textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 8 }}>
                 Iniciar sesión
               </div>
-              <h2 style={{ fontSize: 26, fontWeight: 700, color: '#0f172a', margin: 0, letterSpacing: -0.8, lineHeight: 1.15 }}>
+              <h2 style={{ fontSize: 26, fontWeight: 700, color: 'var(--ink)', margin: 0, letterSpacing: -0.8, lineHeight: 1.15 }}>
                 Ingresa a tu cuenta
               </h2>
-              <p style={{ fontSize: 13.5, color: '#64748b', marginTop: 8, marginBottom: 0, lineHeight: 1.5 }}>
+              <p style={{ fontSize: 13.5, color: 'var(--ink-3)', marginTop: 8, marginBottom: 0, lineHeight: 1.5 }}>
                 Usa el correo y contraseña que te asignó el administrador.
               </p>
             </div>
@@ -161,34 +161,34 @@ export function LoginPage() {
             {error && (
               <div style={{
                 marginTop: 22, padding: '11px 13px',
-                background: '#fef2f2', border: '1px solid #fecaca',
+                background: 'var(--danger-soft)', border: '1px solid var(--danger-soft)',
                 borderRadius: 9, display: 'flex', alignItems: 'flex-start', gap: 10,
               }}>
-                <div style={{ color: '#dc2626', marginTop: 1, flexShrink: 0 }}>
+                <div style={{ color: 'var(--danger)', marginTop: 1, flexShrink: 0 }}>
                   <X size={15} strokeWidth={2.5} />
                 </div>
                 <div>
-                  <div style={{ fontSize: 12.5, fontWeight: 600, color: '#991b1b' }}>Credenciales incorrectas</div>
-                  <div style={{ fontSize: 11.5, color: '#b91c1c', marginTop: 2 }}>Verifica tu correo y contraseña e intenta de nuevo.</div>
+                  <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--danger-on-soft)' }}>Credenciales incorrectas</div>
+                  <div style={{ fontSize: 11.5, color: 'var(--danger-on-soft)', marginTop: 2 }}>Verifica tu correo y contraseña e intenta de nuevo.</div>
                 </div>
               </div>
             )}
 
             {/* Correo */}
             <div style={{ marginTop: 24 }}>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#334155', marginBottom: 6 }}>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--ink-2)', marginBottom: 6 }}>
                 Correo electrónico
               </label>
               <div
                 style={{
                   display: 'flex', alignItems: 'center', gap: 8,
-                  border: `1.5px solid ${error ? '#ef4444' : '#e5e7eb'}`,
-                  borderRadius: 10, padding: '11px 13px', background: '#fff', transition: 'border .12s',
+                  border: `1.5px solid ${error ? 'var(--danger)' : 'var(--border)'}`,
+                  borderRadius: 10, padding: '11px 13px', background: 'var(--surface)', transition: 'border .12s',
                 }}
-                onFocus={e => { if (!error) e.currentTarget.style.borderColor = '#10b981' }}
-                onBlur={e => { if (!error) e.currentTarget.style.borderColor = '#e5e7eb' }}
+                onFocus={e => { if (!error) e.currentTarget.style.borderColor = 'var(--action)' }}
+                onBlur={e => { if (!error) e.currentTarget.style.borderColor = 'var(--border)' }}
               >
-                <User size={16} style={{ color: '#94a3b8', flexShrink: 0 }} />
+                <User size={16} style={{ color: 'var(--ink-4)', flexShrink: 0 }} />
                 <input
                   type="email"
                   value={email}
@@ -196,36 +196,36 @@ export function LoginPage() {
                   placeholder="tu@sede.com"
                   autoFocus
                   autoComplete="email"
-                  style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 14, color: '#0f172a' }}
+                  style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 14, color: 'var(--ink)' }}
                 />
               </div>
             </div>
 
             {/* Contraseña */}
             <div style={{ marginTop: 16 }}>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#334155', marginBottom: 6 }}>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--ink-2)', marginBottom: 6 }}>
                 Contraseña
               </label>
               <div
                 style={{
                   display: 'flex', alignItems: 'center', gap: 8,
-                  border: `1.5px solid ${error ? '#ef4444' : '#e5e7eb'}`,
-                  borderRadius: 10, padding: '11px 13px', background: '#fff',
+                  border: `1.5px solid ${error ? 'var(--danger)' : 'var(--border)'}`,
+                  borderRadius: 10, padding: '11px 13px', background: 'var(--surface)',
                 }}
               >
-                <Lock size={16} style={{ color: '#94a3b8', flexShrink: 0 }} />
+                <Lock size={16} style={{ color: 'var(--ink-4)', flexShrink: 0 }} />
                 <input
                   type={showPwd ? 'text' : 'password'}
                   value={password}
                   onChange={e => { setPassword(e.target.value); setError(false) }}
                   placeholder="••••••••"
                   autoComplete="current-password"
-                  style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 14, color: '#0f172a' }}
+                  style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 14, color: 'var(--ink)' }}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPwd(p => !p)}
-                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 0, display: 'grid', placeItems: 'center' }}
+                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--ink-4)', padding: 0, display: 'grid', placeItems: 'center' }}
                 >
                   {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -233,15 +233,15 @@ export function LoginPage() {
             </div>
 
             {/* Recordarme */}
-            <label style={{ display: 'flex', alignItems: 'center', gap: 9, marginTop: 18, cursor: 'pointer', fontSize: 13, color: '#334155', fontWeight: 500 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 9, marginTop: 18, cursor: 'pointer', fontSize: 13, color: 'var(--ink-2)', fontWeight: 500 }}>
               <div
                 onClick={() => setRemember(r => !r)}
                 style={{
                   width: 18, height: 18, borderRadius: 5,
-                  border: `1.5px solid ${remember ? '#10b981' : '#cbd5e1'}`,
-                  background: remember ? '#10b981' : '#fff',
+                  border: `1.5px solid ${remember ? 'var(--action)' : 'var(--ink-4)'}`,
+                  background: remember ? 'var(--action)' : 'var(--surface)',
                   display: 'grid', placeItems: 'center',
-                  color: '#fff', transition: 'all .12s', flexShrink: 0, cursor: 'pointer',
+                  color: 'var(--surface)', transition: 'all .12s', flexShrink: 0, cursor: 'pointer',
                 }}
               >
                 {remember && <Check size={12} strokeWidth={3} />}
@@ -255,11 +255,11 @@ export function LoginPage() {
               disabled={submitting || !email || !password}
               style={{
                 marginTop: 24, width: '100%', padding: '13px 14px',
-                background: (submitting || !email || !password) ? '#cbd5e1' : '#10b981',
+                background: (submitting || !email || !password) ? 'var(--ink-4)' : 'var(--action)',
                 border: 'none', borderRadius: 10,
                 cursor: (submitting || !email || !password) ? 'not-allowed' : 'pointer',
-                fontSize: 14, fontWeight: 700, color: '#fff',
-                fontFamily: 'Inter, system-ui, sans-serif',
+                fontSize: 14, fontWeight: 700, color: 'var(--surface)',
+                fontFamily: 'inherit',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 boxShadow: (submitting || !email || !password) ? 'none' : '0 6px 16px rgba(16,185,129,.35)',
                 transition: 'all .15s',
@@ -275,7 +275,7 @@ export function LoginPage() {
         </div>
 
         {/* Footer */}
-        <div style={{ fontSize: 11.5, color: '#94a3b8', textAlign: 'center' }}>
+        <div style={{ fontSize: 11.5, color: 'var(--ink-4)', textAlign: 'center' }}>
           ¿No tienes acceso? El administrador de tu sede crea las cuentas.
         </div>
       </div>

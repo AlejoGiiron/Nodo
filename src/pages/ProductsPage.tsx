@@ -14,15 +14,15 @@ import type { Tables } from '@/types/database.types'
 function SkeletonCard() {
   return (
     <div style={{
-      background: '#fff', border: '1px solid #e5e7eb',
+      background: 'var(--surface)', border: '1px solid var(--border)',
       borderRadius: 14, overflow: 'hidden',
     }}>
-      <div style={{ height: 148, background: 'linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%)', backgroundSize: '200% 100%', animation: 'gv-shimmer 1.4s infinite' }} />
+      <div style={{ height: 148, background: 'linear-gradient(90deg, var(--border-2) 25%, var(--border) 50%, var(--border-2) 75%)', backgroundSize: '200% 100%', animation: 'gv-shimmer 1.4s infinite' }} />
       <div style={{ padding: '12px 14px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <div style={{ height: 10, width: '40%', background: '#f1f5f9', borderRadius: 6 }} />
-        <div style={{ height: 14, width: '80%', background: '#f1f5f9', borderRadius: 6 }} />
-        <div style={{ height: 11, width: '60%', background: '#f1f5f9', borderRadius: 6 }} />
-        <div style={{ height: 16, width: '35%', background: '#f1f5f9', borderRadius: 6, marginTop: 4 }} />
+        <div style={{ height: 10, width: '40%', background: 'var(--border-2)', borderRadius: 6 }} />
+        <div style={{ height: 14, width: '80%', background: 'var(--border-2)', borderRadius: 6 }} />
+        <div style={{ height: 11, width: '60%', background: 'var(--border-2)', borderRadius: 6 }} />
+        <div style={{ height: 16, width: '35%', background: 'var(--border-2)', borderRadius: 6, marginTop: 4 }} />
       </div>
     </div>
   )
@@ -34,10 +34,10 @@ function EmptyState({ query, onNew }: { query: string; onNew: () => void }) {
     return (
       <div style={{ gridColumn: '1 / -1', padding: '60px 20px', textAlign: 'center' }}>
         <div style={{ fontSize: 36, marginBottom: 12 }}>🔍</div>
-        <div style={{ fontSize: 15, fontWeight: 600, color: '#334155', marginBottom: 6 }}>
+        <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--ink-2)', marginBottom: 6 }}>
           Sin resultados para "{query}"
         </div>
-        <div style={{ fontSize: 13, color: '#94a3b8' }}>
+        <div style={{ fontSize: 13, color: 'var(--ink-4)' }}>
           Intenta con otro nombre o revisa la categoría seleccionada
         </div>
       </div>
@@ -48,23 +48,23 @@ function EmptyState({ query, onNew }: { query: string; onNew: () => void }) {
     <div style={{ gridColumn: '1 / -1', padding: '60px 20px', textAlign: 'center' }}>
       <div style={{
         width: 64, height: 64, borderRadius: '50%',
-        background: '#ecfdf5', margin: '0 auto 16px',
-        display: 'grid', placeItems: 'center', color: '#10b981',
+        background: 'var(--action-soft)', margin: '0 auto 16px',
+        display: 'grid', placeItems: 'center', color: 'var(--action)',
       }}>
         <Package size={28} strokeWidth={1.5} />
       </div>
-      <div style={{ fontSize: 15, fontWeight: 600, color: '#334155', marginBottom: 6 }}>
+      <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--ink-2)', marginBottom: 6 }}>
         No hay productos en esta categoría
       </div>
-      <div style={{ fontSize: 13, color: '#94a3b8', marginBottom: 20 }}>
+      <div style={{ fontSize: 13, color: 'var(--ink-4)', marginBottom: 20 }}>
         Agrega el primero para que aparezca en el POS
       </div>
       <button
         onClick={onNew}
         style={{
           padding: '10px 20px', border: 'none',
-          background: '#10b981', borderRadius: 9,
-          cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#fff',
+          background: 'var(--action)', borderRadius: 9,
+          cursor: 'pointer', fontSize: 13, fontWeight: 700, color: 'var(--surface)',
           display: 'inline-flex', alignItems: 'center', gap: 6,
           boxShadow: '0 6px 16px rgba(16,185,129,.35)',
         }}
@@ -117,27 +117,27 @@ export function ProductsPage() {
     <div
       style={{
         height: '100%', overflow: 'auto',
-        background: '#f8fafc',
-        fontFamily: 'Inter, system-ui, sans-serif',
-        color: '#0f172a',
+        background: 'var(--surface-2)',
+        fontFamily: 'inherit',
+        color: 'var(--ink)',
       }}
     >
       {/* ── Page header ── */}
       <div style={{
-        background: '#fff',
-        borderBottom: '1px solid #e5e7eb',
+        background: 'var(--surface)',
+        borderBottom: '1px solid var(--border)',
         padding: '20px 28px 0',
         position: 'sticky', top: 0, zIndex: 10,
       }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: '#10b981', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--action)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>
               Administración
             </div>
-            <h1 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', letterSpacing: -0.5, margin: 0 }}>
+            <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--ink)', letterSpacing: -0.5, margin: 0 }}>
               Productos
             </h1>
-            <p style={{ fontSize: 13, color: '#64748b', marginTop: 3, marginBottom: 0 }}>
+            <p style={{ fontSize: 13, color: 'var(--ink-3)', marginTop: 3, marginBottom: 0 }}>
               {isLoading ? 'Cargando...' : `${products.length} productos · ${categories.length} categorías`}
             </p>
           </div>
@@ -147,8 +147,8 @@ export function ProductsPage() {
             style={{
               display: 'flex', alignItems: 'center', gap: 7,
               padding: '10px 18px', border: 'none',
-              background: '#10b981', borderRadius: 10,
-              cursor: 'pointer', fontSize: 13.5, fontWeight: 700, color: '#fff',
+              background: 'var(--action)', borderRadius: 10,
+              cursor: 'pointer', fontSize: 13.5, fontWeight: 700, color: 'var(--surface)',
               boxShadow: '0 6px 16px rgba(16,185,129,.35)',
               flexShrink: 0,
             }}
@@ -171,11 +171,11 @@ export function ProductsPage() {
           {/* Search */}
           <div style={{
             display: 'flex', alignItems: 'center', gap: 8,
-            background: '#f8fafc', border: '1px solid #e2e8f0',
+            background: 'var(--surface-2)', border: '1px solid var(--border)',
             borderRadius: 9, padding: '8px 12px',
             marginBottom: 4, flexShrink: 0, width: 220,
           }}>
-            <Search size={15} color="#94a3b8" />
+            <Search size={15} color="var(--ink-4)" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -184,13 +184,13 @@ export function ProductsPage() {
               style={{
                 flex: 1, border: 'none', outline: 'none',
                 background: 'transparent', fontSize: 13,
-                color: '#0f172a', fontFamily: 'Inter, system-ui, sans-serif',
+                color: 'var(--ink)', fontFamily: 'inherit',
               }}
             />
             {query && (
               <button
                 onClick={() => setQuery('')}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 0, display: 'grid', placeItems: 'center' }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink-4)', padding: 0, display: 'grid', placeItems: 'center' }}
               >
                 <X size={13} />
               </button>
