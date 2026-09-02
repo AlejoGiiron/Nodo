@@ -1,0 +1,179 @@
+/* ============================================================================
+   Nodo · tokens del design system
+   ----------------------------------------------------------------------------
+   FUENTE DE VERDAD: la skill `nodo-design-system` (.claude/skills/), sección 1.
+   Este archivo es su TRANSCRIPCIÓN, no una versión con opinión propia.
+
+   🔴 Cómo se toca (R1 — contrato compartido):
+      un valor se cambia PRIMERO en la skill y después acá. Nunca al revés, y
+      nunca solo en uno de los dos. Si divergen, gana la skill.
+
+   Lo que este archivo NO tiene, a propósito:
+     · la escala tipográfica `--fs-*` → §8.2 la deja SIN DECIDIR ("falta decidir
+       si se tokenizan"). Hoy los tamaños siguen literales. No se inventa.
+     · la escala de espaciado y las alturas de §3 → la skill las fija como
+       valores, no les da nombre de token. Ponerles nombre acá sería inventar
+       vocabulario que la fuente no tiene.
+     · tema oscuro (§8.3): no existe. Los tokens `--on-dark-*` de abajo NO son
+       un tema: son los únicos colores permitidos ENCIMA del panel de cobro y
+       de los diálogos, que van sobre `--ink`.
+   ========================================================================== */
+
+/* ── LA FUENTE, self-hosted ────────────────────────────────────────────────
+   Se declara con el nombre 'Inter' A PROPÓSITO, no 'Inter Variable' que es
+   como la nombra el paquete: hay 40 `fontFamily: 'Inter, system-ui,
+   sans-serif'` inline en src/ que hoy caen a system-ui porque NINGÚN
+   @font-face existía. Declarándola con ese nombre, las 40 resuelven sin tocar
+   un solo archivo — y la pila que dice la skill (`Inter, system-ui,
+   sans-serif`) pasa a ser literalmente cierta en vez de una aspiración.
+
+   Se usa la VARIABLE y no la estática porque la escala tipográfica de la skill
+   pide peso 450, que la estática no tiene: pedir 450 sobre una estática lo
+   redondea a 400 o a 500 en silencio.
+
+   `font-display: swap` — el texto se lee desde el primer frame con la de
+   sistema y cambia al llegar la fuente. En un mostrador, texto invisible
+   esperando una fuente es peor que un cambio de tipografía.
+
+   Self-hosted, no Google Fonts: los .woff2 salen de @fontsource-variable/inter
+   y Vite los emite hasheados a dist/assets/. Sin red de terceros en el primer
+   pintado y cacheables por el service worker. */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('@fontsource-variable/inter/files/inter-latin-wght-normal.woff2')
+    format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('@fontsource-variable/inter/files/inter-latin-ext-wght-normal.woff2')
+    format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+:root {
+  /* ── 1.1 · CAPA DE MARCA — la define el tenant, no el sistema ────────────
+     Se re-inyectan en :root al cargar la organización. Los valores de acá son
+     el DEFAULT del sistema para una organización sin marca cargada, y por eso
+     `--brand` se deriva de `--ink` en vez de ser un color nuevo: un default
+     inventado sería un valor de diseño que nadie decidió.
+
+     🔴 PROHIBIDA en: botones, chips, insignias, filas, barras de progreso,
+        bordes de foco, iconos de navegación, encabezados de tabla, y en
+        cualquier cosa que comunique ESTADO. La fila de un cliente en mora se
+        ve idéntica en un tenant negro, uno rojo y uno azul.
+     ✅ PERMITIDA solo en: el tile de identidad de la barra lateral, la
+        pantalla de login, el logo de documentos impresos, el favicon. */
+  --brand: #0f172a;             /* = --ink mientras el tenant no cargue el suyo */
+  --brand-ink: #ffffff;         /* ≥ 4.5:1 sobre --brand. Marca clara ⇒ #0F172A */
+
+  /* ── 1.2 · CAPA DE SISTEMA — fija, ninguna organización la tematiza ───── */
+
+  /* Acción principal — cobrar, guardar, agregar, entregar, aplicar, abonar,
+     la fila seleccionada, la pestaña activa, el foco.
+     🔴 Ningún ESTADO del dominio es azul. Acción y estado jamás comparten
+        familia de color; por eso la acción es fría, para dejar libre todo el
+        rango cálido a deuda/mora/advertencia y el verde a confirmación. */
+  --action-900: #0c4a6e;
+  --action-800: #075985;        /* link:hover */
+  --action-700: #0369a1;        /* link en reposo, texto sobre --action-soft */
+  --action: #0284c7;            /* relleno de botón primario */
+  --action-500: #0ea5e9;        /* venta en curso en la barra de cupo */
+  --action-soft: #e0f2fe;       /* fila seleccionada, chip de pestaña activa */
+  --action-on-soft: #075985;
+  --action-border: #bae6fd;     /* borde de chip suave, 1er tramo de antigüedad */
+
+  /* Deuda y cartera vencida — saldo en mora, valor vencido, cupo consumido.
+     NO es para errores de validación: un cliente en mora no es un error del
+     usuario. Eso es --danger. */
+  --debt-700: #9f1239;
+  --debt: #be123c;              /* cupo ≥95%, franja de fila en mora */
+  --debt-soft: #ffe4e6;
+  --debt-on-soft: #9f1239;
+  --debt-border: #fda4af;
+
+  /* Antigüedad de la deuda — se lee por COLOR, no leyendo una fecha.
+     ⚠️ --d1 es el fondo de fila; la primera casilla apagada de AgingBar usa
+        --action-border, no --d1. */
+  --d1: #fff1f2;                /*  0–30 días */
+  --d2: #fecdd3;                /* 31–60 días */
+  --d3: #fb7185;                /* 61–90 días */
+  --d4: #be123c;                /*   +90 días */
+
+  /* Error y acción destructiva — validación fallida, anular, eliminar.
+     Separado de --debt a propósito: "el cliente debe" y "hiciste algo mal" no
+     son el mismo mensaje. */
+  --danger: #dc2626;
+  --danger-soft: #fee2e2;
+  --danger-on-soft: #991b1b;
+
+  /* Advertencia — nunca bloqueante: "se puede seguir, con una decisión del
+     dueño". Cupo consumido, venta que excede el cupo, productos sin costo. */
+  --warning-700: #b45309;
+  --warning-500: #f59e0b;       /* barra de aviso sobre fondo oscuro */
+  --warning-soft: #fef3c7;
+  --warning-on-soft: #92400e;
+  --warning-border: #fcd34d;
+
+  /* Confirmación — al día, abono aplicado, pedido entregado, compra aplicada.
+     🔴 NO HAY BOTÓN VERDE EN EL PRODUCTO. Si aparece uno, el usuario deja de
+        poder distinguir "esto está bien" de "hacé clic acá". */
+  --success-700: #047857;
+  --success-soft: #d1fae5;
+  --success-on-soft: #065f46;
+  --success-border: #a7f3d0;
+
+  /* Neutros y superficies.
+     --ink-4 es el LÍMITE: no se usa para texto que haya que leer, solo para
+     apoyo y para el guión de dato ausente. */
+  --ink: #0f172a;               /* texto principal */
+  --ink-2: #334155;             /* etiquetas de formulario, secundario fuerte */
+  --ink-3: #64748b;             /* metadatos, encabezados de tabla, apoyo */
+  --ink-4: #94a3b8;             /* unidades, deshabilitado, el guión de "—" */
+  --border: #e2e8f0;            /* borde de tarjeta, panel, input */
+  --border-2: #f1f5f9;          /* separador entre filas */
+  --surface: #ffffff;           /* fila, tarjeta, panel */
+  --surface-2: #f8fafc;         /* cabecera de tabla pegajosa, fila de resultado */
+  --surface-3: #fbfcfe;         /* barra de herramientas, pie de formulario */
+  --bg: #f4f6f9;                /* lienzo de la aplicación */
+  --attention: #fffdf5;         /* reclama atención sin ser error (sin costo) */
+
+  /* Sobre fondo oscuro — panel de cobro y diálogos, que van sobre --ink.
+     Son los ÚNICOS tokens que se usan encima. */
+  --on-dark-2: #94a3b8;         /* Subtotal, Descuento, Recibe, Cambio */
+  --on-dark-3: #cbd5e1;
+  --on-dark-fill: #1e293b;      /* avatar y superficie elevada sobre tinta */
+  --on-dark-warn: #fde68a;      /* aviso de cupo sobre tinta */
+  --overlay: rgba(15, 23, 42, 0.5);
+
+  /* 🔴 --shadow-1 es el ÚNICO nivel de elevación del producto y está reservado
+     a DIÁLOGOS. Todo lo demás se separa con borde de 1px.
+     LAS FILAS NUNCA LLEVAN SOMBRA. */
+  --shadow-1: 0 20px 50px rgba(15, 23, 42, 0.3);
+
+  /* ── 3 · Radios ─────────────────────────────────────────────────────────
+     La insignia de estado es píldora: se escribe 999px literal, no es token. */
+  --r-1: 4px;                   /* chip pequeño, casilla de antigüedad, barra */
+  --r-2: 6px;                   /* botón, input, fila seleccionada */
+  --r-3: 8px;                   /* tarjeta, panel, diálogo */
+
+  /* ── 2 · Tipografía ─────────────────────────────────────────────────────
+     UNA SOLA FAMILIA PROPORCIONAL. La monoespaciada NO EXISTE en el producto:
+     las cifras se alinean por dígito con `font-variant-numeric: tabular-nums`,
+     no cambiando de familia.
+
+     La pila es la de la skill, palabra por palabra. Ver el @font-face de arriba
+     para por qué se llama 'Inter' y no 'Inter Variable'. */
+  --font-sans: Inter, system-ui, sans-serif;
+}

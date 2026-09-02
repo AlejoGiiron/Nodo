@@ -1,3 +1,6 @@
+/* Los tokens van PRIMERO: el `html` de preflight ya pide var(--font-sans). */
+@import './tokens.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
