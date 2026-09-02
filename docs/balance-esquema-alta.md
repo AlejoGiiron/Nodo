@@ -76,6 +76,17 @@ posible. Por eso queda 🟡 y no 🔴: el hueco es de **UI y de nombre**, no de 
 
 ## Lo que la tabla sugiere, para que lo decidas
 
+> 🔴 **ACTUALIZADO el 2026-09-02: dos deudas NUEVAS suben al bloque de arriba, y las dos
+> aparecieron después de escribir esta tabla — re-skineando Reportes.**
+>
+> | # | Por qué sube |
+> |---|---|
+> | **53** · "Ventas totales" muestra lo cobrado | **la única cuyo daño VIAJA FUERA DE LA APP**: el Excel se archiva con el 58% faltante y sin contexto. Y el ticket promedio es un cociente entre poblaciones: no significa nada. |
+> | **54** · carrera de extras en el mostrador | columna (b) pura: **pierde plata del cliente EN LA VENTA**. La orden se registra con un total menor al real. |
+>
+> Confirma lo que la tabla original ya sugería: **el re-skin sigue encontrando más rápido de lo que
+> cerramos**, y las dos que encontró esta vez son de las que pierden datos.
+
 **Antes del alta, por (b):**
 
 1. **50 · import** — sin esto no hay alta. Y su forma decide si la 41 entra con ella.

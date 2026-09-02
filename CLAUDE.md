@@ -673,6 +673,7 @@ estábamos contando.*
 | `grep -rl "const formatCOP" src/` | copias del formateador | también **las menciones en comentarios**, la del propio comando incluida | **enumerando**: la lista tenía 18 nombres y 16 eran definiciones |
 | `grep -coE '#[0-9a-fA-F]{6}'` | hexes por archivo | **solo los de seis dígitos**: no veía `#fff` | **enumerando**: cinco pantallas "en cero" tenían 47 blancos |
 | **un script propio de migración** | insertar imports al final del bloque | matcheaba `^import .*$` y **partía un import MULTILÍNEA por la mitad** | `tsc`, en el acto |
+| una consulta SQL de diagnóstico | vendido vs cobrado por día | el `left join` a `payments` **multiplicaba `o.total`** por cada pago: una venta mixta contaba doble | **un número no cerró con otro ya conocido**: 165 órdenes donde la app decía 158 |
 
 **Los tres daban un número creíble.** Ninguno daba error, ninguno se veía roto, y los tres
 sostenían una afirmación que se escribió en un commit como si fuera un hecho medido.
@@ -687,13 +688,23 @@ tests corriendo en producción sobre nuestras propias conclusiones.
 corolario de R4 — leer una declaración falsa la confirma — aplicado a un número en vez de a una
 nota.
 
-**LO ACCIONABLE, y son dos técnicas, no una:**
+**LO ACCIONABLE, y son TRES técnicas:**
 
 1. **Control negativo** — corré el instrumento contra algo que **sabés que no existe**. Si contesta
    lo mismo, no mide. Cuesta una línea.
 2. **Enumerar antes de contar** — pedile la LISTA, no el número, y mirala. Un conteo esconde qué
    contó; una lista lo muestra. Los dos greps se cazaron así, y ninguno se habría cazado mirando
    el total.
+3. 🔴 **Cruzar contra un número que ya conocías** — la más barata de las tres, y la que cazó la
+   quinta. La consulta dijo **165 órdenes** donde la app venía diciendo **158**. No hacía falta
+   entender el `left join`: **bastó que dos cifras del mismo hecho no cerraran.**
+
+   > **Un número que no cierra con otro que ya conocías es la señal más barata que tenemos.**
+
+   Cuesta cero y funciona sobre instrumentos que no se pueden auditar de otra forma. Corolario
+   práctico: al escribir una consulta de diagnóstico, **incluí una columna que ya sepas cuánto
+   debe dar** — un conteo, un total del día — aunque no la necesites para la pregunta. Es el
+   control negativo de los números.
 
 🔴 **EL CUARTO ES DE OTRA ESPECIE, y por eso vale aparte: el instrumento era UN SCRIPT NUESTRO.**
 Los tres primeros median mal; éste **rompía el archivo**. Y lo relevante es que **había funcionado
