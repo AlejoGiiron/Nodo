@@ -13,6 +13,7 @@ import { Download, Wallet, Boxes } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { useReports } from '@/hooks/useReports'
 import { KpiCard } from '@/components/ui/KpiCard'
+import { buildFinancieroWorkbook, buildStockWorkbook } from '@/lib/exportes'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -109,28 +110,32 @@ export function ReportsPage() {
   const { dailySales: prevDailySales } = useReports({ from: prevFrom, to: prevTo })
 
   // ─── KPI aggregates ───────────────────────────────────────────────────────
-  // 🔴 DEUDA 53 — `total_revenue` ES LO COBRADO, NO LO VENDIDO.
-  //    `daily_sales_summary.total_revenue` es `sum(payments.amount)`: una venta
-  //    a fiado aporta 0 porque no tiene fila en `payments`. Pero `order_count`
-  //    LA CUENTA IGUAL.
-  //    Medido en el lab el 2026-09-02: 158 órdenes, vendido 2.357.200, cobrado
-  //    993.200 — la pantalla dice "Ventas totales: 993.200" y falta el 58%.
-  //    El §7.13 de la skill ya lo decía ("las vistas miden cobrado, no
-  //    vendido"); la pantalla nunca lo dijo.
-  //    ⚠️ NO SE RENOMBRA ACÁ: qué debe medir el reporte —vendido, cobrado o las
-  //    dos— es decisión de producto, y para una distribuidora que vende a
-  //    crédito las dos responden preguntas distintas que se miran a diario.
-  const totalRev   = useMemo(() => dailySales.reduce((s, r) => s + (r.total_revenue ?? 0), 0), [dailySales])
-  const totalOrd   = useMemo(() => dailySales.reduce((s, r) => s + (r.order_count   ?? 0), 0), [dailySales])
-  // 🔴 DEUDA 53, SEGUNDA MITAD — y ésta no es un rótulo: es aritmética inválida.
-  //    `cobrado / TODAS las órdenes` mezcla el numerador de una población con el
-  //    denominador de otra. No es el ticket de nada: ni de lo cobrado (habría
-  //    que dividir por las órdenes cobradas) ni de lo vendido.
-  //    Medido: muestra 6.286 donde el real es 14.919 — menos de la mitad.
-  const avgTicket  = useMemo(() => totalOrd > 0 ? totalRev / totalOrd : 0, [totalRev, totalOrd])
-  const prevRev    = useMemo(() => prevDailySales.reduce((s, r) => s + (r.total_revenue ?? 0), 0), [prevDailySales])
-  const prevOrd    = useMemo(() => prevDailySales.reduce((s, r) => s + (r.order_count   ?? 0), 0), [prevDailySales])
-  const prevTicket = useMemo(() => prevOrd > 0 ? prevRev / prevOrd : 0, [prevRev, prevOrd])
+  // ✅ DEUDA 53 CERRADA (2026-09-02). Antes, esta pantalla tenía DOS
+  //    definiciones de "ventas" y ninguna lo decía: el tab Financiero sumaba
+  //    `total_revenue` —que era `sum(payments.amount)`, o sea COBRADO— y contaba
+  //    órdenes que exigían pago; el tab Stock y el Top 10 sumaban
+  //    `qty × precio`, que es VENTA BRUTA. Tres números ciertos y distintos,
+  //    los tres llamados igual.
+  //
+  //    Medido en el lab, mismo período: vendido 9.647.600 · cobrado 6.100.600 ·
+  //    venta bruta 9.838.000. Órdenes: 691 reales, 431 con pago.
+  //
+  //    Ahora la vista expone `sold_total` y `collected_total` por separado y la
+  //    pantalla muestra LAS DOS, porque en un negocio con cartera son dos
+  //    preguntas que se miran a diario y no se deducen una de la otra.
+  const vendido    = useMemo(() => dailySales.reduce((s, r) => s + (r.sold_total      ?? 0), 0), [dailySales])
+  const cobrado    = useMemo(() => dailySales.reduce((s, r) => s + (r.collected_total ?? 0), 0), [dailySales])
+  const totalOrd   = useMemo(() => dailySales.reduce((s, r) => s + (r.order_count     ?? 0), 0), [dailySales])
+  // El ticket sale de la MISMA población en numerador y denominador: vendido
+  // sobre TODAS las órdenes no anuladas. Antes era cobrado sobre órdenes-con-
+  // pago en la vista y cobrado sobre órdenes en la pantalla — un cociente entre
+  // poblaciones distintas no es el ticket de nada, y un número que no significa
+  // nada es peor que ausente, porque el ausente se nota.
+  const avgTicket  = useMemo(() => totalOrd > 0 ? vendido / totalOrd : 0, [vendido, totalOrd])
+  const prevVend   = useMemo(() => prevDailySales.reduce((s, r) => s + (r.sold_total      ?? 0), 0), [prevDailySales])
+  const prevCobr   = useMemo(() => prevDailySales.reduce((s, r) => s + (r.collected_total ?? 0), 0), [prevDailySales])
+  const prevOrd    = useMemo(() => prevDailySales.reduce((s, r) => s + (r.order_count     ?? 0), 0), [prevDailySales])
+  const prevTicket = useMemo(() => prevOrd > 0 ? prevVend / prevOrd : 0, [prevVend, prevOrd])
 
   // ─── Bar chart: pivot daily sales by day × channel ────────────────────────
   const barData = useMemo(() => {
@@ -139,7 +144,7 @@ export function ReportsPage() {
       if (r.day == null || r.canal == null) continue
       if (!map[r.day]) map[r.day] = { day: r.day, mostrador: 0, whatsapp: 0, telefono: 0 }
       const key = r.canal as 'mostrador' | 'whatsapp' | 'telefono'
-      map[r.day][key] += r.total_revenue ?? 0
+      map[r.day][key] += r.sold_total ?? 0
     }
     return Object.values(map).sort((a, b) => a.day.localeCompare(b.day))
   }, [dailySales])
@@ -186,7 +191,7 @@ export function ReportsPage() {
   }, [productPerformance])
 
   const top10 = useMemo(() => {
-    const total = allProducts.reduce((s, p) => s + p.total_revenue, 0)
+    const total = allProducts.reduce((s, p) => s + p.total_revenue, 0)   // venta bruta
     return allProducts.slice(0, 10).map(p => ({
       ...p,
       sharePct: total > 0 ? (p.total_revenue / total) * 100 : 0,
@@ -262,40 +267,20 @@ export function ReportsPage() {
       const wb = new ExcelJS.Workbook()
       wb.creator = 'Nodo'
 
-      const ws1 = wb.addWorksheet('Resumen')
-      ws1.columns = [
-        { header: 'Métrica', key: 'metric', width: 32 },
-        { header: 'Valor',   key: 'value',  width: 22 },
-      ]
-      ws1.addRows([
-        { metric: 'Período',              value: `${from} — ${to}` },
-        { metric: 'Ventas totales (COP)', value: totalRev },
-        { metric: 'Cantidad de órdenes',  value: totalOrd },
-        { metric: 'Ticket promedio (COP)',value: Math.round(avgTicket) },
-        { metric: 'Efectivo (COP)',        value: dailySales.reduce((s, r) => s + (r.cash_total     ?? 0), 0) },
-        { metric: 'Tarjeta (COP)',         value: dailySales.reduce((s, r) => s + (r.card_total     ?? 0), 0) },
-        { metric: 'Transferencia (COP)',   value: dailySales.reduce((s, r) => s + (r.transfer_total ?? 0), 0) },
-        { metric: 'Nequi (COP)',           value: dailySales.reduce((s, r) => s + (r.nequi_total    ?? 0), 0) },
-      ])
-
-      const ws2 = wb.addWorksheet('Ventas por día')
-      ws2.columns = [
-        { header: 'Fecha',         key: 'day',         width: 14 },
-        { header: 'Canal',         key: 'canal',       width: 14 },
-        { header: 'Órdenes',       key: 'order_count', width: 10 },
-        { header: 'Efectivo',      key: 'cash',        width: 16 },
-        { header: 'Tarjeta',       key: 'card',        width: 16 },
-        { header: 'Transferencia', key: 'transfer',    width: 16 },
-        { header: 'Nequi',         key: 'nequi',       width: 16 },
-        { header: 'Total',         key: 'total',       width: 16 },
-      ]
-      for (const r of dailySales) {
-        ws2.addRow({
-          day: r.day, canal: r.canal, order_count: r.order_count,
-          cash: r.cash_total, card: r.card_total,
-          transfer: r.transfer_total, nequi: r.nequi_total, total: r.total_revenue,
-        })
-      }
+      // 🔴 El contenido lo arma `src/lib/exportes.ts`, no esta pantalla: lo que
+      //    sale del producto en un archivo tiene que ser aseverable por un test
+      //    (ver CLAUDE.md). Acá quedó solo la entrega.
+      buildFinancieroWorkbook(wb, {
+        periodo: { from, to },
+        totales: {
+          vendido, cobrado, ordenes: totalOrd, ticketPromedio: avgTicket,
+          efectivo:      dailySales.reduce((s, r) => s + (r.cash_total     ?? 0), 0),
+          tarjeta:       dailySales.reduce((s, r) => s + (r.card_total     ?? 0), 0),
+          transferencia: dailySales.reduce((s, r) => s + (r.transfer_total ?? 0), 0),
+          nequi:         dailySales.reduce((s, r) => s + (r.nequi_total    ?? 0), 0),
+        },
+        filas: dailySales,
+      })
 
       await downloadWorkbook(wb, 'financiero')
     } catch {
@@ -312,29 +297,14 @@ export function ReportsPage() {
       const wb = new ExcelJS.Workbook()
       wb.creator = 'Nodo'
 
-      const ws1 = wb.addWorksheet('Detalle de productos')
-      ws1.columns = [
-        { header: 'Producto',          key: 'product_name',  width: 32 },
-        { header: 'Categoría',         key: 'category_name', width: 20 },
-        { header: 'Unidades vendidas', key: 'total_qty',     width: 18 },
-        { header: 'Revenue (COP)',     key: 'total_revenue', width: 18 },
-      ]
-      for (const p of allProducts) {
-        ws1.addRow({
+      buildStockWorkbook(wb, {
+        periodo: { from, to },
+        productos: allProducts.map((p) => ({
           product_name: p.product_name, category_name: p.category_name,
           total_qty: p.total_qty, total_revenue: p.total_revenue,
-        })
-      }
-
-      const ws2 = wb.addWorksheet('Categorías')
-      ws2.columns = [
-        { header: 'Categoría',         key: 'category',      width: 24 },
-        { header: 'Unidades vendidas', key: 'total_qty',     width: 18 },
-        { header: 'Revenue (COP)',     key: 'total_revenue', width: 18 },
-      ]
-      for (const c of categoryRanking) {
-        ws2.addRow({ category: c.category, total_qty: c.total_qty, total_revenue: c.total_revenue })
-      }
+        })),
+        categorias: categoryRanking,
+      })
 
       await downloadWorkbook(wb, 'stock')
     } catch {
@@ -461,14 +431,45 @@ export function ReportsPage() {
             {/* Tercera y ultima copia de KpiCard, unificada. La primitiva gano
                 el indicador de cambio, que era lo unico que esta version tenia
                 de mas — extenderla es unificar; borrarlo habria sido perder. */}
+            {/* 🔴 CUATRO tarjetas, y cada una dice QUÉ mide (deuda 53). "Ventas"
+                a secas era el rótulo que escondía tres números distintos. La
+                nota de cada una no es decoración: es la definición, en el único
+                lugar donde el que mira el número la va a leer. */}
             {isLoading ? <Skeleton h={110} /> : (
-              <KpiCard etiqueta="Ventas totales" valor={COP(totalRev)} cambio={pctChange(totalRev, prevRev)} />
+              <KpiCard
+                testid="vendido"
+                etiqueta="Vendido"
+                valor={COP(vendido)}
+                nota="facturado, con descuento"
+                cambio={pctChange(vendido, prevVend)}
+              />
             )}
             {isLoading ? <Skeleton h={110} /> : (
-              <KpiCard etiqueta="Órdenes" valor={totalOrd.toLocaleString('es-CO')} cambio={pctChange(totalOrd, prevOrd)} />
+              <KpiCard
+                testid="cobrado"
+                etiqueta="Cobrado"
+                valor={COP(cobrado)}
+                nota="pagos recibidos"
+                cambio={pctChange(cobrado, prevCobr)}
+              />
             )}
             {isLoading ? <Skeleton h={110} /> : (
-              <KpiCard etiqueta="Ticket promedio" valor={COP(avgTicket)} cambio={pctChange(avgTicket, prevTicket)} />
+              <KpiCard
+                testid="ordenes"
+                etiqueta="Órdenes"
+                valor={totalOrd.toLocaleString('es-CO')}
+                nota="ventas no anuladas"
+                cambio={pctChange(totalOrd, prevOrd)}
+              />
+            )}
+            {isLoading ? <Skeleton h={110} /> : (
+              <KpiCard
+                testid="ticket"
+                etiqueta="Ticket promedio"
+                valor={COP(avgTicket)}
+                nota="vendido / órdenes"
+                cambio={pctChange(avgTicket, prevTicket)}
+              />
             )}
           </div>
 
@@ -491,7 +492,7 @@ export function ReportsPage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
 
                 <ChartCard
-                  title="Ventas por día y canal"
+                  title="Vendido por día y canal"
                   subtitle="Mostrador · WhatsApp · Teléfono"
                   isLoading={isLoading}
                 >
@@ -530,8 +531,8 @@ export function ReportsPage() {
                 </ChartCard>
 
                 <ChartCard
-                  title="Ventas por hora del día"
-                  subtitle="Acumulado del período seleccionado"
+                  title="Cobrado por hora del día"
+                  subtitle="Acumulado del período · sale de los pagos, no de lo facturado"
                   isLoading={isLoading}
                 >
                   <ResponsiveContainer width="100%" height={220}>
@@ -549,7 +550,7 @@ export function ReportsPage() {
                         width={40} axisLine={false} tickLine={false}
                       />
                       <Tooltip
-                        formatter={(v: unknown) => [COP(Number(v)), 'Ventas']}
+                        formatter={(v: unknown) => [COP(Number(v)), 'Cobrado']}
                         contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid var(--border)', boxShadow: '0 4px 12px rgba(0,0,0,.06)' }}
                       />
                       <Line
@@ -569,7 +570,7 @@ export function ReportsPage() {
                 {/* Métodos de pago */}
                 <ChartCard
                   title="Métodos de pago"
-                  subtitle="Distribución del período"
+                  subtitle="Distribución de lo COBRADO en el período"
                   isLoading={isLoading}
                   skeletonH={280}
                 >
@@ -598,7 +599,8 @@ export function ReportsPage() {
                       {/* Leyenda manual */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginTop: 10 }}>
                         {payData.map(d => {
-                          const share = totalRev > 0 ? (d.value / totalRev) * 100 : 0
+                          // Sobre COBRADO, que es lo que un método de pago puede medir.
+                          const share = cobrado > 0 ? (d.value / cobrado) * 100 : 0
                           return (
                             <div key={d.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12 }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
@@ -620,7 +622,10 @@ export function ReportsPage() {
                 {/* Top 10 productos */}
                 <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: 20 }}>
                   <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)', marginBottom: 2 }}>Top 10 productos</p>
-                  <p style={{ fontSize: 11.5, color: 'var(--ink-4)', marginBottom: 16 }}>Por revenue del período</p>
+                  <p style={{ fontSize: 11.5, color: 'var(--ink-4)', marginBottom: 16 }}>
+                    Por venta bruta — cantidad × precio, sin descuentos: sirve para comparar
+                    productos, no para totalizar el período
+                  </p>
 
                   {isLoading ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -635,7 +640,7 @@ export function ReportsPage() {
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
                         <thead>
                           <tr style={{ borderBottom: '2px solid var(--border-2)' }}>
-                            {['#', 'Producto', 'Categoría', 'Unidades', 'Total', '% rev.'].map((h, i) => (
+                            {['#', 'Producto', 'Categoría', 'Unidades', 'Venta bruta', '% del bruto'].map((h, i) => (
                               <th key={h} style={{
                                 padding: '7px 10px', fontSize: 11.5, fontWeight: 600, color: 'var(--ink-3)',
                                 textAlign: i >= 3 ? 'right' : 'left', whiteSpace: 'nowrap',
@@ -722,12 +727,12 @@ export function ReportsPage() {
               {/* Productos más vendidos */}
               <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: 20 }}>
                 <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)', marginBottom: 2 }}>Productos más vendidos</p>
-                <p style={{ fontSize: 11.5, color: 'var(--ink-4)', marginBottom: 16 }}>Unidades y revenue del período</p>
+                <p style={{ fontSize: 11.5, color: 'var(--ink-4)', marginBottom: 16 }}>Unidades y venta bruta del período</p>
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
                     <thead>
                       <tr style={{ borderBottom: '2px solid var(--border-2)' }}>
-                        {['#', 'Producto', 'Categoría', 'Unidades', 'Revenue'].map((h, i) => (
+                        {['#', 'Producto', 'Categoría', 'Unidades', 'Venta bruta'].map((h, i) => (
                           <th key={h} style={{ padding: '7px 10px', fontSize: 11.5, fontWeight: 600, color: 'var(--ink-3)', textAlign: i >= 3 ? 'right' : 'left', whiteSpace: 'nowrap' }}>{h}</th>
                         ))}
                       </tr>
@@ -750,7 +755,7 @@ export function ReportsPage() {
               {/* Ranking de categorías */}
               <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: 20 }}>
                 <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)', marginBottom: 2 }}>Ranking de categorías</p>
-                <p style={{ fontSize: 11.5, color: 'var(--ink-4)', marginBottom: 16 }}>Por revenue del período</p>
+                <p style={{ fontSize: 11.5, color: 'var(--ink-4)', marginBottom: 16 }}>Por venta bruta del período</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   {categoryRanking.map((c, i) => {
                     const max = categoryRanking[0]?.total_revenue || 1

@@ -130,7 +130,7 @@ test.describe('POS — venta y carrito', () => {
     const texto = (await ticket.textContent()) ?? ''
     expect(texto.length, 'el ticket no puede venir vacío: sin texto no se está midiendo nada').toBeGreaterThan(40)
 
-    expect(texto, 'el ticket no puede afirmar un impuesto que el esquema no tiene').not.toMatch(/IVA/i)
+    expect(texto, 'el ticket no puede afirmar un impuesto que el esquema no tiene').not.toMatch(/IVA/i)
     expect(texto, 'el papel tiene que decir qué es').toMatch(/comprobante de venta/i)
     expect(texto, 'y no puede llamarse factura: Nodo no factura (deuda 72)').not.toMatch(/factura/i)
     expect(texto, 'lo que sí es cierto sigue: el total').toMatch(/TOTAL/)

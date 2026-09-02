@@ -2536,3 +2536,70 @@ inversa exacta — o el arreglo se commitea primero y el mutante va después.
 ✅ Lo bueno: el protocolo funcionó igual. El mutante existía justamente para no confiar en el verde,
 y el que no murió destapó dos defectos reales del método. Un test que no se puede poner rojo a
 voluntad no es un test verificado.
+
+
+## 2026-09-02 · Fase B, bloque 1 · Deuda 53 — tres números que se llamaban igual
+
+*Migración `20260902200000_reportes_vendido_y_cobrado.sql` + `src/lib/exportes.ts` y su test.*
+
+### Los tres números, medidos antes de tocar nada
+
+Mismo período, mismo lab, tres cifras ciertas y distintas:
+
+| | |
+|---|---|
+| vendido (`sum orders.total`, no anuladas) | **9.647.600** |
+| cobrado (`sum payments.amount`) | **6.100.600** |
+| venta bruta (`sum qty × precio`, el Top 10) | **9.838.000** |
+| órdenes no anuladas | **691** |
+| órdenes con pago (lo que la vista contaba) | **431** |
+
+La diferencia vendido-cobrado es **la cartera**; la diferencia vendido-venta bruta son **los
+descuentos**. Las tres preguntas son legítimas en un negocio que fía. Lo que no era legítimo es que
+las tres se llamaran *"ventas"* o *"revenue"*.
+
+**El defecto nunca fue el cálculo: era el nombre.** Por eso `total_revenue` desapareció en vez de
+corregirse — es el criterio *"un valor que significa dos cosas no es un dato"*, aplicado a un rótulo.
+
+### El fan-out, evitado a propósito
+
+Unir `orders` con `payments` y sumar `o.total` **multiplica el total por la cantidad de pagos**: una
+venta mixta cuenta doble. Ya nos mordió en una consulta de diagnóstico (165 órdenes donde la app
+decía 158). La vista nueva agrega `orders` por un lado y `payments` por otro, y une los dos por
+(día, sede, canal). Verificado contra los números de arriba: 691 / 431 / 9.647.600 / 6.100.600, exacto.
+
+### El Excel primero, y por qué
+
+Es lo que se archiva sin contexto: la pantalla se corrige mañana, un archivo guardado en diciembre se
+lee en marzo tal como salió. Los dos libros ahora llevan una hoja **`Definiciones`** adentro, con la
+explicación de por qué la venta bruta del libro de stock **no coincide** con el vendido del
+financiero. Un archivo que se guarda solo tiene que traer su contexto.
+
+Y la construcción de los dos workbooks se mudó a `src/lib/exportes.ts`, separada de la descarga:
+es el criterio nuevo —*lo que sale del producto tiene que ser aseverable sin un humano mirando*—
+aplicado por segunda vez en el día, después del ticket.
+
+**El test se verificó con un mutante**, esta vez bien: volver el rótulo a "Ventas totales" y quitar la
+hoja de definiciones **mató 3 de 8 casos**. Y el revert fue por **sustitución inversa exacta**, no
+`git checkout`, porque el árbol estaba sucio — que es la lección que había quedado escrita hace dos
+horas.
+
+### La cuarta falla de esta clase: `\b` escrito como el byte 0x08
+
+`lint` se puso en **1 error** donde antes había 0. Causa: la regex `/\bIVA\b/i` del caso E2E quedó con
+**bytes de control 0x08 literales** en vez de la secuencia de escape. Es exactamente el modo de fallo
+que `CLAUDE.md` documenta desde Vento —*"`\b` interpretado como byte `0x08`"*, tres veces allá— y la
+primera vez que aparece en Nodo: lo produce escribir código con un script que pasa por varias capas
+de comillas.
+
+⚠️ **Lo notable es quién lo cazó: `lint`.** Es el único verificador que mira `tests/`, `tsc` no ve
+dentro de una regex y la suite habría pasado igual (la regex con 0x08 simplemente no matchea nada, o
+sea que el test habría quedado **verde sin medir**). Es un argumento concreto para la deuda 34: si
+`lint` no corriera, esto pasaba. Y es la razón por la que un warning permanente es peligroso — el
+error nuevo apareció entre cinco warnings viejos.
+
+### Lo que la 53 NO cubrió, dicho
+
+`hourly_sales` y `user_performance` siguen midiendo cobrado. La primera ya lo **dice** en su rótulo
+("Cobrado por hora del día"), que es el criterio de la 53 cumplido sin tocar SQL; la segunda no tiene
+consumidor. Anotado como deuda 73 con su disparador, en vez de arrastrar el alcance.
