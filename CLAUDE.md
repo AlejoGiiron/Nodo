@@ -682,6 +682,54 @@ que no usarlo**; lo que no vale es no usarlo *y no decir por qué*.
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · UN GUARD QUE COMPARA CONTRA UN POSIBLE NULL NO FALLA CERRADO NI ABIERTO: NO EVALÚA — Y UN GUARD QUE NO EVALÚA DEJA PASAR
+
+*Medido en la auditoría A2 (2026-09-02). Es la clase más peligrosa del repo porque no se parece a un
+error: se parece a un guard.*
+
+> **En SQL, `x <> NULL` no es verdadero ni falso: es NULL.** Un `if` sobre NULL **no dispara**. El
+> guard no rechazó y no aceptó — **no preguntó**, y lo que sigue se ejecuta como si hubiera aceptado.
+
+**El caso.** Tres RPC tenían `if v_sede_id <> get_my_sede_id() then raise 'no pertenece a tu sede'`.
+Con un usuario **desactivado**, `get_my_sede_id()` devuelve NULL (los helpers filtran `is_active`, a
+propósito y bien). La comparación da NULL, el `if` calla, y la función —`SECURITY DEFINER`, sin RLS—
+**escribió ítems y descontó stock en una orden de OTRA organización.** Medido, no inferido: líneas
+1 → 2, stock 10 → 7, con el token de un usuario dado de baja.
+
+⚠️ **Por qué no lo vio nadie:** la misma NULL, en una **policy**, falla **cerrada** —RLS trata NULL
+como falso y las 276 celdas del desactivado dieron cero—. La intuición "NULL = falso = niega" es
+correcta en RLS y **falsa en plpgsql**, y las dos conviven en el mismo repo. Y hay una tercera
+trampa: en `adjust_stock` la misma línea existe y **parece cerrada** porque el `has_permission` que le
+sigue la tapa. Un guard tapado no es un guard arreglado: el día que el permiso se conceda, se abre.
+
+**La regla, en una línea:**
+
+> **Todo guard que compare contra una función que puede devolver NULL verifica el NULL PRIMERO,
+> como primer guard, antes de cualquier comparación.**
+
+```sql
+-- ⛔ no evalúa con un inactivo
+if v_sede_id <> get_my_sede_id() then raise exception '...'; end if;
+
+-- ✅ la forma que las otras cuatro RPC ya usaban
+v_sede_id := get_my_sede_id();
+if v_sede_id is null then raise exception 'No tienes una sede activa'; end if;
+if v_sede_id <> v_orden_sede then raise exception 'La orden no pertenece a tu sede'; end if;
+```
+
+⛔ **Lo que NO es el arreglo: agregar un `has_permission` después.** Tapa el síntoma en un sitio y deja
+la comparación NULL viva para el siguiente que copie la línea. Se arregla la comparación, en **todos**
+los sitios de la clase, en el mismo commit (R3). Cómo enumerarlos:
+`grep -rnE "(<>|!=|=)\s*(public\.)?[a-z_]+\(\)" supabase/migrations/` y preguntarle a cada función
+si puede devolver NULL. Las que filtran `is_active` o `auth.uid()` pueden **siempre**.
+
+**Por qué es una clase y no un bug:** cualquier función que resuelva "quién soy" —sede, organización,
+rol— tiene un caso en que la respuesta es *nadie*: usuario sin perfil, desactivado, token sin `sub`.
+Ese caso es exactamente el que un guard existe para frenar, y es exactamente el que la comparación
+directa no ve.
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · UNA ESCRITURA QUE PERSISTE UN CÁLCULO NO EXISTE HASTA QUE TODOS SUS INSUMOS HAYAN CARGADO
 
 *Sale de la auditoría A1 (2026-09-02): cuatro rojos con la misma forma, el peor en el cierre de caja.*

@@ -2100,3 +2100,60 @@ hipótesis era *"hooks que no exponen carga"* — la 54 lo era. Medido: **el hoo
 uno solo**. En los otros tres el hook hizo su parte y el consumidor no la leyó. La regla nueva de
 CLAUDE.md es sobre el consumidor por eso: *leer la carga donde se decide, y que el botón no exista
 hasta que todos los insumos hayan cargado*.
+
+
+## 2026-09-02 · A2 — 828 celdas coincidentes, 111 permisos donde se esperaban, y TRES cruces
+
+*Documento: `docs/auditorias/A2-negacion-policies.md`. Nada se modificó; todo corrió en `begin … rollback`.*
+
+### Los dos números que lo hacen creíble
+
+| | predicho antes de correr | medido |
+|---|---|---|
+| tablas: 23 × (S/I/U/D × sede propia · otra sede · otra org) × (owner · cajero · desactivado) | 828 celdas: 111 permite / 717 niega | **828/828 coinciden** |
+| el control negativo: permisos que TENÍAN que funcionar | 111 | **111, todos con filas > 0** |
+| RPC + escalada | 54: 17 / 37 | **54/54**, tras dos correcciones de fixture |
+| vistas | 36: 8 / 28 | **36/36**; las cuatro con `security_invoker=true` |
+
+Si toda la matriz hubiera dado cero, la sonda habría estado rota. Dio 111 permisos exactos, y además
+la fixture se contó como postgres (46/46 filas de B y X existen): **el cero de `authenticated` es RLS,
+no ausencia.**
+
+### Y los tres que pasan — predichos por escrito ANTES de ejecutar
+
+1. **Desactivado + `add_order_items_with_extras`**: escribió en una orden de **otra organización**.
+   Líneas 1 → 2, stock 10 → 7, `stock_movements` nuevo. Contado como postgres antes del rollback.
+2. **Desactivado + `next_order_number`**: numeró la sede ajena.
+3. **Cajero que se traslada solo de sede** con `update profiles set sede_id`, sin tenerla en
+   `user_stores`, y acto seguido lee la sede nueva.
+
+**El método no falló: encontró exactamente lo que no estaba probado.** La RLS de tablas y vistas
+está bien —828 y 36 celdas lo dicen— y el hueco estaba en las dos capas que ninguna policy cubre: el
+cuerpo de una RPC `SECURITY DEFINER`, y un trigger que protege cuatro columnas de cinco.
+
+### La nota sobre el orden, que es la razón de A2
+
+**Este hueco existe desde que se aplicó el archivo 11 (`…121300_rls.sql`) y las RPC del mismo día,
+2026-08-31.** La suite corrió verde muchas veces desde entonces —**171 pasando, 18 skipped, 189 en
+total** en la última corrida completa— y **no lo vio, porque ningún test impersona a un desactivado
+escribiendo.** `rbac-escalada` prueba que el desactivado *no entra* (UI) y que *no se reactiva*
+(trigger); nadie le preguntó a la base qué pasa si el token sigue vivo y llama a una RPC. Y el test
+que cubriría el traslado de sede **existe y está `skip`** porque el lab tiene una sola sede.
+
+Una suite verde mide lo que alguien escribió que midiera. Lo que nadie escribió no está verde ni
+rojo: **está sin medir**, y se ve exactamente igual que lo verde. Por eso las auditorías van antes de
+tocar una línea: **las tres que faltan pueden mover la prioridad, como acaba de pasar con ésta** —A2
+puso dos deudas arriba del cierre de caja, que era el primer lugar de A1.
+
+### Lo que la sonda enseñó del instrumento
+
+- La Management API devuelve el **último `select` aunque después venga `rollback`**. Se verificó con
+  `begin; select 1; rollback;` antes de confiar. Sin eso, la sonda no podía ser una sola transacción.
+- Dos abortos por el índice parcial de jornadas, **los dos míos**: leí el primer error como "la sede A
+  ya tiene una abierta" y era mi propia fixture con dos. El parche hecho sobre esa lectura movió el
+  error a la sede B. El error decía la verdad; yo lo leí con una hipótesis puesta.
+- Cuatro controles del owner negaron por **negocio** ("Abrí la jornada", "no es de contado"), no por
+  autorización. La regla del plan los separó: un control que no pasa es sonda rota hasta demostrar
+  lo contrario. Se leyó el mensaje, se corrigió la fixture, 17/17.
+- El evaluador marcó ✅ las tres celdas 🔴, porque coincidían con **mi** predicción. "Coincide con lo
+  predicho" y "es seguro" son columnas distintas; la segunda la decide la lectura.
