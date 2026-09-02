@@ -98,7 +98,15 @@ export interface SaleTicketData {
   total: number
 }
 
-export function printSaleTicket(data: SaleTicketData): void {
+/**
+ * HTML del ticket de venta. Exportado A PROPOSITO, igual que
+ * `buildCashReportHtml`: es lo que sale IMPRESO al cliente, y hasta el
+ * 2026-09-02 no habia forma de aseverar sobre su contenido sin abrir el
+ * dialogo de impresion del navegador. Un comprobante que sale del producto y no
+ * se puede testear es justamente donde sobrevivio la linea de IVA falsa
+ * (deuda 62). El cuerpo NO cambio al extraerlo: solo dejo de ser anonimo.
+ */
+export function buildSaleTicketHtml(data: SaleTicketData): string {
   const d = new Date(data.createdAt)
   const dateStr = d.toLocaleDateString('es-CO', {
     day: '2-digit', month: '2-digit', year: '2-digit', timeZone: 'America/Bogota',
@@ -111,13 +119,13 @@ export function printSaleTicket(data: SaleTicketData): void {
     : `#${data.orderId.slice(-8).toUpperCase()}`
   const canalLabel = CANAL_LABEL[data.canal] ?? data.canal
   const methodLabel = data.method ? (METHOD_LABEL[data.method] ?? data.method) : null
-  const iva = Math.round(data.total - data.total / 1.19)
 
   const html = `
     <div style="text-align:center;margin-bottom:6px">
       ${data.sedeName ? `<div style="font-size:16px;font-weight:700;letter-spacing:3px">${data.sedeName.toUpperCase()}</div>` : ''}
       ${data.sedeAddress ? `<div style="font-size:11px">${data.sedeAddress}</div>` : ''}
-      <div style="font-size:13px;font-weight:700;margin-top:4px">${ventaLabel}</div>
+      <div style="font-size:11px;margin-top:4px;letter-spacing:1px">COMPROBANTE DE VENTA</div>
+      <div style="font-size:13px;font-weight:700">${ventaLabel}</div>
       <div style="font-size:10px;margin-top:2px">${dateStr}  ${timeStr} · ${canalLabel}</div>
     </div>
     <div style="border-top:1px dashed #000;margin:6px 0"></div>
@@ -136,9 +144,6 @@ export function printSaleTicket(data: SaleTicketData): void {
       </div>
     `).join('')}
     <div style="border-top:1px dashed #000;margin:6px 0"></div>
-    <div style="display:flex;justify-content:space-between;font-size:10px">
-      <span>IVA 19% incl.</span><span>${formatCOP(iva)}</span>
-    </div>
     <div style="display:flex;justify-content:space-between;font-weight:700;font-size:14px;margin-top:4px">
       <span>TOTAL</span><span>${formatCOP(data.total)}</span>
     </div>
@@ -147,7 +152,11 @@ export function printSaleTicket(data: SaleTicketData): void {
     <div style="text-align:center;font-size:11px">¡Gracias por su visita!</div>
   `
 
-  printThermal(html, {
+  return html
+}
+
+export function printSaleTicket(data: SaleTicketData): void {
+  printThermal(buildSaleTicketHtml(data), {
     styleId: 'nodo-sale-ticket-css',
     contentId: 'nodo-sale-ticket-content',
     className: 'sale-ticket-print',

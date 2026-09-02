@@ -100,6 +100,45 @@ test.describe('POS — venta y carrito', () => {
     await closeShiftIfOpen(page)
   })
 
+  test('el ticket impreso NO afirma IVA y dice qué es (comprobante de venta)', async ({ page }) => {
+    // 🔴 Deuda 62(a) / auditoría A3 §3.1. El ticket declaraba "IVA 19% incl."
+    //    con un número sacado de una constante (`total − total/1,19`) sobre un
+    //    dato que no existe en ninguna tabla. Y el primer cliente no está
+    //    constituido ni factura: el papel afirmaba cobrar un impuesto que el
+    //    negocio no puede declarar.
+    //
+    //    El ticket vive en el DOM oculto (`.ticket-print`, visible solo al
+    //    imprimir), así que se lee su texto sin exigir visibilidad — es lo que
+    //    sale en papel, no lo que se ve en pantalla.
+    await loginAsOwner(page)
+    await addPosProduct(page)
+    await openShiftIfClosed(page, 0)
+
+    await page.getByRole('button', { name: 'Cobrar' }).click()
+    await page.getByText('Efectivo', { exact: true }).click()
+    await page.getByRole('button', { name: /Continuar/ }).click()
+    await page.getByTestId('quick-amount-exact').click()
+    await page.getByRole('button', { name: /Confirmar cobro/ }).click()
+    await expect(page.getByText(/registrada|Cobro exitoso/)).toBeVisible()
+
+    const ticket = page.locator('.ticket-print')
+    await expect(ticket).toHaveCount(1)
+    // `textContent` y no `innerText`: el ticket está oculto (`display:none`
+    // fuera de impresión) y `innerText` devuelve '' para un nodo no renderizado
+    // — con '' el test pasaría sin mirar nada, que es el verde por la razón
+    // equivocada. Se lee el contenido del DOM, que es lo que va al papel.
+    const texto = (await ticket.textContent()) ?? ''
+    expect(texto.length, 'el ticket no puede venir vacío: sin texto no se está midiendo nada').toBeGreaterThan(40)
+
+    expect(texto, 'el ticket no puede afirmar un impuesto que el esquema no tiene').not.toMatch(/IVA/i)
+    expect(texto, 'el papel tiene que decir qué es').toMatch(/comprobante de venta/i)
+    expect(texto, 'y no puede llamarse factura: Nodo no factura (deuda 72)').not.toMatch(/factura/i)
+    expect(texto, 'lo que sí es cierto sigue: el total').toMatch(/TOTAL/)
+
+    await page.goto('/ventas')
+    await closeShiftIfOpen(page)
+  })
+
   test('cobro en efectivo con chip de round-up → vuelto correcto', async ({ page }) => {
     await loginAsOwner(page)
     await addPosProduct(page)

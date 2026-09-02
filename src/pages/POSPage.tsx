@@ -101,7 +101,6 @@ function PrintTicket({
   discountAmt,
   discount,
   discountType,
-  iva,
   total,
   method,
   canal,
@@ -116,7 +115,6 @@ function PrintTicket({
   discountAmt: number
   discount: number
   discountType: DiscountType
-  iva: number
   total: number
   method: PaymentMethodUI
   canal: Canal
@@ -149,7 +147,12 @@ function PrintTicket({
       <div style={{ textAlign: 'center', marginBottom: 6 }}>
         <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: 3 }}>{sedeName.toUpperCase()}</div>
         {sedeAddress && <div style={{ fontSize: 11 }}>{sedeAddress}</div>}
-        <div style={{ fontSize: 13, fontWeight: 700, marginTop: 4 }}>{ventaLabel}</div>
+        {/* 🔴 QUÉ ES este papel. No lo decía — ni esto ni "Factura", que habría
+            sido una segunda afirmación falsa: Nodo no hace facturación
+            electrónica (deuda 72). Sin esta línea se entrega y quien lo recibe
+            supone que sirve como soporte tributario. */}
+        <div style={{ fontSize: 11, marginTop: 4, letterSpacing: 1 }}>COMPROBANTE DE VENTA</div>
+        <div style={{ fontSize: 13, fontWeight: 700 }}>{ventaLabel}</div>
         <div style={{ fontSize: 10, marginTop: 2 }}>{dateStr}  {timeStr} · {canalLabel}</div>
       </div>
 
@@ -184,10 +187,6 @@ function PrintTicket({
           <span>-{formatCOP(discountAmt)}</span>
         </div>
       )}
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10 }}>
-        <span>IVA 19% incl.</span><span>{formatCOP(iva)}</span>
-      </div>
-
       <div style={{ borderTop: '1px dashed #000', margin: '6px 0' }} />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 14 }}>
@@ -438,7 +437,6 @@ function TotalRow({ label, value, tono = 'normal' }: {
 function CartPanel({
   subtotal,
   discountAmt,
-  iva,
   total,
   canal,
   setCanal,
@@ -453,7 +451,6 @@ function CartPanel({
 }: {
   subtotal: number
   discountAmt: number
-  iva: number
   total: number
   canal: Canal
   setCanal: (c: Canal) => void
@@ -750,7 +747,6 @@ function CartPanel({
               value={-discountAmt}
             />
           )}
-          <TotalRow label="IVA 19% (incluido)" value={iva} tono="apagado" />
 
           <div style={{
             display: 'flex', justifyContent: 'space-between',
@@ -801,7 +797,6 @@ function CheckoutModal({
   discount,
   discountType,
   discountReason,
-  iva,
   canal,
   onClose,
   onComplete,
@@ -813,7 +808,6 @@ function CheckoutModal({
   discount: number
   discountType: DiscountType
   discountReason: string
-  iva: number
   canal: Canal
   onClose: () => void
   onComplete: () => void
@@ -1292,7 +1286,6 @@ function CheckoutModal({
               discountAmt={discountAmt}
               discount={discount}
               discountType={discountType}
-              iva={iva}
               total={total}
               method={method}
               canal={canal}
@@ -1659,7 +1652,6 @@ export function POSPage() {
       ? Math.round((subtotal * discount) / 100)
       : Math.min(discount, subtotal)
   const afterDiscount = subtotal - discountAmt
-  const iva = Math.round(afterDiscount - afterDiscount / 1.19)
   const total = afterDiscount
 
   if (catsLoading || prodsLoading) {
@@ -1846,7 +1838,6 @@ export function POSPage() {
       <CartPanel
         subtotal={subtotal}
         discountAmt={discountAmt}
-        iva={iva}
         total={total}
         canal={canal}
         setCanal={setCanal}
@@ -1920,7 +1911,6 @@ export function POSPage() {
           discount={discount}
           discountType={discountType}
           discountReason={discountReason}
-          iva={iva}
           canal={canal}
           onClose={() => setCheckout(false)}
           // El canal vuelve al default tras CUALQUIER venta. `canal` es estado local

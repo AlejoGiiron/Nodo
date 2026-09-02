@@ -2486,3 +2486,53 @@ optimista**. Ya no es un hallazgo, es un costo fijo del arnés, y el hábito que
 escrito: el exit code se escribe DENTRO del archivo de salida y se grepea. Se anota la quinta para que
 el conteo siga siendo honesto — y porque una regla que se cumple sola cinco veces es la evidencia de
 que **el mecanismo, no la memoria**, es lo que la sostiene.
+
+
+## 2026-09-02 · Fase B, bloque 1 · 62(a) — el IVA sale del papel, y un mutante que sobrevivió por mi culpa
+
+### Lo que salió y lo que entró
+
+La línea **"IVA 19% incl."** salió de los tres sitios —ticket del POS, reimpresión y panel de cobro—
+junto con el cálculo (`total − total/1,19`) y la prop `iva` de los tres componentes que la recibían:
+una prop sin consumidor es el residuo inerte que la deuda 23.1 prohíbe.
+
+Y el papel **ahora dice qué es**. Antes no lo decía: nombre de sede, "Venta #N", fecha y canal. Ni
+"Factura" —que habría sido una segunda afirmación falsa en el mismo papel— ni nada. Ahora dice
+**COMPROBANTE DE VENTA**, para que no se entregue creyendo que sirve como soporte tributario.
+
+⚠️ **Para poder probarlo hubo que exportar el builder.** `buildSaleTicketHtml` era anónimo dentro de
+`printSaleTicket`, así que lo que sale impreso **no se podía aseverar sin abrir el diálogo del
+navegador**. Ése es el terreno donde el IVA falso vivió sin que nadie lo viera. Un comprobante que
+sale del producto y no se puede testear es un lugar donde las afirmaciones falsas sobreviven.
+
+### 🔴 El mutante que sobrevivió, y por qué el error fue mío
+
+Para probar que el caso E2E sabía ponerse rojo, volví a meter la línea de IVA en el ticket. **El test
+pasó igual.** Eso es exactamente el criterio que había escrito dos turnos antes —*un verde
+sospechoso es el que pasaría también sin el sujeto*—, aplicado en mi contra.
+
+El diagnóstico, volcando el texto del ticket:
+
+```
+LAB PRINCIPAL Venta #882 … Subtotal $ 8.000  IVA 19% incl. $ 1.277  TOTAL $ 8.000
+```
+
+**Dos defectos, los dos míos:**
+
+1. 🔴 **Reverti el mutante con `git checkout -- src/pages/POSPage.tsx`, y eso se llevó puesto el
+   arreglo**, que estaba en el mismo archivo y **sin commitear**. La corrida "con mutante" tenía el
+   arreglo; la de después, ninguno de los dos. Y el `grep -c IVA` que corrí para confirmar el revert
+   devolvió **2** —las dos líneas originales— y lo leí como "el mutante ya no está" en vez de como lo
+   que era: **el arreglo tampoco**. Un conteo que no distingue qué contó, otra vez.
+2. El test tenía **dos caminos** para obtener el texto (`innerText ?? textContent`), y el primero
+   devuelve `''` para un nodo oculto — y con `''` las aserciones de "no dice IVA" pasan **sin mirar
+   nada**. Ahora usa `textContent` y **asevera que el ticket no vino vacío**, que es el control
+   negativo de la propia lectura.
+
+**Lo accionable, y es de arnés:** para revertir un mutante, `git checkout` solo sirve si el archivo
+está limpio. Con trabajo sin commitear en el mismo archivo, el revert tiene que ser la sustitución
+inversa exacta — o el arreglo se commitea primero y el mutante va después.
+
+✅ Lo bueno: el protocolo funcionó igual. El mutante existía justamente para no confiar en el verde,
+y el que no murió destapó dos defectos reales del método. Un test que no se puede poner rojo a
+voluntad no es un test verificado.
