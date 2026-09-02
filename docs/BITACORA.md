@@ -2211,3 +2211,46 @@ los sitios donde aparecía, y **cada sitio con su estado**. Si la lista tiene un
 nota puede decir "corregido". Si tiene tres y se tocaron dos, la nota dice cuáles.
 
 La regla de la poda ya lo pedía para borrar —*mostrar la enumeración*—. Faltaba pedirlo para afirmar.
+
+
+## 2026-09-02 · A4 — cinco de diez mutantes mueren, y el que sobrevive sobre dinero es el contrato de utilidades
+
+*Documento: `docs/auditorias/A4-mutacion-de-la-suite.md`. Diez mutantes sobre guards de dinero, uno por
+vez, cada uno revertido y verificado antes del siguiente —por el arnés y por un segundo script contra
+los originales capturados antes de empezar—. La base quedó byte a byte idéntica.*
+
+| | |
+|---|---|
+| predicción escrita a las 17:39, cadena a las 17:49 | **9 de 10** aciertos |
+| mueren | M1 factor · M3 jornada · M4 conciliación · M5 clamp · M6 `has_permission` — **los cinco con un rojo que nombra el guard** |
+| sobreviven | M2 motivo · M7 CHECK de categoría · **M8 `unit_cost` congelado** · M9 policy INSERT · M10 default de canal (inerte) |
+| la base, sin mutante | 66 verdes, **5 rojos en `pos.spec`** por un residuo de `anular-venta` |
+
+### El acierto 9 de 10 y el fallo, que es de la misma clase que el scorecard por síntoma
+
+Fallé M5 por leer el **título** del test ("descuento del 100 %") y no el **cuerpo** (25.000 fijos
+sobre 18.000). El título es un nombre; la aserción es la cosa. Ya estaba escrito para la poda
+—*clasificar leyendo el nombre no es clasificar*— y lo repetí sobre un test. Quinto caso del corolario.
+
+### Lo que la mutación enseñó que la lectura no
+
+- **El contrato de utilidades no tiene test.** Nadie lee `order_items.unit_cost`; una línea que lo anule
+  pasa 189 tests. Es la deuda 65, bloqueante.
+- **`rbac.spec` no toca la base.** 7/7 verde con `has_permission` en `true`. Su nombre promete una capa
+  que mide la sonda de A2, no la suite (deuda 66).
+- **Los rojos que dirigen existen y tienen forma:** aseveran el efecto con el valor escrito. M1 además
+  trae mensaje propio. Predije al menos un timeout mudo; no hubo.
+- **La aserción que el re-skin endureció mató un mutante:** con `toContainText('0')`, "−7.000" contiene
+  un cero y M5 habría sobrevivido. `toHaveText('0')` lo mata por diseño. Una aserción laxa es la clase
+  *"verdadera para cualquier entrada"* de R10, medida con un mutante real.
+
+### El instrumento
+
+- El arnés revierte en `finally` y compara fotos; y **se verificó con un segundo script independiente**,
+  porque una herramienta que funcionó diez veces está sin refutar. El segundo encontró que mi fuente de
+  originales no traía `has_permission`; completado con el texto capturado en sesión, coincidió byte a byte.
+- **R9, tercera vez en el día:** la notificación de la base dijo "exit 0"; el `exit=1` real estaba dentro
+  del archivo.
+- El límite de diez minutos del comando en segundo plano casi corta la cadena a mitad de un mutante
+  (duró 10 min 29 s). El `finally` no corre si matan el proceso: por eso el script de recuperación se
+  escribió **antes** de que hiciera falta.

@@ -1211,7 +1211,11 @@ es**, porque de eso depende quién lo resuelve.
 
 #### 🔴 Corolario — clasificar leyendo el nombre o el plan NO es clasificar
 
-*Agregado el 2026-08-31, con cuatro casos medidos.*
+*Agregado el 2026-08-31, con cuatro casos medidos. **Quinto caso el 2026-09-02, en A4:** predije que el
+mutante del clamp sobreviviria porque el TITULO del test dice "descuento del 100 %"; el CUERPO aplica
+25.000 fijos sobre 18.000 —el caso exacto del clamp— y el mutante murio. Es la misma clase que el
+scorecard clasificado por sintoma: el nombre de un test es un nombre, y la aserción es la cosa. Un
+test se clasifica por lo que asevera, leyendo el cuerpo.*
 
 La regla de arriba dice que **no se borra** sin enumerar. Este corolario dice lo mismo un paso
 antes: **no se CLASIFICA sin abrir el archivo.** Una clasificación hecha sobre el nombre —o sobre
