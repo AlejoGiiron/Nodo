@@ -52,6 +52,15 @@ export function PageHeader({
    * ⚠️ Mismo criterio que el título: se puede acortar la redacción, no quitar
    * información. El "por sede" de estas pantallas dice el ALCANCE de lo que se
    * está mirando, que en un producto multi-sede no es relleno.
+   *
+   * 🔴 EL CASO COMPLETO, porque las dos mitades se cazaron distinto:
+   *    · el TÍTULO acortado lo cazó un test — `historiales.spec` lo aserta.
+   *    · las CUATRO DESCRIPCIONES no las cazó nada. Aparecieron auditando la
+   *      clase después de la primera instancia (R3: cuando una aparece, se
+   *      busca la forma en todo el repo).
+   *    O sea: el verificador cubría UNA de las cinco. Las otras cuatro dependían
+   *    de acordarse de buscar, que es justo lo que R3 existe para no dejar
+   *    librado a la memoria.
    */
   descripcion?: string
   /** La acción primaria de la pantalla, alineada a la derecha. */

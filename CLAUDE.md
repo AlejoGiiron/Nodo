@@ -495,7 +495,32 @@ más: la UI del abono decía *"el efectivo no entró a caja"* **cuando sí habí
 reacción natural de un cajero ante ese cartel es **registrar el ingreso a mano** — o sea, duplicarlo.
 El aviso no falla omitiendo: **falla causando**.
 
-Las dos mitades son el mismo principio: **una afirmación falsa en el punto de decisión le gana al
+🔴 **Y HAY UNA TERCERA MITAD, medida el 2026-09-02 en el arqueo de caja:**
+
+> **Una CONFIRMACIÓN falsa apaga la alarma que debería sonar.**
+
+La garantía falsa tranquiliza de más; la advertencia falsa alarma de más; **la confirmación falsa
+dice "todo bien" justo donde algo está mal**. Es la más silenciosa de las tres, porque no produce
+ninguna acción equivocada: produce **la ausencia de una acción correcta**.
+
+**El caso.** El cierre de caja pintaba el **sobrante en VERDE** —el color reservado a la
+confirmación— y el **cuadre en GRIS**. Traducido a lo que el color afirma: *que a la caja le sobre
+plata es un buen resultado*, y *que cuadre es un dato más*. Las dos afirmaciones son falsas y la
+segunda invierte la primera.
+
+**Un sobrante es un descuadre exactamente igual que un faltante:** significa que algo **no se
+registró** — una venta que no se cobró en el sistema, un vuelto mal dado, una base mal contada. El
+único resultado bueno del arqueo es *cuadrado*, y era el que no tenía color.
+
+⚠️ **Por qué es peor que un faltante mal pintado:** un faltante duele y se investiga aunque el color
+esté mal. Un sobrante en verde **se archiva**. La plata de más se queda en el cajón y nadie busca de
+dónde salió.
+
+**Lo accionable, y aplica a cualquier estado que se pinte:** preguntá qué AFIRMA el color, no si
+combina. Verde afirma *"esto salió bien"*. Si el estado no es un resultado bueno, el verde miente —
+y miente en la dirección que menos se revisa.
+
+Las tres mitades son el mismo principio: **una afirmación falsa en el punto de decisión le gana al
 código correcto.** No importa que la base esté impecable si la pantalla dice lo contrario; el que
 actúa es la persona, y la persona lee la pantalla.
 
@@ -605,6 +630,7 @@ estábamos contando.*
 | `document.fonts.check('16px Inter')` | si Inter está cargada | **si el texto se puede pintar** — siempre sí, hay fallback | **control negativo**: dio `true` para una familia inventada |
 | `grep -rl "const formatCOP" src/` | copias del formateador | también **las menciones en comentarios**, la del propio comando incluida | **enumerando**: la lista tenía 18 nombres y 16 eran definiciones |
 | `grep -coE '#[0-9a-fA-F]{6}'` | hexes por archivo | **solo los de seis dígitos**: no veía `#fff` | **enumerando**: cinco pantallas "en cero" tenían 47 blancos |
+| **un script propio de migración** | insertar imports al final del bloque | matcheaba `^import .*$` y **partía un import MULTILÍNEA por la mitad** | `tsc`, en el acto |
 
 **Los tres daban un número creíble.** Ninguno daba error, ninguno se veía roto, y los tres
 sostenían una afirmación que se escribió en un commit como si fuera un hecho medido.
@@ -626,6 +652,21 @@ nota.
 2. **Enumerar antes de contar** — pedile la LISTA, no el número, y mirala. Un conteo esconde qué
    contó; una lista lo muestra. Los dos greps se cazaron así, y ninguno se habría cazado mirando
    el total.
+
+🔴 **EL CUARTO ES DE OTRA ESPECIE, y por eso vale aparte: el instrumento era UN SCRIPT NUESTRO.**
+Los tres primeros median mal; éste **rompía el archivo**. Y lo relevante es que **había funcionado
+las cuatro veces anteriores** — en las cuatro, el último import del archivo era de una sola línea.
+
+> **Una herramienta propia que funcionó cuatro veces no está VERIFICADA: está SIN REFUTAR.**
+
+Es R10 aplicada a las herramientas en vez de a los tests: *si pasa siempre, sospechá de la entrada,
+no del código*. Cuatro éxitos sobre entradas que casualmente compartían una forma no dicen nada
+sobre la quinta. Y a diferencia de un test, **un script de migración no tiene quien lo audite**: su
+única prueba es el archivo que produce.
+
+✅ **Lo que salvó éste fue barato y ya estaba puesto:** `tsc` después de cada script, siempre, aunque
+el cambio "sea solo cosmético". Cuatro pantallas de barrido de colores no necesitaban compilador —
+hasta que sí.
 
 ⚠️ Corolario para escribir: cuando un commit o una nota afirme un número, **dejar escrito el
 comando que lo reproduce** — y haberlo corrido con una de las dos técnicas antes de pegarlo. Un

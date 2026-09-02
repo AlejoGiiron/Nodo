@@ -2018,3 +2018,45 @@ claves del `jsonb_build_object` contra la interfaz **y contra los selects**.
 *(La tercera punta, que este caso agregó: una bandera puede vivir además en una **columna**, y
 entonces hay que verificar que el select la pida. `register_debt_payment` la manda en el retorno Y
 la persiste; el retorno se leía, la columna no.)*
+
+
+## 2026-09-02 · El arqueo — una corrección de SIGNIFICADO, no de color
+
+Va acá y no en la lista de barridos porque **no cambió cómo se ve una pantalla: cambió qué afirma**.
+
+El cierre de caja pintaba el **sobrante en verde** y el **cuadre en gris**. El verde del design
+system está reservado a la confirmación —*al día, abono aplicado, compra aplicada*—, así que el
+color estaba afirmando dos cosas, las dos falsas:
+
+- *que a la caja le sobre plata es un buen resultado*;
+- *que cuadrar es un dato más*.
+
+**Un sobrante es un descuadre exactamente igual que un faltante.** Significa que algo no se
+registró: una venta cobrada por fuera del sistema, un vuelto mal dado, una base mal contada. El
+único resultado bueno del arqueo es *cuadrado*, y era el que no tenía color.
+
+### Por qué es peor que un faltante mal pintado
+
+Un faltante duele y se investiga **aunque el color esté mal**: falta plata, alguien pregunta. Un
+sobrante en verde **se archiva**. La plata de más se queda en el cajón y nadie busca de dónde salió
+— que es justamente el hecho que había que investigar.
+
+### La regla que completa
+
+Es la familia de *"una advertencia falsa induce el error que dice prevenir"*, que ya tenía dos
+mitades escritas —la garantía falsa que tranquiliza de más, la advertencia falsa que alarma de
+más—. Ésta es la tercera y la más silenciosa:
+
+> **Una confirmación falsa apaga la alarma que debería sonar.**
+
+No produce una acción equivocada: produce **la ausencia de una acción correcta**. Por eso no deja
+rastro y por eso no la encontró ningún test — los tests miran el cálculo del arqueo, que estaba
+bien. Lo que estaba mal era lo que el color decía **sobre** un cálculo correcto.
+
+**Lo accionable:** al pintar un estado, preguntá **qué AFIRMA el color**, no si combina. Verde
+afirma *"esto salió bien"*. Si el estado no es un resultado bueno, el verde miente — y miente en la
+dirección que menos se revisa.
+
+⚠️ Se corrigió también en el panel **sobre tinta**, pero solo a medias y con la razón escrita: el
+sobrante sí tiene token on-dark (`--on-dark-warn`), el cuadrado y el faltante no existen sobre
+oscuro (§8.3). Media corrección con su límite dicho vale más que inventar dos tokens.
