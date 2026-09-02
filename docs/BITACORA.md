@@ -2310,3 +2310,61 @@ línea antes de empezar** y no se pueden agregar después.
 - **Dos hallazgos son sobre nosotros**, y los dos salieron de la última: el par contradictorio nace del
   append, y la columna que falta en `sentry.test.ts` nace de leer una regla y no ejecutarla en la misma
   sesión. Ninguna regla nueva los arregla; los arregla el `grep` antes de guardar.
+
+
+## 2026-09-02 · Fase B, bloque 0 · Deuda 60 — el guard que no evaluaba, cerrado en los tres sitios
+
+*Migración `20260902180000_guard_de_sede_null.sql`. Primera deuda de la Fase B, y la primera vez en el
+proyecto que un spec se escribe ROJO a propósito antes del arreglo.*
+
+### El rojo primero, y qué dijo cada uno
+
+`tests/rls-negacion.spec.ts` corrió **contra el defecto vivo** antes de tocar la base. Tres rojos, y
+cada uno nombra su sitio:
+
+| caso | lo que dijo el rojo |
+|---|---|
+| desactivado + `add_order_items_with_extras` | `expect(res.error).not.toBeNull()` → **Received: null**. No negó: escribió la línea |
+| desactivado + `next_order_number` | **Received: null**. Consumió el correlativo |
+| desactivado + `adjust_stock` | `Expected /No tienes una sede activa/` · **Received "No autorizado para ajustar inventario"** — el guard tapado, contestando el guard equivocado |
+
+Y **cuatro verdes en la misma corrida**, que son los que hacen creíble a los rojos: los dos controles
+negativos (el owner activo SÍ agrega ítems, numera y ajusta stock), las otras cuatro RPC negando por
+sede, y la matriz de INSERT directo dando `42501`. Si todo hubiera dado rojo, el problema habría sido
+la sonda.
+
+⚠️ **El tercer caso es el que más valía escribir.** `adjust_stock` ya negaba: un test que solo pidiera
+*"que niegue"* habría estado **verde con el defecto puesto**, porque el `has_permission` siguiente lo
+tapaba. Exigir **el mensaje del guard de sede** es lo que lo hace medir la clase y no el síntoma. Es
+la lección de A4 aplicada al escribir: `toContainText('0')` habría dejado vivo a M5.
+
+### El arreglo, y lo que NO se hizo
+
+Los cuerpos **no se reescribieron de memoria**: la migración se generó desde `pg_get_functiondef` del
+texto vivo, con anclas únicas (el generador falla si un ancla aparece 0 o 2 veces). Cambio por
+función: `v_mi_sede := get_my_sede_id()` con su `is null` como **primera sentencia**, y el `<>` a
+`is distinct from`. El resto del cuerpo es idéntico byte a byte al que estaba aplicado.
+
+⛔ **No se agregó un `has_permission` de parche**, que es lo que la deuda prohibía explícitamente. Y
+el `has_permission('pos.vender')` que A2-1 sugería para `add_order_items_with_extras` **tampoco**: es
+alcance nuevo, cambia quién puede vender, y se anotó como deuda 69 en vez de colarse en un commit de
+seguridad. *Ejecutar lo escrito incluye no ejecutar lo que no estaba escrito.*
+
+### Verificación contra la cosa real
+
+No alcanzaba con que el archivo dijera lo correcto (R4, y la lección del `@keyframes`): se leyó la
+base después del push. Las tres funciones: **0 ocurrencias de `<> get_my_sede_id()`**, un `is null`
+guard cada una, `is distinct from` puesto, `SECURITY DEFINER` y el ACL de `authenticated` intactos —
+`create or replace` los conserva, pero se confirmó en vez de asumirlo.
+
+Las tres migraciones viejas siguen teniendo el `<>` en su texto: **es registro histórico y no se
+edita** (R5). La fuente de verdad de una función es la última migración que la reemplazó.
+
+### Lo que costó de instrumento
+
+- **R9, cuarta vez.** La notificación de la tarea en segundo plano dijo *"exit code 0"* mientras el
+  archivo decía `t1a_exit=1`.
+- Una corrida de suite murió al llegar al límite de diez minutos del comando, y **dejó el `vite` del
+  `webServer` huérfano ocupando el 5180**, lo que hizo fallar la siguiente al instante con un mensaje
+  que no habla de tests. Vale anotarlo: cuando Playwright levanta su propio servidor, matar al padre
+  no mata al hijo.
