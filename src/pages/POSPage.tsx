@@ -198,56 +198,44 @@ function PrintTicket({
   )
 }
 
-// ─── Product image placeholder ───────────────────────────────────
-function ProductImage({ product, color = '#10b981' }: { product: ProductWithCategory; color?: string }) {
-  const hash = product.id.charCodeAt(0) + product.id.charCodeAt(product.id.length - 1)
-  const angle = (hash % 4) * 45
+// ─── Fila de producto ────────────────────────────────────────────
+// 🔴 FILAS, NO TARJETAS (regla 7.3 del design system). Un catálogo de miles de
+//    referencias en tarjetas redondeadas es ilegible y lento: la tarjeta se
+//    reserva para KPI, ficha y formularios. Acá se busca con el teclado y se
+//    recorre con la vista, así que la unidad es la fila.
+//
+// ⚠️ EL TESTID SIGUE SIENDO `product-card` Y ES UN NOMBRE EQUIVOCADO A
+//    PROPÓSITO. Esto ya no es una tarjeta. Los testids NO cambian con el
+//    re-skin — son el contrato con la suite, y renombrarlos convertiría un
+//    cambio visual en un cambio de contrato. El día que se renombren testids
+//    será por LISTA enumerada y en su propio turno, no de rebote acá.
+//
+// 🔴 LA FILA ESTÁ INCOMPLETA CONTRA LA SKILL, y es una decisión, no un olvido:
+//    · La maqueta muestra `código · producto · unidad · precio · costo`.
+//    · `código` y `unidad` NO EXISTEN en el esquema (deuda 41). No se pintan
+//      vacías: un `—` en TODA una columna no es "dato ausente" (regla 7.5),
+//      es una columna sin fuente — y afirmaría que el dato existe y falta,
+//      que es peor que no mostrarla.
+//    · `costo` se saca a propósito (deuda 42): no hay clave de permiso que lo
+//      gatee, y `ocultarPlata` sin una clave detrás es una decisión de UI
+//      ocupando el lugar de una de autorización. Además la cajera cobra, no
+//      negocia precio.
+//    Quedan `producto` y `precio`. Las otras tres entran cuando exista lo que
+//    las sostiene.
+const ALTO_FILA = 34
 
-  if (product.image_url) {
-    return (
-      <img src={product.image_url} alt={product.name}
-        // contain (no cover) para no recortar la foto; el letterbox toma el mismo
-        // tono suave de categoría que el placeholder de al lado (${color}20).
-        style={{ width: '100%', height: 140, objectFit: 'contain', background: `${color}20` }} />
-    )
-  }
-
-  return (
-    <div style={{
-      width: '100%', height: 140,
-      background: `${color}20`,
-      backgroundImage: `repeating-linear-gradient(${angle}deg, transparent, transparent 7px, rgba(0,0,0,.035) 7px, rgba(0,0,0,.035) 14px)`,
-      display: 'flex', alignItems: 'flex-end', padding: 7,
-    }}>
-      <div style={{ fontFamily: 'monospace', fontSize: 11, color, opacity: 0.7, letterSpacing: -0.2 }}>
-        {product.name.substring(0, 10).toUpperCase()}
-      </div>
-    </div>
-  )
-}
-
-// ─── Product card ────────────────────────────────────────────────
-function ProductCard({ product, onAdd }: { product: ProductWithCategory; onAdd: () => void }) {
-  const color = product.categories?.color ?? '#10b981'
-
+function ProductRow({ product, onAdd }: { product: ProductWithCategory; onAdd: () => void }) {
   // Indicador discreto de stock. NO bloquea la venta (el stock negativo está
-  // permitido: un bar vende aunque el conteo diga 0); solo avisa.
-  //
-  // La condición vivía acá incrustada y solo cubría "≤ 0" — el POS no conocía
-  // `min_stock`, así que "stock bajo" no existía. Ahora sale de la MISMA regla
-  // que usa Inventario (`stockStatus`), que es lo que impide que las dos
+  // permitido: se vende aunque el conteo diga 0); solo avisa. Sale de la MISMA
+  // regla que usa Inventario (`stockStatus`), que es lo que impide que las dos
   // pantallas contesten distinto sobre el mismo producto.
-  //
-  // Ojo con la historia del nombre: la variable se llamaba `lowStock` y NO
-  // significaba stock bajo — significaba sin stock. Hoy `low` es un estado real
-  // y distinto, así que ese nombre habría sido activamente engañoso.
   const stockQty = product.stock_qty ?? 0
   const estadoStock = stockStatus(product)
   const alertaStock = esAlertaDeStock(estadoStock)
-  const STOCK_BADGE: Record<string, { bg: string; label: string }> = {
-    negative: { bg: '#dc2626',              label: 'Reponer' },
-    out:      { bg: 'rgba(15,23,42,.72)',   label: 'Sin stock' },
-    low:      { bg: '#d97706',              label: 'Stock bajo' },
+  const STOCK_BADGE: Record<string, { bg: string; fg: string; bd: string; label: string }> = {
+    negative: { bg: 'var(--debt-soft)', fg: 'var(--debt-on-soft)', bd: 'var(--debt-border)', label: 'Reponer' },
+    out: { bg: 'var(--border-2)', fg: 'var(--ink-3)', bd: 'var(--border)', label: 'Sin stock' },
+    low: { bg: 'var(--warning-soft)', fg: 'var(--warning-on-soft)', bd: 'var(--warning-border)', label: 'Stock bajo' },
   }
   const badge = STOCK_BADGE[estadoStock]
 
@@ -255,66 +243,40 @@ function ProductCard({ product, onAdd }: { product: ProductWithCategory; onAdd: 
     <button
       data-testid="product-card"
       onClick={onAdd}
+      title={product.description ?? undefined}
       style={{
-        position: 'relative',
-        background: '#fff', border: '1px solid #e5e7eb', borderRadius: 14,
-        padding: 0, cursor: 'pointer', textAlign: 'left',
-        display: 'flex', flexDirection: 'column', overflow: 'hidden',
-        transition: 'all .15s', width: '100%',
+        width: '100%', minHeight: ALTO_FILA,
+        display: 'flex', alignItems: 'center', gap: 10,
+        padding: '0 12px', border: 'none',
+        borderBottom: '1px solid var(--border-2)',
+        background: 'var(--surface)', cursor: 'pointer', textAlign: 'left',
+        font: 'inherit', color: 'var(--ink)',
       }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = color
-        e.currentTarget.style.transform = 'translateY(-2px)'
-        e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,.06)'
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = '#e5e7eb'
-        e.currentTarget.style.transform = 'translateY(0)'
-        e.currentTarget.style.boxShadow = 'none'
-      }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--surface-2)' }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--surface)' }}
     >
-      <ProductImage product={product} color={color} />
+      <span style={{
+        flex: 1, minWidth: 0, fontSize: 14, fontWeight: 400,
+        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+      }}>
+        {product.name}
+      </span>
       {alertaStock && badge && (
         <span
           data-testid="pos-stock-indicator"
           data-stock-status={estadoStock}
           title={`Stock: ${stockQty}${product.min_stock > 0 ? ` · mínimo ${product.min_stock}` : ''}`}
           style={{
-            position: 'absolute', top: 8, right: 8,
-            display: 'inline-flex', alignItems: 'center', gap: 4,
-            padding: '2px 8px', borderRadius: 8,
-            background: badge.bg,
-            color: '#fff', fontSize: 10.5, fontWeight: 700,
+            flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 4,
+            padding: '3px 9px', borderRadius: 999,
+            background: badge.bg, color: badge.fg, border: `1px solid ${badge.bd}`,
+            fontSize: 11, fontWeight: 600, lineHeight: 1.4, whiteSpace: 'nowrap',
           }}
         >
           <AlertTriangle size={10} /> {badge.label}
         </span>
       )}
-      <div style={{ padding: '12px 14px 14px' }}>
-        <div style={{ fontSize: 14.5, fontWeight: 600, color: '#0f172a', letterSpacing: -0.2, lineHeight: 1.25 }}>
-          {product.name}
-        </div>
-        {product.description && (
-          <div style={{
-            fontSize: 12, color: '#94a3b8', marginTop: 3,
-            height: 17, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          }}>
-            {product.description}
-          </div>
-        )}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', fontFamily: 'monospace', letterSpacing: -0.4 }}>
-            {formatCOP(product.price)}
-          </div>
-          <div style={{
-            width: 30, height: 30, borderRadius: 8, background: '#10b981', color: '#fff',
-            display: 'grid', placeItems: 'center',
-            boxShadow: '0 2px 6px rgba(16,185,129,.3)', flexShrink: 0,
-          }}>
-            <Plus size={16} strokeWidth={2.4} />
-          </div>
-        </div>
-      </div>
+      <MoneyCell value={product.price} style={{ flexShrink: 0, minWidth: 88 }} />
     </button>
   )
 }
@@ -1831,7 +1793,7 @@ export function POSPage() {
           <div style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', letterSpacing: -0.3 }}>
             {query ? `"${query}"` : (activeCatObj?.name ?? 'Todos')}
           </div>
-          <div style={{ fontSize: 12, color: '#94a3b8', fontFamily: 'monospace' }}>
+          <div style={{ fontSize: 12, color: 'var(--ink-4)', fontVariantNumeric: 'tabular-nums' }}>
             {filtered.length} {filtered.length === 1 ? 'producto' : 'productos'}
           </div>
         </div>
@@ -1843,9 +1805,23 @@ export function POSPage() {
               Sin resultados para "{query}"
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
+            <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--r-3)', overflow: 'hidden' }}>
+              {/* Cabecera de columnas. Mayúscula sostenida: es de los dos
+                  únicos lugares donde la skill la permite (etiqueta de columna
+                  y de KPI, --fs-label). */}
+              <div style={{
+                position: 'sticky', top: 0, zIndex: 1,
+                display: 'flex', alignItems: 'center', gap: 10,
+                height: 32, padding: '0 12px',
+                background: 'var(--surface-2)', borderBottom: '1px solid var(--border)',
+                fontSize: 11, fontWeight: 600, letterSpacing: '.04em',
+                textTransform: 'uppercase', color: 'var(--ink-3)',
+              }}>
+                <span style={{ flex: 1 }}>Producto</span>
+                <span style={{ minWidth: 88, textAlign: 'right' }}>Precio</span>
+              </div>
               {filtered.map((p) => (
-                <ProductCard key={p.id} product={p} onAdd={() => handleAddProduct(p)} />
+                <ProductRow key={p.id} product={p} onAdd={() => handleAddProduct(p)} />
               ))}
             </div>
           )}
