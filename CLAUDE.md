@@ -687,6 +687,29 @@ que no usarlo**; lo que no vale es no usarlo *y no decir por qué*.
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · UN TEST DE NEGACIÓN TIENE QUE EXIGIR QUE NIEGUE **POR LA RAZÓN CORRECTA**
+
+*Medido el 2026-09-02 escribiendo el spec de la deuda 60. Es R10 aplicada a los tests de seguridad:
+el mutante muere, pero por la razón equivocada.*
+
+> **"Esperaba que negara" está VERDE con el defecto puesto**, si algo más niega primero.
+
+**El caso.** `adjust_stock` tenía el guard de sede roto (comparaba contra un posible NULL), pero
+**negaba igual**: el `has_permission('inventario.ajustar')` que venía DESPUÉS rechazaba al usuario
+desactivado con *"No autorizado para ajustar inventario"*. Un test que solo pidiera `expect(error).not
+.toBeNull()` habría pasado — y el guard de sede habría seguido sin evaluar, listo para abrirse el día
+que un rol tenga ese permiso.
+
+**Lo accionable:** un test de negación asevera **el mensaje del guard que debe contestar**, no que
+haya error. Y cuando dos guards pueden negar el mismo caso, el test dice **cuál de los dos** —
+si contesta el otro, el que se está probando no está funcionando.
+
+⚠️ Corolario, que es el mismo de R10 leído al revés: **un verde sospechoso no es el que pasa siempre,
+es el que pasaría también sin el sujeto.** Antes de dar por bueno un test de seguridad, preguntá qué
+otra cosa podría producir ese mismo rojo.
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · UN GUARD QUE COMPARA CONTRA UN POSIBLE NULL NO FALLA CERRADO NI ABIERTO: NO EVALÚA — Y UN GUARD QUE NO EVALÚA DEJA PASAR
 
 *Medido en la auditoría A2 (2026-09-02). Es la clase más peligrosa del repo porque no se parece a un
