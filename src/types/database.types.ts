@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       cash_movements: {
@@ -843,27 +868,33 @@ export type Database = {
           id: string
           invoice_id: string
           product_id: string
+          purchase_unit: string | null
           qty: number
           subtotal: number
           unit_cost: number
+          units_per_purchase_unit: number
         }
         Insert: {
           created_at?: string
           id?: string
           invoice_id: string
           product_id: string
+          purchase_unit?: string | null
           qty: number
           subtotal: number
           unit_cost: number
+          units_per_purchase_unit?: number
         }
         Update: {
           created_at?: string
           id?: string
           invoice_id?: string
           product_id?: string
+          purchase_unit?: string | null
           qty?: number
           subtotal?: number
           unit_cost?: number
+          units_per_purchase_unit?: number
         }
         Relationships: [
           {
@@ -1312,6 +1343,7 @@ export type Database = {
         Args: { p_order_id: string; p_reason: string }
         Returns: Json
       }
+      seed_system_roles: { Args: { p_org: string }; Returns: undefined }
     }
     Enums: {
       movement_type: "in" | "out"
@@ -1443,6 +1475,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       movement_type: ["in", "out"],

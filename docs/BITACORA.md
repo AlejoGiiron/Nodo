@@ -1872,3 +1872,69 @@ historia ya congelada.
 **Dibujar una pantalla audita un esquema.** Esta nota vivió nueve días en el documento que se lee
 antes de trabajar; la destapó tener que dibujar la línea de una compra y preguntarse de dónde sale
 `1 bulto = 50 UND`.
+
+
+## 2026-09-01 · La unidad de compra, aplicada — y la sonda que no distinguía
+
+**Deuda 43 cerrada.** `purchase_invoice_items` gana `purchase_unit` y `units_per_purchase_unit`, y
+`register_purchase` v2 convierte a unidades de venta antes de tocar stock y costo.
+
+### La aritmética, y por qué el numerador no divide
+
+```
+stock      += qty × factor
+subtotal    = qty × unit_cost              ← intacto: es la plata de la factura
+cost_price  = round( (stock_actual × costo_actual + subtotal)
+                     / (stock_actual + qty × factor), 2 )
+```
+
+`(qty×factor) × (unit_cost/factor)` es **idénticamente** `qty × unit_cost` = el subtotal. Escribirlo
+así evita dividir y volver a multiplicar, que perdería centavos en cada compra con un factor que no
+divide exacto. La división solo aparece en las tres caídas del promedio, donde va redondeada a 2.
+
+### El cuerpo se copió LITERAL, y el diff lo demuestra
+
+El `register_purchase` de la migración aplicada se extrajo con un script y se le aplicaron
+reemplazos puntuales. El diff contra el original tiene **9 líneas eliminadas, y las 9 son las que
+tenían que cambiar**: el insert, el stock, el movimiento y las cuatro ramas del costo. Ningún guard
+—sede, permiso, jornada, proveedor, producto, movimiento de caja— se perdió en la copia. Reescribir
+una función de 120 líneas a mano es exactamente cómo se pierde un guard sin que nadie lo note.
+
+### 🔴 LA SONDA DEL CHECK NO DISTINGUÍA — segunda vez que pasa
+
+Afirmé en la migración que el `CHECK` protege **cualquier** camino, no solo la RPC. Para probarlo,
+inserté una fila que lo viola desde el cliente:
+
+```
+CODIGO: 42501 | new row violates row-level security policy
+```
+
+**Rechazó la RLS, no el CHECK.** El test daba verde y no probaba nada de lo que yo había afirmado —
+la misma forma que la sonda ambigua del rechazo mudo: *dos caminos que terminan igual*. Un `expect(error).not.toBeNull()`
+es verdadero para los dos.
+
+Se verificó donde corresponde, **contra el catálogo del sistema**:
+
+```
+conname: chk_factor_segun_unidad
+CHECK (((purchase_unit IS NULL) AND (units_per_purchase_unit = 1))
+    OR ((purchase_unit IS NOT NULL) AND (units_per_purchase_unit >= 1)))
+```
+
+**Lo accionable, y ya es la segunda vez:** cuando una sonda espera un rechazo, preguntar **qué
+mecanismo lo produjo**, no solo si hubo error. Si dos mecanismos distintos dan la misma señal, la
+sonda no mide — mide que *algo* falló.
+
+### Tres hermanas barridas al abrir el archivo (R3)
+
+`supabase-helpers.ts` tenía tres defectos de la clase R1 punto 5b, encontrados **al abrirlo por otra
+razón**:
+1. `RegisterPurchaseResult` declaraba 2 de las 3 claves del `jsonb` — faltaba `cash_movement_id`.
+   Lado que **desperdicia**, por eso no era urgente.
+2. `PurchaseInvoiceListRow` y `PurchaseInvoiceDetailRow` declaraban `payment_method`, columna que
+   **no existe** y que el select ni pide. Lado que **miente**: en runtime era `undefined`, falsy, y
+   el código habría elegido una rama. **Las dos mitades del contrato estaban en el mismo archivo,
+   contradiciéndose** —el select decía *"sin payment_method: no existe"* tres líneas debajo de la
+   interfaz que lo declaraba— y TS mira solo una.
+3. El comentario de `RegisterPurchaseResult` afirmaba *"la compra NO toca la caja: no crea egreso
+   automático"*. **Falso desde la deuda 26**, que invirtió exactamente eso.

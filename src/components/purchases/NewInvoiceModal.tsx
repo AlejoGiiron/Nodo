@@ -14,8 +14,13 @@ interface NewInvoiceModalProps {
 interface DraftLine {
   key: string
   product_id: string
+  /** Unidades de COMPRA (bultos), no de venta. */
   qty: string
   unit_cost: string
+  /** Etiqueta libre de la presentación. Vacío = se compra en la unidad de venta. */
+  purchase_unit: string
+  /** Cuántas unidades de venta trae una de compra. '' se lee como 1. */
+  factor: string
 }
 
 const formatCOP = (n: number) =>
@@ -30,7 +35,13 @@ const inputStyle: React.CSSProperties = {
 }
 
 let lineSeq = 0
-const newLine = (): DraftLine => ({ key: `l${lineSeq++}`, product_id: '', qty: '1', unit_cost: '' })
+const newLine = (): DraftLine => ({
+  key: `l${lineSeq++}`, product_id: '', qty: '1', unit_cost: '',
+  purchase_unit: '', factor: '',
+})
+
+/** '' o '0' se leen como 1: comprar suelto es el caso normal. */
+const factorDe = (l: DraftLine) => Math.max(1, parseInt(l.factor, 10) || 1)
 
 export function NewInvoiceModal({ onClose, onNeedSupplier }: NewInvoiceModalProps) {
   const { suppliers } = useSuppliers()
@@ -81,6 +92,14 @@ export function NewInvoiceModal({ onClose, onNeedSupplier }: NewInvoiceModalProp
         notes: notes.trim() || null,
       },
       items: validLines.map(l => ({
+        // ⚠️ `purchase_unit` y el factor viajan JUNTOS o no viajan. Mandar la
+        //    etiqueta sin el factor hace que la RPC rechace la compra entera —
+        //    a propósito, es fail-closed: un factor asumido en 1 cuando era 50
+        //    deja el costo unitario 50 veces más alto, y ese costo se congela
+        //    al vender.
+        ...(l.purchase_unit.trim()
+          ? { purchase_unit: l.purchase_unit.trim(), units_per_purchase_unit: factorDe(l) }
+          : {}),
         product_id: l.product_id,
         qty: parseInt(l.qty, 10),
         unit_cost: parseInt(l.unit_cost, 10),
@@ -162,13 +181,35 @@ export function NewInvoiceModal({ onClose, onNeedSupplier }: NewInvoiceModalProp
                       style={{ ...inputStyle, width: 70, flex: '0 0 auto', fontFamily: 'monospace', textAlign: 'right', padding: '9px 10px' }}
                     />
                     <input
+                      data-testid="invoice-item-unidad"
+                      value={l.purchase_unit}
+                      onChange={(e) => updateLine(l.key, { purchase_unit: e.target.value })}
+                      placeholder="Unidad"
+                      title="Unidad de compra: bulto, canasta, caja. Vacío = se compra suelto."
+                      style={{ ...inputStyle, width: 88, flex: '0 0 auto', padding: '9px 10px' }}
+                    />
+                    <input
+                      data-testid="invoice-item-factor"
+                      type="number" min={1}
+                      value={l.factor}
+                      onChange={(e) => updateLine(l.key, { factor: e.target.value.replace(/\D/g, '') })}
+                      placeholder="× und"
+                      title="Cuántas unidades de venta trae una unidad de compra"
+                      disabled={!l.purchase_unit.trim()}
+                      style={{
+                        ...inputStyle, width: 76, flex: '0 0 auto', textAlign: 'right',
+                        padding: '9px 10px', fontVariantNumeric: 'tabular-nums',
+                        background: l.purchase_unit.trim() ? 'var(--surface)' : 'var(--border-2)',
+                      }}
+                    />
+                    <input
                       data-testid="invoice-item-cost"
                       type="number" min={0}
                       value={l.unit_cost}
                       onChange={(e) => updateLine(l.key, { unit_cost: e.target.value.replace(/\D/g, '') })}
                       placeholder="Costo unit."
-                      title="Costo unitario"
-                      style={{ ...inputStyle, width: 110, flex: '0 0 auto', fontFamily: 'monospace', textAlign: 'right', padding: '9px 10px' }}
+                      title="Costo de UNA unidad de compra (lo que dice la factura)"
+                      style={{ ...inputStyle, width: 110, flex: '0 0 auto', textAlign: 'right', padding: '9px 10px', fontVariantNumeric: 'tabular-nums' }}
                     />
                     <span data-testid="invoice-line-subtotal" style={{ width: 110, flex: '0 0 auto', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, fontSize: 13, color: '#0f172a' }}>
                       {formatCOP(lineSubtotal(l))}
@@ -186,9 +227,39 @@ export function NewInvoiceModal({ onClose, onNeedSupplier }: NewInvoiceModalProp
               })}
             </div>
 
+            {/* 🔴 EL EFECTO SE MUESTRA ANTES DE APLICARLO (regla 7.10 del design
+                system). Acá es más que una cortesía: es la única forma de que
+                alguien note un factor mal tecleado ANTES de que el costo quede
+                congelado en las ventas. La compra es atómica — registrar ES
+                aplicar—, así que este bloque es el "borrador" del §6: el
+                formulario sin confirmar, no un estado guardado. */}
+            {validLines.some(l => l.purchase_unit.trim()) && (
+              <div
+                data-testid="invoice-efecto"
+                style={{
+                  marginTop: 10, padding: '10px 12px', borderRadius: 'var(--r-2)',
+                  border: '1px solid var(--action-border)', background: 'var(--action-soft)',
+                  fontSize: 12, color: 'var(--action-on-soft)',
+                }}
+              >
+                <div style={{ fontWeight: 600, marginBottom: 4 }}>Entra al inventario</div>
+                {validLines.filter(l => l.purchase_unit.trim()).map(l => {
+                  const pr = products.find(x => x.id === l.product_id)
+                  const unidades = (parseInt(l.qty, 10) || 0) * factorDe(l)
+                  const costoUnitario = Math.round((parseInt(l.unit_cost, 10) || 0) / factorDe(l))
+                  return (
+                    <div key={l.key} data-testid="invoice-efecto-linea" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                      {pr?.name ?? 'Producto'}: {l.qty} {l.purchase_unit.trim()} × {factorDe(l)} ={' '}
+                      <strong>{unidades} und</strong> · costo unitario {formatCOP(costoUnitario)}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
             {/* Hint de stock */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, fontSize: 11.5, color: '#64748b' }}>
-              <PackageCheck size={13} color="#10b981" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, fontSize: 11.5, color: 'var(--ink-3)' }}>
+              <PackageCheck size={13} color="var(--action)" />
               Los productos con inventario suben su stock al registrar la compra. Todos actualizan su costo.
             </div>
 

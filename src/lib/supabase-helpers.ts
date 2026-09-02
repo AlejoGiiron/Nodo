@@ -916,20 +916,55 @@ export type PurchaseInvoicePayload = {
 
 export type PurchaseItemPayload = {
   product_id: string
+  /**
+   * 🔴 SON UNIDADES DE COMPRA, NO DE VENTA. Si se compran 12 bultos, acá va 12.
+   * Las unidades que entran al inventario son `qty × units_per_purchase_unit`,
+   * y ese cálculo lo hace la RPC — no el cliente.
+   */
   qty: number
+  /** Costo de UNA unidad de compra (lo que dice la factura del proveedor). */
   unit_cost: number
+  /**
+   * Etiqueta de la presentación: 'bulto', 'canasta', 'caja'. `null` o ausente =
+   * se compró en la misma unidad en que se vende.
+   */
+  purchase_unit?: string | null
+  /**
+   * Cuántas unidades de VENTA trae una unidad de compra.
+   * ⚠️ Si mandás `purchase_unit`, esto es OBLIGATORIO: la RPC rechaza la compra
+   * entera si falta. No hay default silencioso a propósito — un factor que se
+   * asume 1 cuando era 50 deja el costo unitario 50 veces más alto, y
+   * `cost_price` se congela en la línea de venta: el error queda grabado.
+   */
+  units_per_purchase_unit?: number
 }
 
-// Resultado de register_purchase (el jsonb que retorna la RPC). La compra NO
-// toca la caja: no crea egreso automático (el efectivo que sale del cajón se
-// registra como egreso MANUAL). Por eso no hay flags de caja en el retorno.
+/**
+ * Resultado de register_purchase — las TRES claves que el `jsonb_build_object`
+ * de la RPC manda, verificadas contra la migración.
+ *
+ * ⚠️ Declaraba dos de tres: faltaba `cash_movement_id`, que la RPC manda desde
+ * la deuda 26. Es el lado que DESPERDICIA de la asimetría (el dato existía y
+ * nadie podía usarlo), no el que miente — por eso no era urgente, y por eso se
+ * arregla ahora que se abre el archivo por otra razón (R3).
+ *
+ * 🔴 Y el comentario que estaba acá decía *"la compra NO toca la caja: no crea
+ * egreso automático"*. **Era falso desde la deuda 26**, que invirtió justamente
+ * eso: la compra SALE de la caja del día y se rechaza sin jornada abierta. Un
+ * comentario no lo mira ningún verificador — es la clase entera de "lo que no es
+ * una referencia de código".
+ */
 export interface RegisterPurchaseResult {
   invoice_id: string
   total: number
+  /** `null` si el total redondeado dio 0 (no se crea movimiento por cero). */
+  cash_movement_id: string | null
 }
 
-// Registra la compra de forma atómica (sube stock, actualiza cost_price y, si
-// es efectivo con turno abierto, genera el egreso de caja). SECURITY DEFINER.
+// Registra la compra de forma atómica: sube stock (en unidades de VENTA, ya
+// convertidas por el factor), recalcula cost_price con promedio ponderado móvil
+// y genera el egreso de caja. Exige jornada abierta y la rechaza si no la hay.
+// SECURITY DEFINER.
 export const registerPurchase = (
   invoice: PurchaseInvoicePayload,
   items: PurchaseItemPayload[],
@@ -951,7 +986,11 @@ export interface PurchaseInvoiceListRow {
   created_at: string
   invoice_number: string | null
   total: number
-  payment_method: string
+  // ⚠️ SIN `payment_method`: la columna no existe (deuda 26) y el select no la
+  // pide. Estaba declarada igual, así que TS habría dejado leerla y en runtime
+  // era `undefined` — misma clase que el retorno de arriba, y del lado que
+  // MIENTE: un `undefined` es falsy y el código elige una rama. Nadie la leía;
+  // se saca antes de que alguien lo haga.
   suppliers: { name: string } | null
   profiles: { full_name: string | null } | null
 }
@@ -981,15 +1020,21 @@ export interface PurchaseInvoiceDetailRow {
   created_at: string
   invoice_number: string | null
   total: number
-  payment_method: string
+  // ⚠️ Tercera aparición del mismo campo muerto en este archivo: declarado y
+  // nunca pedido. El select de abajo ya decía "sin payment_method: no existe" y
+  // la interfaz lo declaraba igual — las dos mitades del contrato en el mismo
+  // archivo, contradiciéndose, y TS mirando solo una.
   notes: string | null
   suppliers: { name: string; contact: string | null; phone: string | null } | null
   profiles: { full_name: string | null } | null
   purchase_invoice_items: {
     id: string
+    /** Unidades de COMPRA. Las de venta son `qty × units_per_purchase_unit`. */
     qty: number
     unit_cost: number
     subtotal: number
+    purchase_unit: string | null
+    units_per_purchase_unit: number
     products: { name: string } | null
   }[]
 }
@@ -1001,7 +1046,8 @@ export const getPurchaseInvoiceDetail = (invoiceId: string) =>
       'id, created_at, invoice_number, total, notes, ' +   // sin payment_method: no existe
         'suppliers(name, contact, phone), ' +
         'profiles!purchase_invoices_created_by_fkey(full_name), ' +
-        'purchase_invoice_items(id, qty, unit_cost, subtotal, products(name))',
+        'purchase_invoice_items(id, qty, unit_cost, subtotal, ' +
+        'purchase_unit, units_per_purchase_unit, products(name))',
     )
     .eq('id', invoiceId)
     .single()

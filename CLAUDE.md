@@ -593,6 +593,41 @@ más es gratis; hacia el lado que permite, es una fuga.**
 
 ---
 
+### ⚠️ CRITERIO SIN NÚMERO · LA MISMA REGLA PUEDE ELEGIR EL LADO PERMISIVO — Y ENTONCES HAY QUE ESCRIBIR EL DISPARADOR
+
+*Tercera aplicación de la asimetría de la dirección del fallo, y la primera en que el resultado es
+**abrir** en vez de cerrar. 2026-09-01, al modelar la unidad de compra.*
+
+Las dos primeras veces, preguntar *"¿hacia dónde falla?"* dio **cerrar**: conservar el patrón de
+redacción, sacar la clave del allowlist. Esta vez la misma pregunta dio lo contrario, y por eso vale
+escribirlo — para que no se lea como una excepción:
+
+> **R2 no dice "cerrá siempre": dice que lo permitido se declara positivamente y que el diseño lo
+> decide el modo de fallo. Cuando lo que se cuela por el lado abierto es una ETIQUETA y no un dato
+> que mienta, el lado abierto es el correcto.**
+
+**El caso.** `purchase_invoice_items` gana dos columnas: `purchase_unit` (bulto, canasta, caja) y
+`units_per_purchase_unit` (el factor). Las dos podrían llevar allowlist. Se decidió:
+
+| Columna | Decisión | Qué se cuela si me equivoco |
+|---|---|---|
+| `purchase_unit` | **texto libre** | un typo en una etiqueta: `"Bulto"` vs `"bulto"`. Cosmético. |
+| `units_per_purchase_unit` | **`CHECK` en la base + guard en la RPC** | un costo unitario multiplicado por el tamaño del empaque, **congelado para siempre** en `order_items.unit_cost`. Dinero. |
+
+Una allowlist cerrada de presentaciones **bloquea al cliente** el día que llegue una nueva
+—guacal, arroba, paca—, y eso es un costo real contra un riesgo cosmético.
+
+🔴 **LA CONDICIÓN, que es lo que hace honesta la decisión: elegir el lado permisivo obliga a
+escribir SU DISPARADOR.** No *"algún día se normaliza"* —eso no se ejecuta nunca— sino el hecho
+concreto que lo vuelve insuficiente:
+
+> **El día que haya un reporte POR PRESENTACIÓN, el texto libre deja de servir: `"bulto"` y
+> `"Bulto"` son dos filas.** Ahí se normaliza.
+
+Está escrito en el `comment on column`, que es donde lo va a leer quien escriba ese reporte.
+
+---
+
 ### ⚠️ CRITERIO SIN NÚMERO · MIGRAR UN TEST ENTRE DOS UI CONSERVA EL SUJETO, NO LAS ASERCIONES
 
 *Defecto propio, medido el 2026-09-01.*
@@ -1173,6 +1208,24 @@ tests: **la cobertura obsoleta puede estar cubriendo algo que sigue vigente.** E
 el mismo de la poda: antes de borrar, separar el test en sujeto y expectativas, y preguntarle a cada
 expectativa si sobrevive al modelo nuevo. Las que sobreviven se re-alojan; lo que se borra es solo
 el sujeto muerto.
+
+**🔴 HAY UNA CLASE DE DEFECTO QUE NINGÚN TEST CAZA: EL QUE ESTÁ EN LO QUE SE VE, NO EN LO QUE PASA.**
+*Primera vez en el proyecto que un defecto aparece MIRANDO y no EJECUTANDO — 2026-09-01.*
+
+Con el carrito vacío, el botón **"Cobrar — F12" deshabilitado se veía MÁS CLARO que habilitado**: el
+estado apagado del design system usa `--border-2`, que sobre superficie clara es correcto y sobre el
+panel de tinta es casi blanco. El control gritaba justo cuando no había que tocarlo.
+
+**Ningún test lo caza, y no por falta de cobertura: el botón SÍ estaba deshabilitado.** `toBeDisabled()`
+pasa, el click no dispara, la RPC no se llama. El defecto está **enteramente** en lo que el ojo
+recibe, y no hay aserción que lo exprese sin volverse un test de píxeles.
+
+**La regla práctica:** al terminar una pantalla, **mirarla** — en sus estados, no solo en el feliz.
+Una captura cuesta segundos y cubre una clase que la suite no cubre por construcción.
+
+⚠️ **Y el corolario sobre el material de referencia:** las capturas de `docs/reskin-referencia/`
+(1,1 MB) se justificaron acá. No sirven para verificar el código; sirven para **saber cómo debería
+verse**, que es la única forma de notar que algo se ve mal.
 
 **🔴 UN ROJO QUE NO NOMBRA QUÉ CAMBIÓ CUESTA EL DIAGNÓSTICO ENTERO DE NUEVO.**
 *Medido el 2026-08-31, escribiendo el tripwire del catálogo de permisos.*
