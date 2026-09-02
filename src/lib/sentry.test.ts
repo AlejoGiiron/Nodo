@@ -132,6 +132,10 @@ const COLUMNAS_DEL_ESQUEMA: ColumnaEsquema[] = [
   { tabla: 'purchase_invoices', columna: 'total', ejemplo: 340000 },
   { tabla: 'purchase_invoice_items', columna: 'unit_cost', ejemplo: 8000 },
   { tabla: 'purchase_invoice_items', columna: 'subtotal', ejemplo: 96000 },
+  // Migración `unidad_de_compra` (2026-09-01). Agregadas el 2026-09-02 por A5: el contrato de
+  // R1 punto 6 pedía "la misma sesión" y no se cumplió — deuda 29.6.
+  { tabla: 'purchase_invoice_items', columna: 'purchase_unit', ejemplo: 'bulto' },
+  { tabla: 'purchase_invoice_items', columna: 'units_per_purchase_unit', ejemplo: 50 },
 
   // ── stock_movements / store_sequences
   { tabla: 'stock_movements', columna: 'notes', ejemplo: 'Ajuste hecho por Ana' },

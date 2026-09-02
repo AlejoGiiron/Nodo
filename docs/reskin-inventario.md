@@ -1,5 +1,11 @@
 # Re-skin · Inventario de superficie
 
+> ⚠️ **FOTO del 2026-09-01, SUPERADA. No describe el presente.** Todo lo que dice "hoy" acá era cierto
+> antes del re-skin: los tokens, Inter, las nueve primitivas y el nav existen desde el 2026-09-01/02.
+> Superado por: la skill `nodo-design-system` (§5 ubica Historial, Turnos y Configuración),
+> `docs/reskin-esquema.md`, `docs/auditorias/A3` y `A5`, y `docs/DEUDAS.md`. Se conserva como registro
+> de partida. *(Encabezado agregado por A5.)*
+
 *2026-09-01. Medido, no estimado — el script vive en el scratchpad de la sesión; los comandos para
 reproducir cada número están al pie. **Ninguna línea visual escrita todavía.***
 

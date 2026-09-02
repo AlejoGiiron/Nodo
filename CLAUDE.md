@@ -214,13 +214,18 @@ en Vento.
    manifiesta como error sino como *comportamiento distinto*.
    📋 **Cómo se audita, y es mecánico:** comparar las claves del `return jsonb_build_object` de cada
    RPC contra su interfaz. Enumerado el 2026-09-01: `register_debt_payment` tenía `shift_open`
-   declarado y jamás enviado (bug real, corregido), `register_sale_void` declara `was_fiado` y no lo
-   manda, y `register_purchase` manda `cash_movement_id` sin declararlo.
+   declarado y jamás enviado (bug real, corregido), `register_sale_void` declaraba `was_fiado` y no lo
+   mandaba (corregido el 2026-09-01, migración `void_expone_was_fiado`), y `register_purchase` mandaba
+   `cash_movement_id` sin declararlo (declarado el 2026-09-01). **Los tres están cerrados; el método
+   queda.** *(A5 encontró los dos últimos escritos en presente.)*
 
-5. **`src/types/database.types.ts` escrito a mano vs la BD real.** El CLI de Vento da 403 de
-   management y varias entradas se agregaron a mano. Los tipos pueden divergir del esquema **sin
-   que `tsc` lo note** — el proxy exacto que R4 prohíbe confundir con la cosa real. En Nodo:
-   verificar que el CLI funcione **antes** de escribir la primera migración.
+5. **`src/types/database.types.ts` GENERADO vs COMMITEADO.** En Vento el archivo se escribió a mano
+   porque el CLI daba 403, y los tipos divergían del esquema **sin que `tsc` lo note** — el proxy
+   exacto que R4 prohíbe confundir con la cosa real. En Nodo el CLI funciona y el archivo **se
+   genera** (`pnpm db:types` → `supabase gen types typescript --linked`). El contrato que queda es
+   otro: **el archivo commiteado tiene que ser igual al regenerado**, y eso es un check de árbol
+   (deuda 5), no una lectura. *(Corregido en A5: la versión anterior describía el problema de Vento
+   como si fuera el de Nodo.)*
 
 6. **Tabla de columnas de `src/lib/sentry.test.ts` vs el esquema real.** En Vento son 74
    entradas. Agregar una columna al esquema obliga a agregarla ahí, en la misma sesión.
@@ -1373,7 +1378,7 @@ payload vacío y un `.tsx` **callan**.
 real, lo que prueba la cadena entera —settings leído por el harness, matcher activo, Node
 encontrado, script no mudo—. En Vento el script salió mudo la primera vez y
 leyéndolo se veía perfecto — y esa advertencia se conserva como razón, no como pendiente.
-⛔ **Falta el tripwire** `tests/roles.spec.ts` que clave el tamaño del catálogo.
+✅ El tripwire del catálogo está en `src/lib/permissions.test.ts` (ver la tabla de Estado); `tests/roles.spec.ts` prueba la UI de roles, no el tamaño del catálogo. *(Esta línea decía "falta el tripwire" y contradecía la tabla del mismo archivo; corregido en A5.)*
 
 ---
 
@@ -1417,6 +1422,14 @@ falsa. El estado es lo que se pudre, así que se escribe distinto.
   no. `git rev-list --count develop..main` vale más que cualquier frase sobre qué rama va adelante
   — y de hecho ese bloque decía lo contrario de la realidad durante semanas. Cuando existan las
   dos, va primero el comando y después el dato fechado.
+- **UNA AFIRMACIÓN DE ESTADO SE REEMPLAZA, NUNCA SE AGREGA AL LADO DE LA VIEJA.** *Medido en A5
+  (2026-09-02): las tres peores falsas de este archivo eran PARES CONTRADICTORIOS escritos con horas
+  de diferencia* —"23 claves de Vento" dos renglones arriba de "21 claves"; dos filas `settings.json +
+  hooks`, una diciendo que corren y otra que falta correrlos; "falta el tripwire" en la sección de
+  hooks y "✅ tripwire puesto" en la tabla—. *No envejecieron: nacieron falsas.* La causa es mecánica:
+  **editar por append** — agregar la fila del estado nuevo cuesta menos que releer y borrar la vieja,
+  y el lector que llega a la vieja no sabe que hay una nueva. **Antes de guardar una afirmación de
+  estado: `grep` del objeto en el mismo archivo, y la anterior se reemplaza o se marca como superada.**
 - **"CORREGIDO" SE VERIFICA ENUMERANDO LOS SITIOS, NO RECORDANDO EL COMMIT.** *Primera afirmación
   falsa de la bitácora de Nodo, 2026-09-02, y era de estado:* "el cierre de caja pintaba el sobrante
   en verde" —en pasado— cuando lo corregido era el historial y el pie del modal, no el bloque donde
@@ -1545,7 +1558,7 @@ lo hace. Corolario práctico: al auditar por mutación (R10), **leé el mensaje*
 
 ## Estado
 
-*Actualizado: 2026-08-31.*
+*Actualizado: 2026-09-02 (A5: nueve celdas corregidas; ver `docs/auditorias/A5-estado-en-los-documentos.md`).*
 
 Todo lo de esta sección caduca. Preferí siempre el comando sobre el dato.
 
@@ -1553,16 +1566,15 @@ Todo lo de esta sección caduca. Preferí siempre el comando sobre el dato.
 |---|---|
 | Nombre | **Fijado: Nodo** (2026-08-31), tras verificar riesgo marcario. ⛔ Falta el registro en la SIC, clases 9 y 42. |
 | Repo | Creado (2026-08-31). |
-| Proyecto de Supabase | Creado (2026-08-31). Verificar que el CLI **no** dé 403 antes de la primera migración. |
+| Proyecto de Supabase | Creado (2026-08-31). CLI verificado sin 403 el mismo día (deuda 2); **17 migraciones aplicadas al 2026-09-02**. Reconfirmar con `pnpm exec supabase migration list --linked`. |
 | Vercel | No existe. |
 | Sentry | No existe. Proyecto propio, con el filtro de PII ya corregido. |
-| Origen de la copia | Vento rama `develop`, `d848852`. También `docs/reglas-de-clase` en origin, viva hasta terminar de copiar. |
+| Origen de la copia | Vento rama `develop`, `d848852`. *(Esta fila decía que `docs/reglas-de-clase` seguía viva "en origin": en el origin de Nodo no existe —`git ls-remote --heads origin` → solo `develop`—; si existe, es en el de Vento. Corregido en A5.)* |
 | Conteo de errores repetidos en Vento | **Discrepante:** el traspaso dice 9, su `CLAUDE.md` dice 11, el cierre dice 13 y numera los casos #11–#14. Resolver contra `docs/BITACORA.md` antes de citarlo. |
 | `settings.json` + hooks | Copiados, verificados en banco y **corriendo en la máquina real** (2026-08-31): disparó 3 veces en sesión. ⛔ Las 3 fueron falsos positivos — tasa de ruido sin medir (deuda 22). |
 | Centro | Ya nació multi-producto. Enumerar qué falta para que Nodo entre como tercer producto — **en su propio hilo**. |
-| `settings.json` + hooks | Copiados y verificados en banco. ⛔ Falta correrlos en la máquina real. |
-| Generador de RBAC | **Ya viajó** (2026-08-31). Existen `scripts/gen-rbac-sql.mjs` y `supabase/seed-system-roles.sql`; `pnpm gen:rbac:check` da **exit 0**. ⛔ Falta que ese check corra en **CI** (deuda 5) y ⛔ falta el **catálogo propio** (deuda 23): las 23 claves de `SYSTEM_ROLES` siguen siendo las de Vento (`cocina.*`, `mesas.*`, `delivery.*`). Viajó el mecanismo, no el contenido. Reconfirmar con `grep -oE "'[a-z_]+\.[a-z_]+'" src/lib/permissions.ts \| sort -u \| wc -l`. |
-| Design system | ⛔ Pendiente. |
+| Generador de RBAC | **Ya viajó** (2026-08-31). Existen `scripts/gen-rbac-sql.mjs` y `supabase/seed-system-roles.sql`; `pnpm gen:rbac:check` da **exit 0**. ⛔ Falta que ese check corra en **CI** (deuda 5). ✅ **Catálogo propio desde el 2026-08-31: 21 claves de Nodo** (deuda 23 resuelta); quedan la 23.1 —tres claves sin consumidor al 2026-09-02: `productos.ver`, `reportes.stock`, `reportes.consolidado`— y la 23.2. *(Esta celda decía "23 claves de Vento" mientras la fila del tripwire decía 21: par contradictorio, corregido en A5.)* Reconfirmar con `grep -oE "'[a-z_]+\.[a-z_]+'" src/lib/permissions.ts \| sort -u \| wc -l`. |
+| Design system | ✅ **Capturado como skill `nodo-design-system` (2026-09-01)**; tokens en `src/tokens.css`, 9 primitivas en `src/components/ui/`; re-skin de las 11 pantallas hecho el 2026-09-01/02 —8 en cero hexes; POS, Reportes, Turnos y Fiado con sus hexes documentados—. *(Decía "⛔ Pendiente"; corregido en A5.)* |
 | Tripwire del catálogo | ✅ **Puesto (2026-08-31)** en `src/lib/permissions.test.ts`: las 21 claves como **lista ordenada**, no un conteo — un conteo no ve una sustitución. Auditado por mutación, 3/3 mutantes muertos. Reconfirmar con `pnpm test:unit`. |
 | Regla nueva sin número | ⛔ Numerarla en Vento primero. |
 | Las 5 skills | ⛔ Pendientes. |
