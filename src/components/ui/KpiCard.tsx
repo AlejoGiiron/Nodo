@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { TrendingUp, TrendingDown } from 'lucide-react'
 
 /**
  * KpiCard — §4. La tarjeta de cifra de una pantalla.
@@ -32,6 +33,7 @@ export function KpiCard({
   valor,
   nota,
   tono = 'normal',
+  cambio,
   testid,
 }: {
   etiqueta: string
@@ -39,6 +41,18 @@ export function KpiCard({
   valor: ReactNode
   nota?: string
   tono?: KpiTono
+  /**
+   * Variación porcentual contra el período anterior. `null` = no hay
+   * comparable; `undefined` = esta tarjeta no compara.
+   *
+   * ⚠️ ARRIBA SE PINTA VERDE Y ABAJO ROJO, y eso solo es correcto para métricas
+   * donde MÁS ES MEJOR — que son las tres que hoy la usan (ventas, órdenes,
+   * ticket). El día que aparezca un KPI donde menos es mejor —gastos, costo de
+   * lo vendido, productos sin costo— este componente necesita un prop
+   * `sentido`, porque si no va a afirmar que gastar más salió bien. Es la misma
+   * clase que el sobrante en verde: el color afirma, y acá afirmaría al revés.
+   */
+  cambio?: number | null
   /** Se emiten `kpi-<testid>` y `kpi-<testid>-value`, como en Cartera. */
   testid?: string
 }) {
@@ -81,6 +95,19 @@ export function KpiCard({
       {nota && (
         <div style={{ fontSize: 12, color: tono === 'normal' ? 'var(--ink-3)' : t.fg, marginTop: 2 }}>
           {nota}
+        </div>
+      )}
+      {cambio !== undefined && (
+        <div style={{
+          marginTop: 6, display: 'flex', alignItems: 'center', gap: 4,
+          fontSize: 11.5, fontWeight: 600, fontVariantNumeric: 'tabular-nums',
+          color: cambio === null ? 'var(--ink-4)'
+            : cambio >= 0 ? 'var(--success-700)' : 'var(--danger)',
+        }}>
+          {cambio !== null && (cambio >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />)}
+          {cambio !== null
+            ? `${cambio >= 0 ? '+' : ''}${cambio.toFixed(1)}% vs período anterior`
+            : 'Sin período anterior comparable'}
         </div>
       )}
     </div>

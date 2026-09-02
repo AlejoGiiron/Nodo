@@ -9,9 +9,10 @@ import {
   LineChart, Line,
   PieChart, Pie, Cell,
 } from 'recharts'
-import { Download, TrendingUp, TrendingDown, ShoppingBag, DollarSign, Package, Wallet, Boxes } from 'lucide-react'
+import { Download, Wallet, Boxes } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { useReports } from '@/hooks/useReports'
+import { KpiCard } from '@/components/ui/KpiCard'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -25,15 +26,30 @@ function pctChange(current: number, prev: number): number | null {
   return ((current - prev) / prev) * 100
 }
 
-// ─── Design tokens ────────────────────────────────────────────────────────────
-
+// ─── Colores de serie de gráfico ──────────────────────────────────────────────
+//
+// ⚠️ `#3b82f6` y `#8b5cf6` SE QUEDAN COMO HEXES, y es la misma decisión que los
+//    dos on-dark del arqueo: LA SKILL NO DEFINE UNA PALETA DE GRÁFICOS y §8 dice
+//    que lo que no está no se infiere.
+//
+// 🔴 Y ojo: NO es el caso de "una categoría no se pinta con la paleta de los
+//    estados" (§1.2). Esa regla tiene un corolario —distinguir con ícono,
+//    etiqueta o posición— y en una serie de gráfico **ninguna de las tres
+//    existe**: el color ES el mecanismo de distinción, por eso hay leyenda.
+//    Así que acá el color no afirma un estado; identifica una serie. Lo que
+//    falta no es quitarlo: es que la skill diga CUÁLES.
+//
+// Precedente para cuando se pida: la escala `--d1…--d4` de AgingBar ya
+// distingue cuatro cosas con una rampa DENTRO de un rol, sin tomar prestadas
+// familias ajenas. Una rampa de `--action-900/800/700/500` haría lo mismo para
+// series — pero es una decisión de diseño, no una inferencia.
 const CH_COLOR: Record<string, string> = {
-  mostrador: '#f59e0b', whatsapp: '#10b981', telefono: '#3b82f6',
+  mostrador: 'var(--warning-700)', whatsapp: 'var(--action)', telefono: '#3b82f6',
 }
 const CH_LABEL: Record<string, string> = {
   mostrador: 'Mostrador', whatsapp: 'WhatsApp', telefono: 'Teléfono',
 }
-const PAY_COLORS = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b']
+const PAY_COLORS = ['var(--action)', '#3b82f6', '#8b5cf6', 'var(--warning-700)']
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 
@@ -43,46 +59,6 @@ function Skeleton({ h }: { h: number }) {
 
 // ─── KPI Card ─────────────────────────────────────────────────────────────────
 
-function KPICard({
-  label, value, icon, change, isLoading, testid,
-}: {
-  label: string
-  value: string
-  icon: React.ReactNode
-  change: number | null
-  isLoading: boolean
-  testid?: string
-}) {
-  if (isLoading) return <Skeleton h={110} />
-  const up = change !== null && change >= 0
-  return (
-    <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: '18px 22px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-        <span style={{ fontSize: 12, fontWeight: 600, color: '#64748b' }}>{label}</span>
-        <span style={{
-          width: 30, height: 30, borderRadius: 8,
-          background: 'rgba(16,185,129,.10)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981',
-        }}>
-          {icon}
-        </span>
-      </div>
-      <div data-testid={testid} style={{ fontFamily: 'monospace', fontSize: 22, fontWeight: 700, color: '#0f172a', letterSpacing: -0.5 }}>
-        {value}
-      </div>
-      <div style={{
-        marginTop: 6, display: 'flex', alignItems: 'center', gap: 4,
-        fontSize: 11.5, fontWeight: 600,
-        color: change === null ? '#94a3b8' : up ? '#059669' : '#dc2626',
-      }}>
-        {change !== null && (up ? <TrendingUp size={12} /> : <TrendingDown size={12} />)}
-        {change !== null
-          ? `${up ? '+' : ''}${change.toFixed(1)}% vs período anterior`
-          : '— sin datos anteriores'}
-      </div>
-    </div>
-  )
-}
 
 // ─── Chart card wrapper ───────────────────────────────────────────────────────
 
@@ -96,9 +72,9 @@ function ChartCard({
   skeletonH?: number
 }) {
   return (
-    <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: '20px 20px 14px' }}>
-      <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', marginBottom: 2 }}>{title}</p>
-      {subtitle && <p style={{ fontSize: 11.5, color: '#94a3b8', marginBottom: 14 }}>{subtitle}</p>}
+    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: '20px 20px 14px' }}>
+      <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)', marginBottom: 2 }}>{title}</p>
+      {subtitle && <p style={{ fontSize: 11.5, color: 'var(--ink-4)', marginBottom: 14 }}>{subtitle}</p>}
       {isLoading ? <Skeleton h={skeletonH} /> : children}
     </div>
   )
@@ -133,8 +109,24 @@ export function ReportsPage() {
   const { dailySales: prevDailySales } = useReports({ from: prevFrom, to: prevTo })
 
   // ─── KPI aggregates ───────────────────────────────────────────────────────
+  // 🔴 DEUDA 53 — `total_revenue` ES LO COBRADO, NO LO VENDIDO.
+  //    `daily_sales_summary.total_revenue` es `sum(payments.amount)`: una venta
+  //    a fiado aporta 0 porque no tiene fila en `payments`. Pero `order_count`
+  //    LA CUENTA IGUAL.
+  //    Medido en el lab el 2026-09-02: 158 órdenes, vendido 2.357.200, cobrado
+  //    993.200 — la pantalla dice "Ventas totales: 993.200" y falta el 58%.
+  //    El §7.13 de la skill ya lo decía ("las vistas miden cobrado, no
+  //    vendido"); la pantalla nunca lo dijo.
+  //    ⚠️ NO SE RENOMBRA ACÁ: qué debe medir el reporte —vendido, cobrado o las
+  //    dos— es decisión de producto, y para una distribuidora que vende a
+  //    crédito las dos responden preguntas distintas que se miran a diario.
   const totalRev   = useMemo(() => dailySales.reduce((s, r) => s + (r.total_revenue ?? 0), 0), [dailySales])
   const totalOrd   = useMemo(() => dailySales.reduce((s, r) => s + (r.order_count   ?? 0), 0), [dailySales])
+  // 🔴 DEUDA 53, SEGUNDA MITAD — y ésta no es un rótulo: es aritmética inválida.
+  //    `cobrado / TODAS las órdenes` mezcla el numerador de una población con el
+  //    denominador de otra. No es el ticket de nada: ni de lo cobrado (habría
+  //    que dividir por las órdenes cobradas) ni de lo vendido.
+  //    Medido: muestra 6.286 donde el real es 14.919 — menos de la mitad.
   const avgTicket  = useMemo(() => totalOrd > 0 ? totalRev / totalOrd : 0, [totalRev, totalOrd])
   const prevRev    = useMemo(() => prevDailySales.reduce((s, r) => s + (r.total_revenue ?? 0), 0), [prevDailySales])
   const prevOrd    = useMemo(() => prevDailySales.reduce((s, r) => s + (r.order_count   ?? 0), 0), [prevDailySales])
@@ -360,14 +352,14 @@ export function ReportsPage() {
     <div className="flex flex-col h-full overflow-hidden">
 
       {/* ── Barra de controles ── */}
-      <div style={{ background: '#fff', borderBottom: '1px solid #e2e8f0', padding: '12px 24px', flexShrink: 0 }}>
+      <div style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', padding: '12px 24px', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
 
           {/* Título + atajos */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
             <div>
-              <h1 style={{ fontSize: 15, fontWeight: 700, color: '#0f172a' }}>Reportes</h1>
-              <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>
+              <h1 style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)' }}>Reportes</h1>
+              <p style={{ fontSize: 11, color: 'var(--ink-4)', marginTop: 1 }}>
                 {format(parseISO(from), "d MMM yyyy", { locale: es })}
                 {' — '}
                 {format(parseISO(to),   "d MMM yyyy", { locale: es })}
@@ -381,8 +373,8 @@ export function ReportsPage() {
                   style={{
                     fontSize: 12, fontWeight: 600, padding: '5px 10px',
                     borderRadius: 7, border: 'none', cursor: 'pointer',
-                    background: activeShortcut === s.key ? '#10b981' : '#f1f5f9',
-                    color:      activeShortcut === s.key ? '#fff'     : '#475569',
+                    background: activeShortcut === s.key ? 'var(--action)' : 'var(--border-2)',
+                    color:      activeShortcut === s.key ? '#fff'     : 'var(--ink-2)',
                     transition: 'all .15s',
                   }}
                 >
@@ -397,13 +389,13 @@ export function ReportsPage() {
             <input
               type="date" value={from} max={to}
               onChange={e => { setFrom(e.target.value); setActiveShortcut('') }}
-              style={{ fontSize: 13, padding: '6px 10px', border: '1.5px solid #e2e8f0', borderRadius: 8, color: '#0f172a', outline: 'none' }}
+              style={{ fontSize: 13, padding: '6px 10px', border: '1.5px solid var(--border)', borderRadius: 8, color: 'var(--ink)', outline: 'none' }}
             />
-            <span style={{ color: '#94a3b8', fontSize: 13 }}>—</span>
+            <span style={{ color: 'var(--ink-4)', fontSize: 13 }}>—</span>
             <input
               type="date" value={to} min={from}
               onChange={e => { setTo(e.target.value); setActiveShortcut('') }}
-              style={{ fontSize: 13, padding: '6px 10px', border: '1.5px solid #e2e8f0', borderRadius: 8, color: '#0f172a', outline: 'none' }}
+              style={{ fontSize: 13, padding: '6px 10px', border: '1.5px solid var(--border)', borderRadius: 8, color: 'var(--ink)', outline: 'none' }}
             />
           </div>
         </div>
@@ -424,9 +416,9 @@ export function ReportsPage() {
                   display: 'flex', alignItems: 'center', gap: 6,
                   fontSize: 13, fontWeight: 600, padding: '8px 16px',
                   border: 'none', cursor: 'pointer',
-                  borderBottom: active ? '2px solid #10b981' : '2px solid transparent',
+                  borderBottom: active ? '2px solid var(--action)' : '2px solid transparent',
                   background: 'transparent',
-                  color: active ? '#0f172a' : '#64748b',
+                  color: active ? 'var(--ink)' : 'var(--ink-3)',
                   transition: 'all .12s',
                 }}
               >
@@ -438,7 +430,7 @@ export function ReportsPage() {
       </div>
 
       {/* ── Contenido scrollable ── */}
-      <div style={{ flex: 1, overflowY: 'auto', background: '#f8fafc' }}>
+      <div style={{ flex: 1, overflowY: 'auto', background: 'var(--surface-2)' }}>
         <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
 
           {activeTab === 'financiero' && (
@@ -454,8 +446,8 @@ export function ReportsPage() {
                 fontSize: 13, fontWeight: 600, padding: '7px 14px',
                 borderRadius: 9, border: 'none',
                 cursor:     exportDisabled ? 'not-allowed' : 'pointer',
-                background: exportDisabled ? '#cbd5e1'     : '#10b981',
-                color: '#fff',
+                background: exportDisabled ? 'var(--ink-4)'     : 'var(--action)',
+                color: 'var(--surface)',
                 boxShadow: exportDisabled ? 'none' : '0 4px 12px rgba(16,185,129,.35)',
               }}
             >
@@ -466,37 +458,28 @@ export function ReportsPage() {
 
           {/* KPIs financieros */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
-            <KPICard
-              label="Ventas totales"
-              value={COP(totalRev)}
-              icon={<DollarSign size={15} />}
-              change={pctChange(totalRev, prevRev)}
-              isLoading={isLoading}
-            />
-            <KPICard
-              label="Órdenes"
-              value={totalOrd.toLocaleString('es-CO')}
-              icon={<ShoppingBag size={15} />}
-              change={pctChange(totalOrd, prevOrd)}
-              isLoading={isLoading}
-            />
-            <KPICard
-              label="Ticket promedio"
-              value={COP(avgTicket)}
-              icon={<TrendingUp size={15} />}
-              change={pctChange(avgTicket, prevTicket)}
-              isLoading={isLoading}
-            />
+            {/* Tercera y ultima copia de KpiCard, unificada. La primitiva gano
+                el indicador de cambio, que era lo unico que esta version tenia
+                de mas — extenderla es unificar; borrarlo habria sido perder. */}
+            {isLoading ? <Skeleton h={110} /> : (
+              <KpiCard etiqueta="Ventas totales" valor={COP(totalRev)} cambio={pctChange(totalRev, prevRev)} />
+            )}
+            {isLoading ? <Skeleton h={110} /> : (
+              <KpiCard etiqueta="Órdenes" valor={totalOrd.toLocaleString('es-CO')} cambio={pctChange(totalOrd, prevOrd)} />
+            )}
+            {isLoading ? <Skeleton h={110} /> : (
+              <KpiCard etiqueta="Ticket promedio" valor={COP(avgTicket)} cambio={pctChange(avgTicket, prevTicket)} />
+            )}
           </div>
 
           {/* Estado vacío */}
           {isEmpty && (
             <div style={{
-              background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14,
+              background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14,
               padding: '52px 24px', textAlign: 'center',
             }}>
-              <p style={{ fontSize: 15, fontWeight: 700, color: '#0f172a' }}>Sin ventas en el período</p>
-              <p style={{ fontSize: 13.5, color: '#64748b', marginTop: 6 }}>
+              <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)' }}>Sin ventas en el período</p>
+              <p style={{ fontSize: 13.5, color: 'var(--ink-3)', marginTop: 6 }}>
                 Ajusta el rango de fechas para ver datos de otro período.
               </p>
             </div>
@@ -514,16 +497,16 @@ export function ReportsPage() {
                 >
                   <ResponsiveContainer width="100%" height={220}>
                     <BarChart data={barData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border-2)" vertical={false} />
                       <XAxis
                         dataKey="day"
-                        tick={{ fontSize: 10, fill: '#94a3b8' }}
+                        tick={{ fontSize: 10, fill: 'var(--ink-4)' }}
                         tickFormatter={(v: string) => v.slice(5)}
                         interval="preserveStartEnd"
                         axisLine={false} tickLine={false}
                       />
                       <YAxis
-                        tick={{ fontSize: 10, fill: '#94a3b8' }}
+                        tick={{ fontSize: 10, fill: 'var(--ink-4)' }}
                         tickFormatter={(v: number) => `${Math.round(v / 1000)}k`}
                         width={40} axisLine={false} tickLine={false}
                       />
@@ -532,7 +515,7 @@ export function ReportsPage() {
                           [COP(Number(v)), CH_LABEL[String(name)] ?? String(name)]
                         }
                         labelFormatter={(l: unknown) => `Fecha: ${String(l)}`}
-                        contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,.06)' }}
+                        contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid var(--border)', boxShadow: '0 4px 12px rgba(0,0,0,.06)' }}
                       />
                       <Legend
                         formatter={(v: string) => CH_LABEL[v] ?? v}
@@ -553,27 +536,27 @@ export function ReportsPage() {
                 >
                   <ResponsiveContainer width="100%" height={220}>
                     <LineChart data={hourlyData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border-2)" vertical={false} />
                       <XAxis
                         dataKey="label"
-                        tick={{ fontSize: 10, fill: '#94a3b8' }}
+                        tick={{ fontSize: 10, fill: 'var(--ink-4)' }}
                         interval={3}
                         axisLine={false} tickLine={false}
                       />
                       <YAxis
-                        tick={{ fontSize: 10, fill: '#94a3b8' }}
+                        tick={{ fontSize: 10, fill: 'var(--ink-4)' }}
                         tickFormatter={(v: number) => `${Math.round(v / 1000)}k`}
                         width={40} axisLine={false} tickLine={false}
                       />
                       <Tooltip
                         formatter={(v: unknown) => [COP(Number(v)), 'Ventas']}
-                        contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,.06)' }}
+                        contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid var(--border)', boxShadow: '0 4px 12px rgba(0,0,0,.06)' }}
                       />
                       <Line
                         type="monotone" dataKey="ventas"
-                        stroke="#10b981" strokeWidth={2.5}
+                        stroke="var(--action)" strokeWidth={2.5}
                         dot={false}
-                        activeDot={{ r: 4, fill: '#10b981', strokeWidth: 0 }}
+                        activeDot={{ r: 4, fill: 'var(--action)', strokeWidth: 0 }}
                       />
                     </LineChart>
                   </ResponsiveContainer>
@@ -591,7 +574,7 @@ export function ReportsPage() {
                   skeletonH={280}
                 >
                   {payData.length === 0 ? (
-                    <div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: 13 }}>
+                    <div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--ink-4)', fontSize: 13 }}>
                       Sin datos
                     </div>
                   ) : (
@@ -607,7 +590,7 @@ export function ReportsPage() {
                           </Pie>
                           <Tooltip
                             formatter={(v: unknown, name: unknown) => [COP(Number(v)), String(name)]}
-                            contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}
+                            contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid var(--border)' }}
                           />
                         </PieChart>
                       </ResponsiveContainer>
@@ -620,11 +603,11 @@ export function ReportsPage() {
                             <div key={d.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12 }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                                 <div style={{ width: 8, height: 8, borderRadius: '50%', background: d.color, flexShrink: 0 }} />
-                                <span style={{ color: '#475569', fontWeight: 500 }}>{d.name}</span>
+                                <span style={{ color: 'var(--ink-2)', fontWeight: 500 }}>{d.name}</span>
                               </div>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <span style={{ color: '#94a3b8', fontSize: 11 }}>{share.toFixed(1)}%</span>
-                                <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#0f172a' }}>{COP(d.value)}</span>
+                                <span style={{ color: 'var(--ink-4)', fontSize: 11 }}>{share.toFixed(1)}%</span>
+                                <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: 'var(--ink)' }}>{COP(d.value)}</span>
                               </div>
                             </div>
                           )
@@ -635,26 +618,26 @@ export function ReportsPage() {
                 </ChartCard>
 
                 {/* Top 10 productos */}
-                <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 20 }}>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', marginBottom: 2 }}>Top 10 productos</p>
-                  <p style={{ fontSize: 11.5, color: '#94a3b8', marginBottom: 16 }}>Por revenue del período</p>
+                <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: 20 }}>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)', marginBottom: 2 }}>Top 10 productos</p>
+                  <p style={{ fontSize: 11.5, color: 'var(--ink-4)', marginBottom: 16 }}>Por revenue del período</p>
 
                   {isLoading ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                       {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} h={36} />)}
                     </div>
                   ) : top10.length === 0 ? (
-                    <div style={{ height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: 13 }}>
+                    <div style={{ height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--ink-4)', fontSize: 13 }}>
                       Sin productos vendidos
                     </div>
                   ) : (
                     <div style={{ overflowX: 'auto' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
                         <thead>
-                          <tr style={{ borderBottom: '2px solid #f1f5f9' }}>
+                          <tr style={{ borderBottom: '2px solid var(--border-2)' }}>
                             {['#', 'Producto', 'Categoría', 'Unidades', 'Total', '% rev.'].map((h, i) => (
                               <th key={h} style={{
-                                padding: '7px 10px', fontSize: 11.5, fontWeight: 600, color: '#64748b',
+                                padding: '7px 10px', fontSize: 11.5, fontWeight: 600, color: 'var(--ink-3)',
                                 textAlign: i >= 3 ? 'right' : 'left', whiteSpace: 'nowrap',
                               }}>
                                 {h}
@@ -664,20 +647,20 @@ export function ReportsPage() {
                         </thead>
                         <tbody>
                           {top10.map((p, i) => (
-                            <tr key={p.product_id} style={{ borderBottom: '1px solid #f8fafc' }}>
-                              <td style={{ padding: '10px 10px', color: '#94a3b8', fontWeight: 700, fontSize: 11 }}>{i + 1}</td>
-                              <td style={{ padding: '10px 10px', color: '#0f172a', fontWeight: 600, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            <tr key={p.product_id} style={{ borderBottom: '1px solid var(--surface-2)' }}>
+                              <td style={{ padding: '10px 10px', color: 'var(--ink-4)', fontWeight: 700, fontSize: 11 }}>{i + 1}</td>
+                              <td style={{ padding: '10px 10px', color: 'var(--ink)', fontWeight: 600, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                 {p.product_name}
                               </td>
-                              <td style={{ padding: '10px 10px', color: '#64748b' }}>{p.category_name}</td>
-                              <td style={{ padding: '10px 10px', textAlign: 'right', fontFamily: 'monospace', color: '#334155' }}>
+                              <td style={{ padding: '10px 10px', color: 'var(--ink-3)' }}>{p.category_name}</td>
+                              <td style={{ padding: '10px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--ink-2)' }}>
                                 {p.total_qty.toLocaleString('es-CO')}
                               </td>
-                              <td style={{ padding: '10px 10px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: '#0f172a' }}>
+                              <td style={{ padding: '10px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: 'var(--ink)' }}>
                                 {COP(p.total_revenue)}
                               </td>
                               <td style={{ padding: '10px 0 10px 10px', textAlign: 'right' }}>
-                                <span style={{ background: '#ecfdf5', color: '#065f46', borderRadius: 5, padding: '2px 7px', fontSize: 11, fontWeight: 600 }}>
+                                <span style={{ background: 'var(--action-soft)', color: 'var(--success-on-soft)', borderRadius: 5, padding: '2px 7px', fontSize: 11, fontWeight: 600 }}>
                                   {p.sharePct.toFixed(1)}%
                                 </span>
                               </td>
@@ -707,8 +690,8 @@ export function ReportsPage() {
                 fontSize: 13, fontWeight: 600, padding: '7px 14px',
                 borderRadius: 9, border: 'none',
                 cursor:     exportStockDisabled ? 'not-allowed' : 'pointer',
-                background: exportStockDisabled ? '#cbd5e1'     : '#10b981',
-                color: '#fff',
+                background: exportStockDisabled ? 'var(--ink-4)'     : 'var(--action)',
+                color: 'var(--surface)',
                 boxShadow: exportStockDisabled ? 'none' : '0 4px 12px rgba(16,185,129,.35)',
               }}
             >
@@ -719,39 +702,44 @@ export function ReportsPage() {
 
           {/* KPIs de stock */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
-            <KPICard label="Unidades vendidas"  value={totalUnits.toLocaleString('es-CO')}            icon={<Package size={15} />}     change={null} isLoading={isLoading} />
-            <KPICard label="Productos vendidos"  value={allProducts.length.toLocaleString('es-CO')}    icon={<Boxes size={15} />}       change={null} isLoading={isLoading} />
-            <KPICard label="Categorías"          value={categoryRanking.length.toLocaleString('es-CO')} icon={<ShoppingBag size={15} />} change={null} isLoading={isLoading} />
+            {/* Estos tres NO comparan período: `cambio` va sin pasar (undefined),
+                que es distinto de `null` — null dice "no hay comparable", sin
+                pasar dice "esta tarjeta no compara". Antes los tres mandaban
+                change={null} y pintaban "— sin datos anteriores", que afirma
+                que la comparación existe y falló. No existe. */}
+            {isLoading ? <Skeleton h={110} /> : <KpiCard etiqueta="Unidades vendidas" valor={totalUnits.toLocaleString('es-CO')} />}
+            {isLoading ? <Skeleton h={110} /> : <KpiCard etiqueta="Productos vendidos" valor={allProducts.length.toLocaleString('es-CO')} />}
+            {isLoading ? <Skeleton h={110} /> : <KpiCard etiqueta="Categorías" valor={categoryRanking.length.toLocaleString('es-CO')} />}
           </div>
 
           {isStockEmpty ? (
-            <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: '52px 24px', textAlign: 'center' }}>
-              <p style={{ fontSize: 15, fontWeight: 700, color: '#0f172a' }}>Sin productos vendidos en el período</p>
-              <p style={{ fontSize: 13.5, color: '#64748b', marginTop: 6 }}>Ajusta el rango de fechas para ver el consumo de productos.</p>
+            <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: '52px 24px', textAlign: 'center' }}>
+              <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)' }}>Sin productos vendidos en el período</p>
+              <p style={{ fontSize: 13.5, color: 'var(--ink-3)', marginTop: 6 }}>Ajusta el rango de fechas para ver el consumo de productos.</p>
             </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: 16 }}>
               {/* Productos más vendidos */}
-              <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 20 }}>
-                <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', marginBottom: 2 }}>Productos más vendidos</p>
-                <p style={{ fontSize: 11.5, color: '#94a3b8', marginBottom: 16 }}>Unidades y revenue del período</p>
+              <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: 20 }}>
+                <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)', marginBottom: 2 }}>Productos más vendidos</p>
+                <p style={{ fontSize: 11.5, color: 'var(--ink-4)', marginBottom: 16 }}>Unidades y revenue del período</p>
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
                     <thead>
-                      <tr style={{ borderBottom: '2px solid #f1f5f9' }}>
+                      <tr style={{ borderBottom: '2px solid var(--border-2)' }}>
                         {['#', 'Producto', 'Categoría', 'Unidades', 'Revenue'].map((h, i) => (
-                          <th key={h} style={{ padding: '7px 10px', fontSize: 11.5, fontWeight: 600, color: '#64748b', textAlign: i >= 3 ? 'right' : 'left', whiteSpace: 'nowrap' }}>{h}</th>
+                          <th key={h} style={{ padding: '7px 10px', fontSize: 11.5, fontWeight: 600, color: 'var(--ink-3)', textAlign: i >= 3 ? 'right' : 'left', whiteSpace: 'nowrap' }}>{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {allProducts.slice(0, 15).map((p, i) => (
-                        <tr key={p.product_id} style={{ borderBottom: '1px solid #f8fafc' }}>
-                          <td style={{ padding: '10px', color: '#94a3b8', fontWeight: 700, fontSize: 11 }}>{i + 1}</td>
-                          <td style={{ padding: '10px', color: '#0f172a', fontWeight: 600, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.product_name}</td>
-                          <td style={{ padding: '10px', color: '#64748b' }}>{p.category_name}</td>
-                          <td style={{ padding: '10px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: '#0f172a' }}>{p.total_qty.toLocaleString('es-CO')}</td>
-                          <td style={{ padding: '10px', textAlign: 'right', fontFamily: 'monospace', color: '#334155' }}>{COP(p.total_revenue)}</td>
+                        <tr key={p.product_id} style={{ borderBottom: '1px solid var(--surface-2)' }}>
+                          <td style={{ padding: '10px', color: 'var(--ink-4)', fontWeight: 700, fontSize: 11 }}>{i + 1}</td>
+                          <td style={{ padding: '10px', color: 'var(--ink)', fontWeight: 600, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.product_name}</td>
+                          <td style={{ padding: '10px', color: 'var(--ink-3)' }}>{p.category_name}</td>
+                          <td style={{ padding: '10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: 'var(--ink)' }}>{p.total_qty.toLocaleString('es-CO')}</td>
+                          <td style={{ padding: '10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--ink-2)' }}>{COP(p.total_revenue)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -760,9 +748,9 @@ export function ReportsPage() {
               </div>
 
               {/* Ranking de categorías */}
-              <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 20 }}>
-                <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', marginBottom: 2 }}>Ranking de categorías</p>
-                <p style={{ fontSize: 11.5, color: '#94a3b8', marginBottom: 16 }}>Por revenue del período</p>
+              <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: 20 }}>
+                <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)', marginBottom: 2 }}>Ranking de categorías</p>
+                <p style={{ fontSize: 11.5, color: 'var(--ink-4)', marginBottom: 16 }}>Por revenue del período</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   {categoryRanking.map((c, i) => {
                     const max = categoryRanking[0]?.total_revenue || 1
@@ -770,13 +758,13 @@ export function ReportsPage() {
                     return (
                       <div key={c.category}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, marginBottom: 4 }}>
-                          <span style={{ color: '#334155', fontWeight: 600 }}>{c.category}</span>
-                          <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#0f172a' }}>{COP(c.total_revenue)}</span>
+                          <span style={{ color: 'var(--ink-2)', fontWeight: 600 }}>{c.category}</span>
+                          <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: 'var(--ink)' }}>{COP(c.total_revenue)}</span>
                         </div>
-                        <div style={{ height: 6, background: '#f1f5f9', borderRadius: 3, overflow: 'hidden' }}>
+                        <div style={{ height: 6, background: 'var(--border-2)', borderRadius: 3, overflow: 'hidden' }}>
                           <div style={{ width: `${pct}%`, height: '100%', background: PAY_COLORS[i % PAY_COLORS.length] }} />
                         </div>
-                        <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 3 }}>{c.total_qty.toLocaleString('es-CO')} unidades</div>
+                        <div style={{ fontSize: 11, color: 'var(--ink-4)', marginTop: 3 }}>{c.total_qty.toLocaleString('es-CO')} unidades</div>
                       </div>
                     )
                   })}
@@ -786,7 +774,7 @@ export function ReportsPage() {
           )}
 
           {/* Stock/consumo: preparado para cuando los productos registren inventario */}
-          <div style={{ fontSize: 11.5, color: '#94a3b8', textAlign: 'center' }}>
+          <div style={{ fontSize: 11.5, color: 'var(--ink-4)', textAlign: 'center' }}>
             El control de stock por unidades disponibles se mostrará aquí cuando los productos registren inventario.
           </div>
           </>

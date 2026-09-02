@@ -618,6 +618,48 @@ más es gratis; hacia el lado que permite, es una fuga.**
 
 ---
 
+### ⚠️ CRITERIO SIN NÚMERO · "USAR LOS TOKENS" NO ES "USAR LA PRIMITIVA"
+
+*Medido el 2026-09-02, llevando la cuenta de los badges del re-skin.*
+
+Un barrido de colores y una migración a componentes **se ven iguales en una captura** y no lo son.
+Es la diferencia entre **tokenizar** y **re-skinear**, y conviene tenerla escrita porque el primero
+se siente terminado:
+
+| | barrido de tokens | migración a la primitiva |
+|---|---|---|
+| Qué cambia | los VALORES de color | la FORMA del markup |
+| Qué queda | 30 líneas de `style={{...}}` inline con `var(--…)` | un `<Badge tone="…">` |
+| Verificable | sí, con un grep de hexes | sí, con un grep del componente |
+| **Qué NO arregla** | **nada de lo estructural** | — |
+
+🔴 **Lo que el barrido deja intacto, y es lo que importa:**
+
+1. **El próximo nace distinto.** Un `style` inline no le enseña nada a quien escriba el siguiente:
+   va a copiar el de al lado, o a inventar el suyo. La primitiva es el único mecanismo que hace que
+   la forma se propague sola.
+2. **El markup sigue contradiciendo la skill.** Un badge con los colores correctos pero padding,
+   radio y peso propios **no es el componente del §4**: se le parece.
+3. **Un cambio de diseño futuro no llega.** Cambiar el radio de las píldoras es una línea en la
+   primitiva y N ediciones en el markup inline — que es exactamente el modo de fallo de R1.
+
+**Caso medido:** los dos badges de Turnos (`overdraft-badge` en `CloseShiftModal`,
+`overdraft-warning` en `MovementsModal`) **tienen los colores migrados y siguen siendo markup
+inline**. Pasaron el censo de hexes en cero y no pasaron nada más. Si el conteo de "badges
+migrados" los hubiera contado, habría dicho 6 de 6 con 2 sin migrar.
+
+**Lo accionable:** al cerrar una pantalla, contar **las dos cosas por separado** — hexes fuera, y
+componentes adentro. Un cero de hexes no implica lo segundo, y el registro tiene que decir cuál de
+las dos se hizo.
+
+⚠️ Corolario que ya se aplicó: **no forzar la primitiva donde no encaja.** En `SalesHistoryPage`,
+`MoneyCell` se descartó a propósito — sus siete cifras son spans inline de un modal con tamaños de
+12 a 22px, y el 13px/500 fijo del componente pelearía con cada uno. Ya aplican `tabular-nums` y el
+formateador único, que es lo que la primitiva garantiza. **Usar el componente donde estorba es peor
+que no usarlo**; lo que no vale es no usarlo *y no decir por qué*.
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · EN ESTE PROYECTO LOS INSTRUMENTOS DE MEDICIÓN FALLAN MÁS QUE EL CÓDIGO MEDIDO
 
 *Tres casos en dos días, 2026-09-01 y 02. No es mala suerte: es una propiedad del oficio que no

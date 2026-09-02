@@ -128,6 +128,27 @@ Nota de implementación: el primer tramo del componente `AgingBar` usa `--action
 
 > **Regla — verde es solo confirmación y ninguna acción lo usa.** No hay botón verde en el producto. Si aparece uno, el usuario deja de poder distinguir "esto está bien" de "hacé clic acá".
 
+> **🔴 Regla — UNA CATEGORÍA NO SE PINTA CON LA PALETA DE LOS ESTADOS.** *[Agregada el 2026-09-02
+> tras encontrar la misma forma en dos pantallas distintas.]*
+>
+> Las familias de esta sección **afirman algo**: `--success` dice *"salió bien"*, `--warning` dice
+> *"decidí vos"*, `--danger` dice *"esto está mal"*, `--action` dice *"hacé clic"*. Usarlas para
+> distinguir **clases de una cosa** —que no son ni estados ni acciones— hace que el color afirme
+> cosas que nadie quiso decir.
+>
+> | Dónde | Qué estaba pintado | Qué afirmaba sin querer |
+> |---|---|---|
+> | **Inventario**, tipos de movimiento | venta azul · ajuste **violeta** · compra y devolución verdes | que una compra es una confirmación, y el violeta ni siquiera existe en el sistema |
+> | **Historial**, canales de venta | mostrador ámbar · WhatsApp verde · teléfono azul | que una venta por WhatsApp confirma algo, y que una de mostrador pide una decisión |
+>
+> ✅ **Y en los dos casos el color era REDUNDANTE**, que es lo que hace la regla fácil de aceptar:
+> los íconos ya distinguían las categorías. Al quitarlo **no se pierde información** — se deja de
+> afirmar de más.
+>
+> **Corolario:** si hay que distinguir N cosas que no son estados ni acciones, se distinguen con
+> **ícono, etiqueta o posición**. Si aun así hace falta color, se pide — no se toma prestada una
+> familia que ya significa otra cosa (§8).
+
 #### Neutros y superficies
 
 ```css
@@ -464,6 +485,17 @@ Nada de esta lista debe leerse como resuelto. Si la implementación necesita una
    > cierre de caja va sobre `--ink` y muestra la diferencia en verde o rojo según el signo — hoy
    > con dos hexes literales (`#34d399`, `#f87171`), marcados en el código como lo que son: valores
    > que la skill no define y que **no se inventaron**. Se piden cuando el arqueo tenga su turno.
+3-bis. **[HUECO ENCONTRADO 2026-09-02 — PALETA DE SERIES DE GRÁFICO.]** Reportes dibuja barras,
+   líneas y torta con **hasta cuatro series** y la skill no define colores para eso. Hoy usa dos
+   hexes sueltos (`#3b82f6`, `#8b5cf6`) además de `--action` y `--warning-700`.
+   ⚠️ **No es el caso de "una categoría no se pinta con la paleta de los estados"** (§1.2): esa
+   regla se resuelve con ícono, etiqueta o posición, y **en una serie de gráfico ninguna de las tres
+   existe** — el color *es* el mecanismo de distinción, por eso hay leyenda. Acá el color no afirma
+   un estado: identifica una serie.
+   **Precedente para decidirla:** la escala `--d1…--d4` de `AgingBar` ya distingue cuatro cosas con
+   una rampa DENTRO de un rol. Una rampa de `--action-900/800/700/500` haría lo mismo para series —
+   pero eso se decide, no se infiere.
+
 4. **Móvil.** **[CORREGIDO]** La entrega decía "solo la ruta del conductor está pensada en móvil" — **en Nodo no hay conductores, rutas ni despacho**, ni están planeados (el cliente carga y se lleva; es la razón por la que el producto no se llama G-Ship). Queda: las nueve pantallas de escritorio no tienen diseño responsive por debajo de ~1100px; hoy hacen scroll horizontal. Móvil entero está sin decidir.
 5. **Estados de foco por teclado.** El recorrido con Tab, el anillo de foco visible y el orden de tabulación no están especificados. Los atajos sí.
 6. **Impresión.** Remisión, factura, recibo de abono y cierre de caja no tienen diseño impreso.
