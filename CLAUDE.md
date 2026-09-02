@@ -1413,6 +1413,13 @@ falsa. El estado es lo que se pudre, así que se escribe distinto.
   no. `git rev-list --count develop..main` vale más que cualquier frase sobre qué rama va adelante
   — y de hecho ese bloque decía lo contrario de la realidad durante semanas. Cuando existan las
   dos, va primero el comando y después el dato fechado.
+- **"CORREGIDO" SE VERIFICA ENUMERANDO LOS SITIOS, NO RECORDANDO EL COMMIT.** *Primera afirmación
+  falsa de la bitácora de Nodo, 2026-09-02, y era de estado:* "el cierre de caja pintaba el sobrante
+  en verde" —en pasado— cuando lo corregido era el historial y el pie del modal, no el bloque donde
+  se decide. Se escribió con el commit fresco y la convicción de haberlo hecho: **recordar el commit
+  no es enumerar los sitios.** Antes de escribir "se corrigió X": grep de la forma, lista de sitios,
+  estado de cada uno. Si se tocaron dos de tres, la nota dice cuáles. Lo cazó A3 porque el plan exigía
+  que el caso **apareciera** en vez de darlo por cerrado.
 - **UNA NOTA QUE DIRIGE MAL CUESTA MÁS QUE UNA AUSENTE.** Las dos peores del documento no eran
   omisiones: describían código eliminado y una relación de ramas invertida. Si no podés verificar
   una afirmación, no la escribas como hecho.

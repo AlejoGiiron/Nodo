@@ -2022,6 +2022,12 @@ la persiste; el retorno se leía, la columna no.)*
 
 ## 2026-09-02 · El arqueo — una corrección de SIGNIFICADO, no de color
 
+> ⚠️ **ESTA ENTRADA AFIRMA UNA CORRECCIÓN QUE NO SE HIZO DONDE IMPORTA.** Lo corregido fue
+> `ShiftHistoryPage` y el pie sobre tinta del modal; **el bloque "Diferencia" de `CloseShiftModal`
+> —donde se decide el cierre— siguió en verde.** Lo cazó la auditoría A3 el mismo día. Ver *"La
+> primera afirmación falsa de esta bitácora"* más abajo. Se conserva el texto original: el
+> razonamiento es correcto; lo falso es el estado.
+
 Va acá y no en la lista de barridos porque **no cambió cómo se ve una pantalla: cambió qué afirma**.
 
 El cierre de caja pintaba el **sobrante en verde** y el **cuadre en gris**. El verde del design
@@ -2157,3 +2163,51 @@ puso dos deudas arriba del cierre de caja, que era el primer lugar de A1.
   lo contrario. Se leyó el mensaje, se corrigió la fixture, 17/17.
 - El evaluador marcó ✅ las tres celdas 🔴, porque coincidían con **mi** predicción. "Coincide con lo
   predicho" y "es seguro" son columnas distintas; la segunda la decide la lectura.
+
+
+## 2026-09-02 · La primera afirmación falsa de esta bitácora — y es de ESTADO, la clase fundacional
+
+*Corrección de la entrada "El arqueo — una corrección de SIGNIFICADO, no de color" (2026-09-02).
+Atribución: la escribí yo, en la sesión del re-skin de Turnos, después de corregir `ShiftHistoryPage`.*
+
+### Qué se afirmó y qué era cierto
+
+| la entrada decía | lo medido por A3 (§6) |
+|---|---|
+| *"El cierre de caja pintaba el sobrante en verde"* — en pasado | `CloseShiftModal` bloque "Diferencia", líneas 300–328: **sigue en verde**. Y la columna "Dif." por método, línea 364 |
+| *"Se corrigió también en el panel sobre tinta, pero solo a medias"* | cierto: el pie del modal (línea 409) usa `--on-dark-warn` para el sobrante |
+| (implícito) el arqueo quedó corregido | corregido en el **historial** (`ShiftHistoryPage` 51–53) y en el pie. **No en el bloque donde la cajera decide** |
+
+El razonamiento de la entrada es correcto y se conserva entero: un sobrante es un descuadre, el verde
+lo archiva, la confirmación falsa apaga la alarma. **Lo falso es el estado**: *dónde* quedó aplicado.
+
+### Por qué importa más que el defecto
+
+Este documento se separó de CLAUDE.md porque, de 36 afirmaciones auditadas en Vento, **las 8 falsas
+eran todas de estado**. Ésta es la primera falsa de la bitácora de Nodo, y es exactamente de esa
+clase: describe un cambio, en pasado, y el cambio se hizo en un sitio de tres.
+
+Y se escribió **en el momento más creíble**: recién hecho el cambio, con el commit fresco, con la
+convicción de haberlo hecho. No fue descuido de memoria; fue **recordar el commit en vez de enumerar
+los sitios**. El commit corregía el historial y el pie. La memoria decía "el arqueo".
+
+### Qué lo cazó
+
+**Un control que exigía que el caso apareciera.** El plan de A3 decía: *"el sobrante en verde tiene
+que aparecer"*. Mi predicción, escrita antes de leer, decía que aparecería **como corregido**. Si la
+auditoría hubiera partido de la bitácora, el modal no se habría abierto: la nota lo daba por cerrado
+y leerla lo confirmaba (R4). El grep de colores devolvió `CloseShiftModal:300` con `difference > 0 ?
+'var(--success-soft)'`, y la lectura hizo el resto.
+
+Es la misma mecánica que la séptima falla de instrumento en A1: **el control escrito de antemano
+funciona como prevención, no como corrección.** Y es la segunda vez en el mismo día.
+
+### El corolario, que va a CLAUDE.md
+
+> **"Corregido" se verifica ENUMERANDO LOS SITIOS, no recordando el commit.**
+
+Antes de escribir "se corrigió X" en cualquier nota: `grep` de la forma que se corrigió, lista de
+los sitios donde aparecía, y **cada sitio con su estado**. Si la lista tiene un solo elemento, la
+nota puede decir "corregido". Si tiene tres y se tocaron dos, la nota dice cuáles.
+
+La regla de la poda ya lo pedía para borrar —*mostrar la enumeración*—. Faltaba pedirlo para afirmar.
