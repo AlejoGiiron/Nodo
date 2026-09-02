@@ -682,6 +682,44 @@ que no usarlo**; lo que no vale es no usarlo *y no decir por qué*.
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · UNA ESCRITURA QUE PERSISTE UN CÁLCULO NO EXISTE HASTA QUE TODOS SUS INSUMOS HAYAN CARGADO
+
+*Sale de la auditoría A1 (2026-09-02): cuatro rojos con la misma forma, el peor en el cierre de caja.*
+
+> **"Todavía no sé" y "no hay nada" no pueden compartir valor** cuando ese valor alimenta una
+> ESCRITURA. Y el arreglo no es un spinner: **es que el botón no exista hasta entonces.**
+
+**La forma, medida cuatro veces:** un hook devuelve un default vacío —`?? new Set()`, `?? []`,
+`?? 0`, `?? {}`— mientras carga; un consumidor calcula algo con ese vacío y lo **persiste**. El
+resultado es plausible (un cero, una lista vacía) y por eso nadie lo mira.
+
+| dónde | qué se persiste con el vacío | consecuencia |
+|---|---|---|
+| cierre de caja | `expected_amount`, `difference`, snapshot | un arqueo falso **que se reimprime sin recomputar** |
+| guardar producto | `reconcile({ extraIds: [] })` | **borra** las asignaciones; un compuesto deja de descontar stock |
+| confirmar extras | `onConfirm([])` | la línea entra al carrito sin extras: **cobra de menos** |
+| config de caja | `{ ...{}, ...patch }` | **borra** `slug` y `nequi_qr_url` |
+
+🔴 **Y el dato que decide la forma del arreglo: en tres de los cuatro, `isLoading` ESTABA disponible
+y el consumidor no lo leyó.** El hook hizo su parte. Por eso la regla es sobre el **consumidor**:
+
+1. **Leer la carga donde se decide**, no agregarla al hook que ya la expone.
+2. **Una escritura que persiste un cálculo se deshabilita hasta que TODOS sus insumos hayan
+   cargado** — no el primero, todos. El cierre de caja tiene tres (`salesSummary`, `movements`,
+   `currentShift`); con uno solo cargado el arqueo sigue siendo falso.
+3. **No es un spinner sobre el botón: es que el botón no se renderiza.** Un botón deshabilitado con
+   spinner invita a esperar y volver a intentar; un botón ausente dice que la pantalla todavía no
+   sabe lo suficiente para ofrecer la acción.
+4. **El error de carga es un estado del formulario, no un cero.** Si la consulta falló, el
+   formulario lo dice y no ofrece guardar; el `?? 0` convierte un fallo en un número.
+
+⚠️ Corolario para escribir hooks: un hook que devuelve un valor derivado (un `Set`, un número, un
+booleano) **tiene que devolver también su carga**, porque el consumidor no tiene otra forma de
+saberlo. `useProductsWithExtras` no la devolvía; ése fue el único de los cuatro donde el hook era el
+culpable.
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · EN ESTE PROYECTO LOS INSTRUMENTOS DE MEDICIÓN FALLAN MÁS QUE EL CÓDIGO MEDIDO
 
 *Tres casos en dos días, 2026-09-01 y 02. No es mala suerte: es una propiedad del oficio que no
@@ -697,6 +735,7 @@ estábamos contando.*
 | **un script propio de migración** | insertar imports al final del bloque | matcheaba `^import .*$` y **partía un import MULTILÍNEA por la mitad** | `tsc`, en el acto |
 | una consulta SQL de diagnóstico | vendido vs cobrado por día | el `left join` a `payments` **multiplicaba `o.total`** por cada pago: una venta mixta contaba doble | **un número no cerró con otro ya conocido**: 165 órdenes donde la app decía 158 |
 | grepear el FUENTE por un `@keyframes` | si la animación existía | el fuente no ve lo que **Tailwind emite en el build** | **compilando** y grepeando `dist/assets/*.css` |
+| `grep '\?\? new Set\('` en A1 | los `new Set()` como default | no veía `new Set<string>()` — el parámetro de tipo | **el control escrito de antemano**: la 54 TENÍA que aparecer, y dio cero |
 
 **Los tres daban un número creíble.** Ninguno daba error, ninguno se veía roto, y los tres
 sostenían una afirmación que se escribió en un commit como si fuera un hecho medido.

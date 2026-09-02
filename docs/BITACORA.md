@@ -2060,3 +2060,43 @@ dirección que menos se revisa.
 ⚠️ Se corrigió también en el panel **sobre tinta**, pero solo a medias y con la razón escrita: el
 sobrante sí tiene token on-dark (`--on-dark-warn`), el cuadrado y el faltante no existen sobre
 oscuro (§8.3). Media corrección con su límite dicho vale más que inventar dos tokens.
+
+
+## 2026-09-02 · A1 — la séptima falla de instrumento se cazó ANTES, y el 2,0× parejo
+
+### La primera vez que el control negativo funciona como prevención
+
+Las seis fallas anteriores se descubrieron **después**: un número que no cerraba, un `tsc` rojo, una
+lista que no coincidía con el conteo. Todas correcciones. Esta vez el plan de la auditoría decía, de
+antemano: *"la 54 TIENE que aparecer como 🔴; si no aparece, el método está mal"*.
+
+El primer grep, `\?\? new Set\(`, dio **cero**. El caso de la 54 es `new Set<string>()` — el
+parámetro de tipo entre `Set` y `(`. Sin el control, la auditoría habría producido un documento
+diciendo que la clase que la motivó no existe en el código, y ese documento se habría leído y citado.
+
+**Lo que la distingue:** el control no corrigió un resultado — **impidió que el resultado existiera**.
+Es la diferencia entre auditar un número y auditar el instrumento antes de creerle al número. Costó
+una línea en el plan, escrita por quien sabía qué tenía que salir.
+
+### El 2,0× sostenido merece su propia línea
+
+| patrón | predicho | medido | ratio |
+|---|---|---|---|
+| `?? []` | ~25 | 57 | 2,3× |
+| `?? 0` | ~30 | 65 | 2,2× |
+| `?? null` | ~10 | 41 | 4,1× |
+| `.single()` | ~15 | 26 | 1,7× |
+| **total** | **~110** | **222** | **2,0×** |
+
+Un error **concentrado** en un patrón diría *"no conocía ese patrón"*. Un error **parejo** en todos
+dice otra cosa: **subestimé cuán extendido está `??` como idioma de default en este código**. No es
+un hueco de conocimiento sobre un lugar; es una calibración global equivocada. Y eso es accionable de
+una forma que el error concentrado no: la próxima estimación sobre este repo se multiplica por dos.
+
+### Y el hallazgo de A1 que reordena la Fase B
+
+**Tres de los cuatro rojos tenían `isLoading` disponible y sin usar.** Antes de la auditoría, la
+hipótesis era *"hooks que no exponen carga"* — la 54 lo era. Medido: **el hook era el culpable en
+uno solo**. En los otros tres el hook hizo su parte y el consumidor no la leyó. La regla nueva de
+CLAUDE.md es sobre el consumidor por eso: *leer la carga donde se decide, y que el botón no exista
+hasta que todos los insumos hayan cargado*.
