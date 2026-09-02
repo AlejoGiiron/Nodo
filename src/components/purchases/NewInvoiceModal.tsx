@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast'
 import { useSuppliers } from '@/hooks/useSuppliers'
 import { useProducts } from '@/hooks/useProducts'
 import { useRegisterPurchase } from '@/hooks/usePurchases'
+import { formatoCOP } from '@/lib/formato'
 
 interface NewInvoiceModalProps {
   onClose: () => void
@@ -23,15 +24,13 @@ interface DraftLine {
   factor: string
 }
 
-const formatCOP = (n: number) =>
-  new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n)
 
 const fieldLabel: React.CSSProperties = {
-  display: 'block', fontSize: 12, fontWeight: 600, color: '#334155', marginBottom: 6,
+  display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--ink-2)', marginBottom: 6,
 }
 const inputStyle: React.CSSProperties = {
-  width: '100%', padding: '10px 13px', border: '1.5px solid #e5e7eb', borderRadius: 9,
-  fontSize: 14, color: '#0f172a', outline: 'none', boxSizing: 'border-box', background: '#fff',
+  width: '100%', padding: '10px 13px', border: '1.5px solid var(--border)', borderRadius: 9,
+  fontSize: 14, color: 'var(--ink)', outline: 'none', boxSizing: 'border-box', background: '#fff',
 }
 
 let lineSeq = 0
@@ -110,20 +109,20 @@ export function NewInvoiceModal({ onClose, onNeedSupplier }: NewInvoiceModalProp
 
   return (
     <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,.55)', display: 'grid', placeItems: 'center', zIndex: 50, fontFamily: 'Inter, system-ui, sans-serif', padding: 20 }}
+      style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', display: 'grid', placeItems: 'center', zIndex: 50, fontFamily: 'inherit', padding: 20 }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div
         data-testid="new-invoice-modal"
-        style={{ background: '#fff', borderRadius: 14, width: 720, maxWidth: '100%', maxHeight: '92vh', boxShadow: '0 25px 50px -12px rgba(0,0,0,.25)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
+        style={{ background: '#fff', borderRadius: 14, width: 720, maxWidth: '100%', maxHeight: '92vh', boxShadow: 'var(--shadow-1)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
       >
         {/* Header */}
-        <div style={{ padding: '18px 22px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+        <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--border-2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: '#10b981', textTransform: 'uppercase', letterSpacing: 1 }}>Compras</div>
-            <div style={{ fontSize: 17, fontWeight: 700, color: '#0f172a', letterSpacing: -0.3, marginTop: 1 }}>Registrar compra</div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--action)', textTransform: 'uppercase', letterSpacing: 1 }}>Compras</div>
+            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--ink)', letterSpacing: -0.3, marginTop: 1 }}>Registrar compra</div>
           </div>
-          <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: 8, background: '#f1f5f9', border: 'none', cursor: 'pointer', color: '#64748b', display: 'grid', placeItems: 'center' }}><X size={16} /></button>
+          <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--border-2)', border: 'none', cursor: 'pointer', color: 'var(--ink-3)', display: 'grid', placeItems: 'center' }}><X size={16} /></button>
         </div>
 
         {/* Body */}
@@ -131,12 +130,12 @@ export function NewInvoiceModal({ onClose, onNeedSupplier }: NewInvoiceModalProp
           {/* Cabecera */}
           <div style={{ display: 'flex', gap: 12 }}>
             <div style={{ flex: 2 }}>
-              <label style={fieldLabel}>Proveedor <span style={{ color: '#dc2626' }}>*</span></label>
+              <label style={fieldLabel}>Proveedor <span style={{ color: 'var(--danger)' }}>*</span></label>
               {suppliers.length === 0 ? (
                 <button
                   data-testid="invoice-create-supplier"
                   onClick={onNeedSupplier}
-                  style={{ ...inputStyle, textAlign: 'left', cursor: 'pointer', color: '#10b981', fontWeight: 600 }}
+                  style={{ ...inputStyle, textAlign: 'left', cursor: 'pointer', color: 'var(--action)', fontWeight: 600 }}
                 >
                   + Crea tu primer proveedor
                 </button>
@@ -178,7 +177,7 @@ export function NewInvoiceModal({ onClose, onNeedSupplier }: NewInvoiceModalProp
                       onChange={(e) => updateLine(l.key, { qty: e.target.value.replace(/\D/g, '') })}
                       placeholder="Cant."
                       title="Cantidad"
-                      style={{ ...inputStyle, width: 70, flex: '0 0 auto', fontFamily: 'monospace', textAlign: 'right', padding: '9px 10px' }}
+                      style={{ ...inputStyle, width: 70, flex: '0 0 auto', fontVariantNumeric: 'tabular-nums', textAlign: 'right', padding: '9px 10px' }}
                     />
                     <input
                       data-testid="invoice-item-unidad"
@@ -211,14 +210,14 @@ export function NewInvoiceModal({ onClose, onNeedSupplier }: NewInvoiceModalProp
                       title="Costo de UNA unidad de compra (lo que dice la factura)"
                       style={{ ...inputStyle, width: 110, flex: '0 0 auto', textAlign: 'right', padding: '9px 10px', fontVariantNumeric: 'tabular-nums' }}
                     />
-                    <span data-testid="invoice-line-subtotal" style={{ width: 110, flex: '0 0 auto', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, fontSize: 13, color: '#0f172a' }}>
-                      {formatCOP(lineSubtotal(l))}
+                    <span data-testid="invoice-line-subtotal" style={{ width: 110, flex: '0 0 auto', textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 700, fontSize: 13, color: 'var(--ink)' }}>
+                      {formatoCOP(lineSubtotal(l))}
                     </span>
                     <button
                       onClick={() => removeLine(l.key)}
                       title="Quitar ítem"
                       disabled={lines.length === 1}
-                      style={{ width: 32, height: 32, flex: '0 0 auto', border: '1px solid #fecaca', background: '#fef2f2', borderRadius: 8, cursor: lines.length === 1 ? 'not-allowed' : 'pointer', color: '#dc2626', display: 'grid', placeItems: 'center', opacity: lines.length === 1 ? 0.4 : 1 }}
+                      style={{ width: 32, height: 32, flex: '0 0 auto', border: '1px solid var(--danger-soft)', background: 'var(--danger-soft)', borderRadius: 8, cursor: lines.length === 1 ? 'not-allowed' : 'pointer', color: 'var(--danger)', display: 'grid', placeItems: 'center', opacity: lines.length === 1 ? 0.4 : 1 }}
                     >
                       <Trash2 size={13} />
                     </button>
@@ -250,7 +249,7 @@ export function NewInvoiceModal({ onClose, onNeedSupplier }: NewInvoiceModalProp
                   return (
                     <div key={l.key} data-testid="invoice-efecto-linea" style={{ fontVariantNumeric: 'tabular-nums' }}>
                       {pr?.name ?? 'Producto'}: {l.qty} {l.purchase_unit.trim()} × {factorDe(l)} ={' '}
-                      <strong>{unidades} und</strong> · costo unitario {formatCOP(costoUnitario)}
+                      <strong>{unidades} und</strong> · costo unitario {formatoCOP(costoUnitario)}
                     </div>
                   )
                 })}
@@ -266,7 +265,7 @@ export function NewInvoiceModal({ onClose, onNeedSupplier }: NewInvoiceModalProp
             <button
               data-testid="invoice-add-item"
               onClick={() => setLines(ls => [...ls, newLine()])}
-              style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', border: '1.5px dashed #cbd5e1', background: '#fff', borderRadius: 9, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: '#334155' }}
+              style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', border: '1.5px dashed var(--ink-4)', background: '#fff', borderRadius: 9, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: 'var(--ink-2)' }}
             >
               <Plus size={14} /> Agregar ítem
             </button>
@@ -280,18 +279,18 @@ export function NewInvoiceModal({ onClose, onNeedSupplier }: NewInvoiceModalProp
         </div>
 
         {/* Footer */}
-        <div style={{ padding: '16px 22px', borderTop: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, background: 'linear-gradient(180deg, #f8fafc 0%, #fff 100%)', flexShrink: 0 }}>
+        <div style={{ padding: '16px 22px', borderTop: '1px solid var(--border-2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, background: 'linear-gradient(180deg, var(--surface-2) 0%, #fff 100%)', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            <span style={{ fontSize: 12.5, color: '#64748b', fontWeight: 600 }}>Total</span>
-            <span data-testid="invoice-total" style={{ fontSize: 22, fontWeight: 700, fontFamily: 'monospace', color: '#0f172a' }}>{formatCOP(total)}</span>
+            <span style={{ fontSize: 12.5, color: 'var(--ink-3)', fontWeight: 600 }}>Total</span>
+            <span data-testid="invoice-total" style={{ fontSize: 22, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--ink)' }}>{formatoCOP(total)}</span>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
-            <button onClick={onClose} style={{ padding: '11px 18px', border: '1.5px solid #e2e8f0', background: '#fff', borderRadius: 9, cursor: 'pointer', fontSize: 13.5, fontWeight: 600, color: '#334155' }}>Cancelar</button>
+            <button onClick={onClose} style={{ padding: '11px 18px', border: '1.5px solid var(--border)', background: '#fff', borderRadius: 9, cursor: 'pointer', fontSize: 13.5, fontWeight: 600, color: 'var(--ink-2)' }}>Cancelar</button>
             <button
               data-testid="invoice-submit"
               onClick={handleSubmit}
               disabled={!isValid || isRegistering}
-              style={{ padding: '11px 24px', border: 'none', borderRadius: 10, background: !isValid || isRegistering ? '#cbd5e1' : '#10b981', cursor: !isValid || isRegistering ? 'not-allowed' : 'pointer', fontSize: 13.5, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 6, boxShadow: !isValid || isRegistering ? 'none' : '0 6px 16px rgba(16,185,129,.35)' }}
+              style={{ padding: '11px 24px', border: 'none', borderRadius: 10, background: !isValid || isRegistering ? 'var(--ink-4)' : 'var(--action)', cursor: !isValid || isRegistering ? 'not-allowed' : 'pointer', fontSize: 13.5, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 6, boxShadow: !isValid || isRegistering ? 'none' : '0 6px 16px rgba(16,185,129,.35)' }}
             >
               {isRegistering && <Loader2 size={15} className="animate-spin" />}
               {isRegistering ? 'Registrando...' : 'Registrar compra'}

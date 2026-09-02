@@ -47,7 +47,31 @@ function App() {
     <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <BrowserRouter>
-        <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
+        {/* Toasts — DECISIÓN PARCIAL del §8.8: solo color y tipografía del
+            sistema, mapeados a las variantes de Alert. La razón es de
+            identidad, no de estética: react-hot-toast trae su propio VERDE por
+            defecto, y un toast emerald en una app sky rompe justo lo que el
+            re-skin está cambiando.
+            ⚠️ Lo que sigue SIN decidir y no se inventa acá: posición fija,
+            duración, apilado, acción de deshacer, y el patrón de confirmación
+            destructiva. La posición y la duración quedan como estaban. */}
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: 'var(--surface)',
+              color: 'var(--ink)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--r-2)',
+              boxShadow: 'var(--shadow-1)',
+              fontSize: 13,
+              fontFamily: 'inherit',
+            },
+            success: { iconTheme: { primary: 'var(--success-700)', secondary: '#fff' } },
+            error: { iconTheme: { primary: 'var(--danger)', secondary: '#fff' } },
+          }}
+        />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
 

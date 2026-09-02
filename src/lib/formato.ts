@@ -5,9 +5,24 @@
  * en una columna de tabla el encabezado ya dice qué es, y el `$` repetido mil
  * veces solo roba ancho a la cifra.
  *
- * ⚠️ Hay **20 copias** de un `formatCOP` local repartidas por `src/`
- * (`grep -rl "const formatCOP" src/`), y **19 de las 20 imprimen el símbolo de
- * moneda** (`style: 'currency'`) que la skill no quiere en columnas de tabla.
+ * ⚠️ Quedan **16 copias** de un `formatCOP` local repartidas por `src/`
+ * — eran 19 antes de Compras — y casi todas imprimen el símbolo de moneda
+ * (`style: 'currency'`) que la skill no quiere en columnas de tabla.
+ *
+ * Para contarlas:
+ *
+ *     grep -rln "const formatCOP = (" src/ --exclude=formato.ts
+ *
+ * ⚠️ **Las dos partes del comando importan, y las dos salieron de equivocarse.**
+ * · El PARÉNTESIS: sin él el grep cuenta las MENCIONES en comentarios, no solo
+ *   las definiciones — dio 18 donde había 16.
+ * · El `--exclude`: **este archivo documenta el patrón, así que se cuenta a sí
+ *   mismo.** Agregar el paréntesis lo arregló a medias y dio 17.
+ *
+ * El instrumento contaba su propia documentación, dos veces seguidas. Es la
+ * clase de "lo que vive dentro de un string no es una referencia" mordiendo a
+ * quien la escribió: un grep no distingue código de prosa, y un conteo que no
+ * se verifica ENUMERANDO se cree igual.
  * Es la misma clase que las 11 copias de `err instanceof Error`: un contrato de
  * formato sin nada que lo sincronice (R1).
  *

@@ -147,6 +147,34 @@
   cursor: not-allowed;
 }
 
+/* ── Tabs / chips de filtro — §4. Estados: normal · activo ────────────
+   Reemplazan la pestana subrayada heredada. El subrayado de 3px no esta en el
+   design system y usaba el acento del otro producto. */
+.nodo-tab {
+  padding: 7px 14px;
+  margin-bottom: -1px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-2) var(--r-2) 0 0;
+  background: var(--surface-2);
+  color: var(--ink-3);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.12s, color 0.12s, border-color 0.12s;
+}
+.nodo-tab:hover:not(.nodo-tab--activo) { color: var(--ink-2); }
+.nodo-tab--activo {
+  background: var(--action-soft);
+  border-color: var(--action);
+  color: var(--action-on-soft);
+}
+.nodo-tab:focus-visible {
+  outline: none;
+  border-color: var(--action);
+  box-shadow: 0 0 0 3px var(--action-soft);
+}
+
 /* ── NavItem — §4. Estados: normal · hover · activo ──────────────────
    El activo lleva la barra de 2px a la izquierda ADEMAS del fondo: el fondo
    solo distingue mal para quien no separa bien los azules claros. */
@@ -163,6 +191,12 @@
   box-shadow: inset 2px 0 0 var(--action);
 }
 .nodo-nav--activo:hover { background: var(--action-soft); color: var(--action-on-soft); }
+
+/* ── Fila de lista ──────────────────────────────────────────
+   Solo el hover: el resto de los estados de DataRow (seleccionada, en mora, con
+   error, atencion) se pintan donde hay un dato que los justifique. */
+.nodo-fila { transition: background-color 0.1s; }
+.nodo-fila:hover { background: var(--surface-2); }
 
 /* ── Skeleton — barra que late, NUNCA un spinner en blanco ──────────────── */
 @keyframes nodo-shimmer {

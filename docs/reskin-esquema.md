@@ -30,7 +30,9 @@ falta ninguno por haberlo mirado ahí. La tabla de abajo se lee como verificada 
 
 ---
 
-## Resumen: 9 huecos, en 6 pantallas — **1 ya cerrado**
+## Resumen: 10 huecos, en 6 pantallas — **1 ya cerrado**
+
+*(Eran 9. El décimo apareció al construir Compras, no al enumerar: el §4 reserva su color más fuerte para "Anular compra", y esa acción no existe en ninguna capa. Confirma el corolario — construir una pantalla audita un esquema aún mejor que leerla.)*
 
 | # | Hueco | Pantallas | Deuda |
 |---|---|---|---|
@@ -43,6 +45,7 @@ falta ninguno por haberlo mirado ahí. La tabla de abajo se lee como verificada 
 | 7 | **Plazo de crédito** — sin él "VENCIDO" no se puede calcular | Cartera, Clientes | **46** |
 | 8 | **Marca de despacho y forma de entrega** | Pedidos | **47** |
 | 9 | **Dirección del cliente** | Clientes | **48** |
+| 10 | **Anulación de compra** — el §4 reserva el rojo sólido para una acción que no existe | Compras | **49** |
 
 **Lo que sí existe y alcanza:** todo lo demás. Seis de las nueve pantallas se pueden construir
 completas salvo por estos campos, y **ninguno bloquea el re-skin** — bloquean la fidelidad al
@@ -99,6 +102,7 @@ Leyenda: ✅ existe · 🔶 se deriva (no es columna, se calcula) · ❌ no exis
 | Costo del producto: antes → después | 🔶 | `products.cost_price` actual vs. el que resultaría |
 | Entrada al inventario (`+600 UND`) | 🔶 | de las cantidades de la compra |
 | Badge `Borrador` | — | **decidido sin persistencia** (skill §6) |
+| Badge `aplicada` / `anulada` | ❌ | 🔴 **anular una compra NO EXISTE**: ni columna, ni RPC, ni UI (deuda 49) |
 
 ### 4 · Gastos
 

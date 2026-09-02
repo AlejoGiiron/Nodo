@@ -268,9 +268,9 @@ export function AppLayout() {
         {showShiftBanner && (
           <div
             className="flex-shrink-0 flex items-center gap-3 px-6 py-2.5 border-b"
-            style={{ background: '#fffbeb', borderColor: '#fde68a' }}
+            style={{ background: 'var(--warning-soft)', borderColor: 'var(--warning-border)' }}
           >
-            <Wallet size={16} color="#b45309" />
+            <Wallet size={16} color="var(--warning-700)" />
             {/*
               minWidth/overflowWrap: hoy el texto es una constante nuestra y
               siempre entra, pero la carencia es la misma que la del banner de
@@ -280,21 +280,25 @@ export function AppLayout() {
             */}
             <span
               className="text-sm font-medium"
-              style={{ color: '#92400e', minWidth: 0, overflowWrap: 'anywhere' }}
+              style={{ color: 'var(--warning-on-soft)', minWidth: 0, overflowWrap: 'anywhere' }}
             >
               No hay turno de caja abierto.
             </span>
             <button
               onClick={() => setShowOpenShift(true)}
-              className="text-sm font-semibold px-3 py-1 rounded-md"
-              style={{ background: '#10b981', color: '#fff' }}
+              className="text-sm font-semibold px-3 py-1"
+              // 🔴 Era #10b981. Es una ACCIÓN dentro de un aviso: abrir la
+              //    jornada. Ninguna acción es verde (§1.2) — y menos ésta, que
+              //    dentro de un banner ámbar leía como "todo bien" cuando lo
+              //    que dice el banner es que falta algo.
+              style={{ background: 'var(--action)', color: '#fff', borderRadius: 'var(--r-2)' }}
             >
               Abrir turno
             </button>
             <button
               onClick={() => setBannerDismissed(true)}
               className="ml-auto"
-              style={{ color: '#b45309', display: 'grid', placeItems: 'center' }}
+              style={{ color: 'var(--warning-700)', display: 'grid', placeItems: 'center' }}
               title="Descartar"
             >
               <X size={16} />
