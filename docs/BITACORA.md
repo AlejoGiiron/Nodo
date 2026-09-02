@@ -2368,3 +2368,63 @@ edita** (R5). La fuente de verdad de una función es la última migración que l
   `webServer` huérfano ocupando el 5180**, lo que hizo fallar la siguiente al instante con un mensaje
   que no habla de tests. Vale anotarlo: cuando Playwright levanta su propio servidor, matar al padre
   no mata al hijo.
+
+
+## 2026-09-02 · Fase B, bloque 0 · Deuda 61 — el traslado de sede, y un dato que cambió la forma del arreglo
+
+*Migraciones `20260902190000_sede_activa_solo_si_esta_asignada.sql` y `20260902191500_revocar_anon_…`.*
+
+### El skip que escondía el hueco
+
+El caso *"cambio de sede activa"* de `rbac-escalada.spec.ts` estaba `test.skip` con el motivo
+*"el owner del lab necesita ≥2 sedes en user_stores"*. **Ese skip era el hueco**: con una sola sede,
+`sede_id` no tiene a dónde ir, así que ni el caso positivo ni el negativo podían existir. La fixture
+ahora **crea la segunda sede** y se la asigna al owner; el spec dejó de depender de la forma del lab.
+
+Es la lección de A2 escrita al revés: *"no va a fallar por uso; va a fallar el día que abran la
+segunda sede"*. Un test apagado por falta de datos es un hueco con nombre.
+
+### El dato que cambió la forma del arreglo, y por qué se midió antes de escribir
+
+La condición pedida era **SECURITY DEFINER**, por R6: el `select` contra `user_stores` no puede pasar
+por RLS. Puesto en el trigger entero, habría sido una regresión de seguridad. Sonda, con rollback:
+
+```
+dentro de SECURITY DEFINER  ->  current_user = postgres
+dentro de SECURITY INVOKER  ->  current_user = authenticated
+```
+
+`protect_profile_self_escalation` usa `current_user = 'authenticated'` como **condición de entrada a
+todos sus guards**. Marcarlo DEFINER habría hecho que esa condición diera falso y habría dejado
+**inertes los tres guards que hoy funcionan** — rol, `is_active`, `organization_id` — en silencio y
+en el mismo commit que decía arreglar la seguridad.
+
+La forma que cumple el requisito sin romper nada: **el SELECT en un helper DEFINER**
+(`sede_asignada_al_usuario`), llamado desde el trigger que sigue siendo INVOKER. Es el patrón que el
+repo ya usa con `get_my_sede_id` y `has_permission`.
+
+⚠️ **Lo que esto dice del método:** la instrucción era correcta en su requisito —el select no debe
+pasar por RLS— y su implementación literal habría sido dañina. La diferencia se vio **midiendo antes
+de escribir**, no razonando. Cuesta una sonda de tres líneas.
+
+### El defecto propio, encontrado por verificar el ACL contra la base
+
+La migración cumplía la regla del proyecto —*SECURITY DEFINER → revoke execute from public*— y el
+ACL quedó igual con `anon=X`: **Supabase deja DEFAULT PRIVILEGES en el esquema `public` que dan
+EXECUTE a `anon`, y `anon` no es `public`**. Un cliente sin login podía preguntar *"¿el usuario X
+tiene la sede Y?"* contra una función que lee sin RLS.
+
+Se cerró con una migración aparte (R5) y **la regla de CLAUDE.md se corrigió**, porque estaba
+incompleta: el repo lo hacía bien en `funciones_auxiliares.sql` y la regla que se lee no lo decía.
+De las 15 funciones DEFINER del esquema, la única con `anon=X` era la mía.
+
+**Otra vez R4:** el archivo decía lo correcto; la base decía otra cosa. El verde de un `db push` no
+es evidencia de que los permisos quedaron como uno cree.
+
+### Cierre del bloque 0
+
+- **60** · tres RPC con el guard de sede evaluando antes de comparar.
+- **61** · el traslado de sede validado contra `user_stores`, en la base y no en la UI.
+- **66** · la sonda de A2 es un spec (`rls-negacion.spec.ts`) y `rbac.spec` dice en su nombre que
+  mide la UI, no la base.
+- **Vento** · misma línea, tres sitios expuestos, anotado en la 60 y **pospuesto por decisión**.

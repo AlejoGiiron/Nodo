@@ -1020,9 +1020,16 @@ Reglas duras traídas de los hermanos — aplican a todo el trabajo en este repo
   cada escenario se prueba desde un estado limpio para no arrastrar efectos de la prueba anterior.
 - **`git status` ANTES DE COMMITEAR:** revisar siempre qué se va a incluir; evitar `git add -A` a
   ciegas.
-- **SECURITY DEFINER → `revoke execute from public`:** Postgres concede `EXECUTE` a `PUBLIC` por
-  defecto en toda función nueva. En funciones `SECURITY DEFINER` hay que revocar ese permiso
-  explícitamente y concederlo solo a los roles que lo necesiten (`authenticated`, `service_role`).
+- **SECURITY DEFINER → `revoke execute from public` **Y TAMBIÉN** `from anon`:** Postgres concede
+  `EXECUTE` a `PUBLIC` por defecto en toda función nueva, y **Supabase agrega DEFAULT PRIVILEGES en el
+  esquema `public` que se lo dan además a `anon`** — que NO es lo mismo que `public`, así que el
+  primer revoke no lo alcanza. Hay que revocar los dos y conceder solo a quien lo necesita
+  (`authenticated`, `service_role`).
+  🔴 *Medido el 2026-09-02 (deuda 71): una función DEFINER nueva cumplió la versión anterior de esta
+  regla al pie de la letra y quedó igual con `anon=X` — un cliente **sin login** podía invocarla, y
+  leía una tabla sin RLS. Se vio verificando el ACL contra la base; el archivo se veía correcto.*
+  **Cómo se comprueba:** `select proname, proacl from pg_proc … where prosecdef` y mirar que ninguna
+  diga `anon=X`.
 
 ---
 

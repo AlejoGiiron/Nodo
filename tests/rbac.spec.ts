@@ -17,7 +17,14 @@ const ALL_NAV = [
 const CASHIER_HIDDEN = ['Productos', 'Inventario', 'Compras', 'Reportes', 'Configuración']
 const CASHIER_VISIBLE = ['Ventas', 'Fiado', 'Historial', 'Turnos', 'Gastos']
 
-test.describe('RBAC — gating de permisos', () => {
+// 🔴 ESTE SPEC MIDE LA UI, NO LA BASE — dicho en el nombre desde el 2026-09-02
+//    (deuda 66). El mutante M6 de A4 lo dejó 7/7 VERDE con `has_permission`
+//    devolviendo `true` para todo: lo que prueba es `can()` sobre el rol ya
+//    cargado en el cliente, o sea qué ítems y rutas se muestran. Quien lea
+//    "RBAC" y suponga que acá se prueba el enforcement del servidor, se equivoca.
+//    La BASE la prueba `tests/rls-negacion.spec.ts` (la sonda de A2) y el
+//    trigger de auto-edición, `tests/rbac-escalada.spec.ts`.
+test.describe('RBAC — gating de UI por permiso', () => {
   test('owner ve todos los items del sidebar', async ({ page }) => {
     await loginAsOwner(page)
     for (const label of ALL_NAV) {

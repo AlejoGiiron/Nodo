@@ -62,6 +62,15 @@ let cajero: SupabaseClient
 let ownerSnap: ProfileSnap
 let cajeroSnap: ProfileSnap
 
+// 🔴 SEGUNDA SEDE, creada por el propio spec (deuda 61). El caso "cambio de
+//    sede activa" estaba `test.skip` porque el lab tiene UNA sede — y ése era
+//    justamente el motivo por el que el hueco no se veía: con una sola sede,
+//    `sede_id` no tiene a dónde ir. La fixture la crea acá y `afterAll` la
+//    borra, así el spec deja de depender de la forma del lab.
+const SUFFIX_61 = Date.now().toString().slice(-6)
+let SEDE_B = ''          // en la MISMA organización (si no, enforce_profile_organization rechaza)
+let US_OWNER_B = false   // el owner SÍ la tiene en user_stores; el cajero NO
+
 /** Lee un perfil con el cliente owner (ve toda la sede por RLS). */
 async function readProfile(id: string): Promise<ProfileSnap> {
   const { data, error } = await owner.from('profiles').select(SNAP_COLS).eq('id', id).single()
@@ -119,12 +128,32 @@ test.beforeAll(async () => {
   const cajeroId = (await cajero.auth.getUser()).data.user!.id
   ownerSnap = await readProfile(ownerId)
   cajeroSnap = await readProfile(cajeroId)
+
+  const sb = await owner
+    .from('sedes')
+    .insert({ organization_id: ownerSnap.organization_id!, name: `E2E Sede B ${SUFFIX_61}` })
+    .select('id')
+    .single()
+  if (sb.error) throw new Error(`[61] no se pudo crear la sede B: ${sb.error.message}`)
+  SEDE_B = sb.data.id as string
+
+  // Al OWNER se le asigna: es la precondición del caso que DEBE pasar.
+  // Al CAJERO no: es la precondición del caso que DEBE fallar.
+  const us = await owner.from('user_stores').insert({ user_id: ownerSnap.id, sede_id: SEDE_B }).select('user_id')
+  if (us.error) throw new Error(`[61] no se pudo asignar la sede B al owner: ${us.error.message}`)
+  US_OWNER_B = true
 })
 
 test.afterAll(async () => {
-  // Red de seguridad: pase lo que pase, el lab queda como estaba.
+  // Red de seguridad: pase lo que pase, el lab queda como estaba. Los perfiles
+  // PRIMERO — si alguno quedó apuntando a la sede B, borrarla antes fallaría por
+  // la FK y dejaría al usuario en una sede que ya no existe.
   if (owner && cajeroSnap) await restore(cajeroSnap)
   if (owner && ownerSnap) await restore(ownerSnap)
+  if (owner && SEDE_B) {
+    if (US_OWNER_B) await owner.from('user_stores').delete().eq('user_id', ownerSnap.id).eq('sede_id', SEDE_B)
+    await owner.from('sedes').delete().eq('id', SEDE_B)
+  }
 })
 
 // ── DEBEN FALLAR ────────────────────────────────────────────────────────────
@@ -231,15 +260,19 @@ test('un usuario desactivado NO puede auto-reactivarse', async () => {
 // ── DEBEN PASAR ─────────────────────────────────────────────────────────────
 
 test('cambio de sede activa: update de una sola columna sede_id', async () => {
-  // Flujo real del StoreSelector (StoreSelector.tsx:43-46). El owner del lab
-  // tiene 3 sedes en user_stores (lab-seed bloque e).
+  // Flujo real del StoreSelector (StoreSelector.tsx:43-46).
+  // ✅ SIN `test.skip` desde el 2026-09-02 (deuda 61): la sede B la crea la
+  //    fixture y se le asigna al owner en `user_stores`. Estaba apagado porque
+  //    el lab tiene una sola sede, que es exactamente la razón por la que el
+  //    hueco de la 61 no se veía — "no va a fallar por uso; va a fallar el día
+  //    que abran la segunda sede".
   const { data: sedes } = await owner
     .from('user_stores')
     .select('sede_id')
     .eq('user_id', ownerSnap.id)
 
   const otra = (sedes ?? []).map((s) => s.sede_id).find((r) => r !== ownerSnap.sede_id)
-  test.skip(!otra, 'el owner del lab necesita ≥2 sedes en user_stores para este caso')
+  expect(otra, 'la fixture asignó la sede B al owner').toBe(SEDE_B)
 
   const res = await owner
     .from('profiles')
@@ -251,6 +284,57 @@ test('cambio de sede activa: update de una sola columna sede_id', async () => {
   expect((await readProfile(ownerSnap.id)).sede_id).toBe(otra)
 
   // Vuelve a la sede original: el resto de la suite asume la sede por defecto.
+  await restore(ownerSnap)
+  expect((await readProfile(ownerSnap.id)).sede_id).toBe(ownerSnap.sede_id)
+})
+
+test('el cajero NO puede trasladarse a una sede que no tiene asignada', async () => {
+  // 🔴 EL HUECO DE LA DEUDA 61, medido en A2 §4: la policy "profiles: editar el
+  //    propio" permite el UPDATE y el trigger no miraba `sede_id`, así que el
+  //    cajero se mudaba solo a cualquier sede de su organización — y la RLS lo
+  //    seguía: acto seguido leía los productos de esa sede. La restricción
+  //    "solo a una sede de user_stores" vivía ÚNICAMENTE en `StoreSelector.tsx`.
+  //    Misma clase que la deuda 42: la UI ocupando el lugar de la autorización.
+  expect(SEDE_B, 'precondición: existe la sede B').toBeTruthy()
+  const asignadas = await cajero.from('user_stores').select('sede_id').eq('user_id', cajeroSnap.id)
+  expect(
+    (asignadas.data ?? []).map((r) => r.sede_id),
+    'precondición: el cajero NO tiene la sede B asignada',
+  ).not.toContain(SEDE_B)
+
+  const res = await cajero
+    .from('profiles')
+    .update({ sede_id: SEDE_B })
+    .eq('id', cajeroSnap.id)
+    .select(SNAP_COLS)
+
+  // Se exige EL MENSAJE DEL GUARD, no "que falle": el criterio que salió de la
+  // deuda 60 (un test de negación tiene que negar por la razón correcta). Acá
+  // hay dos formas de fallar que se ven iguales desde afuera — el trigger de
+  // consistencia de organización también podría rechazar un `sede_id` ajeno —,
+  // y la que se está probando es la de pertenencia. Y el mensaje dice LA ACCIÓN.
+  // El acento va tolerado: los mensajes SQL del repo se escriben SIN acentos
+  // (0 de 0 los llevan, medido), y el test no debe depender de esa ortografía.
+  expectRechazoDelTrigger(res, /esa sede no est. asignada a tu usuario/i)
+
+  const after = await readProfile(cajeroSnap.id)
+  expect(after.sede_id, 'el traslado no se persistió').toBe(cajeroSnap.sede_id)
+})
+
+test('el owner SÍ puede trasladarse a una sede que tiene asignada (control negativo)', async () => {
+  // Sin esto, el caso de arriba pasaría también con un trigger que rechace TODO
+  // cambio de sede — y eso rompería el StoreSelector, que es una función del
+  // producto. El positivo ya está cubierto por "cambio de sede activa"; este lo
+  // deja explícito al lado del negativo, que es donde se lee.
+  const res = await owner
+    .from('profiles')
+    .update({ sede_id: SEDE_B })
+    .eq('id', ownerSnap.id)
+    .select(SNAP_COLS)
+
+  expect(bloqueado(res), 'el owner tiene la sede B en user_stores: debe poder').toBe(false)
+  expect((await readProfile(ownerSnap.id)).sede_id).toBe(SEDE_B)
+
   await restore(ownerSnap)
   expect((await readProfile(ownerSnap.id)).sede_id).toBe(ownerSnap.sede_id)
 })
