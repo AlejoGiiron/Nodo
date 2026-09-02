@@ -13,26 +13,31 @@ dibujado, no lo que el documento dice en prosa.
 `supabase gen types typescript --linked`, más los `CHECK` y enums leídos directo del SQL de
 `supabase/migrations/`.
 
-⚠️ **El límite, dicho:** esta sesión **no tenía el token de Supabase en el entorno**, así que la
-comparación no se hizo contra `information_schema` sino contra el archivo generado en la sesión
-anterior. Es un proxy —y R4 dice que un proxy no es la cosa—, pero uno **generado por la
-herramienta desde la base**, no escrito a mano. Desde entonces se aplicó una sola migración
-(`20260901120000_void_expone_was_fiado.sql`) y **solo cambia el retorno de una función, ninguna
-columna**. Reconfirmar con `pnpm db:types && git diff --exit-code src/types/database.types.ts`
-cuando haya token.
+⚠️ **El límite que tenía — y su cierre.** Cuando se escribió esta enumeración la sesión **no tenía
+el token de Supabase**, así que la comparación se hizo contra el archivo generado en una sesión
+anterior: un proxy, aunque uno **generado por la herramienta desde la base** y no escrito a mano.
+
+✅ **RECONFIRMADO el 2026-09-01**, regenerando los tipos contra la base real. El diff es
+**puramente aditivo**: las dos columnas de la deuda 43 recién creadas, la firma de
+`seed_system_roles` y el bloque `graphql_public` que el generador ahora emite. **Cero columnas
+removidas y cero modificadas**, así que ningún hueco de esta lista era un artefacto del proxy ni
+falta ninguno por haberlo mirado ahí. La tabla de abajo se lee como verificada contra la base.
+
+*(Volver a comprobarlo después de cualquier migración:
+`pnpm db:types && git diff --exit-code src/types/database.types.ts`.)*
 
 **27 tablas y vistas** en el esquema. Lo que sigue es campo por campo.
 
 ---
 
-## Resumen: 9 huecos, en 6 pantallas
+## Resumen: 9 huecos, en 6 pantallas — **1 ya cerrado**
 
 | # | Hueco | Pantallas | Deuda |
 |---|---|---|---|
 | 1 | **Código de producto** | Mostrador, Pedidos, Compras, Catálogo, Inventario | 41 |
 | 2 | **Unidad de medida** | Mostrador, Catálogo, Inventario | 41 |
 | 3 | **Cupo de crédito** (asignado · consumido · disponible) | Mostrador, Pedidos, Clientes | 40 |
-| 4 | **Unidad de COMPRA y su equivalencia** (1 bulto = 50 UND) | Compras | **43** |
+| 4 | ~~Unidad de COMPRA y su equivalencia~~ | Compras | ✅ **43 CERRADA** (2026-09-01) |
 | 5 | **Fecha del documento ≠ fecha de registro** | Compras, Gastos | **44** |
 | 6 | **Subcategoría de gasto + "Pagado a"** | Gastos | **45** |
 | 7 | **Plazo de crédito** — sin él "VENCIDO" no se puede calcular | Cartera, Clientes | **46** |
@@ -88,8 +93,8 @@ Leyenda: ✅ existe · 🔶 se deriva (no es columna, se calcula) · ❌ no exis
 | **Fecha (editable: `31/08/2026`)** | ❌ | solo `created_at`, que es cuándo se REGISTRÓ (deuda 44) |
 | Código | ❌ | deuda 41 |
 | Producto | ✅ | `products.name` |
-| **Unidad de compra (`12 bulto`, `20 canasta`)** | ❌ | deuda 43 |
-| **Equivale a (`1 bulto = 50 UND`)** | ❌ | deuda 43 |
+| **Unidad de compra (`12 bulto`, `20 canasta`)** | ✅ | `purchase_invoice_items.purchase_unit` — deuda 43 cerrada |
+| **Equivale a (`1 bulto = 50 UND`)** | ✅ / ❌ | el FACTOR existe (`units_per_purchase_unit`); el `UND` del final es la etiqueta de la unidad de VENTA — deuda 41 |
 | Costo unitario · total de línea | ✅ | `purchase_invoice_items.unit_cost` · `subtotal` |
 | Costo del producto: antes → después | 🔶 | `products.cost_price` actual vs. el que resultaría |
 | Entrada al inventario (`+600 UND`) | 🔶 | de las cantidades de la compra |
