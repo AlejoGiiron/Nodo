@@ -2428,3 +2428,61 @@ es evidencia de que los permisos quedaron como uno cree.
 - **66** · la sonda de A2 es un spec (`rls-negacion.spec.ts`) y `rbac.spec` dice en su nombre que
   mide la UI, no la base.
 - **Vento** · misma línea, tres sitios expuestos, anotado en la 60 y **pospuesto por decisión**.
+
+
+## 2026-09-02 · Tres registros del bloque 0 — dos son errores nuestros, y el tercero ya es impuesto
+
+### 1 · Pedí SECURITY DEFINER citando R6, y habría desactivado tres guards
+
+**Atribución: el error es mío, y la instrucción venía con la regla bien citada.** Al fijar el alcance
+de la deuda 61 pedí que el trigger fuera `SECURITY DEFINER`, con el argumento correcto —*valida contra
+`user_stores` y sin eso su select pasa por RLS*—, que es literalmente el enunciado de R6. Lo que no
+hice fue **verificar qué hacía esa marca en ESE trigger**.
+
+La medición, tres líneas y un rollback:
+
+```
+dentro de SECURITY DEFINER  ->  current_user = postgres
+dentro de SECURITY INVOKER  ->  current_user = authenticated
+```
+
+`protect_profile_self_escalation` usa `current_user = 'authenticated'` como **condición de entrada a
+todos sus guards**. Con DEFINER, esa condición da falso: los tres guards vigentes —rol, `is_active`,
+`organization_id`— habrían quedado **inertes**, en el mismo commit que decía cerrar un hueco de
+seguridad, y sin que ningún test lo dijera (los tres casos habrían pasado a "0 filas, sin error",
+que es la forma muda que la deuda 39 ya describe).
+
+**Es R4 aplicada a la aplicación de otra regla:** verificar contra la cosa real, no contra la regla.
+Una regla citada correctamente no es evidencia de que su aplicación a este objeto haga lo que dice.
+
+🔴 **Y la lectura fina que lo resuelve, que es lo que hay que retener:** R6 pide DEFINER para **la
+función que VALIDA DATOS**. En este caso la que valida datos es **el helper que consulta
+`user_stores`**, no el trigger que decide qué hacer con el resultado. La regla estaba bien; mi lectura
+la aplicó al objeto equivocado. Separar las dos —helper DEFINER, trigger INVOKER— cumple R6 al pie de
+la letra y no rompe nada.
+
+### 2 · Una regla incompleta, cumplida al pie de la letra, produjo el defecto que existía para evitar
+
+`revoke execute from public` no alcanza: Supabase deja DEFAULT PRIVILEGES en el esquema `public` que
+conceden `EXECUTE` a **`anon`**, y `anon` no es `public`. El helper nuevo quedó invocable **sin login**,
+leyendo `user_stores` sin RLS.
+
+**El dato que lo hace grave:** de las quince funciones `SECURITY DEFINER` del esquema, **la única con
+el hueco era la escrita siguiendo la regla**. Las otras catorce lo hacen bien porque
+`funciones_auxiliares.sql` revoca a los dos — costumbre heredada, no texto.
+
+> **Una regla incompleta que se cumple al pie de la letra deja tranquilo al que la cumplió.**
+
+Es peor que no tenerla: sustituye el criterio por un trámite, y el trámite sale bien. Corregida en
+CLAUDE.md con el comando que lo comprueba (`proacl` de las DEFINER), y anotada como deuda 71 la parte
+que ningún texto arregla: **un check de árbol**, porque esto no lo caza un hook —nadie tocó un
+archivo— sino una consulta que corre siempre.
+
+### 3 · R9, quinta vez, misma forma — ya es impuesto conocido
+
+La notificación de la tarea en segundo plano dijo *"exit code 0"*; el archivo decía `suite_exit=1`, con
+cinco rojos. Quinta vez en el proyecto, siempre igual, siempre en el mismo sentido: **la notificación
+optimista**. Ya no es un hallazgo, es un costo fijo del arnés, y el hábito que lo neutraliza está
+escrito: el exit code se escribe DENTRO del archivo de salida y se grepea. Se anota la quinta para que
+el conteo siga siendo honesto — y porque una regla que se cumple sola cinco veces es la evidencia de
+que **el mecanismo, no la memoria**, es lo que la sostiene.

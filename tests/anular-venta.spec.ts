@@ -487,6 +487,16 @@ test.describe.serial('Anulación de ventas', () => {
       await c.from('debt_payments').delete().in('order_id', pend)
       await c.from('orders').delete().in('id', pend)
     }
+    // 🔴 DEUDA 67: los productos y el extra de este spec se DESACTIVAN acá.
+    //    Quedaban activos, y `AV Insumo` (precio 0) ordena antes que `Lab…`, así
+    //    que contaminaba a `pos.spec` DENTRO DE LA MISMA CORRIDA — la purga del
+    //    `global-setup` limpia entre corridas, no entre specs. Medido dos veces:
+    //    5 rojos en `pos.spec` cuyo mensaje no nombraba la causa.
+    //    Desactiva, no borra: es lo que hace la purga y evita pelear con las FK
+    //    de `order_items` y `stock_movements`.
+    await c.from('extras').update({ is_active: false }).eq('id', EXTRA)
+    await c.from('products').update({ is_active: false }).in('id', [P_SIMPLE, P_INSUMO])
+
     await loginAsOwner(page)
     await page.goto('/ventas')
     await closeShiftIfOpen(page)

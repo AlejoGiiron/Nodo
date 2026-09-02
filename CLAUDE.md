@@ -1028,6 +1028,11 @@ Reglas duras traídas de los hermanos — aplican a todo el trabajo en este repo
   🔴 *Medido el 2026-09-02 (deuda 71): una función DEFINER nueva cumplió la versión anterior de esta
   regla al pie de la letra y quedó igual con `anon=X` — un cliente **sin login** podía invocarla, y
   leía una tabla sin RLS. Se vio verificando el ACL contra la base; el archivo se veía correcto.*
+  🔴 **Y el dato que hace grave la omisión: de las quince funciones `SECURITY DEFINER` del esquema, la
+  ÚNICA con el hueco era la escrita SIGUIENDO ESTA REGLA.** Las otras catorce lo hacían bien por
+  costumbre heredada, no porque el texto lo pidiera. **Una regla incompleta que se cumple al pie de la
+  letra produce el defecto que la regla existía para evitar — y deja tranquilo al que la cumplió.** Es
+  la peor forma posible de una regla: peor que no tenerla, porque sustituye el criterio por un trámite.
   **Cómo se comprueba:** `select proname, proacl from pg_proc … where prosecdef` y mirar que ninguna
   diga `anon=X`.
 
