@@ -205,11 +205,22 @@ test('un usuario desactivado NO puede auto-reactivarse', async () => {
     .eq('id', cajeroSnap.id)
     .select(SNAP_COLS)
 
-  // CRÍTICO con P2 ya aplicada: un desactivado pierde get_my_organization_id(),
-  // así que el WITH CHECK de la policy podría fallar por su cuenta y dar cero
-  // filas. Eso sería verde por la razón equivocada. Se exige el mensaje del
-  // trigger: es la única prueba de que el BEFORE UPDATE disparó primero.
-  expectRechazoDelTrigger(res, /No podes activar ni desactivar tu propio usuario/i)
+  // 🔴 REESCRITO el 2026-09-01 — el rechazo es MUDO, y queda dicho.
+  //
+  //    La versión anterior EXIGÍA el mensaje del trigger. Verificado con sonda
+  //    SQL contra la base real: `filas_afectadas=0, sin excepción` — el trigger
+  //    protect_profile_self_escalation EXISTE y su mensaje también, pero nunca
+  //    dispara: P2 hace que un desactivado pierda get_my_organization_id(), la
+  //    policy de SELECT le oculta SU PROPIA fila, y el UPDATE escanea 0 filas.
+  //    Mismo comportamiento en Vento (la forma de policies+funciones es
+  //    idéntica): NO es un hueco de consolidación, es P2 silenciando al trigger
+  //    en los dos repos.
+  //
+  //    Para el MVP alcanza: es fail-closed. Pero es INDISTINGUIBLE de "el perfil
+  //    no existe" — 0 filas sin error—, y para un usuario desactivado POR ERROR
+  //    que no entiende por qué nada le funciona, callar no alcanza. Deuda #39.
+  expect(res.error, 'el rechazo es MUDO: la RLS filtra la fila, sin error').toBeNull()
+  expect(res.data ?? [], 'cero filas: la RLS ocultó el propio perfil').toHaveLength(0)
   expect((await readProfile(cajeroSnap.id)).is_active).toBe(false)
 
   // Restaura ya (no espera al afterAll: los tests siguientes usan al cajero).

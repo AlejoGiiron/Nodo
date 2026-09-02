@@ -1697,6 +1697,19 @@ tras su fallo), no archivos enteros.
   proyecto de Nodo. Se saltan **con su motivo impreso** — skip declarado, no silencioso.
 - **1** de `create-user`: la purga del usuario creado exige service role; la hace `lab-seed-b`.
 
+### El cierre del tablero (mismo día, más tarde)
+
+Los 4 fallos quedaron en **0**. `rbac.spec` se reescribió contra el nav real de Nodo (10 ítems, no
+los 11 de Vento), con el contraste positivo primero. Y `rbac-escalada` destapó, al destrabarse su
+serial, **la tercera manifestación de la deuda #39**: la capa de UX del corte de sesión era código
+muerto — mismo mecanismo, la fila propia invisible bajo P2. Restaurada del lado del cliente: cero
+filas en el primer fetch con sesión viva → corte con mensaje. La sonda SQL que separó "trigger mudo"
+de "hueco de consolidación" dio el veredicto: **el trigger viajó y está igual de mudo en Vento** —
+es P2 silenciándolo en los dos repos, no una pérdida del fork.
+
+`rbac` + `rbac-escalada`: **14 passed · 1 skipped (declarado: pide 2 sedes y el lab tiene una a
+propósito) · exit 0.**
+
 ### De dónde venimos
 
 La primera corrida (parcial, hace unas horas): **59 pasados / 15 fallados / 43 saltados**, cortada

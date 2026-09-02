@@ -1,4 +1,4 @@
-import { createContext, useEffect, useState, useCallback, type ReactNode } from 'react'
+import { createContext, useEffect, useState, useCallback, type ReactNode, useRef } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { toast } from 'react-hot-toast'
 import { supabase } from '@/lib/supabase'
@@ -28,6 +28,10 @@ export const AuthContext = createContext<AuthContextValue | undefined>(undefined
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
+  // Espejo en ref para leer "¿habia un profile previo?" dentro de fetchProfile
+  // sin sumarlo a sus dependencias (recrearia el callback en cada cambio).
+  const profileRef = useRef<Profile | null>(null)
+  useEffect(() => { profileRef.current = profile }, [profile])
   const [isLoading, setIsLoading] = useState(true)
 
   /**
@@ -67,11 +71,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .eq('id', userId)
       .single()
     if (error) {
+      // 🔴 CERO FILAS EN EL PRIMER FETCH = sesión sin perfil visible. Bajo P2 un
+      //    usuario DESACTIVADO no puede ver su propia fila (la policy de SELECT
+      //    usa get_my_organization_id(), que filtra is_active), así que el
+      //    `if (!data.is_active)` de abajo es INALCANZABLE para su propio caso:
+      //    para leer is_active=false habría que ver la fila. Verificado con
+      //    sonda SQL (0 filas, sin excepción) — deuda #39, tercera
+      //    manifestación. Sin este corte, el desactivado entraba a una app EN
+      //    BLANCO sin explicación: el mensaje existía y era código muerto.
+      //    (También cubre al huérfano de perfil: para el usuario es lo mismo —
+      //    la sesión no sirve— y el mensaje lo manda con el administrador.)
+      if (error.code === 'PGRST116' && !profileRef.current) {
+        await supabase.auth.signOut()
+        setProfile(null)
+        setUser(null)
+        clearSentryUserContext()
+        toast.error('Tu usuario está desactivado. Contactá al administrador.')
+        return
+      }
       // Hipo de red / RLS transitorio (p. ej. en un token refresh de fondo):
       // NO pisar el profile con null. Un profile nulo deja la app sin sede
       // activa y cuelga pantallas (branding). Se conserva el previo.
-      // En el PRIMER fetch (login) no hay previo → queda null como antes y el
-      // flujo de login continúa (isLoading se apaga en el .finally del caller).
       console.error('fetchProfile falló; se conserva el profile previo:', error.message)
       // Se reporta igual: en producción nadie mira la consola. Si esto falla en
       // el PRIMER fetch no hay profile previo que conservar → el usuario queda

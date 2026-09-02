@@ -1,15 +1,21 @@
 import { test, expect } from '@playwright/test'
 import { loginAsOwner, loginAsCashier } from './helpers/auth'
 
-// Items del sidebar (AppLayout NAV_GROUPS), los 11 reales.
+// Items del sidebar (AppLayout NAV_GROUPS), los 10 reales de NODO.
+// ⚠️ REESCRITO el 2026-09-01: la lista anterior era el nav de VENTO — tenía
+//    Mesas, Delivery y Cocina (podados) y le faltaban Turnos y Gastos. Mismo
+//    tratamiento que historiales.spec: el sujeto del gating es el catálogo
+//    propio de 21 claves, no el heredado.
 // Los grupos arrancan expandidos por defecto → los links son visibles sin abrir nada.
 const ALL_NAV = [
-  'Ventas', 'Mesas', 'Delivery', 'Cocina',
+  'Ventas',
   'Productos', 'Inventario', 'Compras',
-  'Fiado', 'Historial',
+  'Fiado', 'Historial', 'Turnos', 'Gastos',
   'Reportes', 'Configuración',
 ]
-const CASHIER_HIDDEN = ['Productos', 'Reportes', 'Configuración']
+// El cajero tiene 8 de 21: pos.*, caja.*, fiado.gestionar, ventas.historial.
+const CASHIER_HIDDEN = ['Productos', 'Inventario', 'Compras', 'Reportes', 'Configuración']
+const CASHIER_VISIBLE = ['Ventas', 'Fiado', 'Historial', 'Turnos', 'Gastos']
 
 test.describe('RBAC — gating de permisos', () => {
   test('owner ve todos los items del sidebar', async ({ page }) => {
@@ -26,11 +32,13 @@ test.describe('RBAC — gating de permisos', () => {
     }
   })
 
-  test('cajero NO ve Productos, Reportes ni Configuración', async ({ page }) => {
+  test('cajero NO ve Productos, Inventario, Compras, Reportes ni Configuración', async ({ page }) => {
     await loginAsCashier(page)
-    // Ítems que sí debe ver
-    await expect(page.getByRole('link', { name: 'Ventas' })).toBeVisible()
-    await expect(page.getByRole('link', { name: 'Mesas' })).toBeVisible()
+    // CONTRASTE primero: lo que SÍ debe ver (sin esto, un nav roto entero
+    // pasaría el test de ausencias — R10).
+    for (const label of CASHIER_VISIBLE) {
+      await expect(page.getByRole('link', { name: label })).toBeVisible()
+    }
     // Ítems ocultos por permiso
     for (const label of CASHIER_HIDDEN) {
       await expect(page.getByRole('link', { name: label })).toHaveCount(0)
@@ -48,12 +56,13 @@ test.describe('RBAC — gating de permisos', () => {
     await expect(page.getByRole('link', { name: 'Fiado' })).toBeVisible()
   })
 
-  test('cajero SÍ ve Ventas, Mesas y Delivery', async ({ page }) => {
+  test('cajero SÍ ve Turnos y Gastos (caja.cerrar / caja.movimientos)', async ({ page }) => {
+    // Era 'cajero SÍ ve Ventas, Mesas y Delivery' — dos de los tres se podaron y
+    // delivery.gestionar ya no existe en el catálogo. Lo que distingue al cajero
+    // HOY es que sus permisos de caja le muestran los historiales de caja.
     await loginAsCashier(page)
-    // Delivery es visible porque el cajero tiene delivery.gestionar.
-    await expect(page.getByRole('link', { name: 'Ventas' })).toBeVisible()
-    await expect(page.getByRole('link', { name: 'Mesas' })).toBeVisible()
-    await expect(page.getByRole('link', { name: 'Delivery' })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Turnos' })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Gastos' })).toBeVisible()
   })
 
   test('cajero que navega a /configuracion por URL es redirigido a /ventas', async ({ page }) => {
