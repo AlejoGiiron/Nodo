@@ -1531,6 +1531,7 @@ export function POSPage() {
   const [checkout, setCheckout] = useState(false)
   const [showOpenShift, setShowOpenShift] = useState(false)
   const [notingIdx, setNotingIdx] = useState<number | null>(null)
+  const [buscadorEnfocado, setBuscadorEnfocado] = useState(false)
   const [showHoldModal, setShowHoldModal] = useState(false)
   const [showHeldPanel, setShowHeldPanel] = useState(false)
   const [resumeTarget, setResumeTarget] = useState<string | null>(null)
@@ -1695,17 +1696,28 @@ export function POSPage() {
         El `overflowX: auto` del strip no alcanzaba: nunca llegaba a activarse
         porque el panel le cedía el ancho antes de que hubiera algo que scrollear.
       */}
-      <div style={{ flex: '0 0 60%', minWidth: 0, display: 'flex', flexDirection: 'column', minHeight: 0, background: '#fafafa' }}>
+      <div style={{ flex: '0 0 60%', minWidth: 0, display: 'flex', flexDirection: 'column', minHeight: 0, background: 'var(--bg)' }}>
 
         {/* Search + category tabs */}
-        <div style={{ padding: '18px 24px 4px', background: '#fff', borderBottom: '1px solid #f1f5f9' }}>
+        <div style={{ padding: '18px 24px 4px', background: 'var(--surface-3)', borderBottom: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 14 }}>
-            <div style={{
-              flex: 1, display: 'flex', alignItems: 'center', gap: 10,
-              background: '#f8fafc', borderRadius: 10,
-              padding: '11px 14px', border: '1px solid #e2e8f0',
-            }}>
-              <Search size={17} color="#94a3b8" />
+            {/* El envoltorio hace de campo: lleva la lupa, la X y el atajo.
+                Por eso el estado de FOCO se pinta acá y no en el <input> — si
+                lo llevara el input, el anillo aparecería dentro del recuadro.
+                Los valores son los del §4: borde --action + anillo de 3px en
+                --action-soft. */}
+            <div
+              data-focus={buscadorEnfocado || undefined}
+              style={{
+                flex: 1, display: 'flex', alignItems: 'center', gap: 10,
+                background: 'var(--surface)', borderRadius: 'var(--r-2)',
+                padding: '11px 14px',
+                border: `1px solid ${buscadorEnfocado ? 'var(--action)' : 'var(--border)'}`,
+                boxShadow: buscadorEnfocado ? '0 0 0 3px var(--action-soft)' : 'none',
+                transition: 'border-color .12s, box-shadow .12s',
+              }}
+            >
+              <Search size={17} color="var(--ink-3)" />
               <input
                 ref={searchRef}
                 value={query}
@@ -1713,25 +1725,33 @@ export function POSPage() {
                 onKeyDown={(e) => {
                   if (e.key === 'Escape') { setQuery(''); e.currentTarget.blur() }
                 }}
+                onFocus={() => setBuscadorEnfocado(true)}
+                onBlur={() => setBuscadorEnfocado(false)}
                 placeholder="Buscar producto..."
                 style={{
                   flex: 1, border: 'none', outline: 'none',
-                  background: 'transparent', fontSize: 14, color: '#0f172a',
-                  fontFamily: 'Inter, system-ui, sans-serif',
+                  background: 'transparent', fontSize: 14, color: 'var(--ink)',
+                  fontFamily: 'inherit',
                 }}
               />
+              {/* La X borra la búsqueda; sin búsqueda se ve el atajo "/".
+                  El único atajo IMPRESO del producto es "Cobrar — F12" (§5) y
+                  los demás se revelan; este ya estaba impreso antes del
+                  re-skin y se conserva — sacarlo es decisión de producto, no
+                  de estilo. Lo que sí se va es la monoespaciada del `kbd`, que
+                  no existe en el producto (§2). */}
               {query ? (
                 <button
                   onClick={() => setQuery('')}
-                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 0, display: 'grid', placeItems: 'center' }}
+                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--ink-4)', padding: 0, display: 'grid', placeItems: 'center' }}
                 >
                   <X size={14} />
                 </button>
               ) : (
                 <kbd style={{
-                  fontSize: 10, color: '#cbd5e1', border: '1px solid #e5e7eb',
-                  borderRadius: 4, padding: '1px 5px', fontFamily: 'monospace',
-                  background: '#f1f5f9', userSelect: 'none',
+                  fontSize: 10, color: 'var(--ink-4)', border: '1px solid var(--border)',
+                  borderRadius: 'var(--r-1)', padding: '1px 5px', fontFamily: 'inherit',
+                  background: 'var(--border-2)', userSelect: 'none',
                 }}>/</kbd>
               )}
             </div>
