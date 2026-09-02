@@ -39,6 +39,9 @@ import {
 } from '@/lib/supabase-helpers'
 import type { PaymentMethod } from '@/hooks/useSedeConfig'
 import type { Tables } from '@/types/database.types'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { formatoCOP } from '@/lib/formato'
 
 // ─── Constants ────────────────────────────────────────────────────
 
@@ -61,7 +64,7 @@ const DEFAULT_CASH_OUT_REASONS = ['Mercado', 'Servicios', 'Papelería', 'Transpo
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <h2 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a', marginBottom: 24 }}>
+    <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--ink)', marginBottom: 20 }}>
       {children}
     </h2>
   )
@@ -69,7 +72,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
-    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#334155', marginBottom: 6 }}>
+    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--ink-2)', marginBottom: 6 }}>
       {children}
     </label>
   )
@@ -90,66 +93,45 @@ function TextInput({
   maxLength?: number
   testId?: string
 }) {
+  // El foco pasa a ser el del §4 —borde --action + anillo de 3px— y deja de
+  // ser dos handlers de JS que pintaban el borde a mano. Un estado de
+  // interacción es una REGLA, no un valor: escribirlo con onFocus/onBlur
+  // obliga a repetirlo en cada campo y a acordarse de los dos.
   return (
-    <input
+    <Input
       type={type}
       data-testid={testId}
       value={value}
       onChange={e => onChange(e.target.value)}
       placeholder={placeholder}
       maxLength={maxLength}
-      style={{
-        width: '100%',
-        border: '1.5px solid #e2e8f0',
-        borderRadius: 8,
-        padding: '10px 12px',
-        fontSize: 14,
-        color: '#0f172a',
-        outline: 'none',
-        background: '#fff',
-        boxSizing: 'border-box',
-      }}
-      onFocus={e => (e.currentTarget.style.borderColor = '#10b981')}
-      onBlur={e => (e.currentTarget.style.borderColor = '#e2e8f0')}
+      style={{ height: 40, fontSize: 14 }}
     />
   )
 }
 
 function SaveButton({ onClick, loading }: { onClick: () => void; loading: boolean }) {
   return (
-    <button
-      onClick={onClick}
-      disabled={loading}
-      style={{
-        background: loading ? '#cbd5e1' : '#10b981',
-        color: '#fff',
-        border: 'none',
-        borderRadius: 10,
-        padding: '11px 28px',
-        fontSize: 14,
-        fontWeight: 700,
-        cursor: loading ? 'not-allowed' : 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-        boxShadow: loading ? 'none' : '0 6px 16px rgba(16,185,129,.35)',
-        marginTop: 28,
-      }}
-    >
+    <Button onClick={onClick} disabled={loading} style={{ marginTop: 24 }}>
       {loading && <Loader2 size={15} className="animate-spin" />}
       Guardar
-    </button>
+    </Button>
   )
 }
 
+// Pasa al skeleton del §4 (`.nodo-skeleton`): 9px sobre --border-2 con su
+// shimmer de 1.4s, en vez de 48px sobre var(--border-2) con el `pulse` de Tailwind.
+//
+// ⚠️ NOTA DE HONESTIDAD: escribí primero que el `pulse` no existía y que la
+//    barra estaba QUIETA. **Era falso.** `@keyframes pulse` SÍ está en el CSS
+//    emitido — verificado grepeando `dist/assets/index-*.css` después de
+//    compilar, no leyendo la config. El skeleton anduvo siempre; lo que cambia
+//    acá es unificarlo con el del design system, no arreglar nada roto.
 function Skeleton() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {[1, 2, 3].map(i => (
-        <div
-          key={i}
-          style={{ height: 48, borderRadius: 8, background: '#f1f5f9', animation: 'pulse 1.5s infinite' }}
-        />
+        <div key={i} className="nodo-skeleton" style={{ height: 48, borderRadius: 'var(--r-2)' }} />
       ))}
     </div>
   )
@@ -184,17 +166,17 @@ function EditableList({
               alignItems: 'center',
               justifyContent: 'space-between',
               padding: '8px 12px',
-              border: '1px solid #e2e8f0',
+              border: '1px solid var(--border)',
               borderRadius: 8,
-              background: '#f8fafc',
+              background: 'var(--surface-2)',
               fontSize: 14,
-              color: '#0f172a',
+              color: 'var(--ink)',
             }}
           >
             {item}
             <button
               onClick={() => onChange(items.filter(i => i !== item))}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2 }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink-4)', padding: 2 }}
             >
               <X size={14} />
             </button>
@@ -209,25 +191,25 @@ function EditableList({
           placeholder={placeholder ?? 'Nuevo elemento...'}
           style={{
             flex: 1,
-            border: '1.5px solid #e2e8f0',
+            border: '1.5px solid var(--border)',
             borderRadius: 8,
             padding: '9px 12px',
             fontSize: 14,
-            color: '#0f172a',
+            color: 'var(--ink)',
             outline: 'none',
           }}
-          onFocus={e => (e.currentTarget.style.borderColor = '#10b981')}
-          onBlur={e => (e.currentTarget.style.borderColor = '#e2e8f0')}
+          onFocus={e => (e.currentTarget.style.borderColor = 'var(--action)')}
+          onBlur={e => (e.currentTarget.style.borderColor = 'var(--border)')}
         />
         <button
           onClick={add}
           style={{
-            background: '#f1f5f9',
-            border: '1.5px solid #e2e8f0',
+            background: 'var(--border-2)',
+            border: '1.5px solid var(--border)',
             borderRadius: 8,
             padding: '9px 14px',
             cursor: 'pointer',
-            color: '#334155',
+            color: 'var(--ink-2)',
             display: 'flex',
             alignItems: 'center',
             gap: 4,
@@ -293,8 +275,8 @@ function SectionSede() {
               width: 72,
               height: 72,
               borderRadius: 12,
-              border: '1.5px solid #e2e8f0',
-              background: '#f8fafc',
+              border: '1.5px solid var(--border)',
+              background: 'var(--surface-2)',
               overflow: 'hidden',
               display: 'flex',
               alignItems: 'center',
@@ -304,7 +286,7 @@ function SectionSede() {
             {sede?.logo_url ? (
               <img src={sede.logo_url} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : (
-              <Building2 size={28} color="#94a3b8" />
+              <Building2 size={28} color="var(--ink-4)" />
             )}
           </div>
           <input ref={logoInputRef} type="file" accept="image/*" style={{ display: 'none' }}
@@ -318,13 +300,13 @@ function SectionSede() {
               alignItems: 'center',
               gap: 6,
               padding: '9px 16px',
-              border: '1.5px solid #e2e8f0',
+              border: '1.5px solid var(--border)',
               borderRadius: 9,
-              background: '#fff',
+              background: 'var(--surface)',
               cursor: 'pointer',
               fontSize: 13,
               fontWeight: 600,
-              color: '#334155',
+              color: 'var(--ink-2)',
             }}
           >
             {uploadingLogo ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
@@ -419,14 +401,14 @@ function CreateUserModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,.55)', display: 'grid', placeItems: 'center', zIndex: 50 }}
+      style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', display: 'grid', placeItems: 'center', zIndex: 50 }}
       onClick={e => e.target === e.currentTarget && onClose()}
     >
-      <div style={{ background: '#fff', borderRadius: 14, width: 460, maxWidth: '92%', boxShadow: '0 25px 50px -12px rgba(0,0,0,.25)', overflow: 'hidden' }}>
+      <div style={{ background: 'var(--surface)', borderRadius: 14, width: 460, maxWidth: '92%', boxShadow: 'var(--shadow-1)', overflow: 'hidden' }}>
         {/* Header */}
-        <div style={{ padding: '18px 22px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h3 style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', margin: 0 }}>Crear usuario</h3>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={18} /></button>
+        <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--border-2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink)', margin: 0 }}>Crear usuario</h3>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink-4)' }}><X size={18} /></button>
         </div>
 
         {/* Body */}
@@ -451,29 +433,29 @@ function CreateUserModal({ onClose }: { onClose: () => void }) {
                   onChange={e => setPassword(e.target.value)}
                   style={{
                     width: '100%',
-                    border: '1.5px solid #e2e8f0',
+                    border: '1.5px solid var(--border)',
                     borderRadius: 8,
                     padding: '10px 12px',
                     fontSize: 14,
-                    fontFamily: 'monospace',
-                    color: '#0f172a',
+                    fontVariantNumeric: 'tabular-nums',
+                    color: 'var(--ink)',
                     outline: 'none',
                     boxSizing: 'border-box',
                     letterSpacing: 1,
                   }}
-                  onFocus={e => (e.currentTarget.style.borderColor = '#10b981')}
-                  onBlur={e => (e.currentTarget.style.borderColor = '#e2e8f0')}
+                  onFocus={e => (e.currentTarget.style.borderColor = 'var(--action)')}
+                  onBlur={e => (e.currentTarget.style.borderColor = 'var(--border)')}
                 />
               </div>
               <button
                 onClick={() => setPassword(generatePassword())}
                 title="Generar contraseña"
-                style={{ padding: '0 12px', border: '1.5px solid #e2e8f0', borderRadius: 8, background: '#f8fafc', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center' }}
+                style={{ padding: '0 12px', border: '1.5px solid var(--border)', borderRadius: 8, background: 'var(--surface-2)', cursor: 'pointer', color: 'var(--ink-3)', display: 'flex', alignItems: 'center' }}
               >
                 <RefreshCw size={15} />
               </button>
             </div>
-            <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 6, marginBottom: 0 }}>
+            <p style={{ fontSize: 11, color: 'var(--ink-4)', marginTop: 6, marginBottom: 0 }}>
               El usuario deberá cambiar esta contraseña al ingresar por primera vez.
             </p>
           </div>
@@ -483,7 +465,7 @@ function CreateUserModal({ onClose }: { onClose: () => void }) {
             <select
               value={roleId}
               onChange={e => setRoleId(e.target.value)}
-              style={{ width: '100%', border: '1.5px solid #e2e8f0', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#0f172a', background: '#fff', outline: 'none', textTransform: 'capitalize' }}
+              style={{ width: '100%', border: '1.5px solid var(--border)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: 'var(--ink)', background: 'var(--surface)', outline: 'none', textTransform: 'capitalize' }}
             >
               {roles.map(r => (
                 <option key={r.id} value={r.id}>{r.name}</option>
@@ -500,13 +482,13 @@ function CreateUserModal({ onClose }: { onClose: () => void }) {
               justifyContent: 'center',
               gap: 7,
               padding: '10px',
-              border: `1.5px solid ${copied ? '#a7f3d0' : '#e2e8f0'}`,
+              border: `1.5px solid ${copied ? 'var(--action-border)' : 'var(--border)'}`,
               borderRadius: 9,
-              background: copied ? '#ecfdf5' : '#f8fafc',
+              background: copied ? 'var(--action-soft)' : 'var(--surface-2)',
               cursor: 'pointer',
               fontSize: 13,
               fontWeight: 600,
-              color: copied ? '#065f46' : '#334155',
+              color: copied ? 'var(--success-on-soft)' : 'var(--ink-2)',
               transition: 'all .15s',
             }}
           >
@@ -519,7 +501,7 @@ function CreateUserModal({ onClose }: { onClose: () => void }) {
         <div style={{ padding: '0 22px 22px', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
           <button
             onClick={onClose}
-            style={{ padding: '10px 20px', border: '1.5px solid #e2e8f0', borderRadius: 9, background: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: '#334155' }}
+            style={{ padding: '10px 20px', border: '1.5px solid var(--border)', borderRadius: 9, background: 'var(--surface)', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: 'var(--ink-2)' }}
           >
             Cancelar
           </button>
@@ -528,13 +510,13 @@ function CreateUserModal({ onClose }: { onClose: () => void }) {
             disabled={isCreatingUser}
             style={{
               padding: '10px 24px',
-              background: isCreatingUser ? '#cbd5e1' : '#10b981',
+              background: isCreatingUser ? 'var(--ink-4)' : 'var(--action)',
               border: 'none',
               borderRadius: 10,
               cursor: isCreatingUser ? 'not-allowed' : 'pointer',
               fontSize: 13,
               fontWeight: 700,
-              color: '#fff',
+              color: 'var(--surface)',
               display: 'flex',
               alignItems: 'center',
               gap: 6,
@@ -569,13 +551,13 @@ function SectionUsers() {
             alignItems: 'center',
             gap: 6,
             padding: '9px 18px',
-            background: '#10b981',
+            background: 'var(--action)',
             border: 'none',
             borderRadius: 10,
             cursor: 'pointer',
             fontSize: 13,
             fontWeight: 700,
-            color: '#fff',
+            color: 'var(--surface)',
             boxShadow: '0 4px 12px rgba(16,185,129,.3)',
           }}
         >
@@ -583,18 +565,18 @@ function SectionUsers() {
         </button>
       </div>
 
-      <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden' }}>
+      <div style={{ border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
         {/* Header */}
         <div
           style={{
             display: 'grid',
             gridTemplateColumns: '1fr 180px 120px 80px',
             padding: '10px 16px',
-            background: '#f8fafc',
-            borderBottom: '1px solid #e2e8f0',
+            background: 'var(--surface-2)',
+            borderBottom: '1px solid var(--border)',
             fontSize: 11,
             fontWeight: 600,
-            color: '#64748b',
+            color: 'var(--ink-3)',
             textTransform: 'uppercase',
             letterSpacing: 0.5,
           }}
@@ -606,7 +588,7 @@ function SectionUsers() {
         </div>
 
         {users.length === 0 && (
-          <div style={{ padding: '32px 16px', textAlign: 'center', color: '#94a3b8', fontSize: 14 }}>
+          <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--ink-4)', fontSize: 14 }}>
             No hay usuarios en este sede
           </div>
         )}
@@ -619,12 +601,12 @@ function SectionUsers() {
               gridTemplateColumns: '1fr 180px 120px 80px',
               padding: '12px 16px',
               alignItems: 'center',
-              borderBottom: idx < users.length - 1 ? '1px solid #f1f5f9' : 'none',
+              borderBottom: idx < users.length - 1 ? '1px solid var(--border-2)' : 'none',
             }}
           >
             <div>
-              <p style={{ fontSize: 14, fontWeight: 600, color: '#0f172a', margin: 0 }}>{user.full_name}</p>
-              <p style={{ fontSize: 12, color: '#64748b', margin: 0 }}>{user.email}</p>
+              <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)', margin: 0 }}>{user.full_name}</p>
+              <p style={{ fontSize: 12, color: 'var(--ink-3)', margin: 0 }}>{user.email}</p>
             </div>
 
             <select
@@ -632,12 +614,12 @@ function SectionUsers() {
               disabled={isUpdating}
               onChange={e => updateUser(user.id, { role_id: e.target.value })}
               style={{
-                border: '1.5px solid #e2e8f0',
+                border: '1.5px solid var(--border)',
                 borderRadius: 7,
                 padding: '6px 10px',
                 fontSize: 13,
-                color: '#0f172a',
-                background: '#fff',
+                color: 'var(--ink)',
+                background: 'var(--surface)',
                 cursor: 'pointer',
                 outline: 'none',
                 textTransform: 'capitalize',
@@ -656,8 +638,8 @@ function SectionUsers() {
                 gap: 5,
                 fontSize: 12,
                 fontWeight: 600,
-                color: user.is_active ? '#065f46' : '#64748b',
-                background: user.is_active ? '#ecfdf5' : '#f1f5f9',
+                color: user.is_active ? 'var(--success-on-soft)' : 'var(--ink-3)',
+                background: user.is_active ? 'var(--action-soft)' : 'var(--border-2)',
                 padding: '4px 10px',
                 borderRadius: 20,
                 width: 'fit-content',
@@ -668,7 +650,7 @@ function SectionUsers() {
                   width: 6,
                   height: 6,
                   borderRadius: '50%',
-                  background: user.is_active ? '#10b981' : '#94a3b8',
+                  background: user.is_active ? 'var(--action)' : 'var(--ink-4)',
                 }}
               />
               {user.is_active ? 'Activo' : 'Inactivo'}
@@ -681,7 +663,7 @@ function SectionUsers() {
               <span
                 data-testid="user-toggle-self"
                 title="No podés activar ni desactivar tu propio usuario"
-                style={{ fontSize: 11, color: '#94a3b8' }}
+                style={{ fontSize: 11, color: 'var(--ink-4)' }}
               >
                 —
               </span>
@@ -690,7 +672,7 @@ function SectionUsers() {
                 onClick={() => updateUser(user.id, { is_active: !user.is_active })}
                 disabled={isUpdating}
                 title={user.is_active ? 'Desactivar' : 'Activar'}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: user.is_active ? '#10b981' : '#94a3b8', display: 'flex', alignItems: 'center' }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: user.is_active ? 'var(--action)' : 'var(--ink-4)', display: 'flex', alignItems: 'center' }}
               >
                 {user.is_active ? <ToggleRight size={24} /> : <ToggleLeft size={24} />}
               </button>
@@ -748,8 +730,8 @@ function SectionCaja() {
           es FIJA en el esquema y no se edita: si cada sede inventara las suyas,
           los reportes entre sedes y entre meses dejarían de ser comparables. */}
       <div style={{ marginBottom: 32 }}>
-        <h3 style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', marginBottom: 4 }}>Sugerencias de detalle</h3>
-        <p style={{ fontSize: 12, color: '#64748b', marginBottom: 16 }}>
+        <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)', marginBottom: 4 }}>Sugerencias de detalle</h3>
+        <p style={{ fontSize: 12, color: 'var(--ink-3)', marginBottom: 16 }}>
           Autocompletan el campo Detalle al registrar un egreso. NO cambian la
           categoría del movimiento, que es fija en el esquema.
         </p>
@@ -758,8 +740,8 @@ function SectionCaja() {
 
       {/* Métodos de pago */}
       <div style={{ marginBottom: 32 }}>
-        <h3 style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', marginBottom: 4 }}>Métodos de pago habilitados</h3>
-        <p style={{ fontSize: 12, color: '#64748b', marginBottom: 16 }}>
+        <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)', marginBottom: 4 }}>Métodos de pago habilitados</h3>
+        <p style={{ fontSize: 12, color: 'var(--ink-3)', marginBottom: 16 }}>
           Solo los métodos activos aparecen en el flujo de cobro.
         </p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
@@ -771,10 +753,10 @@ function SectionCaja() {
                 onClick={() => toggleMethod(value)}
                 style={{
                   padding: '8px 18px',
-                  border: `1.5px solid ${active ? '#10b981' : '#e2e8f0'}`,
+                  border: `1.5px solid ${active ? 'var(--action)' : 'var(--border)'}`,
                   borderRadius: 9,
-                  background: active ? '#ecfdf5' : '#fff',
-                  color: active ? '#065f46' : '#64748b',
+                  background: active ? 'var(--action-soft)' : 'var(--surface)',
+                  color: active ? 'var(--success-on-soft)' : 'var(--ink-3)',
                   fontSize: 13,
                   fontWeight: 600,
                   cursor: 'pointer',
@@ -790,13 +772,13 @@ function SectionCaja() {
 
       {/* QR Nequi */}
       <div style={{ marginBottom: 8 }}>
-        <h3 style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', marginBottom: 4 }}>QR de Nequi</h3>
-        <p style={{ fontSize: 12, color: '#64748b', marginBottom: 16 }}>
+        <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)', marginBottom: 4 }}>QR de Nequi</h3>
+        <p style={{ fontSize: 12, color: 'var(--ink-3)', marginBottom: 16 }}>
           Se muestra en el modal de cobro cuando el método es Nequi.
         </p>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           {config.nequi_qr_url && (
-            <div style={{ width: 88, height: 88, border: '1.5px solid #e2e8f0', borderRadius: 10, overflow: 'hidden' }}>
+            <div style={{ width: 88, height: 88, border: '1.5px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
               <img src={config.nequi_qr_url} alt="QR Nequi" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
           )}
@@ -811,13 +793,13 @@ function SectionCaja() {
               alignItems: 'center',
               gap: 6,
               padding: '9px 16px',
-              border: '1.5px solid #e2e8f0',
+              border: '1.5px solid var(--border)',
               borderRadius: 9,
-              background: '#fff',
+              background: 'var(--surface)',
               cursor: 'pointer',
               fontSize: 13,
               fontWeight: 600,
-              color: '#334155',
+              color: 'var(--ink-2)',
             }}
           >
             {uploadingQR ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
@@ -859,13 +841,13 @@ function StoreModal({
 
   return (
     <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,.55)', display: 'grid', placeItems: 'center', zIndex: 50 }}
+      style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', display: 'grid', placeItems: 'center', zIndex: 50 }}
       onClick={e => e.target === e.currentTarget && onClose()}
     >
-      <div style={{ background: '#fff', borderRadius: 14, width: 460, maxWidth: '92%', boxShadow: '0 25px 50px -12px rgba(0,0,0,.25)', overflow: 'hidden' }}>
-        <div style={{ padding: '18px 22px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h3 style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', margin: 0 }}>{isNew ? 'Nueva sede' : 'Editar sede'}</h3>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={18} /></button>
+      <div style={{ background: 'var(--surface)', borderRadius: 14, width: 460, maxWidth: '92%', boxShadow: 'var(--shadow-1)', overflow: 'hidden' }}>
+        <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--border-2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink)', margin: 0 }}>{isNew ? 'Nueva sede' : 'Editar sede'}</h3>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink-4)' }}><X size={18} /></button>
         </div>
         <div style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div><FieldLabel>Nombre</FieldLabel><TextInput value={name} onChange={setName} placeholder="Sede Centro" /></div>
@@ -873,11 +855,11 @@ function StoreModal({
           <div><FieldLabel>Teléfono</FieldLabel><TextInput value={phone} onChange={setPhone} placeholder="3001234567" /></div>
         </div>
         <div style={{ padding: '0 22px 22px', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <button onClick={onClose} style={{ padding: '10px 20px', border: '1.5px solid #e2e8f0', borderRadius: 9, background: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: '#334155' }}>Cancelar</button>
+          <button onClick={onClose} style={{ padding: '10px 20px', border: '1.5px solid var(--border)', borderRadius: 9, background: 'var(--surface)', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: 'var(--ink-2)' }}>Cancelar</button>
           <button
             onClick={handleSave}
             disabled={saving}
-            style={{ padding: '10px 24px', background: saving ? '#cbd5e1' : '#10b981', border: 'none', borderRadius: 10, cursor: saving ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 6, boxShadow: saving ? 'none' : '0 4px 12px rgba(16,185,129,.3)' }}
+            style={{ padding: '10px 24px', background: saving ? 'var(--ink-4)' : 'var(--action)', border: 'none', borderRadius: 10, cursor: saving ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 700, color: 'var(--surface)', display: 'flex', alignItems: 'center', gap: 6, boxShadow: saving ? 'none' : '0 4px 12px rgba(16,185,129,.3)' }}
           >
             {saving && <Loader2 size={14} className="animate-spin" />}
             {isNew ? 'Crear sede' : 'Guardar'}
@@ -915,7 +897,7 @@ function SectionSedes() {
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
         <button
           onClick={() => setEditStore('new')}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', background: '#10b981', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#fff', boxShadow: '0 4px 12px rgba(16,185,129,.3)' }}
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', background: 'var(--action)', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 13, fontWeight: 700, color: 'var(--surface)', boxShadow: '0 4px 12px rgba(16,185,129,.3)' }}
         >
           <Plus size={15} /> Crear sede
         </button>
@@ -923,38 +905,38 @@ function SectionSedes() {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         {stores.map(store => (
-          <div key={store.id} style={{ border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '14px 16px', borderBottom: '1px solid #f1f5f9' }}>
+          <div key={store.id} style={{ border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '14px 16px', borderBottom: '1px solid var(--border-2)' }}>
               <div>
-                <p style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', margin: 0 }}>{store.name}</p>
-                <p style={{ fontSize: 12.5, color: '#64748b', margin: '3px 0 0' }}>
+                <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)', margin: 0 }}>{store.name}</p>
+                <p style={{ fontSize: 12.5, color: 'var(--ink-3)', margin: '3px 0 0' }}>
                   {store.address || 'Sin dirección'}{store.phone ? ` · ${store.phone}` : ''}
                 </p>
               </div>
               <div style={{ display: 'flex', gap: 6 }}>
-                <button onClick={() => setEditStore(store)} title="Editar" style={{ width: 30, height: 30, border: '1px solid #e2e8f0', background: '#fff', borderRadius: 7, cursor: 'pointer', color: '#64748b', display: 'grid', placeItems: 'center' }}><Pencil size={13} /></button>
-                <button onClick={() => handleDelete(store)} disabled={stores.length <= 1 || isMutating} title={stores.length <= 1 ? 'No puedes eliminar la única sede' : 'Eliminar'} style={{ width: 30, height: 30, border: '1px solid #fecaca', background: '#fef2f2', borderRadius: 7, cursor: stores.length <= 1 ? 'not-allowed' : 'pointer', color: '#dc2626', display: 'grid', placeItems: 'center', opacity: stores.length <= 1 ? 0.4 : 1 }}><Trash2 size={13} /></button>
+                <button onClick={() => setEditStore(store)} title="Editar" style={{ width: 30, height: 30, border: '1px solid var(--border)', background: 'var(--surface)', borderRadius: 7, cursor: 'pointer', color: 'var(--ink-3)', display: 'grid', placeItems: 'center' }}><Pencil size={13} /></button>
+                <button onClick={() => handleDelete(store)} disabled={stores.length <= 1 || isMutating} title={stores.length <= 1 ? 'No puedes eliminar la única sede' : 'Eliminar'} style={{ width: 30, height: 30, border: '1px solid var(--danger-soft)', background: 'var(--danger-soft)', borderRadius: 7, cursor: stores.length <= 1 ? 'not-allowed' : 'pointer', color: 'var(--danger)', display: 'grid', placeItems: 'center', opacity: stores.length <= 1 ? 0.4 : 1 }}><Trash2 size={13} /></button>
               </div>
             </div>
             {/* Acceso de usuarios */}
             <div style={{ padding: '12px 16px' }}>
-              <p style={{ fontSize: 11, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5, margin: '0 0 10px' }}>Acceso de usuarios</p>
+              <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: 0.5, margin: '0 0 10px' }}>Acceso de usuarios</p>
               {orgUsers.length === 0 ? (
-                <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>Sin usuarios.</p>
+                <p style={{ fontSize: 13, color: 'var(--ink-4)', margin: 0 }}>Sin usuarios.</p>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {orgUsers.map(u => {
                     const checked = isAssigned(u.id, store.id)
                     return (
-                      <label key={u.id} style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 13.5, color: '#334155', cursor: 'pointer', padding: '4px 0' }}>
+                      <label key={u.id} style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 13.5, color: 'var(--ink-2)', cursor: 'pointer', padding: '4px 0' }}>
                         <input
                           type="checkbox"
                           checked={checked}
                           onChange={() => setAssignment({ userId: u.id, sedeId: store.id, assigned: !checked })}
-                          style={{ width: 16, height: 16, accentColor: '#10b981', cursor: 'pointer' }}
+                          style={{ width: 16, height: 16, accentColor: 'var(--action)', cursor: 'pointer' }}
                         />
                         <span style={{ fontWeight: 600 }}>{u.full_name}</span>
-                        <span style={{ color: '#94a3b8' }}>{u.email}</span>
+                        <span style={{ color: 'var(--ink-4)' }}>{u.email}</span>
                       </label>
                     )
                   })}
@@ -1007,23 +989,23 @@ function RoleModal({ role, onClose }: { role: RoleRow | 'new'; onClose: () => vo
 
   return (
     <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,.55)', display: 'grid', placeItems: 'center', zIndex: 50 }}
+      style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', display: 'grid', placeItems: 'center', zIndex: 50 }}
       onClick={e => e.target === e.currentTarget && onClose()}
     >
-      <div data-testid="role-modal" style={{ background: '#fff', borderRadius: 14, width: 560, maxWidth: '94%', maxHeight: '88vh', boxShadow: '0 25px 50px -12px rgba(0,0,0,.25)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ padding: '18px 22px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-          <h3 style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', margin: 0 }}>{isNew ? 'Nuevo rol' : `Editar rol · ${role.name}`}</h3>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={18} /></button>
+      <div data-testid="role-modal" style={{ background: 'var(--surface)', borderRadius: 14, width: 560, maxWidth: '94%', maxHeight: '88vh', boxShadow: 'var(--shadow-1)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--border-2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+          <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink)', margin: 0 }}>{isNew ? 'Nuevo rol' : `Editar rol · ${role.name}`}</h3>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink-4)' }}><X size={18} /></button>
         </div>
         <div style={{ padding: 22, overflowY: 'auto' }}>
           <div style={{ marginBottom: 20 }}>
             <FieldLabel>Nombre del rol</FieldLabel>
             {isSystem ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{ padding: '10px 13px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: '#f8fafc', color: '#334155', fontSize: 14, fontWeight: 600, textTransform: 'capitalize', flex: 1 }}>
+                <div style={{ padding: '10px 13px', borderRadius: 8, border: '1.5px solid var(--border)', background: 'var(--surface-2)', color: 'var(--ink-2)', fontSize: 14, fontWeight: 600, textTransform: 'capitalize', flex: 1 }}>
                   {name}
                 </div>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#64748b' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--ink-3)' }}>
                   <Lock size={11} /> Rol de sistema
                 </span>
               </div>
@@ -1034,12 +1016,12 @@ function RoleModal({ role, onClose }: { role: RoleRow | 'new'; onClose: () => vo
           <FieldLabel>Permisos</FieldLabel>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 6 }}>
             {PERMISSION_GROUPS.map(group => (
-              <div key={group.module} style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: '12px 14px' }}>
-                <p style={{ fontSize: 12, fontWeight: 700, color: '#0f172a', margin: '0 0 8px' }}>{group.module}</p>
+              <div key={group.module} style={{ border: '1px solid var(--border)', borderRadius: 10, padding: '12px 14px' }}>
+                <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', margin: '0 0 8px' }}>{group.module}</p>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 18px' }}>
                   {group.perms.map(perm => (
-                    <label key={perm.key} data-testid={`perm-${perm.key}`} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, color: '#334155', cursor: 'pointer' }}>
-                      <input type="checkbox" checked={perms.includes(perm.key)} onChange={() => toggle(perm.key)} style={{ width: 15, height: 15, accentColor: '#10b981', cursor: 'pointer' }} />
+                    <label key={perm.key} data-testid={`perm-${perm.key}`} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, color: 'var(--ink-2)', cursor: 'pointer' }}>
+                      <input type="checkbox" checked={perms.includes(perm.key)} onChange={() => toggle(perm.key)} style={{ width: 15, height: 15, accentColor: 'var(--action)', cursor: 'pointer' }} />
                       {perm.label}
                     </label>
                   ))}
@@ -1048,12 +1030,12 @@ function RoleModal({ role, onClose }: { role: RoleRow | 'new'; onClose: () => vo
             ))}
           </div>
         </div>
-        <div style={{ padding: '14px 22px', borderTop: '1px solid #f1f5f9', display: 'flex', gap: 10, justifyContent: 'flex-end', flexShrink: 0 }}>
-          <button onClick={onClose} style={{ padding: '10px 20px', border: '1.5px solid #e2e8f0', borderRadius: 9, background: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: '#334155' }}>Cancelar</button>
+        <div style={{ padding: '14px 22px', borderTop: '1px solid var(--border-2)', display: 'flex', gap: 10, justifyContent: 'flex-end', flexShrink: 0 }}>
+          <button onClick={onClose} style={{ padding: '10px 20px', border: '1.5px solid var(--border)', borderRadius: 9, background: 'var(--surface)', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: 'var(--ink-2)' }}>Cancelar</button>
           <button
             onClick={handleSave}
             disabled={isMutating}
-            style={{ padding: '10px 24px', background: isMutating ? '#cbd5e1' : '#10b981', border: 'none', borderRadius: 10, cursor: isMutating ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 6, boxShadow: isMutating ? 'none' : '0 4px 12px rgba(16,185,129,.3)' }}
+            style={{ padding: '10px 24px', background: isMutating ? 'var(--ink-4)' : 'var(--action)', border: 'none', borderRadius: 10, cursor: isMutating ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 700, color: 'var(--surface)', display: 'flex', alignItems: 'center', gap: 6, boxShadow: isMutating ? 'none' : '0 4px 12px rgba(16,185,129,.3)' }}
           >
             {isMutating && <Loader2 size={14} className="animate-spin" />}
             {isNew ? 'Crear rol' : 'Guardar'}
@@ -1082,13 +1064,13 @@ function SectionRoles() {
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
         <button
           onClick={() => setEditRole('new')}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', background: '#10b981', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#fff', boxShadow: '0 4px 12px rgba(16,185,129,.3)' }}
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', background: 'var(--action)', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 13, fontWeight: 700, color: 'var(--surface)', boxShadow: '0 4px 12px rgba(16,185,129,.3)' }}
         >
           <Plus size={15} /> Crear rol
         </button>
       </div>
 
-      <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden' }}>
+      <div style={{ border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
         {roles.map((role, idx) => {
           const count = roleCounts[role.id] ?? 0
           const perms = rolePermissions(role)
@@ -1097,35 +1079,35 @@ function SectionRoles() {
             ? 'Todos los permisos'
             : `${perms.length} ${perms.length === 1 ? 'permiso' : 'permisos'}`
           return (
-            <div key={role.id} data-testid="role-row" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderBottom: idx < roles.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+            <div key={role.id} data-testid="role-row" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderBottom: idx < roles.length - 1 ? '1px solid var(--border-2)' : 'none' }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: '#0f172a', textTransform: 'capitalize' }}>{role.name}</span>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)', textTransform: 'capitalize' }}>{role.name}</span>
                   {role.is_system && (
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10.5, fontWeight: 600, color: '#475569', background: '#f1f5f9', border: '1px solid #e2e8f0', padding: '2px 7px', borderRadius: 20 }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10.5, fontWeight: 600, color: 'var(--ink-2)', background: 'var(--border-2)', border: '1px solid var(--border)', padding: '2px 7px', borderRadius: 20 }}>
                       <Lock size={9} /> Sistema
                     </span>
                   )}
                   {hasWildcard && (
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10.5, fontWeight: 600, color: '#047857', background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '2px 7px', borderRadius: 20 }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10.5, fontWeight: 600, color: 'var(--success-700)', background: 'var(--action-soft)', border: '1px solid var(--action-border)', padding: '2px 7px', borderRadius: 20 }}>
                       <Shield size={9} /> Acceso total
                     </span>
                   )}
                 </div>
-                <p style={{ fontSize: 12, color: '#64748b', margin: '2px 0 0' }}>
+                <p style={{ fontSize: 12, color: 'var(--ink-3)', margin: '2px 0 0' }}>
                   {permLabel} · {count} {count === 1 ? 'usuario' : 'usuarios'}
                 </p>
               </div>
               {hasWildcard ? (
                 // owner: inmutable (protegido además por trigger en BD)
-                <span data-testid="role-not-editable" style={{ fontSize: 12, color: '#94a3b8' }}>No editable</span>
+                <span data-testid="role-not-editable" style={{ fontSize: 12, color: 'var(--ink-4)' }}>No editable</span>
               ) : (
                 <div style={{ display: 'flex', gap: 6 }}>
                   {/* Sistema (admin/cajero/mozo) y custom: editables */}
-                  <button data-testid="role-edit" onClick={() => setEditRole(role)} title="Editar" style={{ width: 30, height: 30, border: '1px solid #e2e8f0', background: '#fff', borderRadius: 7, cursor: 'pointer', color: '#64748b', display: 'grid', placeItems: 'center' }}><Pencil size={13} /></button>
+                  <button data-testid="role-edit" onClick={() => setEditRole(role)} title="Editar" style={{ width: 30, height: 30, border: '1px solid var(--border)', background: 'var(--surface)', borderRadius: 7, cursor: 'pointer', color: 'var(--ink-3)', display: 'grid', placeItems: 'center' }}><Pencil size={13} /></button>
                   {/* Eliminar: SOLO roles custom (los de sistema son plantillas base) */}
                   {!role.is_system && (
-                    <button data-testid="role-delete" onClick={() => handleDelete(role)} disabled={count > 0 || isMutating} title={count > 0 ? 'Tiene usuarios asignados' : 'Eliminar'} style={{ width: 30, height: 30, border: '1px solid #fecaca', background: '#fef2f2', borderRadius: 7, cursor: count > 0 ? 'not-allowed' : 'pointer', color: '#dc2626', display: 'grid', placeItems: 'center', opacity: count > 0 ? 0.4 : 1 }}><Trash2 size={13} /></button>
+                    <button data-testid="role-delete" onClick={() => handleDelete(role)} disabled={count > 0 || isMutating} title={count > 0 ? 'Tiene usuarios asignados' : 'Eliminar'} style={{ width: 30, height: 30, border: '1px solid var(--danger-soft)', background: 'var(--danger-soft)', borderRadius: 7, cursor: count > 0 ? 'not-allowed' : 'pointer', color: 'var(--danger)', display: 'grid', placeItems: 'center', opacity: count > 0 ? 0.4 : 1 }}><Trash2 size={13} /></button>
                   )}
                 </div>
               )}
@@ -1143,11 +1125,6 @@ function SectionRoles() {
 
 type ExtraRow = Tables<'extras'>
 
-const formatCOP = (n: number) =>
-  new Intl.NumberFormat('es-CO', {
-    style: 'currency', currency: 'COP',
-    minimumFractionDigits: 0, maximumFractionDigits: 0,
-  }).format(n)
 
 function ExtraFormModal({
   extra,
@@ -1185,15 +1162,15 @@ function ExtraFormModal({
 
   return (
     <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,.55)', display: 'grid', placeItems: 'center', zIndex: 50 }}
+      style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', display: 'grid', placeItems: 'center', zIndex: 50 }}
       onClick={e => e.target === e.currentTarget && onClose()}
     >
-      <div style={{ background: '#fff', borderRadius: 14, width: 440, boxShadow: '0 25px 50px -12px rgba(0,0,0,.25)' }}>
-        <div style={{ padding: '18px 22px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h3 style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', margin: 0 }}>
+      <div style={{ background: 'var(--surface)', borderRadius: 14, width: 440, boxShadow: 'var(--shadow-1)' }}>
+        <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--border-2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink)', margin: 0 }}>
             {extra ? 'Editar extra' : 'Nuevo extra'}
           </h3>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={18} /></button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink-4)' }}><X size={18} /></button>
         </div>
 
         <div style={{ padding: '22px', display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -1205,17 +1182,17 @@ function ExtraFormModal({
           <div>
             <FieldLabel>Precio (COP)</FieldLabel>
             <div style={{ position: 'relative' }}>
-              <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 13, color: '#94a3b8', fontFamily: 'monospace', pointerEvents: 'none' }}>$</span>
+              <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 13, color: 'var(--ink-4)', fontVariantNumeric: 'tabular-nums', pointerEvents: 'none' }}>$</span>
               <input
                 type="text"
                 inputMode="numeric"
                 data-testid="extra-price"
-                value={price ? formatCOP(priceNum).replace('$', '').trim() : ''}
+                value={price ? formatoCOP(priceNum).replace('$', '').trim() : ''}
                 onChange={e => setPrice(e.target.value.replace(/\D/g, ''))}
                 placeholder="0"
-                style={{ width: '100%', border: '1.5px solid #e2e8f0', borderRadius: 8, padding: '10px 12px 10px 24px', fontSize: 14, color: '#0f172a', outline: 'none', background: '#fff', boxSizing: 'border-box', fontFamily: 'monospace' }}
-                onFocus={e => (e.currentTarget.style.borderColor = '#10b981')}
-                onBlur={e => (e.currentTarget.style.borderColor = '#e2e8f0')}
+                style={{ width: '100%', border: '1.5px solid var(--border)', borderRadius: 8, padding: '10px 12px 10px 24px', fontSize: 14, color: 'var(--ink)', outline: 'none', background: 'var(--surface)', boxSizing: 'border-box', fontVariantNumeric: 'tabular-nums' }}
+                onFocus={e => (e.currentTarget.style.borderColor = 'var(--action)')}
+                onBlur={e => (e.currentTarget.style.borderColor = 'var(--border)')}
               />
             </div>
           </div>
@@ -1224,8 +1201,8 @@ function ExtraFormModal({
           <div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#334155' }}>Descuenta inventario</div>
-                <div style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 2 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink-2)' }}>Descuenta inventario</div>
+                <div style={{ fontSize: 11.5, color: 'var(--ink-4)', marginTop: 2 }}>
                   Vender este extra descuenta stock de un producto
                 </div>
               </div>
@@ -1235,9 +1212,9 @@ function ExtraFormModal({
                 aria-checked={tracksStock}
                 data-testid="extra-link-toggle"
                 onClick={() => setTracksStock(!tracksStock)}
-                style={{ width: 44, height: 24, borderRadius: 12, background: tracksStock ? '#10b981' : '#e2e8f0', border: 'none', cursor: 'pointer', position: 'relative', transition: 'background .15s', flexShrink: 0 }}
+                style={{ width: 44, height: 24, borderRadius: 12, background: tracksStock ? 'var(--action)' : 'var(--border)', border: 'none', cursor: 'pointer', position: 'relative', transition: 'background .15s', flexShrink: 0 }}
               >
-                <span style={{ position: 'absolute', top: 2, left: tracksStock ? 22 : 2, width: 20, height: 20, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,.2)', transition: 'left .15s' }} />
+                <span style={{ position: 'absolute', top: 2, left: tracksStock ? 22 : 2, width: 20, height: 20, borderRadius: '50%', background: 'var(--surface)', boxShadow: '0 1px 3px rgba(0,0,0,.2)', transition: 'left .15s' }} />
               </button>
             </div>
 
@@ -1248,9 +1225,9 @@ function ExtraFormModal({
                   value={linkedProductId}
                   data-testid="extra-link-product"
                   onChange={e => setLinkedProductId(e.target.value)}
-                  style={{ width: '100%', border: '1.5px solid #e2e8f0', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#0f172a', outline: 'none', background: '#fff', cursor: 'pointer' }}
-                  onFocus={e => (e.currentTarget.style.borderColor = '#10b981')}
-                  onBlur={e => (e.currentTarget.style.borderColor = '#e2e8f0')}
+                  style={{ width: '100%', border: '1.5px solid var(--border)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: 'var(--ink)', outline: 'none', background: 'var(--surface)', cursor: 'pointer' }}
+                  onFocus={e => (e.currentTarget.style.borderColor = 'var(--action)')}
+                  onBlur={e => (e.currentTarget.style.borderColor = 'var(--border)')}
                 >
                   <option value="">Seleccionar producto...</option>
                   {products.map(p => (
@@ -1263,14 +1240,14 @@ function ExtraFormModal({
         </div>
 
         <div style={{ padding: '0 22px 22px', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <button onClick={onClose} style={{ padding: '10px 20px', border: '1.5px solid #e2e8f0', borderRadius: 9, background: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: '#334155' }}>
+          <button onClick={onClose} style={{ padding: '10px 20px', border: '1.5px solid var(--border)', borderRadius: 9, background: 'var(--surface)', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: 'var(--ink-2)' }}>
             Cancelar
           </button>
           <button
             onClick={handleSave}
             disabled={!isValid || saving}
             data-testid="extra-save"
-            style={{ padding: '10px 24px', background: !isValid || saving ? '#cbd5e1' : '#10b981', border: 'none', borderRadius: 10, cursor: !isValid || saving ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 6, boxShadow: !isValid || saving ? 'none' : '0 4px 12px rgba(16,185,129,.3)' }}
+            style={{ padding: '10px 24px', background: !isValid || saving ? 'var(--ink-4)' : 'var(--action)', border: 'none', borderRadius: 10, cursor: !isValid || saving ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 700, color: 'var(--surface)', display: 'flex', alignItems: 'center', gap: 6, boxShadow: !isValid || saving ? 'none' : '0 4px 12px rgba(16,185,129,.3)' }}
           >
             {saving && <Loader2 size={14} className="animate-spin" />}
             Guardar
@@ -1310,25 +1287,25 @@ function SectionExtras() {
   return (
     <div>
       <SectionTitle>Extras</SectionTitle>
-      <p style={{ fontSize: 13, color: '#64748b', marginTop: -16, marginBottom: 24 }}>
+      <p style={{ fontSize: 13, color: 'var(--ink-3)', marginTop: -16, marginBottom: 24 }}>
         Subproductos reutilizables (toppings, adiciones, salsas). Se asignan a cada
         producto desde su ficha en <strong>Productos</strong>.
       </p>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-        <h3 style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', margin: 0 }}>Catálogo</h3>
+        <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)', margin: 0 }}>Catálogo</h3>
         <button
           onClick={() => setEditExtra('new')}
           data-testid="extra-new"
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: '#10b981', border: 'none', borderRadius: 9, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: '#fff', boxShadow: '0 4px 12px rgba(16,185,129,.3)' }}
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: 'var(--action)', border: 'none', borderRadius: 9, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: 'var(--surface)', boxShadow: '0 4px 12px rgba(16,185,129,.3)' }}
         >
           <Plus size={14} /> Nuevo extra
         </button>
       </div>
 
-      <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden' }}>
+      <div style={{ border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
         {extras.length === 0 && (
-          <div style={{ padding: '28px 16px', textAlign: 'center', color: '#94a3b8', fontSize: 14 }}>
+          <div style={{ padding: '28px 16px', textAlign: 'center', color: 'var(--ink-4)', fontSize: 14 }}>
             No hay extras en el catálogo
           </div>
         )}
@@ -1336,30 +1313,30 @@ function SectionExtras() {
           <div
             key={e.id}
             data-testid="extra-row"
-            style={{ display: 'flex', alignItems: 'center', padding: '12px 16px', borderBottom: idx < extras.length - 1 ? '1px solid #f1f5f9' : 'none', gap: 12, opacity: e.is_active ? 1 : 0.5 }}
+            style={{ display: 'flex', alignItems: 'center', padding: '12px 16px', borderBottom: idx < extras.length - 1 ? '1px solid var(--border-2)' : 'none', gap: 12, opacity: e.is_active ? 1 : 0.5 }}
           >
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: 14, fontWeight: 600, color: '#0f172a', margin: 0 }}>{e.name}</p>
+              <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)', margin: 0 }}>{e.name}</p>
               {e.linked_product_id && (
-                <p style={{ fontSize: 12, color: '#64748b', margin: '2px 0 0', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <p style={{ fontSize: 12, color: 'var(--ink-3)', margin: '2px 0 0', display: 'flex', alignItems: 'center', gap: 4 }}>
                   <Package size={12} /> Descuenta: {productName(e.linked_product_id)}
                 </p>
               )}
             </div>
-            <span style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', fontFamily: 'monospace' }}>{formatCOP(Number(e.price))}</span>
-            <span style={{ fontSize: 11, fontWeight: 600, color: e.is_active ? '#065f46' : '#64748b', background: e.is_active ? '#ecfdf5' : '#f1f5f9', padding: '3px 10px', borderRadius: 20 }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{formatoCOP(Number(e.price))}</span>
+            <span style={{ fontSize: 11, fontWeight: 600, color: e.is_active ? 'var(--success-on-soft)' : 'var(--ink-3)', background: e.is_active ? 'var(--action-soft)' : 'var(--border-2)', padding: '3px 10px', borderRadius: 20 }}>
               {e.is_active ? 'Activo' : 'Inactivo'}
             </span>
             <button
               onClick={() => setEditExtra(e)}
-              style={{ background: 'none', border: '1px solid #e2e8f0', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 12, color: '#334155' }}
+              style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 12, color: 'var(--ink-2)' }}
             >
               Editar
             </button>
             {e.is_active && (
               <button
                 onClick={() => handleDeactivate(e)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink-4)' }}
                 title="Desactivar"
               >
                 <Trash2 size={15} />
@@ -1398,14 +1375,22 @@ export function ConfigPage() {
   }
 
   return (
-    <div className="flex h-full overflow-hidden">
+    // ⚠️ ESTA PANTALLA NO TIENE PageHeader, y es a propósito: no tiene título.
+    //    Las otras cinco migradas abren con "Compras", "Fiado", "Inventario",
+    //    "Historial de turnos", "Historial de ventas"; Configuración abre
+    //    directo en el nav lateral de secciones.
+    //    Agregarle un título sería AGREGAR INFORMACIÓN, y un re-skin es la
+    //    misma información con el design system nuevo — la misma línea por la
+    //    que restauré "Historial de turnos" cuando lo acorté.
+    //    Queda anotado como inconsistencia para decidir, no resuelto de paso.
+    <div className="flex h-full overflow-hidden" style={{ background: 'var(--bg)' }}>
       {/* Left nav */}
       <nav
         style={{
           width: 220,
           flexShrink: 0,
-          borderRight: '1px solid #e2e8f0',
-          background: '#f8fafc',
+          borderRight: '1px solid var(--border)',
+          background: 'var(--surface-2)',
           padding: '16px 10px',
           display: 'flex',
           flexDirection: 'column',
@@ -1416,7 +1401,7 @@ export function ConfigPage() {
           style={{
             fontSize: 10,
             fontWeight: 600,
-            color: '#64748b',
+            color: 'var(--ink-3)',
             textTransform: 'uppercase',
             letterSpacing: 1,
             padding: '4px 10px 10px',
@@ -1442,16 +1427,16 @@ export function ConfigPage() {
                 textAlign: 'left',
                 fontSize: 13.5,
                 fontWeight: isActive ? 600 : 500,
-                color: isActive ? '#0f172a' : '#64748b',
-                background: isActive ? '#fff' : 'transparent',
-                boxShadow: isActive ? '0 1px 3px rgba(0,0,0,.07)' : 'none',
+                color: isActive ? 'var(--action-on-soft)' : 'var(--ink-3)',
+                background: isActive ? 'var(--action-soft)' : 'transparent',
+                boxShadow: isActive ? 'inset 2px 0 0 var(--action)' : 'none',
                 transition: 'all .12s',
                 width: '100%',
               }}
             >
               <Icon
                 size={16}
-                style={{ color: isActive ? '#10b981' : '#94a3b8', flexShrink: 0 }}
+                style={{ color: isActive ? 'var(--action)' : 'var(--ink-4)', flexShrink: 0 }}
               />
               {label}
             </button>
@@ -1465,7 +1450,7 @@ export function ConfigPage() {
           flex: 1,
           overflowY: 'auto',
           padding: '36px 48px',
-          background: '#fff',
+          background: 'var(--surface)',
         }}
       >
         <div style={{ maxWidth: 640 }}>
