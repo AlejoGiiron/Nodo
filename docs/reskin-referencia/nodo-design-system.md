@@ -1,25 +1,7 @@
----
-name: nodo-design-system
-description: Fuente de verdad visual de Nodo (de Giiron). Usar SIEMPRE antes de construir o modificar cualquier pantalla, componente o estilo de Nodo — tokens exactos, tipografía, densidad, componentes con estados, navegación, estados obligatorios por pantalla y reglas de comportamiento visual. Si un valor no está acá, no está decidido y se pregunta, no se infiere.
----
-
 # Nodo · Design System — Entrega 1
 
 Fuente de verdad visual del producto. Nodo, de Giiron.
 Cerrada el 2026-09-01. Implementación: app Vite única, CSS variables en `:root`, sin capa de tema para React Native.
-
-> **Jerarquía de fuentes (R1).** Desde esta captura, **esta skill es la fuente de verdad**; el
-> archivo de Claude Design (`Nodo.dc.html`) es la maqueta. Si divergen, gana la skill y se
-> corrige la maqueta. Todo cambio visual se hace ACÁ primero y se propaga — nunca en dos lados
-> a mano.
-
-> **Correcciones de captura (2026-09-01).** Cuatro puntos de la entrega chocaban con decisiones
-> ya tomadas en el hilo del producto y se corrigieron al capturar, marcados `[CORREGIDO]`:
-> 1. El método de costeo NO está pendiente: se decidió el 2026-08-31 (§8.1).
-> 2. La nota de `requiere_conciliacion` afirmaba un bloqueo de cierre de período que nadie
->    decidió (§6, movido a §8 como pregunta abierta).
-> 3. Se agregó el requisito de Utilidades: las vistas miden cobrado, no vendido (§7.13).
-> 4. "La ruta del conductor" no existe en el alcance de Nodo — no hay rutas ni despacho (§8.4).
 
 Todo valor de este documento es exacto y literal. Si algo no está acá, no está decidido — ver sección 8.
 
@@ -36,7 +18,7 @@ Dos tokens. Los define el tenant, no el sistema. Se inyectan en `:root` al carga
 --brand-ink:  #FFFFFF;   /* texto/glifo sobre --brand */
 ```
 
-**Dónde puede aparecer:** el cuadro de identidad de la barra lateral (el tile con la inicial), la pantalla de login, el lugar del logo en documentos impresos, el favicon.
+**Dónde puede aparecer:** el cuadro de identidad de la barra lateral (el tile con la inicial), la pantalla de **Login**, el lugar del logo en documentos impresos, el favicon. Esas cuatro, ninguna más.
 
 **Dónde está PROHIBIDA:** botones, chips, insignias, filas de tabla, barras de progreso, bordes de foco, iconos de navegación, encabezados de tabla, cualquier fondo de fila y cualquier elemento que comunique estado.
 
@@ -61,7 +43,7 @@ Ninguna organización la tematiza. No es configurable por tenant.
 --action-border:#BAE6FD;   /* borde de chip suave, primer tramo de antigüedad */
 ```
 
-**Se usa para:** cobrar, guardar, agregar, entregar un pedido, aplicar compra, registrar abono, la fila seleccionada, la pestaña activa, el foco.
+**Se usa para:** cobrar, guardar, agregar, despachar, aplicar compra, registrar abono, la fila seleccionada, la pestaña activa, el foco.
 **No se usa para:** ningún estado del dominio. Un chip de estado nunca es azul, salvo el estado propio del pedido (`Sin entregar · sin cobrar`), que es de flujo, no de salud del dato.
 
 > **Regla — acción y estado jamás comparten familia de color.** Si hay que mirar dos veces para saber si algo es un botón o una insignia, la paleta está mal. Esta es la razón por la que acción es fría: deja todo el rango cálido libre para deuda, mora y advertencia, y el verde libre para confirmación.
@@ -124,7 +106,7 @@ Nota de implementación: el primer tramo del componente `AgingBar` usa `--action
 --success-border:#A7F3D0;
 ```
 
-**Se usa para:** al día, abono aplicado, pedido entregado, compra aplicada, entrada de inventario en positivo.
+**Se usa para:** al día, abono aplicado, pedido despachado, compra aplicada, entrada de inventario en positivo.
 
 > **Regla — verde es solo confirmación y ninguna acción lo usa.** No hay botón verde en el producto. Si aparece uno, el usuario deja de poder distinguir "esto está bien" de "hacé clic acá".
 
@@ -186,8 +168,6 @@ Fallback: `Inter, system-ui, sans-serif`.
 | `--fs-meta` | 12 / 400 | Metadatos, unidad, categoría, nota bajo un campo |
 | `--fs-label` | 11 / 600 / `.04em` / mayúsculas | Etiqueta de columna y de KPI |
 
-*(Los `--fs-*` están documentados pero no tokenizados como variables CSS todavía — ver §8.2.)*
-
 ### tabular-nums
 
 Obligatorio en: precio, costo, cantidad, total, subtotal, descuento, saldo, valor vencido, cupo (asignado, consumido, disponible, proyectado), existencia, bultos, peso, monto de gasto, margen, fecha en formato corto y **código de producto**.
@@ -225,13 +205,12 @@ Fuera de escala no se usa. El padding lateral de una pantalla de listado es 20px
 | **Fila de lista** | **34px** (por defecto) |
 | Fila de venta / con envoltura | 38px mínimo |
 | Fila de cartera | 40px |
-| Fila de entrega de pedido | 44px |
+| Fila de entrega de pedido en mostrador | 44px |
 | Input | 34px |
 | Botón secundario | 36px |
 | Botón primario de pantalla | 38–40px |
 | Selector de medio de pago | 52px |
 | Botón Cobrar | 52px |
-| Objetivo táctil en móvil | 48px mínimo |
 
 ### Control `densidadFila`
 
@@ -252,8 +231,10 @@ Estados: **normal · hover · activo · deshabilitado · destructivo**.
 - POS: alto 52px, 16px/700.
 
 ### Badge
-Estados: **al día · en mora · sin disponible · sin cupo asignado · sin entregar/sin cobrar · entregado · sin costo · borrador · aplicada · anulada**.
+Estados: **al día · en mora · sin disponible · sin cupo asignado · sin entregar/sin cobrar · despachado · sin costo · borrador · aplicada · anulada**.
 Píldora 999px, 11px/600, padding `3px 9px`. Fondo `*-soft`, texto `*-on-soft`, borde `*-border` cuando va sobre superficie del mismo tono.
+
+> **`borrador` en Compras es un estado diseñado sin persistencia.** El formulario sin confirmar cumple la regla 10 —el efecto se ve antes de aplicar— pero no existe un estado borrador en los datos. Decisión tomada, no un hueco por llenar.
 
 ### DataRow
 Estados: **normal · hover · seleccionada · en mora · con error · reclama atención · skeleton**.
@@ -319,22 +300,16 @@ Existencias      Catálogo · Inventario
 Cartera          Clientes · Cartera
 Resultados       Turnos · Utilidades
 ─────────────────────────────────────
-(pie)            usuario y rol · Configuración
+(pie)            Configuración · Tokens · Componentes · usuario y rol
+
+(fuera del nav)  Login
 ```
 
-Mostrador va suelto arriba, sin título de grupo: es la pantalla del día y no pertenece a una categoría. *(Los ítems Tokens y Componentes del pie son andamiaje del archivo de diseño — NO van a la aplicación.)*
+Mostrador va suelto arriba, sin título de grupo: es la pantalla del día y no pertenece a una categoría.
 
-> **[ADICIÓN 2026-09-01 — ubicación de las cuatro pantallas que existían y la entrega no nombraba.]**
-> - **Historial** (de ventas) → grupo **Movimientos**, después de Gastos: es el registro de lo que
->   se movió — mismo criterio de "momento del día".
-> - **Turnos** → grupo **Resultados**, antes de Utilidades: el cierre de caja es el resultado del
->   día. ⚠️ La ETIQUETA sigue siendo "Turnos" por ahora, a propósito: renombrar solo el ítem del
->   nav mientras los tooltips dicen "turno" y las RPC "jornada" crearía un TERCER vocabulario. La
->   deuda #38 renombra las 24 apariciones juntas, en su turno.
-> - **Configuración** → el **pie**, junto al bloque de usuario: no es un momento del día, es el
->   sistema.
-> - **Login** → fuera del nav. Es una de las cuatro superficies donde `--brand` está permitida
->   (§1.1).
+**Configuración** va al pie, junto al bloque de usuario: no es un momento del día, es el sistema. **Login** queda fuera de la navegación y es una de las cuatro superficies donde la capa de marca está permitida (ver §1.1).
+
+Historial, Turnos y Configuración **existen en la aplicación** y ya tienen su lugar. Su diseño no es parte de la Entrega 1: por ahora solo consumen los tokens de este sistema. La etiqueta del nav es **"Turnos"**; el renombre a Jornada es un trabajo aparte ya anotado.
 
 ### Reglas
 
@@ -346,7 +321,7 @@ Mostrador va suelto arriba, sin título de grupo: es la pantalla del día y no p
 
 ### Alcance de la navegación
 
-Nueve pantallas. **No se agregan huecos de navegación para pantallas que no existen.** Lo que no está en la lista de arriba no aparece deshabilitado ni "próximamente".
+Doce destinos en el nav más Login fuera de él. **No se agregan huecos de navegación para pantallas que no existen.** Lo que no está en la lista de arriba no aparece deshabilitado ni "próximamente".
 
 ---
 
@@ -360,24 +335,17 @@ Toda pantalla se diseña y se prueba con todos sus estados, no solo el feliz. So
 |---|---|
 | **Mostrador** | `error de validación` · `cliente sin cupo` · **`venta excede el cupo`** · `cliente en mora` |
 | **Pedidos** | `error de validación` · `cliente sin cupo` · `cliente en mora` |
-| **Compras** | `error de validación` · **`compra en borrador`** · **`compra aplicada`** · **`compra anulada`** |
-
-> **[DECISIÓN 2026-09-01 — `borrador` es un estado de PANTALLA, no de la base.]** El esquema no
-> tiene compras en borrador: `register_purchase` es atómica — registrar ES aplicar. La regla 7.10
-> ("el efecto se muestra antes de aplicarla") se cumple **en el modal**: costo antes → después y
-> entrada al inventario, visibles antes de confirmar. El "borrador" es el formulario sin confirmar.
-> El badge `borrador` del §4 queda **diseñado y sin uso** — decisión tomada, no un hueco: si algún
-> día las compras se guardan a medias, el estado visual ya existe.
+| **Compras** | `error de validación` · **`compra en borrador`** (visual, sin persistencia) · **`compra aplicada`** · **`compra anulada`** |
 | **Gastos** | `error de validación` |
 | **Catálogo** | `error de validación` |
 | **Inventario** | **`producto sin costo`** |
 | **Clientes** | `cliente sin cupo` · `cliente en mora` |
 | **Cartera** | `registrar abono` · `cliente en mora` · **`abono sin movimiento de caja (requiere_conciliacion)`** |
-| **Utilidades** | **`utilidad incompleta`** · **`período sin movimientos`** |
+| **Utilidades** | **`utilidad incompleta`** · **`período sin movimientos`** · **`base cobrado`** / **`base vendido`** (el rótulo cambia; la cascada se recalcula entera) |
 
 **No hay estado offline.** Nodo opera en un mostrador con conexión. No se diseña indicador de sincronización.
 
-Nota sobre `requiere_conciliacion`: el abono quedó registrado contra el saldo del cliente pero no tiene contrapartida en caja. Se marca en la fila y en el detalle; no bloquea. **[CORREGIDO]** La entrega original afirmaba "no se puede cerrar el período con abonos en ese estado" — esa regla **nadie la decidió** y se movió a §8.14 como pregunta abierta.
+Nota sobre `requiere_conciliacion`: el abono quedó registrado contra el saldo del cliente pero no tiene contrapartida en caja. Se marca en la fila y en el detalle. **No bloquea nada.** La vista para resolverlos todavía no existe (deuda 37), y si el cierre de período debe o no bloquearse por conciliaciones pendientes es una decisión abierta — ver 8.2.
 
 ---
 
@@ -394,11 +362,13 @@ Nota sobre `requiere_conciliacion`: el abono quedó registrado contra el saldo d
 9. **Las cifras de plata se alinean por dígito.** Columnas alineadas a la derecha con `tabular-nums`. Se comparan de un vistazo.
 10. **El efecto de una compra se muestra antes de aplicarla:** costo antes → después y entrada al inventario por producto. Una compra aplicada no se edita: se anula.
 11. **Cobra quien entrega.** El flujo de cobro sale del mostrador, no de una caja separada.
-12. **Todo ajuste manual de inventario exige motivo** (avería, vencido, consumo interno, error de conteo, faltante). Una salida sin motivo no se guarda.
-13. **Ningún total de Utilidades existe sin su detalle.** Cada fila de la cascada se abre. **[AGREGADO en captura]** Y la pantalla **declara qué mide**: las vistas del esquema miden **cobrado, no vendido**. Con cartera en el alcance, "ventas del día" leído como facturado deja afuera plata real — la pantalla dice cuál de los dos muestra, y probablemente los dos.
-14. **Iconografía neutra.** Trazo 1.5px, 15×15 en filas y navegación, 16×16 máximo. Ningún icono puede delatar un vertical: ni frascos, ni llaves inglesas, ni botellas.
-15. **Vocabulario neutro.** "Productos", "clientes", "pedidos". El contenido de ejemplo mezcla tornillos, jabón y gaseosa a propósito: si una pantalla se ve rara con esa mezcla, el diseño está asumiendo un vertical.
-16. **Los errores no piden disculpas y nunca son vagos.** El botón que dice "Cobrar" produce un mensaje que dice "Cobrado". Y una advertencia solo se muestra si su condición viene de la fuente que decidió — un mensaje de degradación no se re-deriva en el cliente.
+12. **Costeo: promedio ponderado móvil, con el costo congelado en la línea de venta.** Decidido el 2026-08-31. El costo que entra a la línea es el vigente al momento de vender y no se recalcula después: una compra posterior mueve el costo del producto, nunca el de una venta ya registrada. Utilidades rotula el método en pantalla.
+13. **Utilidades declara si mide cobrado o vendido.** Con cartera en el alcance las dos cifras difieren, y la pantalla no puede dejarlo implícito: el período lleva el rótulo visible de cuál base está mostrando, y la base elegida se aplica igual a ventas, costo de lo vendido y margen. Una cascada que mezcla ventas facturadas con recaudo cobrado no cuadra y nadie puede auditarla.
+14. **Todo ajuste manual de inventario exige motivo** (avería, vencido, consumo interno, error de conteo, faltante). Una salida sin motivo no se guarda.
+15. **Ningún total de Utilidades existe sin su detalle.** Cada fila de la cascada se abre.
+16. **Iconografía neutra.** Trazo 1.5px, 15×15 en filas y navegación, 16×16 máximo. Ningún icono puede delatar un vertical: ni frascos, ni llaves inglesas, ni botellas.
+17. **Vocabulario neutro.** "Productos", "clientes", "pedidos". El contenido de ejemplo mezcla tornillos, jabón y gaseosa a propósito: si una pantalla se ve rara con esa mezcla, el diseño está asumiendo un vertical.
+18. **Los errores no piden disculpas y nunca son vagos.** El botón que dice "Cobrar" produce un mensaje que dice "Cobrado".
 
 ---
 
@@ -406,50 +376,23 @@ Nota sobre `requiere_conciliacion`: el abono quedó registrado contra el saldo d
 
 Nada de esta lista debe leerse como resuelto. Si la implementación necesita una de estas respuestas, hay que pedirla, no inferirla.
 
-1. **[CORREGIDO — SÍ está decidido]** Método de costeo: **promedio ponderado móvil**, decidido el 2026-08-31, con el costo unitario **congelado en la línea de venta al vender** (ver CLAUDE.md, R1 punto 8). El rótulo de Utilidades no es una recomendación pendiente. El cliente nunca ve el término.
-2. **Escala tipográfica como tokens reales.** La tabla de la sección 2 está documentada pero los `--fs-*` no existen todavía como variables CSS: hoy los tamaños van literales. Falta decidir si se tokenizan.
-3. **Tema oscuro.** No existe. No hay tokens de superficie oscura fuera del panel de cobro y los diálogos.
-4. **Móvil.** **[CORREGIDO]** La entrega decía "solo la ruta del conductor está pensada en móvil" — **en Nodo no hay conductores, rutas ni despacho**, ni están planeados (el cliente carga y se lleva; es la razón por la que el producto no se llama G-Ship). Queda: las nueve pantallas de escritorio no tienen diseño responsive por debajo de ~1100px; hoy hacen scroll horizontal. Móvil entero está sin decidir.
-5. **Estados de foco por teclado.** El recorrido con Tab, el anillo de foco visible y el orden de tabulación no están especificados. Los atajos sí.
-6. **Impresión.** Remisión, factura, recibo de abono y cierre de caja no tienen diseño impreso.
-7. **Contenido y permisos exactos de cada rol.** Solo existe la partición binaria `ocultarPlata` y el estado `sin permiso`. La matriz completa rol × pantalla × acción no está definida. *(El catálogo real es de 21 claves: admin=21, cajero=8, owner=comodín — ver `src/lib/permissions.ts`.)*
-8. **Notificaciones, toasts y confirmaciones destructivas.** No hay componente de aviso efímero ni patrón de "¿seguro?". *(La app actual usa react-hot-toast; la migración visual de los toasts está sin diseñar.)*
-   > **[DECISIÓN PARCIAL 2026-09-01 — tokens mínimos, patrón aún sin diseñar.]** Los toasts toman
-   > **solo color y tipografía** del sistema, mapeados a las variantes de `Alert` (§4): error →
-   > `--danger-*`, advertencia → `--warning-*`, éxito → `--success-*`, con `--fs-row` en Inter. La
-   > razón es de identidad, no de estética: **un toast emerald en una app sky rompe justo lo que
-   > el re-skin está cambiando**, y hoy `react-hot-toast` trae su propio verde por defecto.
-   > ⚠️ Lo que sigue SIN decidir y no se inventa: posición, duración, apilado, si hay acción
-   > de deshacer, y el patrón de confirmación destructiva.
-9. **Paginación y volumen.** Las listas se muestran completas. No hay patrón de paginación, scroll infinito ni virtualización decidido, y el catálogo real tiene miles de referencias.
-10. **Búsqueda avanzada.** Solo hay campo de texto y chips de categoría. Sin filtros compuestos, orden por columna ni búsqueda guardada.
-11. **Formato de fecha largo, zona horaria y locale.** Solo está fijado el formato corto y el de moneda. *(La app usa America/Bogota y es-CO por convención Giiron; falta el formato largo.)*
-12. **Marca madre Giiron.** El endoso es texto plano; el lockup definitivo se diseña aparte. El símbolo será la doble i, pero no está construido.
-13. **Pantallas futuras.** Vienen más cuando el esquema de datos esté definido. No anticiparlas ni dejarles hueco.
-
-15. **[ABIERTA 2026-09-01 — la divergencia MÁS GRANDE entre esta skill y el producto.]**
-    **¿El mostrador cobra EN LÍNEA o EN UN MODAL?**
-
-    Esta skill especifica el cobro **en línea**: cliente, cupo, medios de pago y "recibe" viven en
-    la columna derecha, y el `TenderSelector` está definido **sobre `--ink`** por eso. **El producto
-    cobra en un MODAL de tres pasos** (método → monto → éxito), sobre fondo claro. No es un detalle
-    visual: decide la especificación de tres componentes del §4.
-
-    | Si se decide… | Consecuencia |
-    |---|---|
-    | **en línea** (lo que la skill dibuja) | `TenderSelector` queda como está (sobre `--ink`); `CupoMeter` y el `Badge` de cliente ganan su lugar en la columna derecha; el modal desaparece y **cambia el flujo de cobro**, con sus specs |
-    | **en modal** (lo que el producto hace) | los tres se **re-especifican sobre fondo claro** — la skill hoy **no tiene** tokens de selector de medio de pago sobre `--surface` |
-
-    ⚠️ Hasta que se decida, `Badge`, `CupoMeter` y `TenderSelector` **no se implementan**: nacerían
-    sin consumidor y con la superficie equivocada.
-
-16. **[DATO DURO, no pregunta — 2026-09-01.]** **Esta skill dibuja TRES medios de pago** (Efectivo ·
-    Transferencia · Crédito) **y el producto tiene CINCO**: efectivo, tarjeta, transferencia, nequi,
-    fiado. `payment_method` es un **contrato en 8 lados** (R1 punto 4): recortar la lista para que
-    entre en la maqueta sería **cambiar el producto para que quepa en el diseño**.
-    **El diseño se adapta al producto, no al revés.** El `TenderSelector` acomoda N medios; la celda
-    conserva sus 52px.
-14. **[MOVIDO desde §6]** **¿El cierre de período exige resolver los abonos con `requiere_conciliacion`?** La entrega lo afirmaba; nadie lo decidió. Es una decisión de producto con consecuencia operativa (un cierre que se bloquea), no de diseño. Hasta que se decida: el estado se muestra y no bloquea nada.
+1. **Base de Utilidades: cobrado o vendido.** La regla 13 obliga a la pantalla a declararlo, pero *cuál* de las dos es la base por defecto no está decidido. Las vistas del esquema hoy miden cobrado; el rótulo, el filtro de período y la cascada dependen de esta respuesta.
+2. **Si el cierre de período se bloquea con abonos en `requiere_conciliacion`.** Hoy no bloquea nada. Que llegue a bloquear es una decisión operativa con consecuencias en caja, no una nota de diseño: hay que tomarla explícitamente. La vista para resolver esos abonos es la deuda 37.
+3. **Escala tipográfica como tokens reales.** La tabla de la sección 2 está documentada pero los `--fs-*` no existen todavía como variables CSS: hoy los tamaños van literales. Falta decidir si se tokenizan.
+4. **Tema oscuro.** No existe. No hay tokens de superficie oscura fuera del panel de cobro y los diálogos.
+5. **Móvil.** No hay ninguna pantalla pensada en móvil. Nodo es una aplicación de escritorio en un mostrador. Las nueve pantallas no tienen diseño responsive por debajo de ~1100px; hoy hacen scroll horizontal, salvo el mostrador, que colapsa la lista.
+6. **Estados de foco por teclado.** El recorrido con Tab, el anillo de foco visible y el orden de tabulación no están especificados. Los atajos sí.
+7. **Impresión.** Factura, recibo de abono, comprobante de pedido y cierre de caja no tienen diseño impreso.
+8. **Contenido y permisos exactos de cada rol.** Solo existe la partición binaria `ocultarPlata` y el estado `sin permiso`. La matriz completa rol × pantalla × acción no está definida.
+9. **Notificaciones, toasts y confirmaciones destructivas.** No hay componente de aviso efímero ni patrón de "¿seguro?".
+10. **Paginación y volumen.** Las listas se muestran completas. No hay patrón de paginación, scroll infinito ni virtualización decidido, y el catálogo real tiene miles de referencias.
+11. **Búsqueda avanzada.** Solo hay campo de texto y chips de categoría. Sin filtros compuestos, orden por columna ni búsqueda guardada.
+12. **Formato de fecha largo, zona horaria y locale.** Solo está fijado el formato corto y el de moneda.
+13. **Marca madre Giiron.** El endoso es texto plano; el lockup definitivo se diseña aparte. El símbolo será la doble i, pero no está construido.
+14. **Pantallas futuras.** Vienen más cuando el esquema de datos esté definido. No anticiparlas ni dejarles hueco.
+15. **Diseño de Historial, Turnos y Configuración.** Las tres existen y están ubicadas en el nav, pero su diseño no es parte de esta entrega. Consumen tokens; no tienen layout, estados ni componentes propios definidos.
+16. **Diseño de Login.** Está fuera del nav y es superficie de marca autorizada, pero no tiene diseño.
+17. **Renombre de Turnos a Jornada.** Anotado como trabajo aparte. La etiqueta del nav es "Turnos" hasta que se haga.
 
 ---
 
@@ -461,7 +404,12 @@ Nada de esta lista debe leerse como resuelto. Si la implementación necesita una
 /* organización: Muscle Pro */
 --brand:     #111114;   /* tile de identidad en la barra lateral */
 --brand-ink: #FFFFFF;   /* la M sobre el tile */
---brand-accent: #B91C1C; /* reservado a documentos impresos y login. NO se usa en la aplicación */
+```
+
+Tercer valor, el acento de marca disponible para el tenant y hoy sin uso en interfaz:
+
+```css
+--brand-accent: #B91C1C;   /* reservado a documentos impresos y login. NO se usa en la aplicación */
 ```
 
 Muscle Pro es el tenant. **Nodo es el producto.** Los dos conviven en el bloque de identidad de la barra lateral —"Muscle Pro" arriba, "Nodo" abajo— y no se fusionan en ninguna pantalla.

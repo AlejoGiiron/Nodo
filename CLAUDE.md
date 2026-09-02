@@ -350,6 +350,38 @@ grepearon los nombres —eso son otra vez dos declaraciones—: se compiló con 
 buscó **el valor en el bundle**, y después se recompiló con el nombre viejo para confirmar que
 **el centinela desaparecía**. Recién ahí el verde valía algo.
 
+**🔴 EL CASO PARTICULAR QUE MÁS ENGAÑA — y ya es la TERCERA vez que un control negativo salva
+una verificación en este proyecto:**
+
+> **Una API que contesta sobre la CAPACIDAD DEL SISTEMA no verifica la PRESENCIA DE UN RECURSO.**
+
+Las dos preguntas se escriben casi igual —*¿está X?* y *¿se puede X?*— y **la segunda tiene
+fallback**, así que contesta que sí para todo. Una sonda escrita sobre la pregunta equivocada da
+verde con el recurso puesto y verde sin él: es la tautología del corolario de arriba, pero
+disfrazada de API oficial.
+
+**Caso medido (2026-09-01), verificando que Inter estuviera cargada:**
+
+```
+document.fonts.check('16px Inter')               ->  true    ✅ parecía evidencia
+document.fonts.check('16px NoExisteEstaFuente')  ->  true    🔴 el control negativo
+```
+
+`check()` no contesta *¿está cargada Inter?*: contesta **¿se puede pintar este texto?** — y siempre
+se puede, hay fuente de respaldo. Con familia correcta o inventada, idéntico.
+
+**El instrumento que sí discrimina no PREGUNTA: MIDE.** El ancho del mismo texto:
+
+| familia | ancho |
+|---|---|
+| `Inter` | **392,89 px** |
+| `system-ui` | 364,30 px |
+| familia inexistente | **364,30 px** ← cae EXACTO en system-ui: la medición distingue |
+| `Inter` peso 450 vs 400 | 395,39 / 392,89 ← el eje variable está vivo |
+
+**Lo accionable, y cuesta una línea:** correr la misma sonda contra algo que **sabemos que no
+existe**. Si contesta lo mismo, el instrumento no mide — sin importar cuán oficial sea la API.
+
 → **Evidencia:** *"Aprendizajes de proyectos hermanos"* más abajo · repo de Vento,
 `docs/BITACORA.md` → *"Trampas de TERMINAL"*.
 
