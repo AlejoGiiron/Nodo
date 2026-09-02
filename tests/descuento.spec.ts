@@ -143,7 +143,12 @@ test.describe.serial('Descuentos', () => {
     await page.getByTestId('discount-amount').fill('25000')
 
     await page.getByRole('button', { name: 'Cobrar' }).click()
-    await expect(page.getByTestId('checkout-total')).toContainText('$ 0')
+    // El re-skin sacó el símbolo de moneda de las cifras (§2 del design system:
+    // sin símbolo, el rótulo ya dice qué es). La EXPECTATIVA no cambió — el total
+    // a cobrar de una venta gratis es cero —, cambió el formato en que se
+    // escribe. Y se aprovecha para endurecerla: `toContainText('0')` habría
+    // pasado con "10.000"; `toHaveText` exige que el total SEA cero.
+    await expect(page.getByTestId('checkout-total')).toHaveText('0')
 
     // Se cierra SIN pago: continuar dispara handleConfirm, que salta el cobro.
     const n = await payNequiAndFinish(page)

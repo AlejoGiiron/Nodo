@@ -95,33 +95,45 @@
   cursor: not-allowed;
 }
 
-/* ── TenderSelector — vive SOBRE --ink, de ahí los tokens --on-dark-* ────── */
+/* ── TenderSelector — SOBRE SUPERFICIE CLARA ─────────────────────────────
+   Re-especificado el 2026-09-01 al cerrar §8.15: el cobro de Nodo es en modal,
+   sobre --surface. La variante sobre --ink (fondo --action-700, borde
+   --action-500) aplicaría solo si el cobro pasara a ser en línea; hoy no se
+   usa y por eso no se escribe: una regla sin consumidor es la deuda 37. */
 .nodo-tender {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: 8px;
   height: 52px;
-  flex: 1;
-  border: 1px solid var(--on-dark-fill);
+  padding: 0 8px;
+  border: 1px solid var(--border);
   border-radius: var(--r-2);
-  background: var(--on-dark-fill);
-  color: var(--on-dark-3);
+  background: var(--surface);
+  color: var(--ink-2);
   font-family: inherit;
-  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.12s, border-color 0.12s, color 0.12s;
 }
-.nodo-tender:hover:not(:disabled) { color: #fff; }
+.nodo-tender:hover:not(:disabled) { background: var(--surface-2); }
+.nodo-tender:focus-visible {
+  outline: none;
+  border-color: var(--action);
+  box-shadow: 0 0 0 3px var(--action-soft);
+}
+/* Seleccionado = el par de ACCIÓN, el mismo de la fila seleccionada y la
+   pestaña activa. Marca una elección, no un estado del dominio. */
 .nodo-tender[aria-pressed='true'] {
-  background: var(--action-700);
-  border-color: var(--action-500);
-  color: #fff;
+  background: var(--action-soft);
+  border-color: var(--action);
+  color: var(--action-on-soft);
 }
 .nodo-tender:disabled {
-  opacity: 0.5;
-  color: var(--on-dark-2);
+  background: var(--border-2);
+  border-color: transparent;
+  color: var(--ink-4);
   cursor: not-allowed;
 }
 

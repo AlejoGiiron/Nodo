@@ -109,22 +109,22 @@ export function CloseShiftModal({ onClose }: CloseShiftModalProps) {
   const rowStyle: React.CSSProperties = {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
     padding: '8px 0',
-    fontSize: 13.5, color: '#334155',
+    fontSize: 13.5, color: 'var(--ink-2)',
   }
 
   const totalRowStyle: React.CSSProperties = {
     ...rowStyle,
-    borderTop: '1px solid #e5e7eb',
+    borderTop: '1px solid var(--border)',
     marginTop: 4, paddingTop: 12,
-    fontWeight: 700, fontSize: 14, color: '#0f172a',
+    fontWeight: 700, fontSize: 14, color: 'var(--ink)',
   }
 
   const inputStyle: React.CSSProperties = {
     width: '100%', padding: '12px 14px 12px 32px',
-    border: '1.5px solid #e5e7eb', borderRadius: 10,
-    fontSize: 18, fontWeight: 600, color: '#0f172a',
-    fontFamily: 'monospace', outline: 'none',
-    boxSizing: 'border-box', background: '#f8fafc',
+    border: '1.5px solid var(--border)', borderRadius: 10,
+    fontSize: 18, fontWeight: 600, color: 'var(--ink)',
+    fontVariantNumeric: 'tabular-nums', outline: 'none',
+    boxSizing: 'border-box', background: 'var(--surface-2)',
     transition: 'border .12s, background .12s',
   }
 
@@ -134,7 +134,7 @@ export function CloseShiftModal({ onClose }: CloseShiftModalProps) {
         position: 'fixed', inset: 0,
         background: 'rgba(15,23,42,.55)',
         display: 'grid', placeItems: 'center',
-        zIndex: 50, fontFamily: 'Inter, system-ui, sans-serif',
+        zIndex: 50, fontFamily: 'inherit',
         padding: '20px',
       }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
@@ -148,15 +148,15 @@ export function CloseShiftModal({ onClose }: CloseShiftModalProps) {
       }}>
         {/* Header */}
         <div style={{
-          padding: '18px 22px', borderBottom: '1px solid #f1f5f9',
+          padding: '18px 22px', borderBottom: '1px solid var(--border-2)',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           flexShrink: 0,
         }}>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: '#10b981', textTransform: 'uppercase', letterSpacing: 1 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--success-700)', textTransform: 'uppercase', letterSpacing: 1 }}>
               Resumen del turno
             </div>
-            <div style={{ fontSize: 17, fontWeight: 700, color: '#0f172a', letterSpacing: -0.3, marginTop: 1 }}>
+            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--ink)', letterSpacing: -0.3, marginTop: 1 }}>
               Cerrar turno de caja
             </div>
           </div>
@@ -164,8 +164,8 @@ export function CloseShiftModal({ onClose }: CloseShiftModalProps) {
             onClick={onClose}
             style={{
               width: 32, height: 32, borderRadius: 8,
-              background: '#f1f5f9', border: 'none',
-              cursor: 'pointer', color: '#64748b',
+              background: 'var(--border-2)', border: 'none',
+              cursor: 'pointer', color: 'var(--ink-3)',
               display: 'grid', placeItems: 'center',
             }}
           >
@@ -178,16 +178,16 @@ export function CloseShiftModal({ onClose }: CloseShiftModalProps) {
 
           {/* Sales breakdown */}
           <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-4)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
               Ventas por método de pago
             </div>
-            <div style={{ background: '#f8fafc', borderRadius: 10, padding: '4px 14px' }}>
+            <div style={{ background: 'var(--surface-2)', borderRadius: 10, padding: '4px 14px' }}>
               {(['cash', 'card', 'transfer', 'nequi'] as const).map((method) => {
                 const amount = salesSummary?.[method] ?? 0
                 return (
-                  <div key={method} style={{ ...rowStyle, borderBottom: '1px solid #f1f5f9' }}>
-                    <span style={{ color: '#64748b' }}>{METHOD_LABELS[method]}</span>
-                    <span data-testid={`shift-sales-${method}`} style={{ fontFamily: 'monospace', fontWeight: amount > 0 ? 600 : 400, color: amount > 0 ? '#0f172a' : '#94a3b8' }}>
+                  <div key={method} style={{ ...rowStyle, borderBottom: '1px solid var(--border-2)' }}>
+                    <span style={{ color: 'var(--ink-3)' }}>{METHOD_LABELS[method]}</span>
+                    <span data-testid={`shift-sales-${method}`} style={{ fontVariantNumeric: 'tabular-nums', fontWeight: amount > 0 ? 600 : 400, color: amount > 0 ? 'var(--ink)' : 'var(--ink-4)' }}>
                       {formatCOP(amount)}
                     </span>
                   </div>
@@ -195,7 +195,7 @@ export function CloseShiftModal({ onClose }: CloseShiftModalProps) {
               })}
               <div style={totalRowStyle}>
                 <span>Total ventas</span>
-                <span style={{ fontFamily: 'monospace', color: '#10b981' }}>
+                <span style={{ fontVariantNumeric: 'tabular-nums', color: 'var(--success-700)' }}>
                   {formatCOP(salesSummary?.total ?? 0)}
                 </span>
               </div>
@@ -204,28 +204,28 @@ export function CloseShiftModal({ onClose }: CloseShiftModalProps) {
 
           {/* Expected cash calculation */}
           <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-4)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
               Cálculo de efectivo esperado
             </div>
-            <div style={{ background: '#f8fafc', borderRadius: 10, padding: '4px 14px' }}>
-              <div style={{ ...rowStyle, borderBottom: '1px solid #f1f5f9' }}>
-                <span style={{ color: '#64748b' }}>Monto de apertura</span>
-                <span style={{ fontFamily: 'monospace' }}>{formatCOP(currentShift?.opening_amount ?? 0)}</span>
+            <div style={{ background: 'var(--surface-2)', borderRadius: 10, padding: '4px 14px' }}>
+              <div style={{ ...rowStyle, borderBottom: '1px solid var(--border-2)' }}>
+                <span style={{ color: 'var(--ink-3)' }}>Monto de apertura</span>
+                <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatCOP(currentShift?.opening_amount ?? 0)}</span>
               </div>
-              <div style={{ ...rowStyle, borderBottom: '1px solid #f1f5f9' }}>
-                <span style={{ color: '#64748b' }}>Ventas en efectivo</span>
-                <span style={{ fontFamily: 'monospace' }}>+ {formatCOP(cashSales)}</span>
+              <div style={{ ...rowStyle, borderBottom: '1px solid var(--border-2)' }}>
+                <span style={{ color: 'var(--ink-3)' }}>Ventas en efectivo</span>
+                <span style={{ fontVariantNumeric: 'tabular-nums' }}>+ {formatCOP(cashSales)}</span>
               </div>
               {movementsIn > 0 && (
-                <div style={{ ...rowStyle, borderBottom: '1px solid #f1f5f9' }}>
-                  <span style={{ color: '#64748b' }}>Ingresos manuales</span>
-                  <span style={{ fontFamily: 'monospace', color: '#059669' }}>+ {formatCOP(movementsIn)}</span>
+                <div style={{ ...rowStyle, borderBottom: '1px solid var(--border-2)' }}>
+                  <span style={{ color: 'var(--ink-3)' }}>Ingresos manuales</span>
+                  <span style={{ fontVariantNumeric: 'tabular-nums', color: 'var(--success-700)' }}>+ {formatCOP(movementsIn)}</span>
                 </div>
               )}
               {movementsOut > 0 && (
-                <div style={{ ...rowStyle, borderBottom: '1px solid #f1f5f9' }}>
-                  <span style={{ color: '#64748b' }}>Egresos manuales</span>
-                  <span style={{ fontFamily: 'monospace', color: '#dc2626' }}>− {formatCOP(movementsOut)}</span>
+                <div style={{ ...rowStyle, borderBottom: '1px solid var(--border-2)' }}>
+                  <span style={{ color: 'var(--ink-3)' }}>Egresos manuales</span>
+                  <span style={{ fontVariantNumeric: 'tabular-nums', color: 'var(--danger)' }}>− {formatCOP(movementsOut)}</span>
                 </div>
               )}
               <div style={totalRowStyle}>
@@ -237,8 +237,8 @@ export function CloseShiftModal({ onClose }: CloseShiftModalProps) {
                       style={{
                         display: 'inline-flex', alignItems: 'center', gap: 4,
                         padding: '2px 8px', borderRadius: 6,
-                        background: '#fef2f2', border: '1px solid #fecaca',
-                        color: '#b91c1c', fontSize: 10.5, fontWeight: 700,
+                        background: 'var(--danger-soft)', border: '1px solid var(--danger-soft)',
+                        color: 'var(--danger-on-soft)', fontSize: 10.5, fontWeight: 700,
                         textTransform: 'uppercase', letterSpacing: 0.5,
                       }}
                     >
@@ -246,14 +246,14 @@ export function CloseShiftModal({ onClose }: CloseShiftModalProps) {
                       Sobregiro
                     </span>
                   )}
-                  <span style={{ fontFamily: 'monospace', color: isOverdraft ? '#dc2626' : undefined }}>
+                  <span style={{ fontVariantNumeric: 'tabular-nums', color: isOverdraft ? 'var(--danger)' : undefined }}>
                     {formatCOP(expectedCash)}
                   </span>
                 </span>
               </div>
             </div>
             {isOverdraft && (
-              <p style={{ fontSize: 11.5, color: '#b91c1c', marginTop: 8, lineHeight: 1.4 }}>
+              <p style={{ fontSize: 11.5, color: 'var(--danger-on-soft)', marginTop: 8, lineHeight: 1.4 }}>
                 Los egresos superaron el efectivo disponible (apertura + ventas en efectivo +
                 ingresos). El esperado quedó negativo.
               </p>
@@ -262,13 +262,13 @@ export function CloseShiftModal({ onClose }: CloseShiftModalProps) {
 
           {/* Declared amount input */}
           <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#334155', marginBottom: 8 }}>
-              Monto declarado en caja <span style={{ color: '#dc2626' }}>*</span>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--ink-2)', marginBottom: 8 }}>
+              Monto declarado en caja <span style={{ color: 'var(--danger)' }}>*</span>
             </label>
             <div style={{ position: 'relative' }}>
               <div style={{
                 position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)',
-                color: '#94a3b8', pointerEvents: 'none',
+                color: 'var(--ink-4)', pointerEvents: 'none',
               }}>
                 <DollarSign size={14} />
               </div>
@@ -282,12 +282,12 @@ export function CloseShiftModal({ onClose }: CloseShiftModalProps) {
                 autoFocus
                 style={inputStyle}
                 onFocus={(e) => {
-                  e.currentTarget.style.borderColor = '#10b981'
+                  e.currentTarget.style.borderColor = 'var(--success-700)'
                   e.currentTarget.style.background = '#fff'
                 }}
                 onBlur={(e) => {
-                  e.currentTarget.style.borderColor = '#e5e7eb'
-                  e.currentTarget.style.background = '#f8fafc'
+                  e.currentTarget.style.borderColor = 'var(--border)'
+                  e.currentTarget.style.background = 'var(--surface-2)'
                 }}
               />
             </div>
@@ -297,22 +297,22 @@ export function CloseShiftModal({ onClose }: CloseShiftModalProps) {
           {canClose && (
             <div style={{
               padding: '14px 16px', borderRadius: 10,
-              background: difference === 0 ? '#ecfdf5' : difference > 0 ? '#ecfdf5' : '#fef2f2',
-              border: `1px solid ${difference === 0 ? '#a7f3d0' : difference > 0 ? '#a7f3d0' : '#fecaca'}`,
+              background: difference === 0 ? 'var(--success-soft)' : difference > 0 ? 'var(--success-soft)' : 'var(--danger-soft)',
+              border: `1px solid ${difference === 0 ? 'var(--success-border)' : difference > 0 ? 'var(--success-border)' : 'var(--danger-soft)'}`,
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 {difference > 0
-                  ? <TrendingUp size={16} color="#059669" />
+                  ? <TrendingUp size={16} color="var(--success-700)" />
                   : difference < 0
-                    ? <TrendingDown size={16} color="#dc2626" />
-                    : <Minus size={16} color="#10b981" />
+                    ? <TrendingDown size={16} color="var(--danger)" />
+                    : <Minus size={16} color="var(--success-700)" />
                 }
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: difference >= 0 ? '#065f46' : '#991b1b' }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: difference >= 0 ? 'var(--success-on-soft)' : 'var(--danger-on-soft)' }}>
                     {difference > 0 ? 'Sobrante' : difference < 0 ? 'Faltante' : 'Cuadre exacto'}
                   </div>
-                  <div style={{ fontSize: 11.5, color: difference >= 0 ? '#059669' : '#b91c1c', marginTop: 1 }}>
+                  <div style={{ fontSize: 11.5, color: difference >= 0 ? 'var(--success-700)' : 'var(--danger-on-soft)', marginTop: 1 }}>
                     {difference === 0
                       ? 'El monto declarado coincide exactamente'
                       : difference > 0
@@ -324,8 +324,8 @@ export function CloseShiftModal({ onClose }: CloseShiftModalProps) {
               <span
                 data-testid="shift-cash-difference"
                 style={{
-                  fontFamily: 'monospace', fontSize: 17, fontWeight: 700,
-                  color: difference >= 0 ? '#059669' : '#dc2626',
+                  fontVariantNumeric: 'tabular-nums', fontSize: 17, fontWeight: 700,
+                  color: difference >= 0 ? 'var(--success-700)' : 'var(--danger)',
                 }}
               >
                 {difference >= 0 ? '+' : ''}{formatCOP(difference)}
@@ -335,20 +335,20 @@ export function CloseShiftModal({ onClose }: CloseShiftModalProps) {
 
           {/* ── Otros métodos (arqueo multi-método) ── */}
           <div style={{ marginTop: 22 }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
-              Otros métodos <span style={{ textTransform: 'none', letterSpacing: 0, fontWeight: 500, color: '#cbd5e1' }}>· declarado opcional</span>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-4)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
+              Otros métodos <span style={{ textTransform: 'none', letterSpacing: 0, fontWeight: 500, color: 'var(--ink-4)' }}>· declarado opcional</span>
             </div>
-            <div style={{ background: '#f8fafc', borderRadius: 10, padding: '8px 14px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 82px 86px 76px', gap: 6, fontSize: 10.5, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.4, paddingBottom: 6, borderBottom: '1px solid #eef2f7' }}>
+            <div style={{ background: 'var(--surface-2)', borderRadius: 10, padding: '8px 14px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 82px 86px 76px', gap: 6, fontSize: 10.5, fontWeight: 600, color: 'var(--ink-4)', textTransform: 'uppercase', letterSpacing: 0.4, paddingBottom: 6, borderBottom: '1px solid var(--border-2)' }}>
                 <span>Método</span>
                 <span style={{ textAlign: 'right' }}>Esperado</span>
                 <span style={{ textAlign: 'right' }}>Declarado</span>
                 <span style={{ textAlign: 'right' }}>Dif.</span>
               </div>
               {otherRows.map((r) => (
-                <div key={r.method} style={{ display: 'grid', gridTemplateColumns: '1fr 82px 86px 76px', gap: 6, alignItems: 'center', padding: '7px 0', borderBottom: '1px solid #f1f5f9' }}>
-                  <span style={{ fontSize: 13, fontWeight: r.expected > 0 ? 500 : 400, color: r.expected > 0 ? '#334155' : '#94a3b8' }}>{METHOD_LABELS[r.method]}</span>
-                  <span style={{ fontSize: 13, fontFamily: 'monospace', textAlign: 'right', fontWeight: r.expected > 0 ? 600 : 400, color: r.expected > 0 ? '#0f172a' : '#94a3b8' }}>
+                <div key={r.method} style={{ display: 'grid', gridTemplateColumns: '1fr 82px 86px 76px', gap: 6, alignItems: 'center', padding: '7px 0', borderBottom: '1px solid var(--border-2)' }}>
+                  <span style={{ fontSize: 13, fontWeight: r.expected > 0 ? 500 : 400, color: r.expected > 0 ? 'var(--ink-2)' : 'var(--ink-4)' }}>{METHOD_LABELS[r.method]}</span>
+                  <span style={{ fontSize: 13, fontVariantNumeric: 'tabular-nums', textAlign: 'right', fontWeight: r.expected > 0 ? 600 : 400, color: r.expected > 0 ? 'var(--ink)' : 'var(--ink-4)' }}>
                     {formatCOP(r.expected)}
                   </span>
                   <input
@@ -357,11 +357,11 @@ export function CloseShiftModal({ onClose }: CloseShiftModalProps) {
                     value={declaredOther[r.method] ? formatCOP(r.declared).replace('$', '').trim() : ''}
                     onChange={(e) => setDeclaredOther((s) => ({ ...s, [r.method]: e.target.value.replace(/\D/g, '') }))}
                     placeholder="0"
-                    style={{ width: '100%', boxSizing: 'border-box', padding: '6px 8px', border: '1.5px solid #e5e7eb', borderRadius: 7, fontSize: 12.5, fontWeight: 600, color: '#0f172a', fontFamily: 'monospace', textAlign: 'right', outline: 'none', background: '#fff' }}
+                    style={{ width: '100%', boxSizing: 'border-box', padding: '6px 8px', border: '1.5px solid var(--border)', borderRadius: 7, fontSize: 12.5, fontWeight: 600, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums', textAlign: 'right', outline: 'none', background: '#fff' }}
                   />
                   <span
                     data-testid={`pay-diff-${r.method}`}
-                    style={{ fontSize: 12.5, fontFamily: 'monospace', textAlign: 'right', fontWeight: 600, color: r.difference === 0 ? '#64748b' : r.difference > 0 ? '#059669' : '#dc2626' }}
+                    style={{ fontSize: 12.5, fontVariantNumeric: 'tabular-nums', textAlign: 'right', fontWeight: 600, color: r.difference === 0 ? 'var(--ink-3)' : r.difference > 0 ? 'var(--success-700)' : 'var(--danger)' }}
                   >
                     {r.difference > 0 ? '+' : ''}{formatCOP(r.difference)}
                   </span>
@@ -372,7 +372,7 @@ export function CloseShiftModal({ onClose }: CloseShiftModalProps) {
 
           {/* ── Comentario del cierre ── */}
           <div style={{ marginTop: 20 }}>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#334155', marginBottom: 8 }}>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--ink-2)', marginBottom: 8 }}>
               Comentario del cierre
             </label>
             <textarea
@@ -381,23 +381,28 @@ export function CloseShiftModal({ onClose }: CloseShiftModalProps) {
               onChange={(e) => setComment(e.target.value)}
               placeholder="Nota o justificación de diferencias (opcional)"
               rows={2}
-              style={{ width: '100%', boxSizing: 'border-box', padding: '10px 12px', border: '1.5px solid #e5e7eb', borderRadius: 10, fontSize: 13, color: '#0f172a', outline: 'none', resize: 'vertical', fontFamily: 'inherit', background: '#f8fafc' }}
+              style={{ width: '100%', boxSizing: 'border-box', padding: '10px 12px', border: '1.5px solid var(--border)', borderRadius: 10, fontSize: 13, color: 'var(--ink)', outline: 'none', resize: 'vertical', fontFamily: 'inherit', background: 'var(--surface-2)' }}
             />
           </div>
 
           {/* ── Total del arqueo ── */}
-          <div data-testid="shift-arqueo-total" style={{ marginTop: 20, padding: '12px 16px', borderRadius: 10, background: '#0f172a', display: 'flex', flexDirection: 'column', gap: 5 }}>
+          <div data-testid="shift-arqueo-total" style={{ marginTop: 20, padding: '12px 16px', borderRadius: 10, background: 'var(--ink)', display: 'flex', flexDirection: 'column', gap: 5 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}>
-              <span style={{ color: '#cbd5e1' }}>Esperado total</span>
-              <span style={{ fontFamily: 'monospace', color: '#e2e8f0' }}>{formatCOP(expectedTotal)}</span>
+              <span style={{ color: 'var(--ink-4)' }}>Esperado total</span>
+              <span style={{ fontVariantNumeric: 'tabular-nums', color: 'var(--border)' }}>{formatCOP(expectedTotal)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}>
-              <span style={{ color: '#cbd5e1' }}>Declarado total</span>
-              <span style={{ fontFamily: 'monospace', color: '#e2e8f0' }}>{formatCOP(declaredTotal)}</span>
+              <span style={{ color: 'var(--ink-4)' }}>Declarado total</span>
+              <span style={{ fontVariantNumeric: 'tabular-nums', color: 'var(--border)' }}>{formatCOP(declaredTotal)}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 700, borderTop: '1px solid #1e293b', paddingTop: 7, marginTop: 1, color: '#fff' }}>
+            {/* ⚠️ #34d399 / #f87171 se quedan como hexes A PROPÓSITO: son verde y
+                rojo SOBRE TINTA, y la skill define solo cuatro tokens on-dark
+                (--on-dark-2/3/fill/warn). No hay --success ni --danger sobre
+                oscuro, y §8 dice que lo que no está no se infiere. Se piden
+                cuando el arqueo tenga su turno. */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 700, borderTop: '1px solid var(--on-dark-fill)', paddingTop: 7, marginTop: 1, color: '#fff' }}>
               <span>Diferencia total</span>
-              <span style={{ fontFamily: 'monospace', color: differenceTotal === 0 ? '#34d399' : differenceTotal > 0 ? '#34d399' : '#f87171' }}>
+              <span style={{ fontVariantNumeric: 'tabular-nums', color: differenceTotal === 0 ? '#34d399' : differenceTotal > 0 ? '#34d399' : '#f87171' }}>
                 {differenceTotal >= 0 ? '+' : ''}{formatCOP(differenceTotal)}
               </span>
             </div>
@@ -407,18 +412,18 @@ export function CloseShiftModal({ onClose }: CloseShiftModalProps) {
 
         {/* Footer */}
         <div style={{
-          padding: '16px 22px', borderTop: '1px solid #f1f5f9',
+          padding: '16px 22px', borderTop: '1px solid var(--border-2)',
           display: 'flex', gap: 10, flexShrink: 0,
-          background: 'linear-gradient(180deg, #f8fafc 0%, #fff 100%)',
+          background: 'linear-gradient(180deg, var(--surface-2) 0%, #fff 100%)',
         }}>
           <button
             type="button"
             onClick={onClose}
             style={{
               flex: 1, padding: '11px 16px',
-              border: '1.5px solid #e5e7eb', background: '#fff',
+              border: '1.5px solid var(--border)', background: '#fff',
               borderRadius: 9, cursor: 'pointer',
-              fontSize: 13.5, fontWeight: 600, color: '#334155',
+              fontSize: 13.5, fontWeight: 600, color: 'var(--ink-2)',
             }}
           >
             Cancelar
@@ -428,7 +433,7 @@ export function CloseShiftModal({ onClose }: CloseShiftModalProps) {
             disabled={!canClose || isClosingShift}
             style={{
               flex: 2, padding: '11px 16px', border: 'none',
-              background: !canClose || isClosingShift ? '#cbd5e1' : '#0f172a',
+              background: !canClose || isClosingShift ? 'var(--ink-4)' : 'var(--ink)',
               borderRadius: 9,
               cursor: !canClose || isClosingShift ? 'not-allowed' : 'pointer',
               fontSize: 13.5, fontWeight: 700, color: '#fff',

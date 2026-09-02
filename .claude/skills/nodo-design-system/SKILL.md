@@ -276,6 +276,12 @@ Estados: **normal · foco · error · POS grande · deshabilitado**.
 
 ### CupoMeter
 Estados: **holgado · ajustado · consumido · excedido por la venta en curso · sin dato**.
+
+> **[UBICACIÓN FIJADA 2026-09-01 al cerrar §8.15.]** Vive **dentro del modal de cobro**, en el paso
+> donde se elige crédito, junto al bloque de cliente. **No** en la columna derecha del mostrador.
+> La regla 7.1 se cumple igual: el cupo se proyecta con la venta en curso **antes de
+> comprometerlo** — cambia dónde, no cuándo.
+> ⚠️ Hoy arranca siempre en **`sin dato`**: el cupo no existe en el esquema (deuda 40).
 Dos tramos en una barra de 8px: consumido en `--action` (o `--warning-700` ≥80%, `--debt` ≥95%) y venta en curso en `--action-500` al 55% de opacidad. Muestra "Disponible ahora − esta venta → Queda tras esta venta". Sin dato: `—` y nota de invitación.
 
 ### AgingBar
@@ -283,7 +289,24 @@ Cuatro casillas de 16×16, radio 2px, escala `--d1`…`--d4`, apagadas en `--bor
 
 ### TenderSelector
 Estados: **normal · seleccionado · bloqueado**.
-Tres celdas de 52px sobre `--ink`. Seleccionado: fondo `--action-700`, borde `--action-500`. Bloqueado: 50% de opacidad, texto `--on-dark-2`, `cursor:not-allowed`, **con el faltante dicho en pesos debajo**, no solo apagado.
+
+> **[RE-ESPECIFICADO 2026-09-01 al cerrar §8.15 — vive sobre SUPERFICIE CLARA.]** La entrega lo
+> definía sobre `--ink` porque dibujaba el cobro en línea; el cobro es en modal, así que el
+> selector va sobre `--surface`.
+>
+> Celdas de **52px** (el alto no cambia: es el objetivo táctil del cobro), radio `--r-2`.
+> · **normal** — fondo `--surface`, borde `--border`, texto `--ink-2`. Hover: fondo `--surface-2`.
+> · **seleccionado** — fondo `--action-soft`, borde `--action`, texto `--action-on-soft`. Es el
+>   mismo par que la fila seleccionada y la pestaña activa: **el selector marca una elección, no
+>   un estado del dominio**.
+> · **bloqueado** — fondo `--border-2`, texto `--ink-4`, `cursor:not-allowed`, **con el faltante
+>   dicho en pesos debajo** (regla 7.2). Un botón apagado sin cifra no es información.
+>
+> ⚠️ **N celdas, no tres** (§8.16). La grilla se acomoda; la celda conserva sus 52px.
+>
+> *La versión sobre `--ink` —fondo `--action-700`, borde `--action-500`, bloqueado en
+> `--on-dark-2` al 50%— queda documentada como la que aplicaría si algún día el cobro pasa a ser
+> en línea. Hoy no se usa.*
 
 ### Alert
 Variantes: **error · advertencia · informativa**.
@@ -427,21 +450,36 @@ Nada de esta lista debe leerse como resuelto. Si la implementación necesita una
 12. **Marca madre Giiron.** El endoso es texto plano; el lockup definitivo se diseña aparte. El símbolo será la doble i, pero no está construido.
 13. **Pantallas futuras.** Vienen más cuando el esquema de datos esté definido. No anticiparlas ni dejarles hueco.
 
-15. **[ABIERTA 2026-09-01 — la divergencia MÁS GRANDE entre esta skill y el producto.]**
-    **¿El mostrador cobra EN LÍNEA o EN UN MODAL?**
+15. **✅ CERRADA el 2026-09-01 — EL COBRO SE QUEDA EN MODAL. La skill se adapta al producto.**
 
-    Esta skill especifica el cobro **en línea**: cliente, cupo, medios de pago y "recibe" viven en
-    la columna derecha, y el `TenderSelector` está definido **sobre `--ink`** por eso. **El producto
-    cobra en un MODAL de tres pasos** (método → monto → éxito), sobre fondo claro. No es un detalle
-    visual: decide la especificación de tres componentes del §4.
+    *Era la divergencia más grande entre esta skill y el producto, y por eso el cierre lleva sus
+    razones: la entrega dibujaba el cobro **en línea** —cliente, cupo, medios y "recibe" en la
+    columna derecha, con `TenderSelector` sobre `--ink`— y el producto cobra en un **modal de tres
+    pasos** (método → monto → éxito) sobre fondo claro.*
 
-    | Si se decide… | Consecuencia |
-    |---|---|
-    | **en línea** (lo que la skill dibuja) | `TenderSelector` queda como está (sobre `--ink`); `CupoMeter` y el `Badge` de cliente ganan su lugar en la columna derecha; el modal desaparece y **cambia el flujo de cobro**, con sus specs |
-    | **en modal** (lo que el producto hace) | los tres se **re-especifican sobre fondo claro** — la skill hoy **no tiene** tokens de selector de medio de pago sobre `--surface` |
+    **Por qué gana el producto:**
+    1. **El modal está probado.** 51/51 specs verdes, incluidos pago mixto y el flujo de fiado.
+       Pasar a cobro en línea es rediseñar el flujo más crítico —el que la cajera usa cientos de
+       veces al día— **sin un defecto que lo motive**. El diseño no reportó un problema con el
+       modal: dibujó otra cosa porque no lo conocía.
+    2. **Es el mismo criterio que los 5 medios de pago (§8.16).** Recortar `payment_method` para que
+       entraran 3 celdas habría sido cambiar el producto para que quepa en el dibujo; **cambiar el
+       flujo de cobro es la versión grande de ese mismo error.**
+    3. **El cobro en línea es una hipótesis de diseño sin validar contra un cajero real.** El primer
+       tenant no operó ni un día. Si al usarlo pide menos pasos, se decide **con evidencia**.
 
-    ⚠️ Hasta que se decida, `Badge`, `CupoMeter` y `TenderSelector` **no se implementan**: nacerían
-    sin consumidor y con la superficie equivocada.
+    **🔴 CONSECUENCIAS — esto es lo que cambia en esta skill, y es normativo:**
+
+    - **`TenderSelector` se re-especifica sobre fondo CLARO**, no sobre `--ink`. Los tokens
+      `--on-dark-*` **siguen siendo** del panel de cobro del mostrador y de los diálogos: no son
+      del selector.
+    - **`CupoMeter` y el bloque de cliente viven DENTRO del modal**, en el paso donde se elige
+      crédito. **La regla 7.1 se cumple igual** —el cupo se proyecta con la venta en curso, antes
+      de comprometerlo—: solo cambia **dónde**, no **cuándo**.
+    - **La columna derecha del mostrador NO lleva cliente ni medios de pago.** Lo que lleva es
+      canal, líneas, descuento y el panel de cobro sobre `--ink`.
+    - **El "Confirmar cobro" verde del modal es una violación directa de §1.2** —*verde es solo
+      confirmación y ninguna acción lo usa*— y **pasa a `--action`**.
 
 16. **[DATO DURO, no pregunta — 2026-09-01.]** **Esta skill dibuja TRES medios de pago** (Efectivo ·
     Transferencia · Crédito) **y el producto tiene CINCO**: efectivo, tarjeta, transferencia, nequi,

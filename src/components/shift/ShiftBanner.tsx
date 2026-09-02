@@ -29,11 +29,11 @@ export function ShiftBanner() {
       <div style={{
         display: 'inline-flex', alignItems: 'center', gap: 7,
         padding: '6px 12px', borderRadius: 9,
-        background: '#f1f5f9', border: '1px solid #e2e8f0',
-        fontFamily: 'Inter, system-ui, sans-serif',
+        background: 'var(--border-2)', border: '1px solid var(--border)',
+        fontFamily: 'inherit',
       }}>
-        <MoonStar size={13} color="#94a3b8" strokeWidth={2} />
-        <span style={{ fontSize: 12.5, fontWeight: 600, color: '#64748b' }}>
+        <MoonStar size={13} color="var(--ink-4)" strokeWidth={2} />
+        <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--ink-3)' }}>
           Sin turno
         </span>
       </div>
@@ -46,31 +46,31 @@ export function ShiftBanner() {
     <>
       <div style={{
         display: 'flex', alignItems: 'center', gap: 12,
-        fontFamily: 'Inter, system-ui, sans-serif',
+        fontFamily: 'inherit',
       }}>
         {/* Shift info pill */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: 8,
           padding: '6px 12px', borderRadius: 9,
-          background: '#ecfdf5', border: '1px solid #a7f3d0',
+          background: 'var(--success-soft)', border: '1px solid var(--success-border)',
         }}>
           {/* Green pulse dot */}
           <span style={{
             width: 7, height: 7, borderRadius: '50%',
-            background: '#10b981', flexShrink: 0,
+            background: 'var(--success-700)', flexShrink: 0,
             boxShadow: '0 0 0 2px rgba(16,185,129,.25)',
           }} />
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Clock size={13} color="#059669" strokeWidth={2} />
-            <span style={{ fontSize: 12.5, fontWeight: 600, color: '#065f46' }}>
+            <Clock size={13} color="var(--success-700)" strokeWidth={2} />
+            <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--success-on-soft)' }}>
               Turno desde {formatTime(currentShift.opened_at)}
             </span>
           </div>
 
-          <span style={{ width: 1, height: 14, background: '#a7f3d0' }} />
+          <span style={{ width: 1, height: 14, background: 'var(--success-border)' }} />
 
-          <span style={{ fontSize: 12.5, fontWeight: 700, color: '#059669', fontFamily: 'monospace' }}>
+          <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--success-700)', fontVariantNumeric: 'tabular-nums' }}>
             {formatCOP(totalSales)}
           </span>
         </div>
@@ -82,17 +82,17 @@ export function ShiftBanner() {
           style={{
             display: 'flex', alignItems: 'center', gap: 5,
             padding: '6px 10px', borderRadius: 8,
-            border: '1px solid #e2e8f0', background: '#fff',
-            cursor: 'pointer', fontSize: 12, fontWeight: 600, color: '#64748b',
+            border: '1px solid var(--border)', background: 'var(--surface)',
+            cursor: 'pointer', fontSize: 12, fontWeight: 600, color: 'var(--ink-3)',
             transition: 'all .12s',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = '#10b981'
-            e.currentTarget.style.color = '#059669'
+            e.currentTarget.style.borderColor = 'var(--action)'
+            e.currentTarget.style.color = 'var(--action-700)'
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = '#e2e8f0'
-            e.currentTarget.style.color = '#64748b'
+            e.currentTarget.style.borderColor = 'var(--border)'
+            e.currentTarget.style.color = 'var(--ink-3)'
           }}
         >
           <ArrowRightLeft size={13} />
@@ -107,15 +107,15 @@ export function ShiftBanner() {
           style={{
             display: 'flex', alignItems: 'center', gap: 5,
             padding: '6px 10px', borderRadius: 8,
-            border: '1px solid #fecaca', background: '#fef2f2',
-            cursor: 'pointer', fontSize: 12, fontWeight: 600, color: '#dc2626',
+            border: '1px solid var(--danger-soft)', background: 'var(--danger-soft)',
+            cursor: 'pointer', fontSize: 12, fontWeight: 600, color: 'var(--danger)',
             transition: 'all .12s',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = '#fee2e2'
+            e.currentTarget.style.background = 'var(--danger-soft)'
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.background = '#fef2f2'
+            e.currentTarget.style.background = 'var(--danger-soft)'
           }}
         >
           <PowerOff size={13} />

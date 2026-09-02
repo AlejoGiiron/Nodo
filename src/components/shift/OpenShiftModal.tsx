@@ -36,14 +36,14 @@ export function OpenShiftModal({ onClose, onOpened }: {
         background: 'rgba(15,23,42,.85)',
         display: 'grid', placeItems: 'center',
         zIndex: 100,
-        fontFamily: 'Inter, system-ui, sans-serif',
+        fontFamily: 'inherit',
         padding: '20px',
       }}
       onClick={onClose}
     >
       <div
         style={{
-          background: '#fff', borderRadius: 16,
+          background: 'var(--surface)', borderRadius: 16,
           width: 420, maxWidth: '100%',
           boxShadow: '0 25px 60px -12px rgba(0,0,0,.4)',
           overflow: 'hidden', position: 'relative',
@@ -56,8 +56,8 @@ export function OpenShiftModal({ onClose, onOpened }: {
             onClick={onClose}
             style={{
               position: 'absolute', top: 14, right: 14, zIndex: 1,
-              background: '#f1f5f9', border: 'none', width: 30, height: 30,
-              borderRadius: 8, cursor: 'pointer', color: '#64748b',
+              background: 'var(--border-2)', border: 'none', width: 30, height: 30,
+              borderRadius: 8, cursor: 'pointer', color: 'var(--ink-3)',
               display: 'grid', placeItems: 'center',
             }}
           >
@@ -65,26 +65,26 @@ export function OpenShiftModal({ onClose, onOpened }: {
           </button>
         )}
         {/* Top accent */}
-        <div style={{ height: 4, background: 'linear-gradient(90deg, #10b981, #059669)' }} />
+        <div style={{ height: 4, background: 'var(--action)' }} />
 
         <div style={{ padding: '32px 32px 28px' }}>
           {/* Icon + heading */}
           <div style={{ textAlign: 'center', marginBottom: 28 }}>
             <div style={{
               width: 56, height: 56, borderRadius: 16,
-              background: '#ecfdf5',
+              background: 'var(--action-soft)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               margin: '0 auto 16px',
             }}>
-              <Wallet size={26} color="#10b981" strokeWidth={1.8} />
+              <Wallet size={26} color="var(--action)" strokeWidth={1.8} />
             </div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: '#10b981', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--action)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>
               Antes de comenzar
             </div>
-            <h2 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', letterSpacing: -0.5, margin: 0 }}>
+            <h2 style={{ fontSize: 22, fontWeight: 700, color: 'var(--ink)', letterSpacing: -0.5, margin: 0 }}>
               Abrir turno de caja
             </h2>
-            <p style={{ fontSize: 13, color: '#64748b', marginTop: 8, marginBottom: 0, lineHeight: 1.5 }}>
+            <p style={{ fontSize: 13, color: 'var(--ink-3)', marginTop: 8, marginBottom: 0, lineHeight: 1.5 }}>
               Ingresa el efectivo que hay en caja al iniciar el turno. Este monto se usará para calcular diferencias al cierre.
             </p>
           </div>
@@ -92,14 +92,14 @@ export function OpenShiftModal({ onClose, onOpened }: {
           {/* Form */}
           <form onSubmit={handleSubmit}>
             <div style={{ marginBottom: 20 }}>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#334155', marginBottom: 8 }}>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--ink-2)', marginBottom: 8 }}>
                 Efectivo en caja al inicio
               </label>
               <div style={{ position: 'relative' }}>
                 <div style={{
                   position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)',
                   display: 'flex', alignItems: 'center', gap: 4,
-                  color: '#94a3b8', pointerEvents: 'none',
+                  color: 'var(--ink-4)', pointerEvents: 'none',
                 }}>
                   <DollarSign size={14} />
                 </div>
@@ -113,24 +113,24 @@ export function OpenShiftModal({ onClose, onOpened }: {
                   autoFocus
                   style={{
                     width: '100%', padding: '12px 14px 12px 32px',
-                    border: '1.5px solid #e5e7eb', borderRadius: 10,
-                    fontSize: 18, fontWeight: 600, color: '#0f172a',
-                    fontFamily: 'monospace',
+                    border: '1.5px solid var(--border)', borderRadius: 10,
+                    fontSize: 18, fontWeight: 600, color: 'var(--ink)',
+                    fontVariantNumeric: 'tabular-nums',
                     outline: 'none', boxSizing: 'border-box',
-                    background: '#f8fafc',
+                    background: 'var(--surface-2)',
                     transition: 'border .12s, background .12s',
                   }}
                   onFocus={(e) => {
-                    e.currentTarget.style.borderColor = '#10b981'
-                    e.currentTarget.style.background = '#fff'
+                    e.currentTarget.style.borderColor = 'var(--action)'
+                    e.currentTarget.style.background = 'var(--surface)'
                   }}
                   onBlur={(e) => {
-                    e.currentTarget.style.borderColor = '#e5e7eb'
-                    e.currentTarget.style.background = '#f8fafc'
+                    e.currentTarget.style.borderColor = 'var(--border)'
+                    e.currentTarget.style.background = 'var(--surface-2)'
                   }}
                 />
               </div>
-              <div style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 6 }}>
+              <div style={{ fontSize: 11.5, color: 'var(--ink-4)', marginTop: 6 }}>
                 Puedes ingresar 0 si la caja está vacía
               </div>
             </div>
@@ -141,8 +141,8 @@ export function OpenShiftModal({ onClose, onOpened }: {
               style={{
                 width: '100%', padding: '13px',
                 border: 'none', borderRadius: 10,
-                background: isOpeningShift ? '#cbd5e1' : '#10b981',
-                color: '#fff', fontSize: 14, fontWeight: 700,
+                background: isOpeningShift ? 'var(--ink-4)' : 'var(--action)',
+                color: 'var(--surface)', fontSize: 14, fontWeight: 700,
                 cursor: isOpeningShift ? 'not-allowed' : 'pointer',
                 boxShadow: isOpeningShift ? 'none' : '0 6px 16px rgba(16,185,129,.35)',
                 transition: 'all .15s',

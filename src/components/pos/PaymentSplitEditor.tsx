@@ -123,8 +123,8 @@ export function PaymentSplitEditor({ total, onChange }: PaymentSplitEditorProps)
               onChange={(e) => setMethod(i, e.target.value as PayMethod)}
               style={{
                 flex: '0 0 140px', padding: '9px 10px', borderRadius: 8,
-                border: '1.5px solid #e5e7eb', background: '#fff',
-                fontSize: 13, color: '#334155', cursor: 'pointer', outline: 'none',
+                border: '1.5px solid var(--border)', background: 'var(--surface)',
+                fontSize: 13, color: 'var(--ink-2)', cursor: 'pointer', outline: 'none',
               }}
             >
               {options.map((m) => (
@@ -135,7 +135,7 @@ export function PaymentSplitEditor({ total, onChange }: PaymentSplitEditorProps)
             <div style={{ flex: 1, position: 'relative' }}>
               <span style={{
                 position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)',
-                fontSize: 13, color: '#94a3b8', fontFamily: 'monospace', pointerEvents: 'none',
+                fontSize: 13, color: 'var(--ink-4)', fontVariantNumeric: 'tabular-nums', pointerEvents: 'none',
               }}>$</span>
               <input
                 data-testid={`pay-line-amount-${i}`}
@@ -145,9 +145,9 @@ export function PaymentSplitEditor({ total, onChange }: PaymentSplitEditorProps)
                 placeholder="0"
                 style={{
                   width: '100%', boxSizing: 'border-box', padding: '9px 10px 9px 22px',
-                  borderRadius: 8, border: '1.5px solid #e5e7eb', background: '#fff',
-                  fontSize: 14, fontWeight: 600, color: '#0f172a',
-                  fontFamily: 'monospace', textAlign: 'right', outline: 'none',
+                  borderRadius: 8, border: '1.5px solid var(--border)', background: 'var(--surface)',
+                  fontSize: 14, fontWeight: 600, color: 'var(--ink)',
+                  fontVariantNumeric: 'tabular-nums', textAlign: 'right', outline: 'none',
                 }}
               />
             </div>
@@ -160,9 +160,9 @@ export function PaymentSplitEditor({ total, onChange }: PaymentSplitEditorProps)
               title="Quitar método"
               style={{
                 flex: '0 0 32px', height: 32, display: 'grid', placeItems: 'center',
-                borderRadius: 8, border: '1px solid #e5e7eb',
-                background: lines.length <= 1 ? '#f8fafc' : '#fff',
-                color: lines.length <= 1 ? '#cbd5e1' : '#64748b',
+                borderRadius: 8, border: '1px solid var(--border)',
+                background: lines.length <= 1 ? 'var(--surface-2)' : 'var(--surface)',
+                color: lines.length <= 1 ? 'var(--ink-4)' : 'var(--ink-3)',
                 cursor: lines.length <= 1 ? 'not-allowed' : 'pointer',
               }}
             >
@@ -180,8 +180,8 @@ export function PaymentSplitEditor({ total, onChange }: PaymentSplitEditorProps)
           onClick={addLine}
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 2,
-            padding: '7px 12px', borderRadius: 8, border: '1px dashed #cbd5e1',
-            background: '#fff', color: '#334155', fontSize: 12.5, fontWeight: 600,
+            padding: '7px 12px', borderRadius: 8, border: '1px dashed var(--ink-4)',
+            background: 'var(--surface)', color: 'var(--ink-2)', fontSize: 12.5, fontWeight: 600,
             cursor: 'pointer',
           }}
         >
@@ -193,15 +193,15 @@ export function PaymentSplitEditor({ total, onChange }: PaymentSplitEditorProps)
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
         marginTop: 14, padding: '10px 12px', borderRadius: 10,
-        background: valid ? '#ecfdf5' : '#fef2f2',
-        border: `1px solid ${valid ? '#a7f3d0' : '#fecaca'}`,
+        background: valid ? 'var(--success-soft)' : 'var(--danger-soft)',
+        border: `1px solid ${valid ? 'var(--success-border)' : 'var(--danger-soft)'}`,
       }}>
-        <span style={{ fontSize: 12.5, fontWeight: 600, color: valid ? '#065f46' : '#991b1b' }}>
+        <span style={{ fontSize: 12.5, fontWeight: 600, color: valid ? 'var(--success-on-soft)' : 'var(--danger-on-soft)' }}>
           {remaining === 0 ? 'Asignado completo' : remaining > 0 ? 'Restante por asignar' : 'Excedido'}
         </span>
         <span
           data-testid="pay-remaining"
-          style={{ fontSize: 18, fontWeight: 700, fontFamily: 'monospace', color: valid ? '#065f46' : '#991b1b' }}
+          style={{ fontSize: 18, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: valid ? 'var(--success-on-soft)' : 'var(--danger-on-soft)' }}
         >
           {formatCOP(Math.abs(remaining))}
         </span>
@@ -209,14 +209,14 @@ export function PaymentSplitEditor({ total, onChange }: PaymentSplitEditorProps)
 
       {/* Vuelto: solo si hay línea de efectivo. "recibido" es opcional y solo UI. */}
       {cashLine && (
-        <div style={{ marginTop: 12, padding: '12px 12px', borderRadius: 10, background: '#f8fafc', border: '1px solid #eef2f7' }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>
+        <div style={{ marginTop: 12, padding: '12px 12px', borderRadius: 10, background: 'var(--surface-2)', border: '1px solid var(--border-2)' }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>
             Efectivo recibido (opcional)
           </div>
           <div style={{ position: 'relative' }}>
             <span style={{
               position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)',
-              fontSize: 13, color: '#94a3b8', fontFamily: 'monospace', pointerEvents: 'none',
+              fontSize: 13, color: 'var(--ink-4)', fontVariantNumeric: 'tabular-nums', pointerEvents: 'none',
             }}>$</span>
             <input
               data-testid="pay-received"
@@ -226,20 +226,20 @@ export function PaymentSplitEditor({ total, onChange }: PaymentSplitEditorProps)
               placeholder={formatCOP(cashLine.amount).replace('$', '').trim()}
               style={{
                 width: '100%', boxSizing: 'border-box', padding: '9px 10px 9px 22px',
-                borderRadius: 8, border: '1.5px solid #e5e7eb', background: '#fff',
-                fontSize: 14, fontWeight: 600, color: '#0f172a',
-                fontFamily: 'monospace', textAlign: 'right', outline: 'none',
+                borderRadius: 8, border: '1.5px solid var(--border)', background: 'var(--surface)',
+                fontSize: 14, fontWeight: 600, color: 'var(--ink)',
+                fontVariantNumeric: 'tabular-nums', textAlign: 'right', outline: 'none',
               }}
             />
           </div>
           {received !== '' && (
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
-              <span style={{ fontSize: 12.5, fontWeight: 600, color: change >= 0 ? '#065f46' : '#991b1b' }}>
+              <span style={{ fontSize: 12.5, fontWeight: 600, color: change >= 0 ? 'var(--success-on-soft)' : 'var(--danger-on-soft)' }}>
                 {change >= 0 ? 'Vuelto' : 'Falta'}
               </span>
               <span
                 data-testid="pay-change"
-                style={{ fontSize: 16, fontWeight: 700, fontFamily: 'monospace', color: change >= 0 ? '#065f46' : '#991b1b' }}
+                style={{ fontSize: 16, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: change >= 0 ? 'var(--success-on-soft)' : 'var(--danger-on-soft)' }}
               >
                 {formatCOP(Math.abs(change))}
               </span>
