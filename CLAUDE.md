@@ -864,6 +864,38 @@ mostrar la enumeración**. Un `grep` que vuelve vacío es una demostración vál
 deja de valer es *"esto suena a restaurante"*, que es la única evidencia que se usó las cuatro
 veces que salió mal.
 
+#### 🔴 Corolario — DIBUJAR UNA PANTALLA AUDITA UN ESQUEMA
+
+*Medido el 2026-09-01, enumerando los campos de las nueve pantallas del design system contra las
+columnas reales.*
+
+> **Antes de dar un esquema por completo, dibujá la pantalla que lo consume.**
+
+**Nueve huecos en seis pantallas. Seis eran nuevos, y ninguno lo había encontrado una sesión de
+backend** — ni escribiendo el esquema, ni escribiendo las RPC, ni corriendo la suite. Los encontró
+tener que **dibujar**, porque un dibujo obliga a nombrar **cada dato que hace falta para que la
+pantalla signifique algo**, y un `select *` no hace esa pregunta: devuelve lo que hay, y lo que hay
+siempre se ve completo.
+
+Los seis no eran adornos: unidad de compra y su factor de equivalencia, plazo de crédito,
+subcategoría de gasto, beneficiario del gasto, fecha del documento, dirección del cliente. **Todos
+del alcance firmado.**
+
+**Por qué el esquema no los delata solo.** Un esquema es consistente consigo mismo por
+construcción: las FKs cierran, los CHECK pasan, las RPC compilan. Nada dentro de él pregunta *"¿con
+esto se puede contestar lo que el usuario va a mirar?"*. Esa pregunta vive **afuera**, y la
+pantalla es el instrumento más barato para hacerla.
+
+⚠️ **Y el caso extremo, que está en `docs/BITACORA.md`:** la diferencia bulto→unidad estaba
+**escrita en este mismo archivo** desde el 2026-08-31, como una de las tres diferencias medidas
+contra Vento. Se leyó y se citó muchas veces. **No tenía columna.** Ninguna lectura lo destapó;
+lo destapó dibujar la pantalla de Compras.
+
+**Lo accionable:** al cerrar un módulo de esquema, listar los campos de la pantalla que lo va a
+consumir —aunque la pantalla no exista todavía— y cruzarlos contra las columnas. Cuesta una lista.
+
+---
+
 #### 🔴 Corolario — clasificar leyendo el nombre o el plan NO es clasificar
 
 *Agregado el 2026-08-31, con cuatro casos medidos.*

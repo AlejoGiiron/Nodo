@@ -287,6 +287,17 @@ Dos tramos en una barra de 8px: consumido en `--action` (o `--warning-700` ≥80
 ### AgingBar
 Cuatro casillas de 16×16, radio 2px, escala `--d1`…`--d4`, apagadas en `--border-2`. Junto a los días en `tabular-nums`. Leyenda obligatoria al pie de la tabla.
 
+> **[DECISIÓN 2026-09-01 — la columna `VENCIDO` de Cartera NO SE PINTA todavía.]** La AgingBar
+> calcula **antigüedad** (días desde `created_at` de la orden) y eso sí existe. **"Vencido" exige un
+> PLAZO** — *"a 30 días"* — y no hay `due_date` ni plazo de crédito en el esquema (deuda 46). Hasta
+> que exista:
+> - la barra y su columna se rotulan **"Antigüedad"**, que es lo que de verdad miden;
+> - el KPI `VENCIDO` y la columna `VENCIDO` **no se dibujan** — no van en `—`: no van.
+>
+> 🔴 **Un rótulo falso es peor que una columna ausente.** Poner la antigüedad bajo el título
+> "vencido" daría un número plausible y falso, y quien lo lee **actúa como si algo hubiera
+> vencido**. Es la misma familia que la advertencia falsa que induce el error que dice prevenir.
+
 ### TenderSelector
 Estados: **normal · seleccionado · bloqueado**.
 
@@ -432,6 +443,12 @@ Nada de esta lista debe leerse como resuelto. Si la implementación necesita una
 1. **[CORREGIDO — SÍ está decidido]** Método de costeo: **promedio ponderado móvil**, decidido el 2026-08-31, con el costo unitario **congelado en la línea de venta al vender** (ver CLAUDE.md, R1 punto 8). El rótulo de Utilidades no es una recomendación pendiente. El cliente nunca ve el término.
 2. **Escala tipográfica como tokens reales.** La tabla de la sección 2 está documentada pero los `--fs-*` no existen todavía como variables CSS: hoy los tamaños van literales. Falta decidir si se tokenizan.
 3. **Tema oscuro.** No existe. No hay tokens de superficie oscura fuera del panel de cobro y los diálogos.
+   > **[HUECO CONCRETO, encontrado el 2026-09-01 implementando el arqueo.]** Faltan **`--success` y
+   > `--danger` SOBRE TINTA**. Los cuatro tokens on-dark que existen (`--on-dark-2/3/fill/warn`)
+   > cubren texto, relleno y advertencia, pero no confirmación ni error. El panel de arqueo del
+   > cierre de caja va sobre `--ink` y muestra la diferencia en verde o rojo según el signo — hoy
+   > con dos hexes literales (`#34d399`, `#f87171`), marcados en el código como lo que son: valores
+   > que la skill no define y que **no se inventaron**. Se piden cuando el arqueo tenga su turno.
 4. **Móvil.** **[CORREGIDO]** La entrega decía "solo la ruta del conductor está pensada en móvil" — **en Nodo no hay conductores, rutas ni despacho**, ni están planeados (el cliente carga y se lleva; es la razón por la que el producto no se llama G-Ship). Queda: las nueve pantallas de escritorio no tienen diseño responsive por debajo de ~1100px; hoy hacen scroll horizontal. Móvil entero está sin decidir.
 5. **Estados de foco por teclado.** El recorrido con Tab, el anillo de foco visible y el orden de tabulación no están especificados. Los atajos sí.
 6. **Impresión.** Remisión, factura, recibo de abono y cierre de caja no tienen diseño impreso.

@@ -1820,3 +1820,55 @@ que no existen.*
 Las dos aparecieron **al enumerar columnas**, no al leer nombres — mismo método que los cuatro
 casos del corolario de clasificación. Ninguna bloquea el re-skin: el design system ya tiene el
 estado `sin dato` para el cupo, y la fila se arma con las columnas que existen.
+
+
+## 2026-09-01 · La nota decía la verdad, estaba en CLAUDE.md, y no tenía columna
+
+**El caso más caro del corolario de R4 hasta ahora — y el más incómodo, porque las dos
+declaraciones eran NUESTRAS y las dos eran CORRECTAS.**
+
+`CLAUDE.md` dice, desde el 2026-08-31 y en la sección que se lee antes de trabajar:
+
+> *"la **unidad de compra difiere de la de venta** (se compra por bulto, se vende por unidad) y eso
+> no existe en un bar"*
+
+Es una de las **tres diferencias medidas** contra Vento, escrita para advertir que inventario y
+compras **no viajan tal cual**. Se leyó muchas veces: para escribir el esquema de compras, para
+citar la zona gris del 43,3%, para justificar por qué `product_components` no se poda. Y
+`supabase/migrations/…_inventario.sql` la refuerza en un comentario: *"Caso típico en Nodo: un bulto
+que se vende por unidad suelta."*
+
+**Dos documentos del repo, de acuerdo entre sí, los dos diciendo la verdad. Y
+`purchase_invoice_items` tiene `qty`, `unit_cost` y `subtotal`: ninguna columna para la unidad de
+compra ni para su factor.**
+
+### Lo que hace distinto a este caso
+
+El enunciado del corolario de R4 es *"la coincidencia entre dos declaraciones no es evidencia: es
+la misma afirmación escrita dos veces"*, y hasta ahora los casos eran de **contenido falso**
+(`VITE_NODO_SUPABASE_URL` contra lo que el código leía). Acá **el contenido era correcto**. Lo que
+falló fue lo otro que dice el corolario, y que es la parte que se subestima:
+
+> **Ninguna de las dos ejecuta.**
+
+Una nota correcta que nadie ejecuta contra la base **no protege de nada**. Peor: **tranquiliza**.
+Cada lectura la dejaba igual de cierta y un poco más «ya considerada» — el mecanismo exacto que el
+corolario describe, funcionando sobre una afirmación verdadera.
+
+### El costo, que es en dinero
+
+`register_purchase` hace `stock_qty += qty` y calcula el promedio ponderado móvil con ese mismo
+`qty`. Comprar **12 bultos de 50** registrado como 12 unidades deja el stock en +12 (debería ser
++600) y el costo unitario en el del bulto: **50 veces el real**. Y `cost_price` alimenta
+`order_items.unit_cost`, que se **congela al vender** (R1 punto 8) — así que un costo mal calculado
+hoy queda **grabado para siempre** en las utilidades de todas las ventas de ese producto.
+
+✅ **Se encuentra a tiempo por una sola razón: no hay clientes operando todavía.** El mismo defecto,
+encontrado en tres meses, no se arregla con una migración — hay que decidir qué hacer con la
+historia ya congelada.
+
+### Lo accionable, que ya está escrito como corolario en CLAUDE.md
+
+**Dibujar una pantalla audita un esquema.** Esta nota vivió nueve días en el documento que se lee
+antes de trabajar; la destapó tener que dibujar la línea de una compra y preguntarse de dónde sale
+`1 bulto = 50 UND`.
