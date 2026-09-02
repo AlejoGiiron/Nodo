@@ -15,14 +15,17 @@ import type { ReactNode } from 'react'
  *    cuando su pantalla migre — absorberlos ahora sería tocar cuatro pantallas
  *    sin abrir ninguna:
  *      · `stock-badge`        — ProductCard (Catálogo)
- *      · `stock-status-badge` — InventoryPage (Inventario)
- *      · `sale-voided-badge`  — SalesHistoryPage, TRES apariciones (Historial)
  *      · `overdraft-badge`    — CloseShiftModal (Turnos)
  *      · `overdraft-warning`  — MovementsModal (Turnos)
  *    Reproducir la lista:
  *      grep -rn 'data-testid="[a-z-]*\(badge\|status\)[a-z-]*"' src/
- *    ✅ Ya migrados: `pos-stock-indicator` (Mostrador) y el badge de estado de
- *    fiado (Cartera), que fue el primer consumidor de esta primitiva.
+ *    ✅ Migrados: `pos-stock-indicator` (Mostrador) · el badge de estado de
+ *    fiado (Cartera, primer consumidor) · `stock-status-badge` (Inventario) ·
+ *    `sale-voided-badge` (Historial, TRES apariciones al mismo componente).
+ *    ⚠️ Los dos de Turnos tienen los COLORES migrados pero siguen siendo
+ *    markup inline: el barrido de tokens no los componentizó. Es una distinción
+ *    que conviene no perder — "usa los tokens" y "usa la primitiva" no son lo
+ *    mismo, y solo lo segundo evita que el próximo badge nazca distinto.
  */
 
 export type BadgeTone = 'success' | 'debt' | 'warning' | 'danger' | 'action' | 'neutral'

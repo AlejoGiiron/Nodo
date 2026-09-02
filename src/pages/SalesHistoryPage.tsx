@@ -12,14 +12,12 @@ import {
 } from '@/hooks/useSalesHistory'
 import { printSaleTicket } from '@/lib/printer'
 import type { Enums } from '@/types/database.types'
+import { Badge } from '@/components/ui/Badge'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { formatoCOP } from '@/lib/formato'
 
 // ─── Helpers ──────────────────────────────────────────────────────
 
-const formatCOP = (n: number) =>
-  new Intl.NumberFormat('es-CO', {
-    style: 'currency', currency: 'COP',
-    minimumFractionDigits: 0, maximumFractionDigits: 0,
-  }).format(n)
 
 const formatDateTime = (iso: string) =>
   new Date(iso).toLocaleString('es-CO', {
@@ -49,10 +47,18 @@ function daysAgoBogota(days: number): string {
 type Canal = 'mostrador' | 'whatsapp' | 'telefono'
 type PayMethod = Enums<'payment_method'>
 
+// 🔴 LOS TRES CANALES VAN EN NEUTRO — mismo caso que los tipos de movimiento
+//    de Inventario. Tenían mostrador ÁMBAR, WhatsApp VERDE y teléfono AZUL: tres
+//    familias que SÍ significan algo (advertencia, confirmación, acción) usadas
+//    para codificar una CATEGORÍA. Un canal no es un estado ni una acción — que
+//    una venta entre por WhatsApp no es una confirmación de nada.
+//    Y el color era redundante: LOS TRES ÍCONOS YA SON DISTINTOS (tienda, chat,
+//    teléfono), que es una diferencia que se lee sin tener que aprender un
+//    código.
 const CANAL: Record<Canal, { label: string; icon: React.ReactNode; bg: string; fg: string }> = {
-  mostrador: { label: 'Mostrador',  icon: <Store size={12} />,           bg: '#fef3c7', fg: '#854d0e' },
-  whatsapp:  { label: 'WhatsApp',   icon: <MessageCircle size={12} />,   bg: '#dcfce7', fg: '#166534' },
-  telefono:  { label: 'Teléfono',   icon: <Phone size={12} />,           bg: '#dbeafe', fg: '#1e40af' },
+  mostrador: { label: 'Mostrador',  icon: <Store size={12} />,           bg: 'var(--border-2)', fg: 'var(--ink-2)' },
+  whatsapp:  { label: 'WhatsApp',   icon: <MessageCircle size={12} />,   bg: 'var(--border-2)', fg: 'var(--ink-2)' },
+  telefono:  { label: 'Teléfono',   icon: <Phone size={12} />,           bg: 'var(--border-2)', fg: 'var(--ink-2)' },
 }
 
 const METHOD_LABEL: Record<PayMethod, string> = {
@@ -165,48 +171,50 @@ function SaleDetailModal({ orderId, onClose }: { orderId: string; onClose: () =>
 
   return (
     <div
-      style={{ position: 'absolute', inset: 0, background: 'rgba(15,23,42,.55)', display: 'grid', placeItems: 'center', zIndex: 50 }}
+      style={{ position: 'absolute', inset: 0, background: 'var(--overlay)', display: 'grid', placeItems: 'center', zIndex: 50 }}
       onClick={onClose}
     >
       <div
         data-testid="sale-detail-modal"
-        style={{ background: '#fff', borderRadius: 14, width: 480, maxWidth: '94%', maxHeight: '88%', boxShadow: '0 25px 50px -12px rgba(0,0,0,.25)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
+        style={{ background: 'var(--surface)', borderRadius: 14, width: 480, maxWidth: '94%', maxHeight: '88%', boxShadow: 'var(--shadow-1)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div style={{ padding: '18px 22px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--border-2)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
               Detalle de venta
             </div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', letterSpacing: -0.4 }}>
+            <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--ink)', letterSpacing: -0.4 }}>
               {sale?.order_number != null ? `Venta #${sale.order_number}` : 'Venta'}
             </div>
             {sale && (
-              <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 2 }}>
+              <div style={{ fontSize: 11.5, color: 'var(--ink-3)', marginTop: 2 }}>
                 {formatDateTime(sale.created_at)} · {CANAL[sale.canal as Canal].label}
               </div>
             )}
             {isVoided && sale && (
               <div style={{ marginTop: 8 }}>
-                <span
-                  data-testid="sale-voided-badge"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca', borderRadius: 7, padding: '4px 10px', fontSize: 12, fontWeight: 700 }}
-                >
+                {/* Tercer badge inline absorbido por la primitiva (§4). Tono
+                    `danger` y no `debt`: anular está en la familia del error
+                    según §1.2 ("validación fallida, anular compra, eliminar").
+                    Los tres usos de esta pantalla comparten forma exacta, así
+                    que los tres van al mismo componente. */}
+                <Badge tone="danger" data-testid="sale-voided-badge">
                   <Ban size={13} /> Venta anulada
-                </span>
-                <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 4 }}>
+                </Badge>
+                <div style={{ fontSize: 11.5, color: 'var(--ink-3)', marginTop: 4 }}>
                   {formatDateTime(sale.cancelled_at!)} · {sale.canceller?.full_name ?? '—'}
                 </div>
                 {sale.cancel_reason && (
-                  <div style={{ fontSize: 11.5, color: '#475569', marginTop: 1 }}>
-                    Motivo: <span style={{ fontWeight: 600, color: '#0f172a' }}>{sale.cancel_reason}</span>
+                  <div style={{ fontSize: 11.5, color: 'var(--ink-2)', marginTop: 1 }}>
+                    Motivo: <span style={{ fontWeight: 600, color: 'var(--ink)' }}>{sale.cancel_reason}</span>
                   </div>
                 )}
               </div>
             )}
           </div>
-          <button onClick={onClose} style={{ background: '#f1f5f9', border: 'none', width: 32, height: 32, borderRadius: 8, cursor: 'pointer', color: '#64748b', display: 'grid', placeItems: 'center' }}>
+          <button onClick={onClose} style={{ background: 'var(--border-2)', border: 'none', width: 32, height: 32, borderRadius: 8, cursor: 'pointer', color: 'var(--ink-3)', display: 'grid', placeItems: 'center' }}>
             <X size={16} />
           </button>
         </div>
@@ -214,22 +222,22 @@ function SaleDetailModal({ orderId, onClose }: { orderId: string; onClose: () =>
         {/* Body */}
         <div style={{ flex: 1, overflow: 'auto', padding: 22 }}>
           {isLoading || !sale ? (
-            <div style={{ padding: 32, textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
+            <div style={{ padding: 32, textAlign: 'center', color: 'var(--ink-4)', fontSize: 13 }}>
               Cargando detalle...
             </div>
           ) : (
             <>
               {/* Meta */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 16, fontSize: 12.5, color: '#475569' }}>
-                {sale.customer_name && <div>Cliente: <span style={{ fontWeight: 600, color: '#0f172a' }}>{sale.customer_name}</span>{sale.customer_phone ? ` · ${sale.customer_phone}` : ''}</div>}
-                <div>Atendió: <span style={{ fontWeight: 600, color: '#0f172a' }}>{sale.profiles?.full_name ?? '—'}</span></div>
-                <div>Pago: <span data-testid="sale-detail-method" style={{ fontWeight: 600, color: '#0f172a' }}>{methodDisplay(sale)}</span></div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 16, fontSize: 12.5, color: 'var(--ink-2)' }}>
+                {sale.customer_name && <div>Cliente: <span style={{ fontWeight: 600, color: 'var(--ink)' }}>{sale.customer_name}</span>{sale.customer_phone ? ` · ${sale.customer_phone}` : ''}</div>}
+                <div>Atendió: <span style={{ fontWeight: 600, color: 'var(--ink)' }}>{sale.profiles?.full_name ?? '—'}</span></div>
+                <div>Pago: <span data-testid="sale-detail-method" style={{ fontWeight: 600, color: 'var(--ink)' }}>{methodDisplay(sale)}</span></div>
                 {sale.payments.length > 1 && (
                   <div data-testid="sale-detail-payments" style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 2, paddingLeft: 10 }}>
                     {sale.payments.map((p, i) => (
                       <div key={i} style={{ display: 'flex', justifyContent: 'space-between', maxWidth: 220 }}>
                         <span>{METHOD_LABEL[p.method]}</span>
-                        <span style={{ fontFamily: 'monospace', color: '#0f172a' }}>{formatCOP(p.amount)}</span>
+                        <span style={{ fontVariantNumeric: 'tabular-nums', color: 'var(--ink)' }}>{formatoCOP(p.amount)}</span>
                       </div>
                     ))}
                   </div>
@@ -237,32 +245,32 @@ function SaleDetailModal({ orderId, onClose }: { orderId: string; onClose: () =>
               </div>
 
               {/* Items */}
-              <div style={{ border: '1px solid #f1f5f9', borderRadius: 10, overflow: 'hidden' }}>
+              <div style={{ border: '1px solid var(--border-2)', borderRadius: 10, overflow: 'hidden' }}>
                 {sale.order_items.map((it) => {
                   const extrasTotal = it.order_item_extras.reduce((a, e) => a + e.unit_price * e.qty, 0)
                   const lineTotal = it.unit_price * it.qty + extrasTotal
                   return (
-                    <div key={it.id} data-testid="sale-detail-item" style={{ padding: '10px 14px', borderBottom: '1px solid #f8fafc' }}>
+                    <div key={it.id} data-testid="sale-detail-item" style={{ padding: '10px 14px', borderBottom: '1px solid var(--surface-2)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-                        <span style={{ fontSize: 13.5, fontWeight: 600, color: '#0f172a' }}>
+                        <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--ink)' }}>
                           {it.qty}× {it.products?.name ?? '—'}
                         </span>
-                        <span style={{ fontSize: 13.5, fontWeight: 700, color: '#0f172a', fontFamily: 'monospace' }}>
-                          {formatCOP(lineTotal)}
+                        <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>
+                          {formatoCOP(lineTotal)}
                         </span>
                       </div>
                       {it.order_item_extras.length > 0 && (
                         <div data-testid="sale-detail-extras" style={{ marginTop: 3 }}>
                           {it.order_item_extras.map((e) => (
-                            <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: '#065f46', paddingLeft: 10 }}>
+                            <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: 'var(--success-on-soft)', paddingLeft: 10 }}>
                               <span>+ {e.extras?.name ?? 'Extra'} ×{e.qty}</span>
-                              <span style={{ fontFamily: 'monospace' }}>{formatCOP(e.unit_price * e.qty)}</span>
+                              <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatoCOP(e.unit_price * e.qty)}</span>
                             </div>
                           ))}
                         </div>
                       )}
                       {it.notes && (
-                        <div style={{ fontSize: 11.5, color: '#854d0e', marginTop: 2, paddingLeft: 10 }}>* {it.notes}</div>
+                        <div style={{ fontSize: 11.5, color: 'var(--warning-on-soft)', marginTop: 2, paddingLeft: 10 }}>* {it.notes}</div>
                       )}
                     </div>
                   )
@@ -271,20 +279,20 @@ function SaleDetailModal({ orderId, onClose }: { orderId: string; onClose: () =>
 
               {/* Totals */}
               <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, color: '#475569' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, color: 'var(--ink-2)' }}>
                   <span>Subtotal</span>
-                  <span style={{ fontFamily: 'monospace' }}>{formatCOP(subtotal)}</span>
+                  <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatoCOP(subtotal)}</span>
                 </div>
                 {discount > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, color: '#dc2626' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, color: 'var(--danger)' }}>
                     <span>Descuento</span>
-                    <span style={{ fontFamily: 'monospace' }}>-{formatCOP(discount)}</span>
+                    <span style={{ fontVariantNumeric: 'tabular-nums' }}>-{formatoCOP(discount)}</span>
                   </div>
                 )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: 4 }}>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: '#0f172a' }}>Total</span>
-                  <span style={{ fontSize: 24, fontWeight: 700, color: '#0f172a', fontFamily: 'monospace', letterSpacing: -0.6 }}>
-                    {formatCOP(sale.total)}
+                  <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)' }}>Total</span>
+                  <span style={{ fontSize: 24, fontWeight: 700, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums', letterSpacing: -0.6 }}>
+                    {formatoCOP(sale.total)}
                   </span>
                 </div>
               </div>
@@ -293,7 +301,7 @@ function SaleDetailModal({ orderId, onClose }: { orderId: string; onClose: () =>
         </div>
 
         {/* Footer */}
-        <div style={{ padding: '14px 22px', borderTop: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+        <div style={{ padding: '14px 22px', borderTop: '1px solid var(--border-2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
           {/* Anular: solo con permiso y venta aún no anulada. Deshabilitado (no
               oculto) cuando no es del turno actual, con el motivo en el tooltip. */}
           <div>
@@ -305,11 +313,11 @@ function SaleDetailModal({ orderId, onClose }: { orderId: string; onClose: () =>
                 onClick={() => setVoiding(true)}
                 style={{
                   padding: '11px 18px', borderRadius: 9,
-                  border: `1.5px solid ${voidEligible ? '#fecaca' : '#e5e7eb'}`,
-                  background: voidEligible ? '#fff' : '#f8fafc',
+                  border: `1.5px solid ${voidEligible ? 'var(--danger-soft)' : 'var(--border)'}`,
+                  background: voidEligible ? 'var(--surface)' : 'var(--surface-2)',
                   cursor: voidEligible ? 'pointer' : 'not-allowed',
                   fontSize: 13.5, fontWeight: 700,
-                  color: voidEligible ? '#b91c1c' : '#cbd5e1',
+                  color: voidEligible ? 'var(--danger-on-soft)' : 'var(--ink-4)',
                   display: 'flex', alignItems: 'center', gap: 7,
                 }}
               >
@@ -323,8 +331,8 @@ function SaleDetailModal({ orderId, onClose }: { orderId: string; onClose: () =>
             onClick={handleReprint}
             style={{
               padding: '11px 20px', border: 'none',
-              background: sale ? '#10b981' : '#cbd5e1', borderRadius: 9,
-              cursor: sale ? 'pointer' : 'not-allowed', fontSize: 13.5, fontWeight: 700, color: '#fff',
+              background: sale ? 'var(--action)' : 'var(--ink-4)', borderRadius: 9,
+              cursor: sale ? 'pointer' : 'not-allowed', fontSize: 13.5, fontWeight: 700, color: 'var(--surface)',
               display: 'flex', alignItems: 'center', gap: 7,
               boxShadow: sale ? '0 6px 16px rgba(16,185,129,.35)' : 'none',
             }}
@@ -336,30 +344,30 @@ function SaleDetailModal({ orderId, onClose }: { orderId: string; onClose: () =>
         {/* Diálogo de anulación — motivo OBLIGATORIO + confirmación explícita */}
         {voiding && sale && (
           <div
-            style={{ position: 'absolute', inset: 0, background: 'rgba(15,23,42,.55)', display: 'grid', placeItems: 'center', zIndex: 60 }}
+            style={{ position: 'absolute', inset: 0, background: 'var(--overlay)', display: 'grid', placeItems: 'center', zIndex: 60 }}
             onClick={() => { if (!voidMutation.isPending) { setVoiding(false); setReason('') } }}
           >
             <div
               data-testid="sale-void-dialog"
-              style={{ background: '#fff', borderRadius: 12, width: 420, maxWidth: '92%', boxShadow: '0 25px 50px -12px rgba(0,0,0,.25)', overflow: 'hidden' }}
+              style={{ background: 'var(--surface)', borderRadius: 12, width: 420, maxWidth: '92%', boxShadow: 'var(--shadow-1)', overflow: 'hidden' }}
               onClick={(e) => e.stopPropagation()}
             >
               <div style={{ padding: '18px 22px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                <div style={{ width: 40, height: 40, borderRadius: 10, background: '#fef2f2', color: '#dc2626', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--danger-soft)', color: 'var(--danger)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
                   <AlertTriangle size={20} />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: '#0f172a' }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)' }}>
                     Anular {sale.order_number != null ? `venta #${sale.order_number}` : 'venta'}
                   </div>
-                  <div style={{ fontSize: 12.5, color: '#64748b', marginTop: 3, lineHeight: 1.4 }}>
+                  <div style={{ fontSize: 12.5, color: 'var(--ink-3)', marginTop: 3, lineHeight: 1.4 }}>
                     Devuelve el stock al inventario y la saca del cuadre del turno. La venta queda registrada como anulada (no se borra). Esta acción no se puede deshacer.
                   </div>
                 </div>
               </div>
               <div style={{ padding: '0 22px 4px' }}>
-                <label style={{ fontSize: 12, fontWeight: 600, color: '#334155', display: 'block', marginBottom: 6 }}>
-                  Motivo <span style={{ color: '#dc2626' }}>*</span>
+                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink-2)', display: 'block', marginBottom: 6 }}>
+                  Motivo <span style={{ color: 'var(--danger)' }}>*</span>
                 </label>
                 <textarea
                   data-testid="sale-void-reason"
@@ -368,14 +376,14 @@ function SaleDetailModal({ orderId, onClose }: { orderId: string; onClose: () =>
                   onChange={(e) => setReason(e.target.value)}
                   placeholder="Ej: error del cajero, producto equivocado…"
                   rows={3}
-                  style={{ width: '100%', border: '1.5px solid #e2e8f0', borderRadius: 8, padding: '9px 11px', fontSize: 13, color: '#0f172a', outline: 'none', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'Inter, system-ui, sans-serif' }}
+                  style={{ width: '100%', border: '1.5px solid var(--border)', borderRadius: 8, padding: '9px 11px', fontSize: 13, color: 'var(--ink)', outline: 'none', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit' }}
                 />
               </div>
               <div style={{ padding: '14px 22px 20px', display: 'flex', gap: 10 }}>
                 <button
                   onClick={() => { setVoiding(false); setReason('') }}
                   disabled={voidMutation.isPending}
-                  style={{ flex: 1, padding: '11px', border: '1.5px solid #e5e7eb', background: '#fff', borderRadius: 9, cursor: 'pointer', fontSize: 13.5, fontWeight: 600, color: '#334155' }}
+                  style={{ flex: 1, padding: '11px', border: '1.5px solid var(--border)', background: 'var(--surface)', borderRadius: 9, cursor: 'pointer', fontSize: 13.5, fontWeight: 600, color: 'var(--ink-2)' }}
                 >
                   Cancelar
                 </button>
@@ -385,9 +393,9 @@ function SaleDetailModal({ orderId, onClose }: { orderId: string; onClose: () =>
                   onClick={confirmVoid}
                   style={{
                     flex: 2, padding: '11px', border: 'none', borderRadius: 9,
-                    background: !reason.trim() || voidMutation.isPending ? '#cbd5e1' : '#dc2626',
+                    background: !reason.trim() || voidMutation.isPending ? 'var(--ink-4)' : 'var(--danger)',
                     cursor: !reason.trim() || voidMutation.isPending ? 'not-allowed' : 'pointer',
-                    fontSize: 13.5, fontWeight: 700, color: '#fff',
+                    fontSize: 13.5, fontWeight: 700, color: 'var(--surface)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
                   }}
                 >
@@ -405,9 +413,9 @@ function SaleDetailModal({ orderId, onClose }: { orderId: string; onClose: () =>
 // ─── Página ───────────────────────────────────────────────────────
 
 const inputStyle: React.CSSProperties = {
-  padding: '9px 12px', border: '1.5px solid #e2e8f0', borderRadius: 8,
-  fontSize: 13, color: '#0f172a', outline: 'none', boxSizing: 'border-box',
-  fontFamily: 'Inter, system-ui, sans-serif', background: '#fff',
+  padding: '9px 12px', border: '1.5px solid var(--border)', borderRadius: 8,
+  fontSize: 13, color: 'var(--ink)', outline: 'none', boxSizing: 'border-box',
+  fontFamily: 'inherit', background: 'var(--surface)',
 }
 
 export function SalesHistoryPage() {
@@ -436,34 +444,34 @@ export function SalesHistoryPage() {
   return (
     <div
       className="flex flex-col h-full overflow-hidden"
-      style={{ background: '#f8fafc', color: '#0f172a', fontFamily: 'Inter, system-ui, sans-serif', position: 'relative' }}
+      style={{ background: 'var(--bg)', color: 'var(--ink)', position: 'relative' }}
     >
+      {/* Quinta pantalla con el patrón. El título es el que ya tenía. */}
+      <PageHeader titulo="Historial de ventas" descripcion="ventas cobradas y anuladas, por sede" />
+
       {/* Controls bar */}
-      <div style={{ padding: '16px 24px', background: '#fff', borderBottom: '1px solid #f1f5f9', flexShrink: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-          <Receipt size={18} color="#10b981" />
-          <div style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', letterSpacing: -0.3 }}>
-            Historial de ventas
-          </div>
-          <div style={{ fontSize: 12, color: '#94a3b8', fontFamily: 'monospace' }}>
+      <div style={{ padding: '14px 24px', background: 'var(--surface-3)', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+          <Receipt size={16} color="var(--ink-3)" />
+          <div style={{ fontSize: 12, color: 'var(--ink-3)', fontVariantNumeric: 'tabular-nums' }}>
             {count} {count === 1 ? 'venta' : 'ventas'}
           </div>
         </div>
 
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
           {/* Search por número */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f8fafc', borderRadius: 8, padding: '8px 12px', border: '1px solid #e2e8f0', minWidth: 220 }}>
-            <Search size={15} color="#94a3b8" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--surface-2)', borderRadius: 8, padding: '8px 12px', border: '1px solid var(--border)', minWidth: 220 }}>
+            <Search size={15} color="var(--ink-4)" />
             <input
               data-testid="sales-search"
               value={search}
               onChange={(e) => { setSearch(e.target.value); resetPage() }}
               placeholder="Buscar por número de venta..."
               inputMode="numeric"
-              style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 13, color: '#0f172a' }}
+              style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 13, color: 'var(--ink)' }}
             />
             {search && (
-              <button onClick={() => { setSearch(''); resetPage() }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 0, display: 'grid', placeItems: 'center' }}>
+              <button onClick={() => { setSearch(''); resetPage() }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--ink-4)', padding: 0, display: 'grid', placeItems: 'center' }}>
                 <X size={14} />
               </button>
             )}
@@ -471,7 +479,7 @@ export function SalesHistoryPage() {
 
           {/* Rango de fechas */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Calendar size={15} color="#94a3b8" />
+            <Calendar size={15} color="var(--ink-4)" />
             <input
               data-testid="sales-from"
               type="date"
@@ -480,7 +488,7 @@ export function SalesHistoryPage() {
               onChange={(e) => { setFrom(e.target.value); resetPage() }}
               style={inputStyle}
             />
-            <span style={{ color: '#94a3b8', fontSize: 13 }}>→</span>
+            <span style={{ color: 'var(--ink-4)', fontSize: 13 }}>→</span>
             <input
               data-testid="sales-to"
               type="date"
@@ -513,15 +521,15 @@ export function SalesHistoryPage() {
         {method && cancelledRows.length > 0 && (
           <div data-testid="cancelled-sales-section" style={{ marginBottom: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-              <Ban size={14} color="#b91c1c" />
-              <span style={{ fontSize: 12.5, fontWeight: 700, color: '#b91c1c', textTransform: 'uppercase', letterSpacing: 0.4 }}>
+              <Ban size={14} color="var(--danger-on-soft)" />
+              <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--danger-on-soft)', textTransform: 'uppercase', letterSpacing: 0.4 }}>
                 Anuladas ({cancelledRows.length})
               </span>
-              <span style={{ fontSize: 11.5, color: '#94a3b8' }}>
+              <span style={{ fontSize: 11.5, color: 'var(--ink-4)' }}>
                 sin método — no se filtran por método de pago
               </span>
             </div>
-            <div style={{ background: '#fff', border: '1px solid #fecaca', borderRadius: 12, overflow: 'hidden' }}>
+            <div style={{ background: 'var(--surface)', border: '1px solid var(--danger-soft)', borderRadius: 12, overflow: 'hidden' }}>
               {cancelledRows.map((row: CancelledSaleRow) => (
                 <button
                   key={row.id}
@@ -530,30 +538,27 @@ export function SalesHistoryPage() {
                   style={{
                     width: '100%', textAlign: 'left', display: 'grid',
                     gridTemplateColumns: '90px 1fr 130px', gap: 12, alignItems: 'center',
-                    padding: '13px 16px', borderBottom: '1px solid #fef2f2',
-                    background: '#fff', border: 'none', cursor: 'pointer',
+                    padding: '13px 16px', borderBottom: '1px solid var(--danger-soft)',
+                    background: 'var(--surface)', border: 'none', cursor: 'pointer',
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = '#fef2f2')}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--danger-soft)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--surface)')}
                 >
-                  <span style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', fontFamily: 'monospace' }}>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>
                     #{row.order_number}
                   </span>
                   <span style={{ minWidth: 0 }}>
-                    <span style={{ display: 'block', fontSize: 13, color: '#0f172a', fontFamily: 'monospace' }}>
+                    <span style={{ display: 'block', fontSize: 13, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>
                       {formatDateTime(row.cancelled_at ?? row.created_at)}
                     </span>
-                    <span style={{ display: 'block', fontSize: 12, color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <span style={{ display: 'block', fontSize: 12, color: 'var(--ink-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {row.canceller?.full_name ?? '—'}{row.cancel_reason ? ` · ${row.cancel_reason}` : ''}
                     </span>
                   </span>
                   <span style={{ textAlign: 'right' }}>
-                    <span
-                      data-testid="sale-voided-badge"
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca', borderRadius: 6, padding: '3px 8px', fontSize: 11.5, fontWeight: 700 }}
-                    >
+                    <Badge tone="danger" data-testid="sale-voided-badge">
                       <Ban size={11} /> Anulada
-                    </span>
+                    </Badge>
                   </span>
                 </button>
               ))}
@@ -562,18 +567,18 @@ export function SalesHistoryPage() {
         )}
 
         {isLoading ? (
-          <div style={{ padding: 50, textAlign: 'center', color: '#94a3b8', fontSize: 13.5 }}>
+          <div style={{ padding: 50, textAlign: 'center', color: 'var(--ink-4)', fontSize: 13.5 }}>
             Cargando ventas...
           </div>
         ) : rows.length === 0 ? (
-          <div style={{ padding: 60, textAlign: 'center', color: '#94a3b8', fontSize: 13.5 }}>
+          <div style={{ padding: 60, textAlign: 'center', color: 'var(--ink-4)', fontSize: 13.5 }}>
             <Receipt size={32} style={{ margin: '0 auto 14px', display: 'block', opacity: 0.3 }} />
             No hay ventas para los filtros seleccionados.
           </div>
         ) : (
-          <div style={{ background: '#fff', border: '1px solid #f1f5f9', borderRadius: 12, overflow: 'hidden', opacity: isFetching ? 0.7 : 1, transition: 'opacity .12s' }}>
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border-2)', borderRadius: 12, overflow: 'hidden', opacity: isFetching ? 0.7 : 1, transition: 'opacity .12s' }}>
             {/* Head */}
-            <div style={{ display: 'grid', gridTemplateColumns: '90px 1fr 130px 130px 120px', gap: 12, padding: '11px 16px', borderBottom: '1px solid #f1f5f9', background: '#f8fafc', fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.4 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '90px 1fr 130px 130px 120px', gap: 12, padding: '11px 16px', borderBottom: '1px solid var(--border-2)', background: 'var(--surface-2)', fontSize: 11, fontWeight: 700, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: 0.4 }}>
               <span>Venta</span>
               <span>Fecha · Cliente</span>
               <span>Tipo</span>
@@ -591,21 +596,21 @@ export function SalesHistoryPage() {
                   style={{
                     width: '100%', textAlign: 'left', display: 'grid',
                     gridTemplateColumns: '90px 1fr 130px 130px 120px', gap: 12, alignItems: 'center',
-                    padding: '13px 16px', borderBottom: '1px solid #f8fafc',
-                    background: '#fff', border: 'none', cursor: 'pointer',
+                    padding: '13px 16px', borderBottom: '1px solid var(--surface-2)',
+                    background: 'var(--surface)', border: 'none', cursor: 'pointer',
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = '#f8fafc')}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-2)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--surface)')}
                 >
-                  <span style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', fontFamily: 'monospace' }}>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>
                     #{row.order_number}
                   </span>
                   <span style={{ minWidth: 0 }}>
-                    <span style={{ display: 'block', fontSize: 13, color: '#0f172a', fontFamily: 'monospace' }}>
+                    <span style={{ display: 'block', fontSize: 13, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>
                       {formatDateTime(row.created_at)}
                     </span>
                     {row.customer_name && (
-                      <span style={{ display: 'block', fontSize: 12, color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <span style={{ display: 'block', fontSize: 12, color: 'var(--ink-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {row.customer_name}
                       </span>
                     )}
@@ -615,20 +620,17 @@ export function SalesHistoryPage() {
                       {ot.icon} {ot.label}
                     </span>
                   </span>
-                  <span data-testid="sale-row-method" style={{ fontSize: 12.5, color: '#475569' }}>
+                  <span data-testid="sale-row-method" style={{ fontSize: 12.5, color: 'var(--ink-2)' }}>
                     {row.cancelled_at ? (
-                      <span
-                        data-testid="sale-voided-badge"
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca', borderRadius: 6, padding: '3px 8px', fontSize: 11.5, fontWeight: 700 }}
-                      >
+                      <Badge tone="danger" data-testid="sale-voided-badge">
                         <Ban size={11} /> Anulada
-                      </span>
+                      </Badge>
                     ) : (
                       methodDisplay(row)
                     )}
                   </span>
-                  <span style={{ textAlign: 'right', fontSize: 14, fontWeight: 700, color: '#0f172a', fontFamily: 'monospace' }}>
-                    {formatCOP(row.total)}
+                  <span style={{ textAlign: 'right', fontSize: 14, fontWeight: 700, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>
+                    {formatoCOP(row.total)}
                   </span>
                 </button>
               )
@@ -639,8 +641,8 @@ export function SalesHistoryPage() {
 
       {/* Pagination */}
       {count > 0 && (
-        <div style={{ flexShrink: 0, padding: '12px 24px', borderTop: '1px solid #f1f5f9', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: 12.5, color: '#64748b' }}>
+        <div style={{ flexShrink: 0, padding: '12px 24px', borderTop: '1px solid var(--border-2)', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: 12.5, color: 'var(--ink-3)' }}>
             {rangeFrom}–{rangeTo} de {count}
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -649,14 +651,14 @@ export function SalesHistoryPage() {
               disabled={page === 0}
               onClick={() => setPage((p) => Math.max(0, p - 1))}
               style={{
-                width: 34, height: 34, borderRadius: 8, border: '1px solid #e5e7eb',
-                background: '#fff', cursor: page === 0 ? 'not-allowed' : 'pointer',
-                color: page === 0 ? '#cbd5e1' : '#334155', display: 'grid', placeItems: 'center',
+                width: 34, height: 34, borderRadius: 8, border: '1px solid var(--border)',
+                background: 'var(--surface)', cursor: page === 0 ? 'not-allowed' : 'pointer',
+                color: page === 0 ? 'var(--ink-4)' : 'var(--ink-2)', display: 'grid', placeItems: 'center',
               }}
             >
               <ChevronLeft size={16} />
             </button>
-            <span style={{ fontSize: 12.5, color: '#334155', fontFamily: 'monospace', minWidth: 70, textAlign: 'center' }}>
+            <span style={{ fontSize: 12.5, color: 'var(--ink-2)', fontVariantNumeric: 'tabular-nums', minWidth: 70, textAlign: 'center' }}>
               {page + 1} / {pageCount}
             </span>
             <button
@@ -664,9 +666,9 @@ export function SalesHistoryPage() {
               disabled={page + 1 >= pageCount}
               onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
               style={{
-                width: 34, height: 34, borderRadius: 8, border: '1px solid #e5e7eb',
-                background: '#fff', cursor: page + 1 >= pageCount ? 'not-allowed' : 'pointer',
-                color: page + 1 >= pageCount ? '#cbd5e1' : '#334155', display: 'grid', placeItems: 'center',
+                width: 34, height: 34, borderRadius: 8, border: '1px solid var(--border)',
+                background: 'var(--surface)', cursor: page + 1 >= pageCount ? 'not-allowed' : 'pointer',
+                color: page + 1 >= pageCount ? 'var(--ink-4)' : 'var(--ink-2)', display: 'grid', placeItems: 'center',
               }}
             >
               <ChevronRight size={16} />
