@@ -687,6 +687,59 @@ que no usarlo**; lo que no vale es no usarlo *y no decir por qué*.
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · TODO LO QUE SALE DEL PRODUCTO EN PAPEL O EN ARCHIVO TIENE QUE SER ASEVERABLE SIN UN HUMANO MIRANDO
+
+*Medido el 2026-09-02 quitando el IVA falso del ticket (deuda 62a).*
+
+> **Si para verificar lo que imprimís hay que imprimirlo y mirarlo, nadie lo verifica.**
+
+El ticket afirmaba *"IVA 19% incl."* sobre un dato que no existe en ninguna tabla. Sobrevivió porque
+su HTML se construía **dentro** de la función que llama a `window.print()`: no había forma de
+aseverar su contenido sin abrir el diálogo del navegador. **El lugar donde no se puede mirar es el
+lugar donde las afirmaciones falsas sobreviven** — y es justo el que llega al cliente.
+
+**Lo accionable, y cuesta un `export`:** la construcción del artefacto se separa de su entrega.
+`buildSaleTicketHtml(datos) → string` es testeable; `printSaleTicket(datos)` solo lo entrega. Igual
+para un workbook: `buildWorkbook(datos) → wb` aparte de la descarga.
+
+**Dónde aplica hoy** — todo lo que cruza la frontera del producto:
+
+| artefacto | estado |
+|---|---|
+| ticket de venta (POS) y su reimpresión | ✅ `buildSaleTicketHtml`, con test unitario (2026-09-02) |
+| arqueo impreso | ✅ `buildCashReportHtml` ya estaba separado; ⛔ sin test |
+| Excel financiero y Excel de stock | va con la deuda 53 |
+
+⚠️ Y el corolario que lo hace regla y no anécdota: **un artefacto que sale del producto y no tiene
+test es una afirmación sin verificar, aunque el código que lo genera se vea bien.** El compilador ve
+un string.
+
+---
+
+### 🔴 CRITERIO SIN NÚMERO · CÓMO SE APLICA Y SE REVIERTE UN MUTANTE (arnés, no test)
+
+*Tres fallas encadenadas el 2026-09-02, todas mías, en una sola verificación de cuatro minutos.*
+
+1. 🔴 **El mutante se aplica y se revierte sobre un árbol LIMPIO, verificado con `git status` ANTES.**
+   Revertí un mutante con `git checkout -- archivo` y **se llevó puesto el arreglo**, que estaba en el
+   mismo archivo y sin commitear. Resultado: una corrida "con mutante" que en realidad tenía el
+   arreglo, y otra "revertida" que no tenía ninguno de los dos. Si hay trabajo sin commitear, el
+   revert es la **sustitución inversa exacta**, o se commitea el arreglo primero y el mutante va
+   después.
+2. 🔴 **Un conteo que baja no dice QUÉ desapareció.** Corrí `grep -c IVA` para confirmar el revert,
+   dio **2**, y lo leí como *"el mutante ya no está"*. Significaba lo contrario: eran las dos líneas
+   originales, y **el arreglo tampoco estaba**. Tercera vez que cobra el mismo criterio —*enumerar,
+   no contar*—: un conteo esconde qué contó, y el número que uno espera se lee en el que salga.
+3. 🔴 **Un test que puede pasar con entrada vacía no prueba nada.** El caso leía el ticket con
+   `innerText ?? textContent`; `innerText` devuelve `''` para un nodo oculto, y con `''` todas las
+   aserciones de *"no dice X"* pasan **sin mirar nada**. Lo que lo convierte en test es la aserción
+   de que **el contenido no vino vacío** — el control negativo de la propia lectura.
+
+✅ Lo que salvó la verificación fue el mutante mismo: existía para no confiar en el verde, y el que
+**no murió** destapó las tres. **Un test que no se puede poner rojo a voluntad no está verificado.**
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · UN TEST DE NEGACIÓN TIENE QUE EXIGIR QUE NIEGUE **POR LA RAZÓN CORRECTA**
 
 *Medido el 2026-09-02 escribiendo el spec de la deuda 60. Es R10 aplicada a los tests de seguridad:
