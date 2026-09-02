@@ -1750,3 +1750,73 @@ es corrección y va a los dos repos (R1 punto 9), en su turno.
 
 En Nodo la tercera capa (UX) quedó restaurada del lado del cliente; la voz del guard en la base es
 la deuda #39, post-MVP.
+
+
+## 2026-09-01 · Paso 0 del re-skin — y el instrumento que no podía salir rojo
+
+**Lo que se aplicó:** los 45 tokens del §1 de la skill en `:root` (`src/tokens.css`), los radios del
+§3, e **Inter cargada por primera vez**. Cero pantallas tocadas.
+
+### El hallazgo del inventario que este commit convirtió en arreglo
+
+La skill declara la pila `Inter, system-ui, sans-serif` y hay **40 `fontFamily: 'Inter, …'`
+inline** en `src/`. **No existía ningún `@font-face`.** Las 40 pedían una fuente que el navegador
+no tenía de dónde sacar, así que **todo el mundo veía `system-ui`** — en Windows, Segoe UI. Un
+documento y cuarenta declaraciones de código de acuerdo entre sí, y ninguna ejecutando: el
+corolario de R4 en su forma más barata de detectar y más cara de notar.
+
+**La decisión de implementación que sale de ahí:** el `@font-face` se declara con el nombre
+`'Inter'` y no `'Inter Variable'` — que es como lo nombra `@fontsource-variable/inter` —
+justamente para que **las 40 resuelvan sin editar un solo archivo**. La pila de la skill pasa de
+aspiración a hecho sin un renombre masivo.
+
+Y la variable, no la estática: la escala tipográfica pide **peso 450**, que la estática no tiene.
+Pedir 450 sobre una estática **lo redondea a 400 o 500 en silencio** — el mismo perfil de fallo.
+
+### 🔴 EL CONTROL NEGATIVO MATÓ A MI PRIMER INSTRUMENTO
+
+Que el `@font-face` esté en el CSS emitido es una **declaración**, no evidencia. Así que se midió
+en un Chromium real contra el build. Primera sonda:
+
+```
+document.fonts.check('16px Inter')  ->  true
+```
+
+Verde. Y **falso como instrumento**, porque el control negativo dio lo mismo:
+
+```
+document.fonts.check('16px NoExisteEstaFuente')  ->  true   <-- 🔴
+```
+
+`check()` no contesta *¿está cargada Inter?*: contesta **¿se puede pintar este texto?** — y siempre
+se puede, hay fallback. Con familia correcta o inventada, el resultado es idéntico. Era un verde
+que **no podía salir rojo**, que es la definición exacta de tautología del corolario de R4.
+
+**El instrumento que sí discrimina fue medir, no preguntar** — el ancho del mismo texto:
+
+| familia | ancho |
+|---|---|
+| `Inter` | **392,89 px** |
+| `system-ui` | 364,30 px |
+| familia inexistente | **364,30 px** ← cae exacto en system-ui: la medición distingue |
+| `Inter` peso 450 vs 400 | 395,39 / 392,89 ← el eje variable está vivo |
+
+**Lo accionable, que generaliza a cualquier API de "¿está disponible X?":** una API que contesta
+sobre la CAPACIDAD DEL SISTEMA (¿podría?) no sirve para verificar la PRESENCIA DE UN RECURSO
+(¿está?). Las dos preguntas se escriben casi igual y una tiene fallback. Se distinguen con el
+control negativo, y **cuesta una línea**: correr la misma sonda contra algo que sabemos que no
+existe. Si contesta lo mismo, el instrumento no mide.
+
+### Dos huecos de esquema encontrados por leer la maqueta contra `information_schema`
+
+Ya son **dos en el mismo día y forman clase**, no instancias sueltas: *diseño cerrado sobre datos
+que no existen.*
+
+1. **El cupo de crédito** — cero columnas, y está en el alcance firmado (deuda 40).
+2. **`codigo` y `unidad`** de producto — dos de las cinco columnas de la fila del mostrador
+   (deuda 41). La `unidad` ya estaba escrita en CLAUDE.md como una de las tres diferencias
+   medidas contra Vento; nadie había notado que **no tenía columna**.
+
+Las dos aparecieron **al enumerar columnas**, no al leer nombres — mismo método que los cuatro
+casos del corolario de clasificación. Ninguna bloquea el re-skin: el design system ya tiene el
+estado `sin dato` para el cupo, y la fila se arma con las columnas que existen.
