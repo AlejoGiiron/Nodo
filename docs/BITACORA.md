@@ -2254,3 +2254,59 @@ sobre 18.000). El título es un nombre; la aserción es la cosa. Ya estaba escri
 - El límite de diez minutos del comando en segundo plano casi corta la cadena a mitad de un mutante
   (duró 10 min 29 s). El `finally` no corre si matan el proceso: por eso el script de recuperación se
   escribió **antes** de que hiciera falta.
+
+
+## 2026-09-02 · Cierre de la Fase A — cinco auditorías, y cuántas veces cada regla atajó algo
+
+*`docs/auditorias/A1` a `A5`. Ninguna modificó código; cada una produjo un documento y sus deudas. Este
+cierre es el argumento medido de por qué las reglas se leen antes: no son estilo, son las que
+encontraron lo que 189 tests verdes no vieron.*
+
+### Lo que encontró cada una, en una línea
+
+| | hallazgo | lo vio la suite |
+|---|---|---|
+| **A1** pérdida silenciosa | 4 escrituras que persisten un cálculo hecho sobre un default vacío; la peor se reimprime sin recomputar | no |
+| **A2** negación de policies | 828/828 en tablas, 36/36 en vistas — y **tres cruces por RPC y por traslado de sede**: un desactivado escribe en la organización de otro cliente | no |
+| **A3** rótulos que afirman | el ticket declara un IVA que no existe en ningún dato; dos definiciones de "ventas" en la misma pantalla y en dos Excel; el sobrante sigue verde donde se decide | no |
+| **A4** mutación | 5 de 10 mutantes mueren con rojos que dirigen; **el contrato de utilidades no tiene un solo test**; `pos.spec` acoplado a un residuo | no (es la suite) |
+| **A5** estado en los documentos | 17 afirmaciones falsas en ~107; tres pares contradictorios en `CLAUDE.md`; el contrato R1-6 violado con la 43 | no puede |
+
+Dos de las cinco encontraron algo que **sale del producto en papel** (A3: IVA y Excel; A2 indirectamente:
+el arqueo). Eso reordenó la Fase B.
+
+### El conteo — enumerado, no estimado
+
+Cada fila es una vez que la regla **cambió el resultado**: sin ella, la auditoría habría concluido otra
+cosa. Las citas van al documento donde está la evidencia.
+
+| regla / técnica | veces | dónde |
+|---|---|---|
+| **Predicción escrita antes de medir** | 5 usos · **atajó 4** | A1 (el grep sin `<T>`: la 54 *tenía* que aparecer y dio cero) · A3 (el sobrante, predicho "corregido", apareció abierto) · A4 (M5: predije por el título y el cuerpo era otro) · A5 (subestimé 10–15 → 17; y la forma —pares contradictorios— no estaba prevista). A2 la usó como **anticipación**: los tres cruces estaban escritos antes de correr |
+| **Control negativo** | **10** | A1 ×1 (la 54 debe aparecer) · A2 ×4 (111 permisos donde se esperaban; la fixture contada como postgres 46/46; las vistas 8/8; `seed_system_roles` → 42501) · A3 ×2 (la 53 y el sobrante tenían que aparecer) · A4 ×2 (la base verde antes de mutar — y no lo estaba; el revert verificado por un segundo script) · A5 ×1 (la 43 cerrada en todo documento). *El dueño contó 7; la diferencia son las tres verificaciones de fixture y vistas de A2, que cuento porque cada una podía salir mal y una de ellas destapó una omisión mía.* |
+| **R9** · el exit code que te muestran no es el que pensás | 1 en las auditorías (**4 en el día**, según el registro del dueño) | A4 §1.3: la notificación de la base dijo "exit 0"; el `exit=1` estaba dentro del archivo, y cinco rojos con él |
+| **R8** · artefactos antes de re-correr | 1 | A4 §1.2: los cinco rojos de `pos.spec` se diagnosticaron con `error-context.md` y una consulta a la base, no re-corriendo: `AV Insumo` precio 0 |
+| **R4** · contra la cosa real, no el proxy | 4 | A2 (policies leídas de `pg_policies`, no de las migraciones) · A3 (el archivo contra la bitácora: el sobrante) · A4 (el revert contra los originales, no contra el arnés) · A5 (entera: 17 contra código, base y suite) |
+| **R10** · mutación | 2 | A4 (los diez) · A3 (`toHaveText('0')`: la aserción endurecida es la que mató a M5) |
+| **R3** · clase, no instancia | 3 | A1 (cuatro rojos, una forma) · A2 (tres sitios del `<>` con NULL, uno tapado) · A4 (M7 y la 63: la misma columna sin usar y sin probar) |
+| **R1** · contrato compartido | 2 | A3 (la 53 vive en KPI, gráfico, tabla y Excel) · A5 (la tabla de `sentry.test.ts` sin las columnas de la 43: el punto 6 violado) |
+| **Enumerar antes de contar** | 4 | A1 (222 hits listados) · A3 (186 colores con su condición; y las 4 cabeceras que el grep de `<th>` no veía) · A4 (las anclas validadas en seco) · A5 (~107 afirmaciones) |
+| **Una herramienta propia que funcionó N veces está sin refutar** | 3 fallas cazadas | A2 (la fixture, dos veces: leí el error del índice con una hipótesis puesta) · A4 (el script de recuperación no traía `has_permission`) |
+| **Clasificar por el nombre no es clasificar** | 1, en contra | A4 M5 |
+| **Nuevas, salidas de la Fase A** | 4 | *un guard que no evalúa deja pasar* (A2) · *una escritura no existe hasta que todos sus insumos hayan cargado* (A1) · *"corregido" se verifica enumerando los sitios* (A3) · *una afirmación de estado se reemplaza, nunca se agrega* (A5) |
+
+**Treinta y cuatro veces en cinco auditorías** una regla escrita cambió lo que se habría concluido. Y
+las dos que más atajaron —la predicción escrita y el control negativo— son las dos que **cuestan una
+línea antes de empezar** y no se pueden agregar después.
+
+### Lo que la Fase A dice del método
+
+- **Cada auditoría encontró algo que 189 tests verdes no vieron**, y en tres de las cinco lo que
+  encontró estaba escrito en un documento como resuelto o como imposible. Una suite verde mide lo que
+  alguien escribió que midiera; una nota en pasado mide lo que alguien recordó.
+- **Las auditorías se leen unas a otras.** A4 midió con un mutante (M9) lo que A2 había medido con la
+  sonda; A5 encontró la 24 vencida porque A2 había leído `pg_policies`; A3 encontró el sobrante porque
+  el plan exigía que apareciera. El orden importó.
+- **Dos hallazgos son sobre nosotros**, y los dos salieron de la última: el par contradictorio nace del
+  append, y la columna que falta en `sentry.test.ts` nace de leer una regla y no ejecutarla en la misma
+  sesión. Ninguna regla nueva los arregla; los arregla el `grep` antes de guardar.
