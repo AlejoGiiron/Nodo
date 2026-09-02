@@ -314,7 +314,7 @@ export function FiadoPage() {
           §4. Ver el porqué en src/components/ui/PageHeader.tsx. */}
       <PageHeader
         titulo="Fiado"
-        descripcion="por cobrar y clientes"
+        descripcion="cuentas por cobrar y clientes, por sede"
         accion={tab === 'customers'
           ? <Button data-testid="new-customer-btn" onClick={() => setEditCustomer('new')}><Plus size={15} /> Nuevo cliente</Button>
           : undefined}

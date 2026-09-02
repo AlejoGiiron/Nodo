@@ -131,10 +131,10 @@ export function MovementsModal({ onClose }: MovementsModalProps) {
 
   const inputStyle: React.CSSProperties = {
     width: '100%', padding: '10px 13px',
-    border: '1.5px solid #e5e7eb', borderRadius: 9,
-    fontSize: 14, color: '#0f172a', outline: 'none',
-    fontFamily: 'Inter, system-ui, sans-serif',
-    boxSizing: 'border-box', background: '#fff',
+    border: '1.5px solid var(--border)', borderRadius: 9,
+    fontSize: 14, color: 'var(--ink)', outline: 'none',
+    fontFamily: 'inherit',
+    boxSizing: 'border-box', background: 'var(--surface)',
     transition: 'border .12s',
   }
 
@@ -142,31 +142,31 @@ export function MovementsModal({ onClose }: MovementsModalProps) {
     <div
       style={{
         position: 'fixed', inset: 0,
-        background: 'rgba(15,23,42,.55)',
+        background: 'var(--overlay)',
         display: 'grid', placeItems: 'center',
-        zIndex: 50, fontFamily: 'Inter, system-ui, sans-serif',
+        zIndex: 50, fontFamily: 'inherit',
         padding: '20px',
       }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div style={{
-        background: '#fff', borderRadius: 14,
+        background: 'var(--surface)', borderRadius: 14,
         width: 500, maxWidth: '100%',
-        boxShadow: '0 25px 50px -12px rgba(0,0,0,.25)',
+        boxShadow: 'var(--shadow-1)',
         overflow: 'hidden', maxHeight: '92vh',
         display: 'flex', flexDirection: 'column',
       }}>
         {/* Header */}
         <div style={{
-          padding: '18px 22px', borderBottom: '1px solid #f1f5f9',
+          padding: '18px 22px', borderBottom: '1px solid var(--border-2)',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           flexShrink: 0,
         }}>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: '#10b981', textTransform: 'uppercase', letterSpacing: 1 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--action)', textTransform: 'uppercase', letterSpacing: 1 }}>
               Caja
             </div>
-            <div style={{ fontSize: 17, fontWeight: 700, color: '#0f172a', letterSpacing: -0.3, marginTop: 1 }}>
+            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--ink)', letterSpacing: -0.3, marginTop: 1 }}>
               Movimientos manuales
             </div>
           </div>
@@ -175,8 +175,8 @@ export function MovementsModal({ onClose }: MovementsModalProps) {
             onClick={onClose}
             style={{
               width: 32, height: 32, borderRadius: 8,
-              background: '#f1f5f9', border: 'none',
-              cursor: 'pointer', color: '#64748b',
+              background: 'var(--border-2)', border: 'none',
+              cursor: 'pointer', color: 'var(--ink-3)',
               display: 'grid', placeItems: 'center',
             }}
           >
@@ -189,7 +189,7 @@ export function MovementsModal({ onClose }: MovementsModalProps) {
 
           {/* New movement form */}
           <form onSubmit={handleAdd} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: '#334155' }}>Registrar movimiento</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink-2)' }}>Registrar movimiento</div>
 
             {/* Type selector */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
@@ -197,43 +197,43 @@ export function MovementsModal({ onClose }: MovementsModalProps) {
                 type="button"
                 onClick={() => cambiarTipo('in')}
                 style={{
-                  padding: '10px 12px', border: `2px solid ${type === 'in' ? '#10b981' : '#e5e7eb'}`,
-                  borderRadius: 9, background: type === 'in' ? '#ecfdf5' : '#fff',
+                  padding: '10px 12px', border: `2px solid ${type === 'in' ? 'var(--action)' : 'var(--border)'}`,
+                  borderRadius: 9, background: type === 'in' ? 'var(--action-soft)' : 'var(--surface)',
                   cursor: 'pointer', transition: 'all .12s',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
                   fontSize: 13.5, fontWeight: 600,
-                  color: type === 'in' ? '#065f46' : '#64748b',
+                  color: type === 'in' ? 'var(--success-on-soft)' : 'var(--ink-3)',
                 }}
               >
-                <ArrowDownLeft size={15} color={type === 'in' ? '#10b981' : '#94a3b8'} />
+                <ArrowDownLeft size={15} color={type === 'in' ? 'var(--action)' : 'var(--ink-4)'} />
                 Ingreso
               </button>
               <button
                 type="button"
                 onClick={() => cambiarTipo('out')}
                 style={{
-                  padding: '10px 12px', border: `2px solid ${type === 'out' ? '#dc2626' : '#e5e7eb'}`,
-                  borderRadius: 9, background: type === 'out' ? '#fef2f2' : '#fff',
+                  padding: '10px 12px', border: `2px solid ${type === 'out' ? 'var(--danger)' : 'var(--border)'}`,
+                  borderRadius: 9, background: type === 'out' ? 'var(--danger-soft)' : 'var(--surface)',
                   cursor: 'pointer', transition: 'all .12s',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
                   fontSize: 13.5, fontWeight: 600,
-                  color: type === 'out' ? '#991b1b' : '#64748b',
+                  color: type === 'out' ? 'var(--danger-on-soft)' : 'var(--ink-3)',
                 }}
               >
-                <ArrowUpRight size={15} color={type === 'out' ? '#dc2626' : '#94a3b8'} />
+                <ArrowUpRight size={15} color={type === 'out' ? 'var(--danger)' : 'var(--ink-4)'} />
                 Egreso
               </button>
             </div>
 
             {/* Amount */}
             <div>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#334155', marginBottom: 6 }}>
-                Monto <span style={{ color: '#dc2626' }}>*</span>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--ink-2)', marginBottom: 6 }}>
+                Monto <span style={{ color: 'var(--danger)' }}>*</span>
               </label>
               <div style={{ position: 'relative' }}>
                 <div style={{
                   position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)',
-                  color: '#94a3b8', pointerEvents: 'none',
+                  color: 'var(--ink-4)', pointerEvents: 'none',
                 }}>
                   <DollarSign size={13} />
                 </div>
@@ -244,25 +244,25 @@ export function MovementsModal({ onClose }: MovementsModalProps) {
                   value={rawAmount ? formatCOP(amount).replace('$', '').trim() : ''}
                   onChange={(e) => { setRawAmount(e.target.value.replace(/\D/g, '')); setOverdraftPending(false) }}
                   placeholder="0"
-                  style={{ ...inputStyle, paddingLeft: 30, fontFamily: 'monospace', fontSize: 15, fontWeight: 600 }}
-                  onFocus={(e) => { e.currentTarget.style.borderColor = '#10b981' }}
-                  onBlur={(e) => { e.currentTarget.style.borderColor = '#e5e7eb' }}
+                  style={{ ...inputStyle, paddingLeft: 30, fontVariantNumeric: 'tabular-nums', fontSize: 15, fontWeight: 600 }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--action)' }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)' }}
                 />
               </div>
             </div>
 
             {/* Categoria — ALLOWLIST cruzada con el tipo */}
             <div>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#334155', marginBottom: 6 }}>
-                Categoría <span style={{ color: '#dc2626' }}>*</span>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--ink-2)', marginBottom: 6 }}>
+                Categoría <span style={{ color: 'var(--danger)' }}>*</span>
               </label>
               <select
                 data-testid="movement-categoria"
                 value={categoria}
                 onChange={(e) => setCategoria(e.target.value)}
                 style={{ ...inputStyle, cursor: 'pointer', appearance: 'auto' }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = '#10b981' }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = '#e5e7eb' }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--action)' }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)' }}
               >
                 <option value="" disabled>Selecciona una categoría...</option>
                 {categorias.map((c) => (
@@ -273,11 +273,11 @@ export function MovementsModal({ onClose }: MovementsModalProps) {
 
             {/* Detalle libre. Obligatorio SOLO en 'otro' (chk_otro_exige_detalle) */}
             <div>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#334155', marginBottom: 6 }}>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--ink-2)', marginBottom: 6 }}>
                 Detalle{' '}
                 {categoria === CATEGORIA_OTRO
-                  ? <span style={{ color: '#dc2626' }}>*</span>
-                  : <span style={{ color: '#94a3b8', fontWeight: 500 }}>(opcional)</span>}
+                  ? <span style={{ color: 'var(--danger)' }}>*</span>
+                  : <span style={{ color: 'var(--ink-4)', fontWeight: 500 }}>(opcional)</span>}
               </label>
               <input
                 type="text"
@@ -291,8 +291,8 @@ export function MovementsModal({ onClose }: MovementsModalProps) {
                     : 'Ej: proveedor, factura, quién lo pidió...'
                 }
                 style={inputStyle}
-                onFocus={(e) => { e.currentTarget.style.borderColor = '#10b981' }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = '#e5e7eb' }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--action)' }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)' }}
               />
               {type === 'out' && sugerencias.length > 0 && (
                 <datalist id="sugerencias-egreso">
@@ -307,16 +307,16 @@ export function MovementsModal({ onClose }: MovementsModalProps) {
                 data-testid="overdraft-warning"
                 style={{
                   padding: '12px 14px', borderRadius: 9,
-                  background: '#fef2f2', border: '1px solid #fecaca',
+                  background: 'var(--danger-soft)', border: '1px solid var(--danger-soft)',
                   display: 'flex', alignItems: 'flex-start', gap: 9,
                 }}
               >
-                <AlertTriangle size={16} color="#dc2626" style={{ flexShrink: 0, marginTop: 1 }} />
+                <AlertTriangle size={16} color="var(--danger)" style={{ flexShrink: 0, marginTop: 1 }} />
                 <div>
-                  <div style={{ fontSize: 12.5, fontWeight: 700, color: '#991b1b' }}>
+                  <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--danger-on-soft)' }}>
                     Este egreso supera el efectivo disponible
                   </div>
-                  <div style={{ fontSize: 11.5, color: '#b91c1c', marginTop: 2, lineHeight: 1.5 }}>
+                  <div style={{ fontSize: 11.5, color: 'var(--danger-on-soft)', marginTop: 2, lineHeight: 1.5 }}>
                     Disponible en caja: <strong>{formatCOP(cashOnHand)}</strong>. La caja quedará en{' '}
                     <strong data-testid="overdraft-amount">{formatCOP(cashOnHand - amount)}</strong>{' '}
                     (sobregiro de {formatCOP(amount - cashOnHand)}). Vuelve a presionar para
@@ -333,9 +333,9 @@ export function MovementsModal({ onClose }: MovementsModalProps) {
               style={{
                 padding: '10px 16px', border: 'none', borderRadius: 9,
                 background: !isValid || isAddingMovement
-                  ? '#cbd5e1'
-                  : type === 'in' ? '#10b981' : '#dc2626',
-                color: '#fff', fontSize: 13.5, fontWeight: 700,
+                  ? 'var(--ink-4)'
+                  : type === 'in' ? 'var(--action)' : 'var(--danger)',
+                color: 'var(--surface)', fontSize: 13.5, fontWeight: 700,
                 cursor: !isValid || isAddingMovement ? 'not-allowed' : 'pointer',
                 boxShadow: !isValid || isAddingMovement ? 'none'
                   : type === 'in'
@@ -355,7 +355,7 @@ export function MovementsModal({ onClose }: MovementsModalProps) {
           {/* Movements list */}
           {movements.length > 0 && (
             <div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink-4)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
                 Movimientos del turno
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -366,14 +366,14 @@ export function MovementsModal({ onClose }: MovementsModalProps) {
                     style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                       padding: '10px 14px', borderRadius: 9,
-                      background: m.type === 'in' ? '#f0fdf4' : '#fef2f2',
-                      border: `1px solid ${m.type === 'in' ? '#bbf7d0' : '#fecaca'}`,
+                      background: m.type === 'in' ? 'var(--success-soft)' : 'var(--danger-soft)',
+                      border: `1px solid ${m.type === 'in' ? 'var(--success-border)' : 'var(--danger-soft)'}`,
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       {m.type === 'in'
-                        ? <ArrowDownLeft size={14} color="#10b981" />
-                        : <ArrowUpRight size={14} color="#dc2626" />
+                        ? <ArrowDownLeft size={14} color="var(--action)" />
+                        : <ArrowUpRight size={14} color="var(--danger)" />
                       }
                       <div>
                         {/* 🔴 La CATEGORIA primero, el detalle despues. Antes se
@@ -383,18 +383,18 @@ export function MovementsModal({ onClose }: MovementsModalProps) {
                             dato que decidimos que fuera la fuente de los
                             reportes: no mostrarlo dejaba la lista diciendo menos
                             que la base. Lo destapo un test E2E. */}
-                        <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>
                           {etiquetaCategoria(m.categoria)}
                           {m.reason ? ` · ${m.reason}` : ''}
                         </div>
-                        <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>
+                        <div style={{ fontSize: 11, color: 'var(--ink-4)', marginTop: 1 }}>
                           {formatTime(m.created_at)}
                         </div>
                       </div>
                     </div>
                     <span style={{
-                      fontFamily: 'monospace', fontWeight: 700, fontSize: 13.5,
-                      color: m.type === 'in' ? '#059669' : '#dc2626',
+                      fontVariantNumeric: 'tabular-nums', fontWeight: 700, fontSize: 13.5,
+                      color: m.type === 'in' ? 'var(--success-700)' : 'var(--danger)',
                     }}>
                       {m.type === 'in' ? '+' : '−'} {formatCOP(m.amount)}
                     </span>
@@ -405,7 +405,7 @@ export function MovementsModal({ onClose }: MovementsModalProps) {
           )}
 
           {movements.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '20px 0', color: '#94a3b8', fontSize: 13 }}>
+            <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--ink-4)', fontSize: 13 }}>
               Sin movimientos manuales en este turno
             </div>
           )}

@@ -346,7 +346,7 @@ export function InventoryPage() {
       {/* Tercera pantalla con el patrón: sin eyebrow, --fs-head, tabs del §4. */}
       <PageHeader
         titulo="Inventario"
-        descripcion="existencias y movimientos"
+        descripcion="existencias y movimientos, por sede"
         accion={
           <Button data-testid="inventory-adjust-btn" onClick={() => openAdjust(null)}>
             <Plus size={15} /> Ajuste manual

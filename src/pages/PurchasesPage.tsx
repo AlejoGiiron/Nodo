@@ -156,7 +156,7 @@ export function PurchasesPage() {
           encabezado ubica, no compite con el contenido. */}
       <PageHeader
         titulo="Compras"
-        descripcion="facturas de proveedor"
+        descripcion="facturas de proveedor y proveedores, por sede"
         accion={tab === 'invoices'
           ? <Button data-testid="new-invoice-btn" onClick={() => setInvoiceOpen(true)}><Plus size={15} /> Registrar compra</Button>
           : <Button data-testid="new-supplier-btn" onClick={() => setEditSupplier('new')}><Plus size={15} /> Nuevo proveedor</Button>}

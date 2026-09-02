@@ -132,7 +132,7 @@ export function CloseShiftModal({ onClose }: CloseShiftModalProps) {
     <div
       style={{
         position: 'fixed', inset: 0,
-        background: 'rgba(15,23,42,.55)',
+        background: 'var(--overlay)',
         display: 'grid', placeItems: 'center',
         zIndex: 50, fontFamily: 'inherit',
         padding: '20px',
@@ -142,7 +142,7 @@ export function CloseShiftModal({ onClose }: CloseShiftModalProps) {
       <div style={{
         background: 'var(--surface)', borderRadius: 14,
         width: 520, maxWidth: '100%',
-        boxShadow: '0 25px 50px -12px rgba(0,0,0,.25)',
+        boxShadow: 'var(--shadow-1)',
         overflow: 'hidden', maxHeight: '92vh',
         display: 'flex', flexDirection: 'column',
       }}>
@@ -283,7 +283,7 @@ export function CloseShiftModal({ onClose }: CloseShiftModalProps) {
                 style={inputStyle}
                 onFocus={(e) => {
                   e.currentTarget.style.borderColor = 'var(--success-700)'
-                  e.currentTarget.style.background = '#fff'
+                  e.currentTarget.style.background = 'var(--surface)'
                 }}
                 onBlur={(e) => {
                   e.currentTarget.style.borderColor = 'var(--border)'
@@ -395,14 +395,18 @@ export function CloseShiftModal({ onClose }: CloseShiftModalProps) {
               <span style={{ color: 'var(--ink-4)' }}>Declarado total</span>
               <span style={{ fontVariantNumeric: 'tabular-nums', color: 'var(--border)' }}>{formatCOP(declaredTotal)}</span>
             </div>
-            {/* ⚠️ #34d399 / #f87171 se quedan como hexes A PROPÓSITO: son verde y
-                rojo SOBRE TINTA, y la skill define solo cuatro tokens on-dark
-                (--on-dark-2/3/fill/warn). No hay --success ni --danger sobre
-                oscuro, y §8 dice que lo que no está no se infiere. Se piden
-                cuando el arqueo tenga su turno. */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 700, borderTop: '1px solid var(--on-dark-fill)', paddingTop: 7, marginTop: 1, color: '#fff' }}>
+            {/* ⚠️ #34d399 (cuadrado) y #f87171 (faltante) se quedan como hexes A
+                PROPÓSITO: son verde y rojo SOBRE TINTA, y la skill define solo
+                cuatro tokens on-dark. No hay --success ni --danger sobre
+                oscuro, y §8 dice que lo que no está no se infiere.
+                ✅ El SOBRANTE sí pasó a token: `--on-dark-warn` es exactamente
+                "texto del aviso sobre tinta", y un sobrante ES una advertencia
+                — la caja no cuadra. Estaba en el mismo verde que el cuadre, o
+                sea que el color decía "bien hecho" cuando falta explicar de
+                dónde salió esa plata. */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 700, borderTop: '1px solid var(--on-dark-fill)', paddingTop: 7, marginTop: 1, color: 'var(--surface)' }}>
               <span>Diferencia total</span>
-              <span style={{ fontVariantNumeric: 'tabular-nums', color: differenceTotal === 0 ? '#34d399' : differenceTotal > 0 ? '#34d399' : '#f87171' }}>
+              <span style={{ fontVariantNumeric: 'tabular-nums', color: differenceTotal === 0 ? '#34d399' : differenceTotal > 0 ? 'var(--on-dark-warn)' : '#f87171' }}>
                 {differenceTotal >= 0 ? '+' : ''}{formatCOP(differenceTotal)}
               </span>
             </div>
@@ -414,7 +418,7 @@ export function CloseShiftModal({ onClose }: CloseShiftModalProps) {
         <div style={{
           padding: '16px 22px', borderTop: '1px solid var(--border-2)',
           display: 'flex', gap: 10, flexShrink: 0,
-          background: 'linear-gradient(180deg, var(--surface-2) 0%, #fff 100%)',
+          background: 'linear-gradient(180deg, var(--surface-2) 0%, var(--surface) 100%)',
         }}>
           <button
             type="button"
@@ -436,7 +440,7 @@ export function CloseShiftModal({ onClose }: CloseShiftModalProps) {
               background: !canClose || isClosingShift ? 'var(--ink-4)' : 'var(--ink)',
               borderRadius: 9,
               cursor: !canClose || isClosingShift ? 'not-allowed' : 'pointer',
-              fontSize: 13.5, fontWeight: 700, color: '#fff',
+              fontSize: 13.5, fontWeight: 700, color: 'var(--surface)',
               transition: 'all .15s',
             }}
           >

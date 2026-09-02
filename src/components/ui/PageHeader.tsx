@@ -36,9 +36,23 @@ export function PageHeader({
   tabActivo,
   onTab,
 }: {
-  /** En CAJA DE ORACIÓN (§5): "Despachos del día", no "DESPACHOS DEL DÍA". */
+  /**
+   * En CAJA DE ORACIÓN (§5): "Despachos del día", no "DESPACHOS DEL DÍA".
+   *
+   * 🔴 Y ES EL TÍTULO QUE YA TENÍA LA PANTALLA, no uno más corto. Un título
+   *    es INFORMACIÓN, no estilo: acortarlo es un cambio de producto colado en
+   *    un cambio visual. Un re-skin es la misma información con el design
+   *    system nuevo — la misma línea que hace que no se agreguen KPI ni
+   *    columnas de paso. (Medido: acorté "Historial de turnos" a "Turnos" y un
+   *    spec lo cazó.)
+   */
   titulo: string
-  /** Va en la misma línea, en gris: dice qué es la pantalla, no la repite. */
+  /**
+   * Va en la misma línea, en gris: dice qué es la pantalla, no la repite.
+   * ⚠️ Mismo criterio que el título: se puede acortar la redacción, no quitar
+   * información. El "por sede" de estas pantallas dice el ALCANCE de lo que se
+   * está mirando, que en un producto multi-sede no es relleno.
+   */
   descripcion?: string
   /** La acción primaria de la pantalla, alineada a la derecha. */
   accion?: ReactNode
