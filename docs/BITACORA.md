@@ -1716,3 +1716,37 @@ La primera corrida (parcial, hace unas horas): **59 pasados / 15 fallados / 43 s
 en el test 117, con el lab sucio y sin extras. Ésta: **156 / 4 / 17**, completa, con la cuenta
 cerrada. La diferencia no fue arreglar 15 tests: fue el seed, la purga, dos columnas muertas, un
 contrato jsonb, los testids del modal nuevo, y dos specs cuyo modelo estaba invertido.
+
+
+---
+
+## 2026-09-01 · P2: UN caso con TRES síntomas — todo lo que depende de leer la fila propia falla hacia el silencio
+
+Tres hallazgos de la misma sesión que se registraron por separado y son **el mismo defecto**:
+
+| Síntoma | Dónde apareció |
+|---|---|
+| El trigger de auto-reactivación nunca dispara (0 filas, sin excepción) | sonda SQL |
+| El test que exigía el mensaje del trigger recibía silencio | `rbac-escalada.spec` |
+| La pantalla "Tu usuario está desactivado" era código muerto para su propio caso | `AuthContext` |
+
+**La raíz, en una frase:** P2 hace que un desactivado pierda `get_my_organization_id()`, y la policy
+de SELECT de `profiles` usa esa función — así que el desactivado **no puede ver su propia fila**. Y
+todo lo que depende de LEERLA falla hacia el silencio:
+
+- el **guard** no puede dispararse (el UPDATE escanea 0 filas — nunca llega al trigger);
+- el **mensaje** del guard no puede emitirse (es parte del guard);
+- el **corte de sesión con explicación** no puede ejecutarse (para leer `is_active=false` hay que
+  ver la fila; `.single()` da 0 filas y el código toma la rama de "hipo transitorio").
+
+⚠️ **La forma general, que es lo que vale retener:** una policy de visibilidad no solo oculta datos —
+**oculta la evidencia que otros mecanismos necesitan para hablar**. Guard, mensaje y UX eran tres
+capas de defensa en profundidad, y una sola policy las silenció a las tres **a la vez**, porque las
+tres leían la misma fila. Defensa en profundidad con un único punto de lectura no es profundidad.
+
+Verificado también en Vento: forma idéntica de policies+funciones → **el mismo defecto está en
+producción allá** — un usuario desactivado entra a una app en blanco. NO se arregla allá desde acá:
+es corrección y va a los dos repos (R1 punto 9), en su turno.
+
+En Nodo la tercera capa (UX) quedó restaurada del lado del cliente; la voz del guard en la base es
+la deuda #39, post-MVP.
