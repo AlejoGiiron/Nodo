@@ -29,6 +29,10 @@ import { stockStatus, esAlertaDeStock } from '@/lib/stockStatus'
 import type { ProductWithCategory, CartItem, DiscountType, HeldOrder } from '@/stores/cartStore'
 import type { Enums } from '@/types/database.types'
 import { mensajeDeError } from '@/lib/errores'
+import { Button } from '@/components/ui/Button'
+import { formatoCOP } from '@/lib/formato'
+import { MoneyCell } from '@/components/ui/MoneyCell'
+import { Input } from '@/components/ui/Input'
 
 // Canal: por donde ENTRO el pedido. Espeja el CHECK de orders.canal — si acá
 // se agrega un valor sin ampliar el CHECK, el insert falla RUIDOSO, que es lo
@@ -339,21 +343,29 @@ function CartLine({ item, index, noting, onToggleNote, hasExtras, onEditExtras }
           }}>
             {item.product.name}
           </div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', fontFamily: 'monospace', flexShrink: 0 }}>
-            {formatCOP(cartItemTotal(item))}
-          </div>
+          <MoneyCell
+            value={cartItemTotal(item)}
+            style={{ fontSize: 14, fontWeight: 700, flexShrink: 0 }}
+          />
         </div>
-        <div style={{ fontSize: 11.5, color: '#94a3b8', fontFamily: 'monospace', marginTop: 2 }}>
-          {formatCOP(item.product.price)} c/u
+        <div style={{ fontSize: 11.5, color: 'var(--ink-4)', marginTop: 2 }}>
+          <MoneyCell
+            value={item.product.price}
+            style={{ fontSize: 11.5, fontWeight: 400, color: 'var(--ink-4)' }}
+          />{' '}
+          c/u
         </div>
 
         {/* Extras del ítem */}
         {item.extras.length > 0 && (
           <div data-testid="cart-item-extras" style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 2 }}>
             {item.extras.map((ex) => (
-              <div key={ex.extra_id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: '#065f46' }}>
+              <div key={ex.extra_id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: 'var(--success-on-soft)' }}>
                 <span>+ {ex.name} ×{ex.qty}</span>
-                <span style={{ fontFamily: 'monospace' }}>{formatCOP(ex.price * ex.qty * item.qty)}</span>
+                <MoneyCell
+                  value={ex.price * ex.qty * item.qty}
+                  style={{ fontSize: 11.5, fontWeight: 400, color: 'var(--success-on-soft)' }}
+                />
               </div>
             ))}
           </div>
@@ -397,8 +409,8 @@ function CartLine({ item, index, noting, onToggleNote, hasExtras, onEditExtras }
               {item.qty === 1 ? <Trash size={13} /> : <Minus size={13} />}
             </button>
             <div style={{
-              minWidth: 32, textAlign: 'center', fontFamily: 'monospace',
-              fontWeight: 700, fontSize: 14, color: '#0f172a',
+              minWidth: 32, textAlign: 'center', fontVariantNumeric: 'tabular-nums',
+              fontWeight: 700, fontSize: 14, color: 'var(--ink)',
             }}>
               {item.qty}
             </div>
@@ -429,17 +441,23 @@ function CartLine({ item, index, noting, onToggleNote, hasExtras, onEditExtras }
 }
 
 // ─── Total row ───────────────────────────────────────────────────
-function TotalRow({ label, value, color, muted }: {
-  label: string; value: number; color?: string; muted?: boolean
+// Vive DENTRO del panel de cobro, que va sobre --ink: por eso los colores son
+// los tokens --on-dark-*, los únicos permitidos encima de la tinta (§1.2).
+// La monoespaciada se fue: las cifras se alinean con tabular-nums (§2).
+function TotalRow({ label, value, tono = 'normal' }: {
+  label: string; value: number; tono?: 'normal' | 'apagado'
 }) {
   return (
     <div style={{
       display: 'flex', justifyContent: 'space-between', fontSize: 12.5, padding: '3px 0',
-      color: muted ? '#94a3b8' : (color ?? '#475569'),
+      color: 'var(--on-dark-2)',
     }}>
       <span>{label}</span>
-      <span style={{ fontFamily: 'monospace', fontWeight: 500 }}>
-        {value < 0 ? '-' : ''}{formatCOP(Math.abs(value))}
+      <span style={{
+        fontVariantNumeric: 'tabular-nums', fontWeight: 500,
+        color: tono === 'apagado' ? 'var(--on-dark-2)' : 'var(--on-dark-3)',
+      }}>
+        {value < 0 ? '-' : ''}{formatoCOP(Math.abs(value))}
       </span>
     </div>
   )
@@ -728,74 +746,74 @@ function CartPanel({
       </div>
       )}
 
-      {/* Totals */}
-      <div style={{ padding: '10px 22px', borderTop: '1px solid #f1f5f9' }}>
-        <TotalRow label="Subtotal" value={subtotal} />
-        {discountAmt > 0 && (
-          <TotalRow
-            label={`Descuento${discountType === 'pct' ? ` (${discount}%)` : ''}`}
-            value={-discountAmt}
-            color="#dc2626"
-          />
-        )}
-        <TotalRow label="IVA 19% (incluido)" value={iva} muted />
+      {/* ── En espera ─────────────────────────────────────────────────────
+          Queda AFUERA del panel de cobro, sobre superficie clara. La maqueta
+          pone en la tinta solo lo que lleva a cobrar; y un secundario sobre
+          --ink necesitaría un token de borde on-dark que la skill no define
+          (§8: lo que no está, se pregunta). No se inventa. */}
+      <div style={{ padding: '12px 22px 0' }}>
+        <Button
+          variant="secondary"
+          size="sm"
+          block
+          disabled={items.length === 0}
+          onClick={onHold}
+          title="Poner la venta en espera"
+        >
+          <Pause size={15} /> En espera
+        </Button>
       </div>
 
-      {/* Total + Cobrar */}
-      <div style={{
-        padding: '16px 22px 20px',
-        background: 'linear-gradient(180deg, #f8fafc 0%, #ffffff 100%)',
-        borderTop: '1px solid #e5e7eb',
-      }}>
+      {/* ── Panel de cobro ────────────────────────────────────────────────
+          Sobre --ink, con los tokens --on-dark-*. El total a cobrar es el
+          ÚNICO número grande del producto (regla 7.4, --fs-total 44/700):
+          todo lo demás es información de trabajo, no un tablero. */}
+      <div style={{ padding: '12px 22px 20px' }}>
         <div style={{
-          display: 'flex', justifyContent: 'space-between',
-          alignItems: 'baseline', marginBottom: 12,
+          background: 'var(--ink)', borderRadius: 'var(--r-3)', padding: 16,
         }}>
-          <span style={{ fontSize: 14, fontWeight: 600, color: '#0f172a' }}>Total</span>
-          <span
-            data-testid="cart-total"
-            style={{
-              fontSize: 30, fontWeight: 700, color: '#0f172a',
-              fontFamily: 'monospace', letterSpacing: -0.8,
-            }}
-          >
-            {formatCOP(total)}
-          </span>
-        </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button
-            disabled={items.length === 0}
-            onClick={onHold}
-            title="Poner la venta en espera"
-            style={{
-              flexShrink: 0, padding: '15px 16px',
-              background: '#fff',
-              border: `1.5px solid ${items.length === 0 ? '#e5e7eb' : '#fde68a'}`,
-              borderRadius: 10,
-              cursor: items.length === 0 ? 'not-allowed' : 'pointer',
-              fontSize: 14, fontWeight: 700,
-              color: items.length === 0 ? '#cbd5e1' : '#854d0e',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-            }}
-          >
-            <Pause size={16} /> En espera
-          </button>
-          <button
+          <TotalRow label="Subtotal" value={subtotal} />
+          {discountAmt > 0 && (
+            <TotalRow
+              label={`Descuento${discountType === 'pct' ? ` (${discount}%)` : ''}`}
+              value={-discountAmt}
+            />
+          )}
+          <TotalRow label="IVA 19% (incluido)" value={iva} tono="apagado" />
+
+          <div style={{
+            display: 'flex', justifyContent: 'space-between',
+            alignItems: 'baseline', gap: 10, margin: '10px 0 14px',
+          }}>
+            <span style={{
+              fontSize: 11, fontWeight: 600, letterSpacing: '.04em',
+              textTransform: 'uppercase', color: 'var(--on-dark-2)',
+            }}>
+              Total a cobrar
+            </span>
+            <span
+              data-testid="cart-total"
+              style={{
+                fontSize: 44, fontWeight: 700, color: '#fff',
+                fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.03em',
+                lineHeight: 1,
+              }}
+            >
+              {formatoCOP(total)}
+            </span>
+          </div>
+
+          {/* "Cobrar — F12" es la ÚNICA tecla impresa del producto (§5): el
+              atajo que la cajera usa cientos de veces al día es el que
+              justifica la excepción a "los atajos no se imprimen". */}
+          <Button
+            size="pos"
+            block
             disabled={items.length === 0}
             onClick={onCheckout}
-            style={{
-              flex: 1, padding: '15px 16px',
-              background: items.length === 0 ? '#cbd5e1' : '#10b981',
-              border: 'none', borderRadius: 10,
-              cursor: items.length === 0 ? 'not-allowed' : 'pointer',
-              fontSize: 15, fontWeight: 700, color: '#fff',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              boxShadow: items.length === 0 ? 'none' : '0 6px 16px rgba(16,185,129,.35)',
-              letterSpacing: 0.2,
-            }}
           >
-            Cobrar <ChevronRight size={17} strokeWidth={2.5} />
-          </button>
+            Cobrar — F12
+          </Button>
         </div>
       </div>
     </div>
@@ -1147,18 +1165,17 @@ function CheckoutModal({
               <div style={{ fontSize: 11, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5 }}>
                 Efectivo recibido
               </div>
-              <input
+              {/* El estado "POS grande" del Input (§4): 52px, alineado a la
+                  derecha, tabular. La plata se escribe grande porque se cuenta
+                  en voz alta. */}
+              <Input
                 autoFocus
+                inputSize="pos"
                 data-testid="checkout-received"
-                value={received ? formatCOP(receivedNum) : ''}
+                value={received ? formatoCOP(receivedNum) : ''}
                 onChange={(e) => setReceived(e.target.value)}
-                placeholder={formatCOP(total)}
-                style={{
-                  width: '100%', border: 'none', outline: 'none',
-                  fontSize: 32, fontWeight: 700, color: '#0f172a',
-                  fontFamily: 'monospace', padding: '6px 0', letterSpacing: -0.5,
-                  boxSizing: 'border-box',
-                }}
+                placeholder={formatoCOP(total)}
+                style={{ marginTop: 6 }}
               />
               <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
                 {quickAmounts.map((chip) => {

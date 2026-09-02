@@ -57,7 +57,12 @@ test.describe('POS — venta y carrito', () => {
     await page.getByRole('button', { name: 'Cobrar' }).click()
 
     // Paso método: los 4 métodos visibles.
-    await expect(page.getByText('Total a cobrar')).toBeVisible()
+    // Se aserta el testid `checkout-total` y no el texto 'Total a cobrar': desde
+    // el re-skin ese rótulo aparece DOS veces — en el panel de cobro (que sigue
+    // en el DOM detrás del modal) y en el modal —, y getByText en modo estricto
+    // falla con dos coincidencias. El testid ya existía; la aserción no se
+    // debilita, se vuelve específica: dice QUÉ total tiene que estar visible.
+    await expect(page.getByTestId('checkout-total')).toBeVisible()
     for (const m of ['Efectivo', 'Tarjeta', 'Transferencia', 'Nequi / QR']) {
       await expect(page.getByText(m, { exact: true })).toBeVisible()
     }

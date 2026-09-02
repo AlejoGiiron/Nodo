@@ -1,0 +1,139 @@
+/* Primitivas del design system — estados que el estilo inline no puede expresar
+   (:hover, :focus-visible, :disabled, @keyframes).
+
+   Por qué hay un .css acá y el resto de la app usa `style={{}}`: un estado de
+   interacción no es un valor, es una REGLA. Escribirlo con onMouseEnter obliga
+   a re-implementar el estado deshabilitado a mano en cada uso — que es de donde
+   salen los botones que se ven activos y no hacen nada.
+
+   Todos los valores salen de src/tokens.css. Ningún hex literal acá. */
+
+/* ── Button ─────────────────────────────────────────────────────────────── */
+.nodo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid transparent;
+  border-radius: var(--r-2);
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.12s, border-color 0.12s, color 0.12s;
+}
+.nodo-btn:focus-visible {
+  outline: none;
+  border-color: var(--action);
+  box-shadow: 0 0 0 3px var(--action-soft);
+}
+
+.nodo-btn--primary {
+  background: var(--action);
+  color: #fff;
+}
+.nodo-btn--primary:hover:not(:disabled) { background: var(--action-700); }
+.nodo-btn--primary:active:not(:disabled) { background: var(--action-800); }
+
+.nodo-btn--secondary {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--ink-2);
+}
+.nodo-btn--secondary:hover:not(:disabled) { background: var(--surface-2); }
+.nodo-btn--secondary:active:not(:disabled) { background: var(--border-2); }
+
+/* Contorno, no relleno. El relleno sólido --danger se reserva a "Anular compra"
+   (variante `destructive-solid`): si toda acción destructiva grita igual, la
+   que de verdad borra deja de distinguirse. */
+.nodo-btn--destructive {
+  background: var(--surface);
+  border-color: var(--danger-soft);
+  color: var(--danger);
+}
+.nodo-btn--destructive:hover:not(:disabled) { background: var(--danger-soft); }
+
+.nodo-btn--destructive-solid {
+  background: var(--danger);
+  color: #fff;
+}
+.nodo-btn--destructive-solid:hover:not(:disabled) { background: var(--danger-on-soft); }
+
+/* 🔴 Deshabilitado NUNCA se oculta: se apaga y se explica al lado. Un control
+   que desaparece no dice qué falta. */
+.nodo-btn:disabled {
+  background: var(--border-2);
+  border-color: transparent;
+  color: var(--ink-4);
+  cursor: not-allowed;
+}
+
+/* ── Input ──────────────────────────────────────────────────────────────── */
+.nodo-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-2);
+  color: var(--ink);
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+.nodo-input::placeholder { color: var(--ink-4); }
+.nodo-input:focus {
+  border-color: var(--action);
+  box-shadow: 0 0 0 3px var(--action-soft);
+}
+.nodo-input--error {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px var(--danger-soft);
+}
+.nodo-input:disabled {
+  background: var(--border-2);
+  color: var(--ink-4);
+  cursor: not-allowed;
+}
+
+/* ── TenderSelector — vive SOBRE --ink, de ahí los tokens --on-dark-* ────── */
+.nodo-tender {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 52px;
+  flex: 1;
+  border: 1px solid var(--on-dark-fill);
+  border-radius: var(--r-2);
+  background: var(--on-dark-fill);
+  color: var(--on-dark-3);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.12s, border-color 0.12s, color 0.12s;
+}
+.nodo-tender:hover:not(:disabled) { color: #fff; }
+.nodo-tender[aria-pressed='true'] {
+  background: var(--action-700);
+  border-color: var(--action-500);
+  color: #fff;
+}
+.nodo-tender:disabled {
+  opacity: 0.5;
+  color: var(--on-dark-2);
+  cursor: not-allowed;
+}
+
+/* ── Skeleton — barra que late, NUNCA un spinner en blanco ──────────────── */
+@keyframes nodo-shimmer {
+  0%   { opacity: 1; }
+  50%  { opacity: 0.45; }
+  100% { opacity: 1; }
+}
+.nodo-skeleton {
+  height: 9px;
+  border-radius: var(--r-1);
+  background: var(--border-2);
+  animation: nodo-shimmer 1.4s ease-in-out infinite;
+}
