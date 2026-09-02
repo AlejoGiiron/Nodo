@@ -593,6 +593,46 @@ más es gratis; hacia el lado que permite, es una fuga.**
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · EN ESTE PROYECTO LOS INSTRUMENTOS DE MEDICIÓN FALLAN MÁS QUE EL CÓDIGO MEDIDO
+
+*Tres casos en dos días, 2026-09-01 y 02. No es mala suerte: es una propiedad del oficio que no
+estábamos contando.*
+
+> **Un número plausible no es un número verificado.**
+
+| Instrumento | Debía medir | Qué medía de verdad | Cómo se cazó |
+|---|---|---|---|
+| `document.fonts.check('16px Inter')` | si Inter está cargada | **si el texto se puede pintar** — siempre sí, hay fallback | **control negativo**: dio `true` para una familia inventada |
+| `grep -rl "const formatCOP" src/` | copias del formateador | también **las menciones en comentarios**, la del propio comando incluida | **enumerando**: la lista tenía 18 nombres y 16 eran definiciones |
+| `grep -coE '#[0-9a-fA-F]{6}'` | hexes por archivo | **solo los de seis dígitos**: no veía `#fff` | **enumerando**: cinco pantallas "en cero" tenían 47 blancos |
+
+**Los tres daban un número creíble.** Ninguno daba error, ninguno se veía roto, y los tres
+sostenían una afirmación que se escribió en un commit como si fuera un hecho medido.
+
+**Por qué pasa más con los instrumentos que con el código:** el código tiene tests, tipos, RLS y
+usuarios que se quejan. **Un instrumento de medición no tiene a nadie del otro lado** — su salida se
+lee una vez, se cree, y se cita después como dato establecido. Un grep mal escrito es código sin
+tests corriendo en producción sobre nuestras propias conclusiones.
+
+🔴 **Y hay un agravante que este proyecto ya conoce por otro lado:** una medición falsa
+**tranquiliza**. "Cero hexes" cerró cinco pantallas que no estaban cerradas. Es exactamente el
+corolario de R4 — leer una declaración falsa la confirma — aplicado a un número en vez de a una
+nota.
+
+**LO ACCIONABLE, y son dos técnicas, no una:**
+
+1. **Control negativo** — corré el instrumento contra algo que **sabés que no existe**. Si contesta
+   lo mismo, no mide. Cuesta una línea.
+2. **Enumerar antes de contar** — pedile la LISTA, no el número, y mirala. Un conteo esconde qué
+   contó; una lista lo muestra. Los dos greps se cazaron así, y ninguno se habría cazado mirando
+   el total.
+
+⚠️ Corolario para escribir: cuando un commit o una nota afirme un número, **dejar escrito el
+comando que lo reproduce** — y haberlo corrido con una de las dos técnicas antes de pegarlo. Un
+número sin comando es una opinión con dígitos.
+
+---
+
 ### ⚠️ CRITERIO SIN NÚMERO · LA MISMA REGLA PUEDE ELEGIR EL LADO PERMISIVO — Y ENTONCES HAY QUE ESCRIBIR EL DISPARADOR
 
 *Tercera aplicación de la asimetría de la dirección del fallo, y la primera en que el resultado es
