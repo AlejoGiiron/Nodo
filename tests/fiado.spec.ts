@@ -313,6 +313,62 @@ test.describe.serial('Fiado / Cartera', () => {
     // los usuarios del lab (owner y cajero ambos lo tienen).
   })
 
+  // ==========================================================================
+  // ABONO SIN JORNADA: `requiere_conciliacion`.
+  //
+  // 🔴 El estado existia en la BASE desde el primer dia y NO TENIA CAMINO DE
+  //    LECTURA: la RPC lo escribia, ningun select lo pedia, y el §6 lo lista
+  //    como estado OBLIGATORIO de la pantalla Cartera. Este test cubre las dos
+  //    puntas: el aviso en el momento, y la marca que queda despues.
+  //
+  // ⚠️ Y el contraste importa mas que de costumbre acá, porque esta misma
+  //    condicion ya produjo un bug: el aviso salia SIEMPRE que el metodo era
+  //    efectivo, porque se derivaba de una clave que la RPC nunca mandaba. Un
+  //    test que solo mire el caso degradado habria pasado con ese bug puesto.
+  // ==========================================================================
+  test('abono sin jornada: avisa la degradacion y deja la marca de conciliacion', async ({ page }) => {
+    await loginAsOwner(page)
+
+    // Primero el CONTRASTE, con jornada abierta: el abono NO queda marcado.
+    await page.goto('/ventas')
+    await openShiftIfClosed(page, 0)
+    const nOk = await sellOnFiado(page, CLIENTE)
+    await page.goto('/fiado')
+    await selectCustomer(page, CLIENTE)
+    await openAbono(page, nOk)
+    await page.getByTestId('debt-method').selectOption('cash')
+    await page.getByTestId('debt-amount').fill('5000')
+    await page.getByTestId('debt-submit').click()
+    await expect(page.getByText(/Abono registrado · saldo/)).toBeVisible()
+
+    await openAbono(page, nOk)
+    await expect(
+      page.getByTestId('abono-requiere-conciliacion'),
+      'con jornada abierta el abono NO requiere conciliacion',
+    ).toHaveCount(0)
+    await page.getByTestId('debt-payment-modal').getByRole('button', { name: 'Cancelar' }).click()
+
+    // Ahora el caso degradado: misma operacion, sin jornada.
+    const nSin = await sellOnFiado(page, CLIENTE)
+    await page.goto('/ventas')
+    await closeShiftIfOpen(page)
+
+    await page.goto('/fiado')
+    await selectCustomer(page, CLIENTE)
+    await openAbono(page, nSin)
+    await page.getByTestId('debt-method').selectOption('cash')
+    await page.getByTestId('debt-amount').fill('5000')
+    await page.getByTestId('debt-submit').click()
+
+    // (1) El aviso del momento. Sale de `requiere_conciliacion`, la decision de
+    //     la RPC — no de una condicion re-derivada en el cliente.
+    await expect(page.getByText(/El efectivo no entró a caja/)).toBeVisible()
+
+    // (2) La marca que QUEDA, que es lo que no existia: el badge del §6.
+    await openAbono(page, nSin)
+    await expect(page.getByTestId('abono-requiere-conciliacion').first()).toBeVisible()
+  })
+
   test('limpieza: cerrar turno y desactivar clientes', async ({ page }) => {
     page.on('dialog', (d) => d.accept())
     await loginAsOwner(page)

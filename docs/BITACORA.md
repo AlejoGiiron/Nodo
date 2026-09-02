@@ -1938,3 +1938,49 @@ razón**:
    interfaz que lo declaraba— y TS mira solo una.
 3. El comentario de `RegisterPurchaseResult` afirmaba *"la compra NO toca la caja: no crea egreso
    automático"*. **Falso desde la deuda 26**, que invirtió exactamente eso.
+
+
+## 2026-09-02 · Cartera — una columna que se escribía y nunca se leía
+
+**El hallazgo, y es la mitad que faltaba de un caso ya conocido.** `debt_payments.requiere_conciliacion`
+existe desde el primer día, la RPC la setea, y el §6 del design system la lista como **estado
+obligatorio** de la pantalla Cartera. **Ningún select la pedía.** El dato se escribía correctamente
+y no había forma de verlo.
+
+Es el reverso exacto del bug que ya pagamos: allá el aviso del MOMENTO se derivaba de una clave que
+la RPC nunca mandaba y salía siempre; acá el aviso PERSISTENTE no existía porque nadie leía la
+clave que sí manda. **Las dos mitades del mismo contrato, rotas en direcciones opuestas.**
+
+### El campo que salió del select, y por qué es la misma historia
+
+`cash_movement_id` estaba en el select y **no lo usaba nadie**. Se sacó, y no por limpieza: dejarlo
+invitaba a derivar el badge de `cash_movement_id == null`, que **no es lo mismo** — un abono con
+tarjeta tampoco crea movimiento de caja y **no** está pendiente de conciliar. Confundirlos es
+literalmente lo que hizo nacer la columna: es el caso 2 de *"un valor que significa dos cosas no es
+un dato"*, donde `cash_movement_id` nulo cargaba *"no tocó caja"* **y** *"la jornada estaba
+cerrada"*.
+
+### El test, y el mutante que lo validó
+
+El estado no tenía cobertura. Se agregó con **contraste**: primero un abono con jornada abierta que
+**no** debe quedar marcado, después el mismo abono sin jornada que sí. El contraste no es adorno
+acá: *un test que solo mirara el caso degradado habría pasado con el bug viejo puesto*, porque
+entonces el aviso salía siempre.
+
+Auditado por mutación (R10): con el badge pintándose incondicionalmente (`{true && …}`), **la mitad
+del contraste se pone roja**. El mutante muere.
+
+### Tres primitivas nacidas con su consumidor
+
+- **`Badge`** — primer consumidor real. Y lleva escrito el inventario de los **cinco badges inline
+  que todavía no pasan por ella** (`stock-badge`, `stock-status-badge`, `sale-voided-badge` ×3,
+  `overdraft-badge`, `overdraft-warning`), con el comando para reproducir la lista. Se cuentan, no
+  se descubren de a uno.
+- **`KpiCard`** — unifica **tres** formas que vivían separadas: la función de InventoryPage, el
+  bloque inline de FiadoPage (el único con testids, por eso salen de ahí) y los de ReportsPage. Y
+  aprovecha para corregir un rol: *"Total por cobrar"* usaba `#dc2626` igual que los otros dos KPI;
+  ahora es `--debt`, porque **que un cliente deba no es que alguien haya hecho algo mal**.
+- **`AgingBar`** — rotulada **"Antigüedad"**, con la columna `VENCIDO` deliberadamente **sin
+  pintar** (deuda 46). Enciende **todos** los tramos con deuda, no solo el de la más vieja: un
+  cliente con una deuda de 5 días y otra de 95 tiene las dos cosas, y mostrar solo la peor esconde
+  que la mayoría es reciente.

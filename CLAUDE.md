@@ -926,8 +926,17 @@ pantalla es el instrumento más barato para hacerla.
 contra Vento. Se leyó y se citó muchas veces. **No tenía columna.** Ninguna lectura lo destapó;
 lo destapó dibujar la pantalla de Compras.
 
+🔴 **Y VA EN LAS DOS DIRECCIONES.** *Segundo caso, 2026-09-02.* No solo el diseño destapa
+**campos que faltan**: también destapa **operaciones que nadie modeló**. El §4 del design system
+reserva el relleno sólido `--danger` —su color más fuerte, y el único lugar donde lo permite— a
+*"Anular compra"*. Esa acción **no existe en ninguna capa**: ni columna, ni RPC, ni UI. El diseño
+previó una operación que el backend no tiene, y lo dijo con el color que se reserva para lo más
+grave.
+
 **Lo accionable:** al cerrar un módulo de esquema, listar los campos de la pantalla que lo va a
-consumir —aunque la pantalla no exista todavía— y cruzarlos contra las columnas. Cuesta una lista.
+consumir —aunque la pantalla no exista todavía— y cruzarlos contra las columnas. **Y listar también
+sus ACCIONES**, que es la mitad que casi se nos pasa: un botón dibujado es un verbo que alguien
+espera poder ejecutar. Cuesta una lista.
 
 ---
 

@@ -1107,15 +1107,30 @@ export interface DebtPaymentRow {
   id: string
   amount: number
   payment_method: string
-  cash_movement_id: string | null
   created_at: string
+  /**
+   * 🔴 El abono quedó contra el saldo del cliente pero SIN contrapartida en
+   * caja (no había jornada abierta a la cual atribuirlo). Es un estado
+   * obligatorio de la pantalla Cartera (§6) y hasta hoy **se escribía y no se
+   * leía nunca**: la RPC lo setea desde el primer día y ningún select lo pedía.
+   *
+   * ⚠️ NO se re-deriva de `cash_movement_id == null`, y por eso ese campo salió
+   * del select. No son lo mismo: un abono con TARJETA tampoco crea movimiento
+   * de caja y **no** está pendiente de conciliar. Confundirlos es exactamente
+   * lo que hizo nacer esta columna — el caso 2 de "un valor que significa dos
+   * cosas no es un dato", donde `cash_movement_id` nulo cargaba "no tocó caja"
+   * Y "la jornada estaba cerrada". Dejar el campo en el select invitaba a
+   * rehacer la mezcla.
+   */
+  requiere_conciliacion: boolean
   profiles: { full_name: string | null } | null
 }
 
 export const getDebtPayments = (orderId: string) =>
   supabase
     .from('debt_payments')
-    .select('id, amount, payment_method, cash_movement_id, created_at, profiles!debt_payments_created_by_fkey(full_name)')
+    .select('id, amount, payment_method, requiere_conciliacion, created_at, ' +
+            'profiles!debt_payments_created_by_fkey(full_name)')
     .eq('order_id', orderId)
     .order('created_at', { ascending: false })
 

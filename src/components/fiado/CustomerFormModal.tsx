@@ -12,11 +12,11 @@ interface CustomerFormModalProps {
 }
 
 const fieldLabel: React.CSSProperties = {
-  display: 'block', fontSize: 12, fontWeight: 600, color: '#334155', marginBottom: 6,
+  display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--ink-2)', marginBottom: 6,
 }
 const inputStyle: React.CSSProperties = {
-  width: '100%', padding: '10px 13px', border: '1.5px solid #e5e7eb', borderRadius: 9,
-  fontSize: 14, color: '#0f172a', outline: 'none', boxSizing: 'border-box', background: '#fff',
+  width: '100%', padding: '10px 13px', border: '1.5px solid var(--border)', borderRadius: 9,
+  fontSize: 14, color: 'var(--ink)', outline: 'none', boxSizing: 'border-box', background: '#fff',
 }
 
 export function CustomerFormModal({ customer, onClose, onSaved }: CustomerFormModalProps) {
@@ -43,23 +43,23 @@ export function CustomerFormModal({ customer, onClose, onSaved }: CustomerFormMo
 
   return (
     <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,.55)', display: 'grid', placeItems: 'center', zIndex: 60, fontFamily: 'Inter, system-ui, sans-serif', padding: 20 }}
+      style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', display: 'grid', placeItems: 'center', zIndex: 60, fontFamily: 'inherit', padding: 20 }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div
         data-testid="customer-form-modal"
         style={{ background: '#fff', borderRadius: 14, width: 480, maxWidth: '100%', maxHeight: '90vh', boxShadow: '0 25px 50px -12px rgba(0,0,0,.25)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
       >
-        <div style={{ padding: '18px 22px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-          <h3 style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', margin: 0 }}>
+        <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--border-2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+          <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink)', margin: 0 }}>
             {isNew ? 'Nuevo cliente' : `Editar · ${customer.name}`}
           </h3>
-          <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: 8, background: '#f1f5f9', border: 'none', cursor: 'pointer', color: '#64748b', display: 'grid', placeItems: 'center' }}><X size={16} /></button>
+          <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--border-2)', border: 'none', cursor: 'pointer', color: 'var(--ink-3)', display: 'grid', placeItems: 'center' }}><X size={16} /></button>
         </div>
 
         <div style={{ padding: 22, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div>
-            <label style={fieldLabel}>Nombre <span style={{ color: '#dc2626' }}>*</span></label>
+            <label style={fieldLabel}>Nombre <span style={{ color: 'var(--danger)' }}>*</span></label>
             <input data-testid="customer-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej: Juan Pérez" style={inputStyle} autoFocus />
           </div>
           <div style={{ display: 'flex', gap: 12 }}>
@@ -78,13 +78,13 @@ export function CustomerFormModal({ customer, onClose, onSaved }: CustomerFormMo
           </div>
         </div>
 
-        <div style={{ padding: '14px 22px', borderTop: '1px solid #f1f5f9', display: 'flex', gap: 10, justifyContent: 'flex-end', flexShrink: 0 }}>
-          <button onClick={onClose} style={{ padding: '10px 20px', border: '1.5px solid #e2e8f0', borderRadius: 9, background: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: '#334155' }}>Cancelar</button>
+        <div style={{ padding: '14px 22px', borderTop: '1px solid var(--border-2)', display: 'flex', gap: 10, justifyContent: 'flex-end', flexShrink: 0 }}>
+          <button onClick={onClose} style={{ padding: '10px 20px', border: '1.5px solid var(--border)', borderRadius: 9, background: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: 'var(--ink-2)' }}>Cancelar</button>
           <button
             data-testid="customer-save"
             onClick={handleSave}
             disabled={isMutating}
-            style={{ padding: '10px 24px', background: isMutating ? '#cbd5e1' : '#10b981', border: 'none', borderRadius: 10, cursor: isMutating ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 6, boxShadow: isMutating ? 'none' : '0 4px 12px rgba(16,185,129,.3)' }}
+            style={{ padding: '10px 24px', background: isMutating ? 'var(--ink-4)' : 'var(--action)', border: 'none', borderRadius: 10, cursor: isMutating ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 6, boxShadow: isMutating ? 'none' : '0 4px 12px rgba(16,185,129,.3)' }}
           >
             {isMutating && <Loader2 size={14} className="animate-spin" />}
             {isNew ? 'Crear cliente' : 'Guardar'}
