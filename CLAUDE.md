@@ -618,6 +618,50 @@ dos cosas y parece economía.
 
 ---
 
+### 🔴 SU LADO OPERATIVO · UN DESEMPATADOR ES LA SEÑAL, NO LA SOLUCIÓN
+
+*Sale del cableado de los atajos, 2026-09-03. El criterio de arriba dice cómo **reconocer** un valor
+con dos significados; éste dice **qué hacer** cuando ya lo tenés escrito y andando.*
+
+> **Un desempatador es la señal de que dos cosas comparten un valor que no deberían compartir. El
+> arreglo correcto no es un desempatador más astuto: es que no haya empate.**
+
+**El caso, completo — y lo que lo hace útil es que el desempatador FUNCIONABA.** §5 le daba doble
+significado a tres teclas —«F9 Gastos / efectivo», «F10 Inventario / transferencia»—. Para
+resolverlo escribí `hayCobroAbierto()`: un marcador en el DOM (`data-ambito-cobro`) que declaraba
+«hay un cobro abierto», y ahí mandaba el cobro. Andaba, tenía su spec en verde, y hasta tenía un
+buen argumento sobre por qué el DOM y no un orden de listeners.
+
+**Nada de eso era el problema.** Al darle a cada tecla **un solo significado** —navegar se queda con
+F9/F10/F11, los medios de pago pasan a E/T/C— la ambigüedad desapareció y **el mecanismo se quedó
+sin trabajo**: se borró entero, junto con su atributo, su consulta al documento y su justificación.
+Ninguna de las tres hacía falta.
+
+⚠️ **Por qué un desempatador es peor que el empate que resuelve.** El empate es un defecto visible:
+alguien se confunde. El desempatador lo **tapa** y agrega tres cosas nuevas — un mecanismo que
+mantener, un caso más en cada spec, y una condición que el próximo va a copiar sin entender. Y sobre
+todo: **convierte un problema de modelo en un problema de implementación**, que es el peor cambio de
+categoría posible, porque a partir de ahí se discute cómo desempatar mejor y ya nadie pregunta por
+qué hay empate.
+
+🔴 **Y el desempatador tiene fecha de vencimiento que nadie ve.** El de acá se apoyaba en que el
+cobro era un **modal**: un modal crea un MODO —está o no está— y el modo desambigua. La decisión de
+poner el cobro **en línea** eliminaba el modo, y con él la condición entera — **sin producir un solo
+rojo**: F9 simplemente habría dejado de navegar para siempre, en silencio. El desempatador no falla
+cuando cambia el mundo: **deja de aplicarse**, que es peor.
+
+**LA SEÑAL DE DETECCIÓN, y es lo accionable:**
+
+> **Si estás escribiendo código para decidir CUÁL de dos significados aplica, mirá primero si podés
+> quitarle uno.**
+
+Cuenta cualquier forma: un `if` de modo, un flag, un marcador en el DOM, un orden de suscripción,
+una prioridad, un "en esta pantalla gana X". Todos son la misma cosa. La pregunta previa —y es de
+diseño, no de código— es **cuál de los dos significados es el LOCAL**: ése cede. Acá navegar es
+global y §5 promete que los atajos funcionan siempre; elegir medio de pago es de una sola pantalla.
+
+---
+
 ### ⚠️ CRITERIO SIN NÚMERO · LA URGENCIA DE UN DESAJUSTE LA DECIDE LA DIRECCIÓN DEL FALLO
 
 *Dos casos medidos el 2026-09-01, en capas distintas. Se escribe una vez porque es la misma forma.*
@@ -2020,6 +2064,28 @@ falsa. El estado es lo que se pudre, así que se escribe distinto.
   **editar por append** — agregar la fila del estado nuevo cuesta menos que releer y borrar la vieja,
   y el lector que llega a la vieja no sabe que hay una nueva. **Antes de guardar una afirmación de
   estado: `grep` del objeto en el mismo archivo, y la anterior se reemplaza o se marca como superada.**
+
+  🔴 **Y LA MISMA FORMA TIENE GRADOS: UN PAR CONTRADICTORIO EN LA SKILL NO CONFUNDE — SE EJECUTA.**
+  *Cuarto par encontrado, 2026-09-03, y el primero fuera de este archivo.*
+
+  El Anexo de `nodo-design-system` decía que el producto y el tenant *"conviven en el bloque de
+  identidad de la barra lateral — Muscle Pro arriba, Nodo abajo"*. **§5 de la misma skill, escrita
+  el mismo día, decía lo contrario:** organización arriba, sede debajo, y el producto **sale** del
+  sidebar. Nació falso, igual que los tres de A5, y por la misma causa mecánica: editar por append
+  en una sección sin releer la otra.
+
+  **Lo que cambia es DÓNDE vive, y por eso vale como grado propio:**
+
+  | dónde está el par | qué produce |
+  |---|---|
+  | `docs/DEUDAS.md` | **confunde a quien planifica** — se discute, y alguien pregunta |
+  | `CLAUDE.md` | **dirige mal** — se aplica una regla con la mitad equivocada |
+  | 🔴 **una skill** | **SE EJECUTA** — es lo que se lee *para implementar*, así que el lector elige una de las dos mitades y **escribe código sobre ella** |
+
+  ⚠️ Una skill no se lee para deliberar: se lee para construir. Entre leer la mitad equivocada y que
+  esa mitad esté en la pantalla del cliente **no hay ningún paso donde alguien pregunte**. El orden
+  de revisión, entonces, no es por antigüedad ni por tamaño: **es por cuán cerca está el documento
+  del código.**
 - **"CORREGIDO" SE VERIFICA ENUMERANDO LOS SITIOS, NO RECORDANDO EL COMMIT.** *Primera afirmación
   falsa de la bitácora de Nodo, 2026-09-02, y era de estado:* "el cierre de caja pintaba el sobrante
   en verde" —en pasado— cuando lo corregido era el historial y el pie del modal, no el bloque donde
@@ -2174,6 +2240,28 @@ grep -rln "AppLayout\|<Badge\|MoneyCell" src/ tests/       # por símbolo, si el
 
 ⚠️ Y la señal barata que lo anticipa: **si el archivo que estás editando aparece en más de una
 pantalla, el grupo es la lista de consumidores, no la carpeta.** El sidebar está en las once.
+
+**🔴 SI DOS SUPERFICIES COMPARTEN UNA ESCRITURA, ESO SE MIDE — NO SE AFIRMA.**
+*Condición fijada el 2026-09-03, antes de partir el cobro en línea en cortes.*
+
+Cuando un cambio grande se parte, es normal que durante la transición **dos superficies hagan lo
+mismo** —el formulario nuevo y el viejo, la columna y el modal—. La defensa contra R1 es siempre la
+misma frase: *"la escritura es una sola, hay dos vistas de una implementación"*.
+
+> **Esa frase es una afirmación de diseño, y como toda afirmación de diseño no ejecuta.** Vale hasta
+> que alguien agrega un campo en una sola de las dos, o una validación, o un default.
+
+**Lo accionable, y cuesta un caso por corte:** el spec de cada corte asevera que **las dos
+superficies producen el mismo resultado** —no sólo que la nueva funciona—. Un caso por superficie
+sobre el **mismo escenario**, comparando **contra la base**.
+
+⚠️ **Y el detalle que decide si el caso mide algo:** la comparación va sobre lo que se PERSISTIÓ
+—total, líneas, pagos, movimiento de caja—, porque es lo único que las dos superficies comparten de
+verdad. Comparar lo que MUESTRAN es comparar dos vistas, que es justamente lo que no está en duda.
+
+⚠️ Corolario para el que retira la superficie vieja: **el día que se borra, ese caso se borra con
+ella** — su sujeto deja de existir. Lo que NO se borra son las aserciones sobre la base: se
+re-alojan en el spec de la superficie que queda.
 
 **🔴 HAY UNA CLASE DE DEFECTO QUE NINGÚN TEST CAZA: EL QUE ESTÁ EN LO QUE SE VE, NO EN LO QUE PASA.**
 *Primera vez en el proyecto que un defecto aparece MIRANDO y no EJECUTANDO — 2026-09-01.*

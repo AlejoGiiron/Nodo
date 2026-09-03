@@ -491,6 +491,10 @@ descuento, nombre de cliente. La decisión es **por tipo de control y el default
 una lista de campos, porque una lista se congela y el próximo input nacería desprotegido. Un campo
 donde las letras son inertes **lo declara** (`data-letras-inertes`), y ésa es la única excepción.
 
+⛔ **`F4` (cambiar cliente) se cablea CON SU CONTROL, no antes.** Hoy no está cableada justamente
+porque el mostrador no tiene control de cliente: se elige dentro del cobro y sólo para fiado. Las
+dos mitades —el control y su tecla— entran juntas, con el flujo de fiado.
+
 ⛔ **Pendiente, y es CONDICIÓN DEL COBRO EN LÍNEA:** *«E con el foco en el campo de dinero elige
 efectivo»* está aseverada **en dos mitades** —la regla, en `src/lib/atajos.test.ts`; y que el campo
 real lleve la declaración, en `tests/atajos.spec.ts`— pero **no de punta a punta**, porque el modal
@@ -680,6 +684,28 @@ Nada de esta lista debe leerse como resuelto. Si la implementación necesita una
     entre en la maqueta sería **cambiar el producto para que quepa en el diseño**.
     **El diseño se adapta al producto, no al revés.** El `TenderSelector` acomoda N medios; la celda
     conserva sus 52px.
+17. **🔴 EL DISEÑO NO CUBRE EL DESPUÉS DEL COBRO — y acá se decide, no se infiere.**
+    *Encontrado el 2026-09-03 al enumerar el cobro en línea.*
+
+    La entrega dibuja el panel de cobro y **nada de lo que pasa cuando se aprieta Cobrar**. El
+    producto sí tiene ese momento, y no es una pantalla de felicitación: es donde aparece el
+    **número de la venta**, y donde puede aparecer que **la numeración falló** (`success-sin-numero`)
+    con su **reintento** (`retry-order-number`), además de la impresión del comprobante.
+
+    **DECIDIDO: ese momento tiene DIÁLOGO PROPIO, y por lo tanto el modal de cobro no desaparece del
+    todo — sobrevive reducido al después.** Sin eufemismos: el cobro en línea elimina los pasos
+    *método* y *monto*; el paso *éxito* queda, en un diálogo chico.
+
+    **La razón, y es de riesgo, no de estética:** `success-sin-numero` y `retry-order-number` son
+    **estados de ERROR sobre una venta YA COBRADA** — la plata entró y el número falló. Eso tiene que
+    **ocupar la pantalla y exigir una decisión**, no compartir espacio con una columna que ya está
+    lista para la venta siguiente.
+
+    ⚠️ **El riesgo concreto de la alternativa** —el número y el reintento dentro de la columna, que
+    sería lo fiel a la maqueta—: la cajera **puede empezar a teclear la venta siguiente sobre un
+    error sin resolver**. La maqueta no lo dibuja porque **no modeló que la numeración pueda
+    fallar**; el producto sí lo modeló, y el diseño se adapta al producto (§8.16).
+
 14. **[MOVIDO desde §6]** **¿El cierre de período exige resolver los abonos con `requiere_conciliacion`?** La entrega lo afirmaba; nadie lo decidió. Es una decisión de producto con consecuencia operativa (un cierre que se bloquea), no de diseño. Hasta que se decida: el estado se muestra y no bloquea nada.
 
 ---
@@ -695,4 +721,19 @@ Nada de esta lista debe leerse como resuelto. Si la implementación necesita una
 --brand-accent: #B91C1C; /* reservado a documentos impresos y login. NO se usa en la aplicación */
 ```
 
-Muscle Pro es el tenant. **Nodo es el producto.** Los dos conviven en el bloque de identidad de la barra lateral —"Muscle Pro" arriba, "Nodo" abajo— y no se fusionan en ninguna pantalla.
+Muscle Pro es el tenant. **Nodo es el producto.** No se fusionan en ninguna pantalla.
+
+> 🔴 **CORREGIDO el 2026-09-03 — esta línea decía que los dos conviven en el bloque de identidad de
+> la barra lateral, "Muscle Pro arriba, Nodo abajo". Eso quedó SUPERADO por la decisión de §5** del
+> mismo día: el bloque de identidad lleva **organización arriba y sede debajo**, y **el producto sale
+> del sidebar** — ese bloque es del tenant, y meter nuestro nombre adentro mezcla dos identidades.
+> **"Nodo, de Giiron" vive en Login y en Configuración.**
+>
+> ⚠️ **Y vale anotar de qué clase de error es éste, porque es el más caro que puede tener este
+> archivo:** era un **par contradictorio dentro de la fuente de verdad** —§5 decía una cosa y el
+> Anexo la contraria, escritos el mismo día—, exactamente la clase que la auditoría A5 encontró tres
+> veces en `CLAUDE.md`. **Con una agravante propia: la skill es lo que se lee para IMPLEMENTAR.**
+> Un par contradictorio en `docs/DEUDAS.md` confunde a quien planifica; uno acá **se ejecuta** — el
+> lector elige una de las dos mitades y escribe código sobre ella.
+> La regla que ya estaba y ahora aplica también acá: **una afirmación de estado se REEMPLAZA, nunca
+> se agrega al lado de la vieja.**
