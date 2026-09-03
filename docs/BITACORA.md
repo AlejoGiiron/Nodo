@@ -3419,3 +3419,95 @@ habría probado nada —el total lo mandaba el mismo cliente que mandaba el prec
 por construcción—. Ahora son dos caminos independientes que tienen que dar el mismo número.
 
 **Ése era el argumento para hacer la 80 primero, y quedó verificado en vez de argumentado.**
+
+
+## 2026-09-03 · Cierre del BLOQUE 3 — el tablero, y lo que el bloque midió sobre sí mismo
+
+### La suite, leída de adentro del archivo (R9)
+
+| | |
+|---|---|
+| passed | **217** |
+| failed | **0** — ninguna línea |
+| flaky | **0** — ninguna línea |
+| skipped | **17** |
+| did not run | **0** — ninguna línea |
+| `suite_exit=` | **0** |
+
+Duración 14,8 min. ⚠️ Los tres ceros son **ausencia de línea**: Playwright sólo los imprime cuando son
+distintos de cero, así que se verificaron uno por uno. Cruce: passed + skipped = el último número de
+test emitido.
+
+### El tablero
+
+| deuda | qué perdía o mentía | qué quedó |
+|---|---|---|
+| **63 + M7** | "Gastos" sumaba **compras a proveedor y retiros del dueño**. El cliente comete ese error en su propio Excel: 3.511.500 de sus 5.495.500 de "gastos" son compras — le habríamos devuelto su número inflado con autoridad de sistema | filtra `categoria in ('gasto','otro')`; el arqueo intacto porque ahí **todos** los egresos salieron del cajón; y el CHECK cruzado por fin tiene test |
+| **49** | **anular o devolver una compra no existía en ninguna capa** — ni columna, ni RPC, ni UI. El design system reservaba su color más fuerte a una acción que el backend no tenía | `kind` + `register_purchase_return` + `adjust_cost` con motivo obligatorio y rastro. La devolución **no toca `cost_price`**: ese costo ya se propagó a las ventas del medio |
+| **44** | sólo existía la fecha de **tecleo**. El cliente registró el 2 de septiembre compras del 31 de agosto: cada día sin la columna metía facturas en el mes equivocado | `document_date` en compras y gastos, con `hoy_bogota()` y guard de futuro por los dos caminos. El arqueo sigue cuadrando por `created_at` |
+| **45** | la subcategoría de gasto **no tenía dónde vivir**, y meterla en `reason` habría deshecho una separación ya hecha: el reporte por tipo de gasto no se podría armar **ni reprocesando** | tres columnas, lista **por sede** en la config, desplegable y no texto libre. La retirada se conserva en la fila y deja de ofrecerse |
+| **46** | **no existía el plazo**, así que la cartera no podía decir "vencido" — y decirlo sin plazo habría hecho llamar a cobrar algo que no venció | plazo en el cliente **y congelado en la venta**; la aritmética como función pura con 10 tests; la cartera ordena por días vencidos y **dice qué mide cada columna** |
+| **80** | `orders.total` **lo mandaba el cliente y nadie lo verificaba** contra sus líneas. Hoy coincidían por construcción; el precio editable convertía esa coincidencia en una convención | derivado por trigger diferido. Y de rebote se cerró un guard que nadie miraba: `register_sale_payment` validaba los pagos contra un total sin verificar |
+| **75** | el cliente vende el mismo producto a **109.000, 110.000 y 115.000** y el mostrador mandaba el precio de lista: la utilidad por producto salía mal, que es el número por el que compró el sistema | precio en la línea, catálogo como sugerencia, confirmación al ±20% — **la única red que existe**, porque el servidor nunca compara contra `products.price` |
+
+---
+
+## 🔴 Lo que el bloque midió sobre sí mismo
+
+**De las siete deudas, SEIS cambiaron de alcance o de forma antes de llegar al código.** La única que
+se ejecutó tal como estaba escrita es la **63** — y es la más local de las siete: un filtro en una
+consulta.
+
+⚠️ **No es un reproche a quien las escribió.** Las siete se redactaron **antes** de tener el archivo
+del cliente y **antes** de las cinco auditorías. Lo que la tasa dice es sobre el instrumento: *una
+deuda es una hipótesis con fecha*, y **seis de siete es la medición que lo prueba**.
+
+### Origen de las seis correcciones
+
+| origen del error | cuáles |
+|---|---|
+| una **premisa de la maqueta** tomada como medición | **44** (los campos de fecha que no existían) |
+| **edición por append**: dos alcances apilados sin que ninguno reemplazara al otro | **45** |
+| una **suposición sobre el código que nadie había verificado** | **46** (ordenaba por saldo, no por antigüedad) · **49** (`type='return'` ya tenía dueño) · **75** (el precio ya era libre) |
+| **ninguno**: el análisis era correcto y faltaba una consecuencia de ORDEN | **80** (el trigger diferido) |
+
+### Las tres conclusiones, y la tercera es la que cambia el método
+
+**1 · La enumeración previa cazó CINCO de las seis. Se paga sola.** Cuatro fueron un `grep` o abrir un
+archivo: `grep 'type="date"'`, `grep "'return'"`, leer el `sort` de la cartera, leer la RPC de alta.
+
+**2 · La que se le escapa no es aleatoria: es de una CLASE.** Consecuencias del **orden de las
+escrituras**, que no existen hasta que hay código ejecutándolas en secuencia. Dos apariciones medidas
+en el proyecto: el **plan de consolidación** del esquema (2026-08-31) y el **trigger diferido** (hoy).
+
+**3 · Y por eso lo accionable NO es desconfiar de enumerar** —enumerar acertó cinco de seis— sino
+**escribir primero el caso que COMBINA dos cosas**. Acá fue descuento *y* varias líneas; allá fue el
+archivo que dependía de otros tres. **Los huecos de orden viven en las combinaciones, no en los casos
+simples.**
+
+⚠️ **Y la mayoría del bloque tiene un remedio de un renglón.** Tres de las seis —46, 49, 75— son la
+misma causa: *una suposición sobre el código que nadie había verificado*. El remedio no es un
+mecanismo nuevo: es **abrir el archivo antes de escribir el alcance**.
+
+### 🔴 Quien pide la medición no está exento de ella
+
+*Registro con atribución, y va acá porque es del mismo tablero que lo mide.*
+
+Armando este cierre hubo **dos correcciones seguidas sobre el mismo tablero**, las dos del lado de
+quien pidió la medición, y las dos por la misma causa: **hablar de memoria sobre algo que estaba
+escrito**.
+
+| lo enunciado | lo registrado |
+|---|---|
+| "cinco de siete cambiaron" | **seis**: faltaba la 49, cuyo cambio de forma está escrito en su propia entrada |
+| "un tercio de las correcciones sólo existen al escribir" | **una de seis**: la 49 estaba registrada como hallazgo de la **enumeración**, no de la escritura |
+
+**Es el mismo defecto que este bloque midió seis veces**, aplicado al registro en vez de al código: una
+inferencia *sobre* el registro presentada como una lectura *del* registro.
+
+> **El rol no cambia la regla.** Quien pide que las afirmaciones se midan está sujeto a la misma
+> exigencia sobre las suyas — y con un agravante: **sus afirmaciones tienen más autoridad, así que se
+> revisan menos.** Es el corolario de R4 —*una afirmación que te da la razón no la revisa nadie*—
+> leído sobre la jerarquía.
+
+✅ Las dos se corrigieron **antes** de entrar al registro, que es donde dejaban de ser reversibles.
