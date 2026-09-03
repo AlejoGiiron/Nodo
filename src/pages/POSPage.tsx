@@ -7,7 +7,6 @@ import {
   Pause, Play, Clock, AlertTriangle, HandCoins, SplitSquareHorizontal,
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
-import { useQueryClient } from '@tanstack/react-query'
 import { useScrollOverflow } from '@/hooks/useScrollOverflow'
 import {
   useCartStore, cartItemTotal, precioLejosDelCatalogo, desvioDelCatalogo,
@@ -22,22 +21,20 @@ import { useCashShift } from '@/hooks/useCashShift'
 import { OpenShiftModal } from '@/components/shift/OpenShiftModal'
 import { ItemConfigModal } from '@/components/pos/ItemConfigModal'
 import { PaymentSplitEditor } from '@/components/pos/PaymentSplitEditor'
-import { createOrder, addOrderItemsWithExtras, registerSalePayment, assignOrderNumber, retryOrderNumber } from '@/lib/supabase-helpers'
+import { retryOrderNumber } from '@/lib/supabase-helpers'
 import type { SalePaymentPart } from '@/lib/supabase-helpers'
-import { captureError } from '@/lib/sentry'
 import { CustomerPicker } from '@/components/fiado/CustomerPicker'
 import { useCustomers } from '@/hooks/useCustomers'
 import { DEFAULT_PLAZOS_CREDITO, DEFAULT_PLAZO_CREDITO } from '@/lib/sedeConfig'
 import { cashQuickAmounts } from '@/lib/cashRounding'
 import { stockStatus, esAlertaDeStock } from '@/lib/stockStatus'
 import type { ProductWithCategory, CartItem, DiscountType, HeldOrder } from '@/stores/cartStore'
-import type { Enums } from '@/types/database.types'
-import { mensajeDeError } from '@/lib/errores'
 import { Button } from '@/components/ui/Button'
 import { formatoCOP } from '@/lib/formato'
 import { MoneyCell } from '@/components/ui/MoneyCell'
 import { Input } from '@/components/ui/Input'
 import { TenderSelector } from '@/components/ui/TenderSelector'
+import { useCobro } from '@/hooks/useCobro'
 import { ATAJOS, ATRIBUTO_LETRAS_INERTES, elFocoEstaEscribiendo, teclaDe } from '@/lib/atajos'
 import { CupoMeter } from '@/components/ui/CupoMeter'
 
@@ -873,8 +870,7 @@ function CheckoutModal({
   const { profile } = useAuth()
   const { can } = usePermissions()
   const { sede, config: sedeConfig } = useSedeConfig()
-  const { refetchSales } = useCashShift()
-  const queryClient = useQueryClient()
+  const { cobrar } = useCobro()
   const [step, setStep] = useState<'method' | 'amount' | 'success'>('method')
   const [method, setMethod] = useState<PaymentMethodUI>('efectivo')
   const [received, setReceived] = useState('')
@@ -915,106 +911,34 @@ function CheckoutModal({
 
   const quickAmounts = cashQuickAmounts(total)
 
-  const methodMap: Record<Exclude<PaymentMethodUI, 'fiado'>, Enums<'payment_method'>> = {
-    efectivo:      'cash',
-    tarjeta:       'card',
-    transferencia: 'transfer',
-    nequi:         'nequi',
-  }
 
   // En modo dividir el fiado no aplica (mixto = solo métodos reales).
   const isFiado = !split && method === 'fiado'
 
   const handleConfirm = async () => {
     if (!profile) return
-    if (isFiado && !customerId) { toast.error('Selecciona un cliente para la venta a fiado'); return }
     setSubmitting(true)
-    try {
-      // Venta a fiado: la orden se crea como pendiente de pago y ligada al
-      // cliente; NO entra dinero (no toca caja) y NO se registra payment.
-      // El stock SÍ se descuenta igual (la mercancía salió). Copiamos el nombre
-      // del cliente a customer_name para que tickets/historial sigan leyéndolo.
-      const { data: order, error: orderErr } = await createOrder({
-        canal,
-        status: 'pending',
-        // 🔴 SIN `total` — deuda 80. Lo deriva el servidor de las líneas; el
-        //    `total` de acá abajo sigue usándose para MOSTRAR y para el cobro,
-        //    donde ahora funciona como cruce contra el derivado.
-        sede_id: profile.sede_id,
-        created_by: profile.id,
-        // Descuento REAL persistido (monto en COP ya reflejado en total).
-        // Sin monto (0) → type null.
-        discount_amount: discountAmt,
-        discount_type: discountAmt > 0 ? discountType : null,
-        discount_reason: discountAmt > 0 ? (discountReason.trim() || null) : null,
-        ...(isFiado
-          ? {
-              payment_status: 'pending' as const,
-              customer_id: customerId,
-              customer_name: customerName,
-              // El plazo se CONGELA acá. Ver el comentario del estado.
-              plazo_dias: plazoDias,
-            }
-          : {}),
-      })
-      if (orderErr || !order) throw orderErr ?? new Error('Error al crear orden')
-
-      const { error: itemsErr } = await addOrderItemsWithExtras(
-        order.id,
-        items.map((item) => ({
-          product_id: item.product.id,
-          qty: item.qty,
-          // 🔴 El precio PACTADO. `products.price` quedó como sugerencia y no
-          //    se persiste en ningún lado (deuda 75).
-          unit_price: item.price,
-          notes: item.note || null,
-          extras: item.extras.map((ex) => ({ extra_id: ex.extra_id, qty: ex.qty })),
-        })),
-      )
-      if (itemsErr) throw itemsErr
-
-      // Venta GRATIS (total 0 = descuento del 100%): NO hay dinero que cobrar.
-      // Se salta register_sale_payment (valida amount>0). La orden queda
-      // registrada SIN payment; payment_status='paid' (default, saldada — no es
-      // fiado). El nº se asigna igual (abajo).
-      if (!isFiado && total > 0) {
-        // Un solo camino de cobro: simple = una parte al total; dividir = las
-        // partes del editor. La RPC valida atómicamente que Σ = total (rechaza
-        // si no cuadra) e inserta una fila por método.
-        // En la rama simple (!split) el método nunca es fiado (isFiado lo excluye),
-        // pero el isFiado compuesto impide a TS estrecharlo → cast explícito.
-        const parts: SalePaymentPart[] = split
-          ? splitParts
-          : [{ method: methodMap[method as Exclude<PaymentMethodUI, 'fiado'>], amount: total }]
-        const { error: payErr } = await registerSalePayment(order.id, parts)
-        if (payErr) throw payErr
-      }
-
-      // Numeración: es una venta real (cobrada o a fiado) → asignar número
-      // correlativo. Si falla, no se tumba la venta (queda registrada igual).
-      const num = await assignOrderNumber(order.id, profile.sede_id)
-      setOrderNumber(num.orderNumber)
-      setNumeroReservado(num.numeroReservado)
-
-      if (isFiado) queryClient.invalidateQueries({ queryKey: ['debts'] })
-      refetchSales()
-      setOrderId(order.id)
-      setStep('success')
-    } catch (err) {
-      const msg = mensajeDeError(err, 'Error desconocido')
-      toast.error(`Error al procesar el cobro: ${msg}`)
-      console.error('[checkout]', err)
-      // El toast le dice al cajero que falló, pero no nos dice a nosotros por
-      // qué. Es el flujo que más importa: si esto se rompe, no se puede cobrar.
-      captureError(err, 'cobro', {
-        origen: 'POS',
-        esFiado: isFiado,
-        pagoDividido: split,
-        cantidadItems: items.length,
-      })
-    } finally {
-      setSubmitting(false)
-    }
+    // 🔴 LA ESCRITURA VIVE EN `useCobro`, NO ACÁ. El cobro pasa de modal a
+    //    columna por cortes, y durante la transición las dos superficies cobran.
+    //    Dos superficies que escriben lo mismo es R1 en el flujo más caro del
+    //    producto; una sola escritura con dos vistas, no. Mismo patrón que
+    //    Gastos con `addMovement`.
+    const res = await cobrar({
+      perfil: { id: profile.id, sede_id: profile.sede_id },
+      canal, items, total,
+      discountAmt,
+      discountType: discountAmt > 0 ? discountType : null,
+      discountReason,
+      method, split, splitParts,
+      customerId, customerName, plazoDias,
+      origen: 'modal',
+    })
+    setSubmitting(false)
+    if (!res) return
+    setOrderNumber(res.orderNumber)
+    setNumeroReservado(res.numeroReservado)
+    setOrderId(res.orderId)
+    setStep('success')
   }
 
   // Reintento a pedido del cajero cuando la venta quedó sin número. La venta YA
