@@ -119,6 +119,65 @@ grupo, y fue la única que cambió. Las diez restantes ya eran correctas.
 > producto hace y la maqueta no dibuja— y esa lista se escribe **antes** de escribir código. Los
 > cortes 2 (mixto), 3 (fiado) y 4 (el después del cobro) llevan la suya.
 
+---
+
+#### 🔴 UNA ESPECIE DE (d) QUE LA DEFINICIÓN NO CUBRÍA: EL QUE NO ES UN CONTROL SINO UNA FRASE
+
+*Encontrado el 2026-09-03 enumerando el fiado, y merece categoría propia porque **ningún criterio de
+los que veníamos usando lo alcanza**.*
+
+Un (d) normal es un control: un botón, una columna, un chip. Se ve, se puede clickear, y **casi
+siempre tiene un testid** — así que hay alguna chance de que un spec lo extrañe. Éste no es nada de
+eso:
+
+> **Es un texto que no hace nada, no tiene testid, no tiene spec — y es la única explicación en
+> pantalla de un principio del producto.**
+
+**El caso.** Bajo el selector de plazo, el mostrador dice:
+
+> *«Queda guardado en esta venta: cambiarle el plazo al cliente después no mueve el vencimiento de
+> ésta.»*
+
+Esa frase es **todo** lo que le explica al usuario el principio de congelar el plazo en la venta
+(deuda 46). Se borra en un re-skin sin que nada falle y sin que nadie la eche de menos: no hay
+verde que se ponga rojo, porque no hay nada que aseverar.
+
+🔴 **Y LA CONSECUENCIA GENERAL, que es lo que la hace cara:**
+
+> **Las decisiones más caras de este proyecto son INVISIBLES en la interfaz.**
+
+El **costo congelado** en la línea de venta (R1 punto 8), la **fecha del documento** separada de la
+del tecleo (deuda 44), el **plazo congelado** en la orden (deuda 46): las tres se tomaron para que
+una pregunta sobre el pasado **no cambie de respuesta según cuándo se la haga**, y las tres son
+indistinguibles, mirando la pantalla, de no haberlas tomado. **La frase es la única superficie donde
+esas decisiones existen para quien usa el producto.**
+
+⚠️ **Sin ella, el modo de fallo no es que alguien no entienda: es que alguien lo "arregle".** Un
+usuario —o nosotros dentro de seis meses— va a reportar como defecto que cambiarle el plazo a un
+cliente no actualiza sus ventas viejas, y va a tener toda la razón aparente. Es la misma familia que
+*una nota que dirige mal cuesta más que una ausente*, del otro lado: acá la nota **falta**, y lo que
+la reemplaza es una intuición equivocada.
+
+**LO ACCIONABLE, y son dos cosas:**
+
+1. **Al enumerar los (d) de una pantalla, incluir el TEXTO explicativo, no sólo los controles.** La
+   pregunta no es *«¿qué se puede hacer acá?»* sino *«¿qué se explica acá?»*.
+2. 🔴 **Un texto que explica un invariante LLEVA TESTID** — y no para aseverar el copy, que
+   cambiaría con cualquier redacción, sino **para que su desaparición se note**. La aserción es
+   *«este bloque existe»*, no *«dice exactamente esto»*.
+
+⚠️ Corolario sobre el alcance: no todo texto lo lleva. Un placeholder, un rótulo de columna o una
+ayuda de formato son reemplazables y su ausencia se ve. **El criterio es si el texto es la única
+explicación de una decisión que la pantalla no muestra de otra forma** — ahí, y sólo ahí, hay que
+poder detectar que se fue.
+
+📋 **Los que hay que ir a marcar, con este criterio:** la frase del plazo (deuda 46, el caso de
+arriba); la nota de Gastos que distingue gasto de compra a proveedor; la advertencia de que la venta
+a fiado **no entra a la caja**; y la hoja `Definiciones` de los Excel, que es la versión archivada
+del mismo problema. **Se marcan cuando se toque cada pantalla, no en una pasada**: una pasada de
+testids sin tocar el flujo es exactamente el barrido de tokens que ya sabemos que no arregla lo
+estructural.
+
 🔴 **La regla de (d), y es la que protege lo que ya funciona:** un (d) **no puede desaparecer porque
 la maqueta no lo tenía**. Eso sería la maqueta borrando funcionalidad probada. Se decide aparte si se
 dibuja o se quita.
@@ -559,19 +618,44 @@ declaraciones otra vez, sólo que ahora una la dice quien implementa y la otra q
 clase conocida, y el corte 2 habría escrito su spec creyendo ser **la única defensa** de algo que la
 base ya rechaza.
 
-### Corte 3 · fiado — enumerado ANTES de tocarlo
+### Corte 3 · fiado — enumerado ANTES de tocarlo, leyendo el flujo
 
-| # | capacidad | dónde vive hoy |
-|---|---|---|
-| 1 | **elegir cliente**, obligatorio para fiado | `CustomerPicker` dentro del modal |
-| 2 | **plazo pactado por venta**, precargado del cliente y **editable** | `pos-plazo` (deuda 46) |
-| 3 | el plazo **se congela en la orden**, no se lee del cliente después | `plazo_dias` en `createOrder` |
-| 4 | fiado **no registra pago** y **no toca caja**, pero **sí descuenta stock** | `useCobro`, rama `esFiado` |
-| 5 | `Cambiar cliente` / **F4** | ⛔ **no existe**: es la mitad que falta, y entra con este corte |
+**Lo que la maqueta SÍ dibuja** en la columna: el nombre del cliente con su NIT, un botón
+`Cambiar cliente`, y el bloque `CUPO DE CRÉDITO` con su barra y su badge. **Todo lo demás del flujo
+de crédito es (d).**
 
-⚠️ La maqueta **sí** dibuja cliente y cupo en la columna, así que acá el riesgo no es la omisión
-sino el revés: **el `CupoMeter` que la maqueta dibuja no tiene datos** — el cupo no existe en el
-esquema (deuda 40) y nace en `sin dato`.
+| # | capacidad | dónde vive hoy | qué se pierde si no viaja |
+|---|---|---|---|
+| 1 | **buscar cliente** por nombre, teléfono o documento | `customer-search` en `CustomerPicker` | con más de veinte clientes, elegir deja de ser posible |
+| 2 | **alta rápida de cliente sin salir del cobro** | `customer-quick-create` | el cliente nuevo obliga a abandonar la venta e ir a Clientes |
+| 3 | **plazo de pago como DESPLEGABLE, no número libre** | `pos-plazo` | ⬇️ ver la nota, es la más cara |
+| 4 | **precarga del plazo** desde el cliente, con fallback al default de la sede | `onChange` del picker | el cajero teclea el plazo pactado en cada venta |
+| 5 | **«Sin plazo»** como opción explícita | `<option value="">` | una venta sin plazo pactado no se puede expresar |
+| 6 | **la nota del congelado**, en pantalla: *«cambiarle el plazo al cliente después no mueve el vencimiento de ésta»* | bajo el select | la regla existe y **nadie la sabe**: se descubre cuando un vencimiento no se movió |
+| 7 | **el aviso de que no entra dinero a la caja** y dónde se registran los abonos | bajo el bloque | el cajero busca la plata del fiado en el arqueo |
+| 8 | **Cobrar deshabilitado sin cliente**, y el toast que lo dice | `isFiado && !customerId` | una venta a crédito sin deudor |
+
+🔴 **El 3 es el más caro, y su razón está escrita en el código:** *«el typo de 3 por 30 no lo detecta
+nada, y una venta a 3 días se lee como vencida a los cuatro»*. Un campo numérico libre se ve más
+flexible y es un error silencioso sobre la fecha que ordena toda la cartera.
+
+⚠️ **El 6 merece mención aparte porque no es un control: es una FRASE.** Explica en la pantalla el
+principio de congelar el plazo (deuda 46). Un rediseño la borra sin notarlo —no hace nada— y con
+ella se va la única explicación de por qué cambiar el plazo del cliente no mueve las ventas viejas.
+
+**Dos decisiones YA TOMADAS que este corte no re-decide:**
+- **`plazo_dias` se congela en la venta**, no se deriva del cliente (deuda 46). La cartera **deriva
+  de `orders`**, así que leerlo del cliente daría otro vencimiento mañana para una venta de enero.
+- **`CupoMeter` nace en `sin dato`**: el cupo no existe en el esquema (deuda 40). El componente dice
+  qué falta y dónde asignarlo en vez de inventar un número (§7.5).
+
+**Y la mitad que falta, que entra con este corte:** `Cambiar cliente` **no existe** en el mostrador,
+y por eso **`F4` no está cableada**. Las dos mitades van juntas: **un atajo que lleva a nada es
+exactamente lo que se acaba de arreglar con F12.**
+
+⚠️ **Divergencia a decidir, no a inventar:** la maqueta muestra el bloque de cliente **siempre**,
+también en una venta de contado. El producto lo muestra **sólo con crédito elegido**. Se anota; no
+se resuelve de paso.
 
 ### Corte 4 · el después del cobro
 

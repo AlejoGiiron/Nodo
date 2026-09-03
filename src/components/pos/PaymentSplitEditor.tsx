@@ -41,9 +41,46 @@ interface Line {
 interface PaymentSplitEditorProps {
   total: number
   onChange: (parts: SalePaymentPart[], valid: boolean) => void
+  /**
+   * Prefijo de los `data-testid`.
+   *
+   * 🔴 Mismo motivo que en `TenderSelector`, y la lección salió del corte 1: con
+   * el cobro en línea las DOS superficies pueden estar montadas a la vez —la
+   * columna y el modal encima—, así que dos editores con el mismo testid harían
+   * que cada locator resolviera a dos elementos. Es la clase «un locator
+   * apoyado en unicidad no declarada», atajada antes de que muerda.
+   *
+   * ⚠️ Los SUFIJOS no cambian: con el default `pay` los testids quedan byte a
+   * byte como estaban, así que los specs del modal no se tocan. Un renombre que
+   * no hacía falta habría sido trabajo puro más la chance de romper algo.
+   */
+  prefijo?: string
+  /** Variante sobre `--ink` (§1.2): el panel de cobro de la columna. */
+  sobreTinta?: boolean
 }
 
-export function PaymentSplitEditor({ total, onChange }: PaymentSplitEditorProps) {
+export function PaymentSplitEditor({
+  total, onChange, prefijo = 'pay', sobreTinta = false,
+}: PaymentSplitEditorProps) {
+  // ⚠️ Sobre tinta valen SÓLO los `--on-dark-*` (§1.2). Los pares se resuelven
+  //    acá y no en cada `style` para no repetir el condicional catorce veces —
+  //    y para que agregar un estado nuevo no nazca claro por olvido.
+  const T = sobreTinta
+    ? {
+        campoBg: 'var(--on-dark-fill)', campoBorde: 'transparent', campoTexto: '#fff',
+        etiqueta: 'var(--on-dark-2)', apoyo: 'var(--on-dark-3)',
+        panelBg: 'var(--on-dark-fill)', panelBorde: 'transparent',
+        // §8.3: sobre tinta NO existen --success ni --danger. Son los mismos dos
+        // hexes que ya usa el arqueo, marcados como lo que son: valores que la
+        // skill no define y que no se inventaron acá.
+        ok: '#34d399', mal: '#f87171',
+      }
+    : {
+        campoBg: 'var(--surface)', campoBorde: 'var(--border)', campoTexto: 'var(--ink)',
+        etiqueta: 'var(--ink-3)', apoyo: 'var(--ink-2)',
+        panelBg: 'var(--surface-2)', panelBorde: 'var(--border-2)',
+        ok: 'var(--success-on-soft)', mal: 'var(--danger-on-soft)',
+      }
   // Semilla: una línea con el total en el primer método libre (efectivo).
   // Es un estado válido de arranque (equivale a "todo en un método"); el
   // cajero reduce esta línea y agrega otras para dividir.
@@ -118,13 +155,13 @@ export function PaymentSplitEditor({ total, onChange }: PaymentSplitEditorProps)
         return (
           <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
             <select
-              data-testid={`pay-line-method-${i}`}
+              data-testid={`${prefijo}-line-method-${i}`}
               value={line.method}
               onChange={(e) => setMethod(i, e.target.value as PayMethod)}
               style={{
                 flex: '0 0 140px', padding: '9px 10px', borderRadius: 8,
-                border: '1.5px solid var(--border)', background: 'var(--surface)',
-                fontSize: 13, color: 'var(--ink-2)', cursor: 'pointer', outline: 'none',
+                border: `1.5px solid ${T.campoBorde}`, background: T.campoBg,
+                fontSize: 13, color: T.campoTexto, cursor: 'pointer', outline: 'none',
               }}
             >
               {options.map((m) => (
@@ -138,7 +175,7 @@ export function PaymentSplitEditor({ total, onChange }: PaymentSplitEditorProps)
                 fontSize: 13, color: 'var(--ink-4)', fontVariantNumeric: 'tabular-nums', pointerEvents: 'none',
               }}>$</span>
               <input
-                data-testid={`pay-line-amount-${i}`}
+                data-testid={`${prefijo}-line-amount-${i}`}
                 inputMode="numeric"
                 value={line.amount ? formatCOP(line.amount).replace('$', '').trim() : ''}
                 onChange={(e) => setAmount(i, parsePesos(e.target.value))}
@@ -154,7 +191,7 @@ export function PaymentSplitEditor({ total, onChange }: PaymentSplitEditorProps)
 
             <button
               type="button"
-              data-testid={`pay-line-remove-${i}`}
+              data-testid={`${prefijo}-line-remove-${i}`}
               onClick={() => removeLine(i)}
               disabled={lines.length <= 1}
               title="Quitar método"
@@ -176,12 +213,12 @@ export function PaymentSplitEditor({ total, onChange }: PaymentSplitEditorProps)
       {canAdd && (
         <button
           type="button"
-          data-testid="pay-add-method"
+          data-testid={`${prefijo}-add-method`}
           onClick={addLine}
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 2,
-            padding: '7px 12px', borderRadius: 8, border: '1px dashed var(--ink-4)',
-            background: 'var(--surface)', color: 'var(--ink-2)', fontSize: 12.5, fontWeight: 600,
+            padding: '7px 12px', borderRadius: 8, border: `1px dashed ${T.etiqueta}`,
+            background: 'transparent', color: T.apoyo, fontSize: 12.5, fontWeight: 600,
             cursor: 'pointer',
           }}
         >
@@ -193,15 +230,15 @@ export function PaymentSplitEditor({ total, onChange }: PaymentSplitEditorProps)
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
         marginTop: 14, padding: '10px 12px', borderRadius: 10,
-        background: valid ? 'var(--success-soft)' : 'var(--danger-soft)',
-        border: `1px solid ${valid ? 'var(--success-border)' : 'var(--danger-soft)'}`,
+        background: sobreTinta ? T.panelBg : (valid ? 'var(--success-soft)' : 'var(--danger-soft)'),
+        border: `1px solid ${sobreTinta ? T.panelBorde : (valid ? 'var(--success-border)' : 'var(--danger-soft)')}`,
       }}>
-        <span style={{ fontSize: 12.5, fontWeight: 600, color: valid ? 'var(--success-on-soft)' : 'var(--danger-on-soft)' }}>
+        <span style={{ fontSize: 12.5, fontWeight: 600, color: valid ? T.ok : T.mal }}>
           {remaining === 0 ? 'Asignado completo' : remaining > 0 ? 'Restante por asignar' : 'Excedido'}
         </span>
         <span
-          data-testid="pay-remaining"
-          style={{ fontSize: 18, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: valid ? 'var(--success-on-soft)' : 'var(--danger-on-soft)' }}
+          data-testid={`${prefijo}-remaining`}
+          style={{ fontSize: 18, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: valid ? T.ok : T.mal }}
         >
           {formatCOP(Math.abs(remaining))}
         </span>
@@ -209,8 +246,8 @@ export function PaymentSplitEditor({ total, onChange }: PaymentSplitEditorProps)
 
       {/* Vuelto: solo si hay línea de efectivo. "recibido" es opcional y solo UI. */}
       {cashLine && (
-        <div style={{ marginTop: 12, padding: '12px 12px', borderRadius: 10, background: 'var(--surface-2)', border: '1px solid var(--border-2)' }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>
+        <div style={{ marginTop: 12, padding: '12px 12px', borderRadius: 10, background: T.panelBg, border: `1px solid ${T.panelBorde}` }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: T.etiqueta, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>
             Efectivo recibido (opcional)
           </div>
           <div style={{ position: 'relative' }}>
@@ -219,27 +256,27 @@ export function PaymentSplitEditor({ total, onChange }: PaymentSplitEditorProps)
               fontSize: 13, color: 'var(--ink-4)', fontVariantNumeric: 'tabular-nums', pointerEvents: 'none',
             }}>$</span>
             <input
-              data-testid="pay-received"
+              data-testid={`${prefijo}-received`}
               inputMode="numeric"
               value={received ? formatCOP(receivedNum).replace('$', '').trim() : ''}
               onChange={(e) => setReceived(e.target.value)}
               placeholder={formatCOP(cashLine.amount).replace('$', '').trim()}
               style={{
                 width: '100%', boxSizing: 'border-box', padding: '9px 10px 9px 22px',
-                borderRadius: 8, border: '1.5px solid var(--border)', background: 'var(--surface)',
-                fontSize: 14, fontWeight: 600, color: 'var(--ink)',
+                borderRadius: 8, border: `1.5px solid ${T.campoBorde}`, background: T.campoBg,
+                fontSize: 14, fontWeight: 600, color: T.campoTexto,
                 fontVariantNumeric: 'tabular-nums', textAlign: 'right', outline: 'none',
               }}
             />
           </div>
           {received !== '' && (
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
-              <span style={{ fontSize: 12.5, fontWeight: 600, color: change >= 0 ? 'var(--success-on-soft)' : 'var(--danger-on-soft)' }}>
+              <span style={{ fontSize: 12.5, fontWeight: 600, color: change >= 0 ? T.ok : T.mal }}>
                 {change >= 0 ? 'Vuelto' : 'Falta'}
               </span>
               <span
-                data-testid="pay-change"
-                style={{ fontSize: 16, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: change >= 0 ? 'var(--success-on-soft)' : 'var(--danger-on-soft)' }}
+                data-testid={`${prefijo}-change`}
+                style={{ fontSize: 16, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: change >= 0 ? T.ok : T.mal }}
               >
                 {formatCOP(Math.abs(change))}
               </span>

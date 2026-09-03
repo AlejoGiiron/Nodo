@@ -501,6 +501,10 @@ function CartPanel({
   onMasOpciones,
   cobrando,
   botonCobrarRef,
+  split,
+  setSplit,
+  splitValid,
+  onSplitChange,
 }: {
   subtotal: number
   discountAmt: number
@@ -524,6 +528,10 @@ function CartPanel({
   onMasOpciones: () => void
   cobrando: boolean
   botonCobrarRef: React.RefObject<HTMLButtonElement>
+  split: boolean
+  setSplit: (v: boolean) => void
+  splitValid: boolean
+  onSplitChange: (parts: SalePaymentPart[], valid: boolean) => void
 }) {
   const items = useCartStore((s) => s.items)
   const discount = useCartStore((s) => s.discount)
@@ -853,7 +861,40 @@ function CartPanel({
               ⚠️ Corte 1: la columna cobra el flujo SIMPLE. Mixto y fiado siguen
                  en el cobro completo (cortes 2 y 3) y el modal no desaparece
                  hasta que los tres estén acá. */}
-          {items.length > 0 && (
+          {items.length > 0 && split && (
+            <div style={{ marginBottom: 14 }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                marginBottom: 8,
+              }}>
+                <span style={{
+                  fontSize: 11, fontWeight: 600, letterSpacing: '.04em',
+                  textTransform: 'uppercase', color: 'var(--on-dark-2)',
+                }}>
+                  Dividir entre métodos
+                </span>
+                <button
+                  data-testid="cobro-dividir-cancelar"
+                  onClick={() => setSplit(false)}
+                  style={{
+                    background: 'transparent', border: 'none', cursor: 'pointer',
+                    color: 'var(--on-dark-2)', fontSize: 12, fontFamily: 'inherit',
+                    textDecoration: 'underline', textUnderlineOffset: 3,
+                  }}
+                >
+                  Un solo método
+                </button>
+              </div>
+              <PaymentSplitEditor
+                total={total}
+                onChange={onSplitChange}
+                prefijo="cobro"
+                sobreTinta
+              />
+            </div>
+          )}
+
+          {items.length > 0 && !split && (
             <div style={{ marginBottom: 14 }}>
               <TenderSelector
                 tenders={medios.map((m) => ({ id: m.id, label: m.label, icon: m.icon }))}
@@ -967,6 +1008,29 @@ function CartPanel({
             </div>
           )}
 
+          {/* Dividir pago. 🔴 NO se ofrece con crédito, y no es sólo cosmético:
+              `register_sale_payment` guarda la regla en la base —«Solo ventas de
+              CONTADO. La venta a credito se salda con abonos»— y una orden a
+              fiado nace `payment_status='pending'`, así que la RPC la rechaza.
+              Esto es la mitad de UI: que el cajero no vea un control que la base
+              va a negar. El guard es el que sostiene la regla; esto evita el
+              viaje en falso. */}
+          {items.length > 0 && !split && method !== 'fiado' && (
+            <button
+              data-testid="cobro-dividir"
+              onClick={() => setSplit(true)}
+              style={{
+                width: '100%', marginBottom: 12, padding: '8px 0',
+                borderRadius: 'var(--r-2)', border: '1px dashed var(--on-dark-2)',
+                background: 'transparent', cursor: 'pointer',
+                color: 'var(--on-dark-3)', fontSize: 12.5, fontWeight: 600,
+                fontFamily: 'inherit',
+              }}
+            >
+              Dividir pago
+            </button>
+          )}
+
           {/* "Cobrar — F12" es la ÚNICA tecla impresa del producto (§5): el
               atajo que la cajera usa cientos de veces al día es el que
               justifica la excepción a "los atajos no se imprimen".
@@ -985,12 +1049,12 @@ function CartPanel({
             size="pos"
             block
             className="nodo-btn--sobre-tinta"
-            disabled={items.length === 0 || cobrando}
+            disabled={items.length === 0 || cobrando || (split && !splitValid)}
             onClick={onCheckout}
           >
             {cobrando
               ? 'Cobrando…'
-              : `${method === 'fiado' ? 'Continuar' : 'Cobrar'} — ${teclaDe('Cobrar')}`}
+              : `${!split && method === 'fiado' ? 'Continuar' : 'Cobrar'} — ${teclaDe('Cobrar')}`}
           </Button>
 
           {items.length > 0 && (
@@ -1793,6 +1857,11 @@ export function POSPage() {
   //    siga vivo: un solo estado, dos vistas.
   const [method, setMethod] = useState<PaymentMethodUI>('efectivo')
   const [received, setReceived] = useState('')
+  // Corte 2: el reparto también vive en la página. Mismo motivo que `method` —
+  // la columna lo muestra y el modal, mientras siga vivo, tiene que ver el mismo.
+  const [split, setSplit] = useState(false)
+  const [splitParts, setSplitParts] = useState<SalePaymentPart[]>([])
+  const [splitValid, setSplitValid] = useState(false)
   const [cobrando, setCobrando] = useState(false)
   const [resultadoInline, setResultadoInline] = useState<ResultadoDeCobro | null>(null)
   const botonCobrarRef = useRef<HTMLButtonElement>(null)
@@ -1813,6 +1882,9 @@ export function POSPage() {
     if (!isShiftOpen) { setShowOpenShift(true); return }
     if (items.length === 0 || !profile) return
     if (method === 'fiado') { setCheckout(true); return }
+    // Con el reparto abierto, cobrar exige que la suma cuadre. La RPC lo valida
+    // igual y de forma atómica; esto es que el cajero no llegue hasta ahí.
+    if (split && !splitValid) return
     setCobrando(true)
     const res = await cobrar({
       perfil: { id: profile.id, sede_id: profile.sede_id },
@@ -1820,7 +1892,7 @@ export function POSPage() {
       discountAmt,
       discountType: discountAmt > 0 ? discountType : null,
       discountReason,
-      method, split: false, splitParts: [],
+      method, split, splitParts,
       customerId: null, customerName: '', plazoDias: null,
       origen: 'columna',
     })
@@ -1841,6 +1913,9 @@ export function POSPage() {
     setCanal(DEFAULT_CANAL)
     setMethod('efectivo')
     setReceived('')
+    setSplit(false)
+    setSplitParts([])
+    setSplitValid(false)
   }
 
   const { data: categories = [], isLoading: catsLoading } = useCategories()
@@ -2219,6 +2294,10 @@ export function POSPage() {
         setReceived={setReceived}
         cobrando={cobrando}
         botonCobrarRef={botonCobrarRef}
+        split={split}
+        setSplit={setSplit}
+        splitValid={splitValid}
+        onSplitChange={(parts, valid) => { setSplitParts(parts); setSplitValid(valid) }}
         onHold={() => setShowHoldModal(true)}
         heldCount={heldOrders.length}
         onShowHeld={() => setShowHeldPanel(true)}

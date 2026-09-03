@@ -257,3 +257,118 @@ test('🔴 el producto del lab sigue siendo el que arma el carrito', async ({ pa
     `el lab necesita "${POS_PRODUCTO}" activo`,
   ).toHaveCount(1)
 })
+
+// ============================================================================
+// CORTE 2 · el PAGO MIXTO baja a la columna
+//
+// 🔴 LA MAQUETA NO DIBUJA EL PAGO DIVIDIDO EN ABSOLUTO — no lo dibuja distinto:
+//    no está. El panel tiene tres celdas, un RECIBE y un CAMBIO. **El flujo
+//    entero es (d) NO DIBUJADO**, y sus ocho capacidades quedaron enumeradas en
+//    `docs/auditorias/A6-visual-contra-la-maqueta.md` §12 ANTES de tocar nada,
+//    porque durante una migración por cortes la superficie vieja sostiene toda
+//    la cobertura: una capacidad que no viaje **no rompe nada**.
+// ============================================================================
+
+test('🔴 el reparto vive en la columna: no hay que abrir nada para dividir', async ({ page }) => {
+  await addPosProduct(page)
+  await page.getByTestId('cobro-dividir').click()
+  await expect(
+    page.getByTestId('cobro-line-method-0'),
+    'dividir el pago es parte del cobro, y el cobro está en la columna',
+  ).toBeVisible()
+  await expect(page.getByTestId('checkout-total'), 'sin abrir el modal').toHaveCount(0)
+})
+
+test('🔴 un método NO se repite entre líneas del reparto', async ({ page }) => {
+  // Capacidad 6 de la enumeración. Sin control visible: es una regla de
+  // comportamiento, de las que un rediseño mirando la maqueta borra sin notarlo.
+  // Dos líneas del mismo método dan un reparto que la RPC acepta —la suma cuadra—
+  // y que el reporte por medio de pago no puede explicar.
+  await addPosProduct(page)
+  await page.getByTestId('cobro-dividir').click()
+  await page.getByTestId('cobro-line-method-0').selectOption('cash')
+  await page.getByTestId('cobro-add-method').click()
+
+  const opciones = await page.getByTestId('cobro-line-method-1').locator('option')
+    .allTextContents()
+  expect(
+    opciones,
+    'el método ya usado por otra línea NO puede estar entre las opciones de la nueva',
+  ).not.toContain('Efectivo')
+  expect(opciones.length, 'y sí quedan los otros').toBeGreaterThan(0)
+})
+
+test('🔴 el reparto dice CUÁNTO FALTA antes de que la RPC lo rechace', async ({ page }) => {
+  // Capacidad 4. Sin esto el cajero se entera de que no cuadra cuando el cobro
+  // ya falló, que es el peor momento.
+  await addPosProduct(page)
+  await page.getByTestId('cobro-dividir').click()
+  await page.getByTestId('cobro-line-amount-0').fill('3000')
+  await expect(
+    page.getByTestId('cobro-remaining'),
+    'faltan 5.000 de los 8.000: la cifra tiene que estar antes de confirmar',
+  ).toContainText('5.000')
+})
+
+test('🔴 EQUIVALENCIA DEL REPARTO: columna y modal escriben las MISMAS FILAS', async ({ page }) => {
+  // 🔴 ES LA ASERCIÓN QUE EL CORTE 1 ESCRIBIÓ Y NO PUDO EJERCER. Allá el
+  //    escenario tenía UNA fila de pago, y con una fila comparar la lista y
+  //    comparar el total son la misma aserción. Acá hay dos, y la propiedad que
+  //    la comparación por filas existe para atrapar —**dos repartos distintos
+  //    que suman lo mismo**— por fin se puede medir.
+  const reparto = async (prefijo: string) => {
+    await page.getByTestId(`${prefijo}-line-amount-0`).fill('5000')
+    await page.getByTestId(`${prefijo}-add-method`).click()
+    await page.getByTestId(`${prefijo}-line-method-1`).selectOption('nequi')
+    await page.getByTestId(`${prefijo}-line-amount-1`).fill('3000')
+  }
+
+  await addPosProduct(page)
+  await page.getByTestId('cobro-dividir').click()
+  await page.getByTestId('cobro-line-method-0').selectOption('cash')
+  await reparto('cobro')
+  await page.getByTestId('cobro-confirmar').click()
+  await expect(page.getByTestId('success-order-number').or(page.getByTestId('success-sin-numero')))
+    .toBeVisible({ timeout: 20_000 })
+  const porLaColumna = await loQueQuedo(await ultimaOrden())
+  expect(porLaColumna.pagos.length, 'el escenario TIENE que tener dos filas, o no mide nada')
+    .toBe(2)
+
+  // El mismo reparto por el modal, que sigue vivo hasta el corte 4.
+  await page.goto('/ventas')
+  await waitPosReady(page)
+  await addPosProduct(page)
+  await page.getByTestId('cobro-mas-opciones').click()
+  await expect(page.getByTestId('checkout-total')).toBeVisible({ timeout: 10_000 })
+  await page.getByTestId('pay-split-toggle').click()
+  await page.getByTestId('pay-line-method-0').selectOption('cash')
+  await reparto('pay')
+  await page.getByTestId('checkout-confirm').click()
+  await expect(page.getByTestId('success-order-number').or(page.getByTestId('success-sin-numero')))
+    .toBeVisible({ timeout: 20_000 })
+  const porElModal = await loQueQuedo(await ultimaOrden())
+
+  expect(
+    porLaColumna.pagos,
+    'las FILAS de pago tienen que ser idénticas: dos repartos distintos suman lo mismo, ' +
+    'así que el total es justamente lo que NO distingue',
+  ).toEqual(porElModal.pagos)
+  expect(porLaColumna, 'y el resto de la orden también').toEqual(porElModal)
+})
+
+test('🔴 con crédito NO se ofrece dividir — y la base lo respalda', async ({ page }) => {
+  // Capacidad 8. ⚠️ Y se asevera con el peso correcto: NO es lo único que
+  // sostiene la regla. `register_sale_payment` la guarda en la base —
+  //   «Solo ventas de CONTADO. La venta a credito se salda con abonos»
+  //   if v_pay_status <> 'paid' then raise exception …
+  // — y una orden a fiado nace `payment_status='pending'`, así que la RPC la
+  // rechaza. Esto de acá es la mitad de UI: que el cajero no vea un control que
+  // la base va a negar.
+  await addPosProduct(page)
+  await expect(page.getByTestId('cobro-dividir')).toBeVisible()
+  await page.getByTestId('cobro-medio-fiado').click()
+  await expect(
+    page.getByTestId('cobro-dividir'),
+    'una venta a crédito no se reparte entre medios: no se cobra nada hoy',
+  ).toHaveCount(0)
+})
