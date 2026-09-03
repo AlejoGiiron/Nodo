@@ -16,12 +16,11 @@ export interface ExpensesHistoryUIFilters {
   page: number
 }
 
-function dayStartISO(day: string): string {
-  return new Date(`${day}T00:00:00-05:00`).toISOString()
-}
-function dayEndISO(day: string): string {
-  return new Date(`${day}T23:59:59.999-05:00`).toISOString()
-}
+// 🔴 LAS DOS CONVERSIONES A ISO MURIERON ACÁ (deuda 44). El rango ahora se
+//    aplica sobre `document_date`, que es una columna `date`: no tiene hora ni
+//    zona, así que las cadenas 'YYYY-MM-DD' viajan tal cual. Convertirlas era
+//    necesario mientras se filtraba un `timestamptz`, y era exactamente el
+//    lugar donde R7 se paga — un borde de día calculado a mano.
 
 /**
  * Historial de gastos (egresos de caja, movimientos type='out') paginado y
@@ -33,17 +32,14 @@ export function useExpensesHistory({ from, to, scope, page }: ExpensesHistoryUIF
   const sedeId = profile?.sede_id ?? null
   const userId = scope === 'mine' ? (profile?.id ?? null) : null
 
-  const fromISO = from ? dayStartISO(from) : undefined
-  const toISO = to ? dayEndISO(to) : undefined
-
   const query = useQuery({
     queryKey: ['expenses_history', sedeId, from, to, scope, userId, page],
     queryFn: async () => {
       const { data, count, error } = await getCashOutMovements({
         sedeId: sedeId!,
         userId,
-        from: fromISO,
-        to: toISO,
+        from: from || undefined,
+        to: to || undefined,
         page,
         pageSize: EXPENSES_PAGE_SIZE,
       })
@@ -65,8 +61,8 @@ export function useExpensesHistory({ from, to, scope, page }: ExpensesHistoryUIF
       const { data, error } = await getCashOutTotal({
         sedeId: sedeId!,
         userId,
-        from: fromISO,
-        to: toISO,
+        from: from || undefined,
+        to: to || undefined,
       })
       if (error) throw error
       return (data ?? []).reduce((s, r) => s + (r.amount ?? 0), 0)

@@ -14,6 +14,17 @@ import { availableCash } from '@/lib/shiftCalc'
 // y abonos sin deuda — plata sin su hecho de negocio detrás.
 /** Etiqueta legible de una categoria. Deriva de CATEGORIAS: la lista de valores
  *  validos vive en UN solo lugar y esto la lee, no la repite (R1). */
+/**
+ * Hoy en América/Bogotá. Es el mismo día que usa el default de la base
+ * (`hoy_bogota()`): `new Date().toISOString()` daría UTC y a partir de las 7 de
+ * la noche adelantaría el día — justo la franja del cierre de caja (R7).
+ */
+function hoyBogota(): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'America/Bogota',
+  }).format(new Date())
+}
+
 export function etiquetaCategoria(valor: string | null | undefined): string {
   if (!valor) return ''
   for (const grupo of Object.values(CATEGORIAS)) {
@@ -58,6 +69,9 @@ export function MovementsModal({ onClose }: MovementsModalProps) {
   const { config } = useSedeConfig()
 
   const [type, setType] = useState<'in' | 'out'>('in')
+  // 🔴 Deuda 44. Arranca en HOY porque el caso normal es cargar el gasto del
+  //    día; lo que faltaba era poder decir otra cosa cuando el papel es viejo.
+  const [documentDate, setDocumentDate] = useState(hoyBogota())
   const [categoria, setCategoria] = useState<string>('')
   const [rawAmount, setRawAmount] = useState('')
   const [reason, setReason] = useState('')   // DETALLE libre, ya no la clasificación
@@ -96,6 +110,7 @@ export function MovementsModal({ onClose }: MovementsModalProps) {
     setRawAmount('')
     setReason('')
     setCategoria('')
+    setDocumentDate(hoyBogota())
     setOverdraftPending(false)
   }
 
@@ -122,6 +137,7 @@ export function MovementsModal({ onClose }: MovementsModalProps) {
         amount,
         categoria,
         reason: detalle || null,   // null explícito: la columna es nullable
+        document_date: documentDate,
       })
       resetForm()
     } catch {
@@ -269,6 +285,30 @@ export function MovementsModal({ onClose }: MovementsModalProps) {
                   <option key={c.valor} value={c.valor}>{c.label}</option>
                 ))}
               </select>
+            </div>
+
+            {/* 🔴 FECHA DEL DOCUMENTO — deuda 44. No es cuándo se teclea: un
+                gasto del 24 cargado el 31 pertenece al 24, y el historial lo
+                ordena por acá. La caja NO la usa: la plata salió del cajón hoy,
+                y el arqueo sigue cuadrando por la jornada. */}
+            <div>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--ink-2)', marginBottom: 6 }}>
+                Fecha del documento
+              </label>
+              <input
+                type="date"
+                data-testid="movement-document-date"
+                value={documentDate}
+                max={hoyBogota()}
+                onChange={(e) => setDocumentDate(e.target.value)}
+                style={{ ...inputStyle, fontVariantNumeric: 'tabular-nums' }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--action)' }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)' }}
+              />
+              <p style={{ margin: '6px 0 0', fontSize: 11.5, color: 'var(--ink-3)', lineHeight: 1.45 }}>
+                De cuándo es el gasto. El arqueo del turno lo cuenta hoy igual,
+                porque la plata sale del cajón ahora.
+              </p>
             </div>
 
             {/* Detalle libre. Obligatorio SOLO en 'otro' (chk_otro_exige_detalle) */}

@@ -786,6 +786,12 @@ export type CashOutRow = {
   id: string
   amount: number
   reason: string
+  /**
+   * 🔴 Fecha del gasto (deuda 44). Es la que FILTRA y ORDENA esta pantalla.
+   * `created_at` sigue existiendo y sigue siendo lo que cuadra la caja: son dos
+   * preguntas distintas sobre la misma fila.
+   */
+  document_date: string
   /** `gasto` u `otro` (ver CATEGORIAS_DE_GASTO): se muestra por fila para que
    *  `otro` sea visible como tal y no se confunda con un gasto clasificado. */
   categoria: string
@@ -829,7 +835,7 @@ export const getCashOutMovements = ({
   let q = supabase
     .from('cash_movements')
     .select(
-      'id, amount, reason, categoria, created_at, created_by, jornada_id, ' +
+      'id, amount, reason, categoria, created_at, document_date, created_by, jornada_id, ' +
       'autor:profiles!cash_movements_created_by_fkey(full_name)',
       { count: 'exact' },
     )
@@ -837,9 +843,14 @@ export const getCashOutMovements = ({
     .eq('type', 'out')
     .in('categoria', CATEGORIAS_DE_GASTO)
   if (userId) q = q.eq('created_by', userId)
-  if (from) q = q.gte('created_at', from)
-  if (to) q = q.lte('created_at', to)
+  // 🔴 EL RANGO SE APLICA SOBRE `document_date` (deuda 44). Un gasto del 24
+  // cargado el 31 pertenece al 24. Y como es una columna `date`, el filtro son
+  // fechas planas: desaparece la conversión a ISO con -05:00 que hacía el hook,
+  // y con ella el riesgo de R7 en este filtro.
+  if (from) q = q.gte('document_date', from)
+  if (to) q = q.lte('document_date', to)
   return q
+    .order('document_date', { ascending: false })
     .order('created_at', { ascending: false })
     .range(page * pageSize, page * pageSize + pageSize - 1)
 }
@@ -855,8 +866,8 @@ export const getCashOutTotal = ({
     .eq('type', 'out')
     .in('categoria', CATEGORIAS_DE_GASTO)   // el total y la lista, la misma pregunta
   if (userId) q = q.eq('created_by', userId)
-  if (from) q = q.gte('created_at', from)
-  if (to) q = q.lte('created_at', to)
+  if (from) q = q.gte('document_date', from)   // ...y el mismo rango, ver arriba
+  if (to) q = q.lte('document_date', to)
   return q
 }
 
@@ -941,6 +952,13 @@ export type PurchaseInvoicePayload = {
   supplier_id: string
   invoice_number: string | null
   notes: string | null
+  /**
+   * 🔴 La fecha del PAPEL del proveedor, `YYYY-MM-DD` (deuda 44). No es cuándo
+   * se teclea: el cliente registra el 2 de septiembre facturas del 31 de
+   * agosto, medido en su archivo real. Si se omite, la RPC la fecha hoy en
+   * Bogotá — nunca con `current_date`, que en el servidor es UTC.
+   */
+  document_date: string
 }
 
 export type PurchaseItemPayload = {
@@ -1018,6 +1036,8 @@ export interface PurchaseInvoiceListRow {
   created_at: string
   invoice_number: string | null
   total: number
+  /** Fecha del papel del proveedor. Es la que ORDENA esta lista. */
+  document_date: string
   // 🔴 `kind` SE PIDE SIEMPRE. `purchase_invoices` guarda las devoluciones en la
   // misma tabla y con `total` POSITIVO —el signo lo lleva la cabecera, no las
   // cantidades—, así que una lista que no lo mire muestra una devolución como si
@@ -1042,11 +1062,15 @@ export const getPurchaseInvoices = ({
       // ⚠️ SIN payment_method: la columna no existe (deuda 26 — la compra sale
       //    de caja, siempre). Pedirla hacia fallar la consulta ENTERA y la lista
       //    de compras se veia vacia. Nadie la leia: era solo el select.
-      'id, created_at, invoice_number, total, kind, ' +
+      'id, created_at, invoice_number, total, kind, document_date, ' +
         'suppliers(name), profiles!purchase_invoices_created_by_fkey(full_name)',
       { count: 'exact' },
     )
     .eq('sede_id', sedeId)
+    // Ordena por la fecha del DOCUMENTO: una factura vieja cargada hoy va donde
+    // le corresponde. `created_at` queda de desempate para dos papeles del
+    // mismo día, y así el orden es estable.
+    .order('document_date', { ascending: false })
     .order('created_at', { ascending: false })
     .range(fromIdx, fromIdx + pageSize - 1)
 }
@@ -1058,6 +1082,7 @@ export interface PurchaseInvoiceDetailRow {
   invoice_number: string | null
   total: number
   kind: PurchaseInvoiceKind
+  document_date: string
   /** Solo en `kind: 'return'`: la compra que esta devolución revierte. */
   returns_invoice_id: string | null
   // ⚠️ Tercera aparición del mismo campo muerto en este archivo: declarado y
@@ -1084,6 +1109,7 @@ export const getPurchaseInvoiceDetail = (invoiceId: string) =>
     .from('purchase_invoices')
     .select(
       'id, created_at, invoice_number, total, notes, kind, returns_invoice_id, ' +
+        'document_date, ' +
         'suppliers(name, contact, phone), ' +
         'profiles!purchase_invoices_created_by_fkey(full_name), ' +
         'purchase_invoice_items(id, qty, unit_cost, subtotal, ' +

@@ -152,6 +152,12 @@ const COLUMNAS_DEL_ESQUEMA: ColumnaEsquema[] = [
   { tabla: 'product_cost_adjustments', columna: 'old_cost', ejemplo: 7350 },
   { tabla: 'product_cost_adjustments', columna: 'new_cost', ejemplo: 9420 },
 
+  // Migración `fecha_del_documento` (2026-09-02, deuda 44). Una fecha sola no
+  // identifica a nadie, pero CRUZADA con el resto de la fila ubica a una persona
+  // en un día: se verifica que no salga, como el resto.
+  { tabla: 'purchase_invoices', columna: 'document_date', ejemplo: '2019-03-14' },
+  { tabla: 'cash_movements', columna: 'document_date', ejemplo: '2019-07-22' },
+
   // ── stock_movements / store_sequences
   { tabla: 'stock_movements', columna: 'notes', ejemplo: 'Ajuste hecho por Ana' },
   { tabla: 'stock_movements', columna: 'reference_id', ejemplo: '3f2b1c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d', permitida: true },

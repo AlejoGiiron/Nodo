@@ -35,7 +35,7 @@ function InvoicesTab({ onNew, onOpen }: { onNew: () => void; onOpen: (id: string
             {/* Etiquetas de columna: el otro de los dos únicos lugares donde la
                 skill permite mayúscula sostenida (--fs-label, §2). */}
             <tr style={{ background: 'var(--surface-2)', textAlign: 'left', color: 'var(--ink-3)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.04em' }}>
-              <th style={{ padding: '9px 16px', fontWeight: 600 }}>Fecha</th>
+              <th style={{ padding: '9px 16px', fontWeight: 600 }}>Fecha factura</th>
               <th style={{ padding: '9px 16px', fontWeight: 600 }}>Proveedor</th>
               <th style={{ padding: '9px 16px', fontWeight: 600 }}>N.° factura</th>
               <th style={{ padding: '9px 16px', fontWeight: 600, textAlign: 'right' }}>Total</th>
@@ -62,7 +62,16 @@ function InvoicesTab({ onNew, onOpen }: { onNew: () => void; onOpen: (id: string
                 className="nodo-fila"
                 style={{ borderTop: '1px solid var(--border-2)', cursor: 'pointer' }}
               >
-                <td style={{ padding: '10px 16px', color: 'var(--ink-3)', fontVariantNumeric: 'tabular-nums', fontSize: 12 }}>{fmtDate(inv.created_at)}</td>
+                {/* 🔴 La fecha del PAPEL, no la del tecleo (deuda 44). El
+                    `title` conserva cuándo se registró: las dos existen y cada
+                    una contesta una pregunta distinta. */}
+                <td
+                  data-testid="purchase-document-date"
+                  title={'Registrada el ' + fmtDate(inv.created_at)}
+                  style={{ padding: '10px 16px', color: 'var(--ink-3)', fontVariantNumeric: 'tabular-nums', fontSize: 12 }}
+                >
+                  {fmtDate(inv.document_date + 'T12:00:00')}
+                </td>
                 <td style={{ padding: '10px 16px', color: 'var(--ink)' }}>{inv.suppliers?.name ?? '—'}</td>
                 <td style={{ padding: '10px 16px', color: 'var(--ink-3)' }}>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>

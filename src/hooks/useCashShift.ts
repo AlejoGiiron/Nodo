@@ -160,7 +160,10 @@ export function useCashShift() {
     mutationFn: async (
       // `categoria` es obligatoria: la constraint chk_categoria_segun_tipo la
       // exige y la valida CRUZADA con `type`. Sin ella el insert se rechaza.
-      movement: Pick<TablesInsert<'cash_movements'>, 'type' | 'amount' | 'reason' | 'categoria'>,
+      movement: Pick<
+        TablesInsert<'cash_movements'>,
+        'type' | 'amount' | 'reason' | 'categoria' | 'document_date'
+      >,
     ) => {
       const { data, error } = await createCashMovement({
         ...movement,

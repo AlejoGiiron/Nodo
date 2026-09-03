@@ -3030,3 +3030,69 @@ un rol que no toca dinero la capacidad de tocarlo. El costo es plata; el stock e
 `cost_price` por la tabla, sin motivo y sin rastro — lo hace nuestro propio `costo-congelado.spec`.
 Es la deuda 78, y la nota de diseño que trae es concreta: apoyar el trigger en que `current_user`
 sea `postgres` dentro de un `SECURITY DEFINER` funciona pero es frágil.
+
+
+## 2026-09-02 · Fase B, bloque 3 · La 44 — la fecha del papel y la fecha del tecleo
+
+*Y una premisa de la propia deuda que resultó falsa al ir a ejecutarla.*
+
+### La premisa que no era
+
+La deuda decía que las pantallas de alta **ya dejaban elegir** la fecha y que sólo faltaba la
+columna. Al ir a escribirla, `grep 'type="date"' src/` devolvió diez apariciones y **las diez eran
+filtros de pantallas de historial**. Ningún formulario de alta tenía campo de fecha.
+
+Es la segunda vez en dos días que una descripción de la maqueta entra a una tabla de decisiones como
+si fuera una medición de la app — la primera fueron los 4.212 productos. Y el efecto es el mismo:
+**subestima el trabajo**, porque la deuda parecía "dos columnas" y eran dos columnas, dos guards, dos
+formularios y cuatro consultas.
+
+⚠️ Lo accionable no es escribir mejor: es que **la enumeración previa se hace igual aunque la deuda
+ya diga el alcance**. La deuda es una hipótesis fechada; el código es el dato.
+
+### 🔴 R7, medida en el reloj, no citada
+
+`default current_date` era lo obvio. Y está mal por la razón exacta que R7 nombra: **el servidor
+corre en UTC.** Medido a las 21:40 de Bogotá, mientras se escribía esto:
+
+| pregunta | respuesta |
+|---|---|
+| `current_date` del servidor | **2026-09-03** |
+| hoy en América/Bogotá | **2026-09-02** |
+
+Toda la franja entre las 7 de la tarde y la medianoche —**la del cierre de caja**— habría nacido
+fechada mañana. Por eso existe `hoy_bogota()`, y por eso el caso del spec que lo mide **imprime si
+está discriminando o no**: fuera de esa franja las dos fechas coinciden y el verde no probaría nada.
+En la corrida de hoy imprimió `✅ DISCRIMINA ahora mismo`.
+
+### Dos guards distintos porque hay dos caminos distintos
+
+Los gastos se escriben por **INSERT directo** desde el cliente: no hay RPC de movimientos de caja,
+así que el invariante vive en un **trigger** o no vive — la deuda 61 otra vez, misma forma. Las
+compras sólo las escriben dos funciones `SECURITY DEFINER` y la tabla **no tiene policy de INSERT**,
+así que el guard va en la RPC. Poner además un trigger allí sería un segundo lado del mismo
+invariante sin nada que los sincronice.
+
+Y el trigger **valida, no fuerza**: no recorta la fecha al máximo permitido. Forzar dejaría el gasto
+guardado con una fecha que nadie escribió y el cajero nunca se enteraría del typo.
+
+### Lo que NO se tocó, y está aseverado
+
+El arqueo sigue cuadrando por jornada y `created_at`. Hay un caso del spec cuyo único propósito es
+**impedir que alguien lo "arregle"**: un gasto fechado la semana pasada tiene que seguir contando en
+el cierre de hoy, porque la plata salió del cajón hoy. Es la misma distinción de la deuda 63, y ya
+van dos veces que la misma tabla contesta dos preguntas distintas sin conflicto.
+
+### Un rojo ajeno que era correcto
+
+Al correr el grupo, `gastos-categoria` se puso rojo por **122.000** exactos. No era un defecto: ese
+test calculaba su esperado con `created_at` y la pantalla ya contestaba por `document_date`, así que
+la diferencia eran justo los dos gastos con fecha vieja que el spec nuevo había insertado. **La
+aserción sobrevivió al modelo nuevo y sólo cambió la definición del período** — que es exactamente
+el procedimiento escrito para no borrar un test por obsoleto.
+
+### Un efecto lateral que vale más que su tamaño
+
+Filtrar por una columna `date` **mató las dos conversiones a ISO con `-05:00`** que hacía el hook de
+gastos. Eran un borde de día calculado a mano, o sea el lugar donde R7 se paga. El filtro nuevo no
+tiene hora ni zona: las cadenas `YYYY-MM-DD` viajan tal cual.

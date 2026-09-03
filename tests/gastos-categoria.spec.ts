@@ -146,14 +146,19 @@ test('el total de Gastos NO incluye compras ni retiros', async ({ page }) => {
 
   // Y el total no puede contener la compra: si la contuviera, sería ≥ 500.000
   // sólo por la fixture. Se compara contra el total que la app debería sumar.
-  const desdeHoy = `${hoy}T00:00:00-05:00`
+  // ⚠️ EL RANGO SE MIDE SOBRE `document_date`, NO SOBRE `created_at` (deuda 44,
+  //    2026-09-02). La aserción no cambió —el total de la pantalla tiene que ser
+  //    la suma de gasto+otro del período— pero la definición de "el período" sí:
+  //    la pantalla pasó a filtrar por la fecha del GASTO. Calcularlo con
+  //    `created_at` daba de más justo por los gastos con fecha vieja, que es
+  //    exactamente lo que la 44 vino a separar.
   const esperado = await db
     .from('cash_movements')
     .select('amount')
     .eq('sede_id', SEDE)
     .eq('type', 'out')
     .in('categoria', ['gasto', 'otro'])
-    .gte('created_at', desdeHoy)
+    .eq('document_date', hoy)
   const totalEsperado = (esperado.data ?? []).reduce((s, m) => s + Number(m.amount), 0)
   expect(
     valor,

@@ -42,6 +42,17 @@ const newLine = (): DraftLine => ({
 /** '' o '0' se leen como 1: comprar suelto es el caso normal. */
 const factorDe = (l: DraftLine) => Math.max(1, parseInt(l.factor, 10) || 1)
 
+/**
+ * Hoy en América/Bogotá. Es el mismo día que usa el default de la base
+ * (`hoy_bogota()`): `new Date().toISOString()` daría UTC y a partir de las 7 de
+ * la noche adelantaría el día — justo la franja del cierre de caja (R7).
+ */
+function hoyBogota(): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'America/Bogota',
+  }).format(new Date())
+}
+
 export function NewInvoiceModal({ onClose, onNeedSupplier }: NewInvoiceModalProps) {
   const { suppliers } = useSuppliers()
   const { data: products = [] } = useProducts()
@@ -50,6 +61,9 @@ export function NewInvoiceModal({ onClose, onNeedSupplier }: NewInvoiceModalProp
   const [supplierId, setSupplierId] = useState('')
   const [invoiceNumber, setInvoiceNumber] = useState('')
   const [notes, setNotes] = useState('')
+  // 🔴 Deuda 44: la fecha del papel del proveedor. El cliente registra el 2
+  //    de septiembre facturas del 31 de agosto — medido en su archivo real.
+  const [documentDate, setDocumentDate] = useState(hoyBogota())
   const [lines, setLines] = useState<DraftLine[]>([newLine()])
 
   const productById = useMemo(() => {
@@ -89,6 +103,7 @@ export function NewInvoiceModal({ onClose, onNeedSupplier }: NewInvoiceModalProp
         supplier_id: supplierId,
         invoice_number: invoiceNumber.trim() || null,
         notes: notes.trim() || null,
+        document_date: documentDate,
       },
       items: validLines.map(l => ({
         // ⚠️ `purchase_unit` y el factor viajan JUNTOS o no viajan. Mandar la
@@ -275,6 +290,20 @@ export function NewInvoiceModal({ onClose, onNeedSupplier }: NewInvoiceModalProp
           <div>
             <label style={fieldLabel}>Notas</label>
             <input data-testid="invoice-notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Observaciones de la compra" style={inputStyle} />
+            {/* 🔴 FECHA DE LA FACTURA — deuda 44. Sin esto, una factura del 31 de
+                agosto cargada el 2 de septiembre cae en septiembre y el costo de
+                agosto queda corto, sin un solo error. */}
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--ink-2)', margin: '12px 0 6px' }}>
+              Fecha de la factura
+            </label>
+            <input
+              type="date"
+              data-testid="invoice-document-date"
+              value={documentDate}
+              max={hoyBogota()}
+              onChange={(e) => setDocumentDate(e.target.value)}
+              style={{ ...inputStyle, fontVariantNumeric: 'tabular-nums' }}
+            />
           </div>
         </div>
 

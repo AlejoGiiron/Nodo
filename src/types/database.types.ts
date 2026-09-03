@@ -45,6 +45,7 @@ export type Database = {
           categoria: string
           created_at: string
           created_by: string
+          document_date: string
           id: string
           jornada_id: string
           reason: string | null
@@ -56,6 +57,7 @@ export type Database = {
           categoria: string
           created_at?: string
           created_by: string
+          document_date?: string
           id?: string
           jornada_id: string
           reason?: string | null
@@ -67,6 +69,7 @@ export type Database = {
           categoria?: string
           created_at?: string
           created_by?: string
+          document_date?: string
           id?: string
           jornada_id?: string
           reason?: string | null
@@ -972,6 +975,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          document_date: string
           id: string
           invoice_number: string | null
           kind: string
@@ -984,6 +988,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
+          document_date?: string
           id?: string
           invoice_number?: string | null
           kind?: string
@@ -996,6 +1001,7 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
+          document_date?: string
           id?: string
           invoice_number?: string | null
           kind?: string
@@ -1400,6 +1406,7 @@ export type Database = {
       }
       get_my_sede_id: { Args: never; Returns: string }
       has_permission: { Args: { perm: string }; Returns: boolean }
+      hoy_bogota: { Args: never; Returns: string }
       next_order_number: { Args: { p_sede_id: string }; Returns: number }
       register_debt_payment: {
         Args: { p_amount: number; p_order_id: string; p_payment_method: string }
@@ -1410,7 +1417,12 @@ export type Database = {
         Returns: Json
       }
       register_purchase_return: {
-        Args: { p_invoice_id: string; p_items: Json; p_notes?: string }
+        Args: {
+          p_document_date?: string
+          p_invoice_id: string
+          p_items: Json
+          p_notes?: string
+        }
         Returns: Json
       }
       register_sale_payment: {

@@ -160,7 +160,7 @@ export function ExpensesHistoryPage() {
             <div style={{ display: 'grid', gridTemplateColumns: '90px 1fr 180px 150px 110px', gap: 12, padding: '11px 16px', borderBottom: '1px solid var(--border-2)', background: 'var(--surface-2)', fontSize: 11, fontWeight: 700, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: 0.4 }}>
               <span>Tipo</span>
               <span>Motivo</span>
-              <span>Quién · Cuándo</span>
+              <span>Quién · Fecha del gasto</span>
               <span>Turno</span>
               <span style={{ textAlign: 'right' }}>Monto</span>
             </div>
@@ -186,8 +186,20 @@ export function ExpensesHistoryPage() {
                   <span style={{ display: 'block', fontSize: 12.5, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {row.autor?.full_name ?? '—'}
                   </span>
-                  <span style={{ display: 'block', fontSize: 12, color: 'var(--ink-3)', fontVariantNumeric: 'tabular-nums' }}>
-                    {formatDateTime(row.created_at)}
+                  {/* 🔴 Manda la fecha del GASTO, que es por la que filtra y
+                      ordena esta pantalla (deuda 44). Cuando difiere de la de
+                      registro se dice, porque si no un total por mes parecería
+                      no cuadrar con lo que la persona recuerda haber cargado. */}
+                  <span
+                    data-testid="expense-document-date"
+                    style={{ display: 'block', fontSize: 12, color: 'var(--ink-3)', fontVariantNumeric: 'tabular-nums' }}
+                  >
+                    {row.document_date}
+                    {row.document_date !== row.created_at.slice(0, 10) && (
+                      <span style={{ color: 'var(--ink-4)' }}>
+                        {' · registrado ' + formatDateTime(row.created_at)}
+                      </span>
+                    )}
                   </span>
                 </span>
                 <span style={{ fontSize: 12, color: 'var(--ink-4)', fontVariantNumeric: 'tabular-nums' }}>
