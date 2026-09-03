@@ -159,7 +159,7 @@ test('🔴 la lista sale de la SEDE: cambiarla cambia el desplegable', async ({ 
   await loginAsOwner(page)
   await page.goto('/ventas')
 
-  await page.getByRole('button', { name: 'Movimientos' }).click()
+  await page.getByTestId('open-movements').click()
   await expect(page.getByText('Movimientos manuales', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Egreso', exact: true }).click()
   await page.getByTestId('movement-categoria').selectOption('gasto')
@@ -222,7 +222,7 @@ test('🔴 una subcategoría RETIRADA deja de ofrecerse, pero la fila vieja la c
 
   // 3 · PERO YA NO SE PUEDE ELEGIR.
   await page.goto('/ventas')
-  await page.getByRole('button', { name: 'Movimientos' }).click()
+  await page.getByTestId('open-movements').click()
   await expect(page.getByText('Movimientos manuales', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Egreso', exact: true }).click()
   await page.getByTestId('movement-categoria').selectOption('gasto')

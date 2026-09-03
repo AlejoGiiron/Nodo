@@ -21,7 +21,7 @@ const cop = (n: number) => new Intl.NumberFormat('es-CO').format(n)
 // SIEMPRE disponible (no depende de config.cash_out_reasons, que puede estar
 // vacío) y así el motivo es distintivo y localizable.
 async function registrarEgreso(page: import('@playwright/test').Page) {
-  await page.getByRole('button', { name: 'Movimientos' }).click()
+  await page.getByTestId('open-movements').click()
   await expect(page.getByText('Movimientos manuales', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Egreso', exact: true }).click()
   // Ver la nota de arqueo.spec: categoria + detalle, no motivo libre.
@@ -119,7 +119,7 @@ test.describe.serial('Historiales de turnos y gastos', () => {
     await page.goto('/ventas')
 
     // Lo que el cajero NO tiene → el item de nav no se renderiza.
-    for (const item of ['Productos', 'Inventario', 'Compras', 'Reportes', 'Configuración']) {
+    for (const item of ['Catálogo', 'Inventario', 'Compras', 'Reportes', 'Configuración']) {
       await expect(page.getByRole('link', { name: item }), `nav "${item}" visible para el cajero`)
         .toHaveCount(0)
     }

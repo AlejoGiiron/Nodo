@@ -1,21 +1,28 @@
 import { test, expect } from '@playwright/test'
 import { loginAsOwner, loginAsCashier } from './helpers/auth'
 
-// Items del sidebar (AppLayout NAV_GROUPS), los 10 reales de NODO.
-// ⚠️ REESCRITO el 2026-09-01: la lista anterior era el nav de VENTO — tenía
-//    Mesas, Delivery y Cocina (podados) y le faltaban Turnos y Gastos. Mismo
-//    tratamiento que historiales.spec: el sujeto del gating es el catálogo
-//    propio de 21 claves, no el heredado.
-// Los grupos arrancan expandidos por defecto → los links son visibles sin abrir nada.
+// Ítems del sidebar según §5 de la skill (AppLayout NAV_GROUPS).
+//
+// 🔴 REESCRITO el 2026-09-03 (A6 · tanda 1) CONTRA §5, y esta vez el spec no
+//    describe lo que hay: describe lo que la skill manda. La versión anterior
+//    aseveraba `Ventas · Productos · Fiado`, que son los rótulos de VENTO —
+//    **un test que asierta lo que hay protege lo que hay**, y por eso las tres
+//    etiquetas equivocadas sobrevivieron un re-skin entero con la suite verde.
+//
+// §5 pide `Pedidos` en Movimientos y `Utilidades` en Resultados; ninguna de las
+// dos existe (deudas 85 y 86) y §5 también dice que **no se dejan huecos de
+// navegación para pantallas que no existen**: por eso no están en esta lista.
 const ALL_NAV = [
-  'Ventas',
-  'Productos', 'Inventario', 'Compras',
-  'Fiado', 'Historial', 'Turnos', 'Gastos',
-  'Reportes', 'Configuración',
+  'Mostrador',
+  'Compras', 'Gastos', 'Historial',
+  'Catálogo', 'Inventario',
+  'Clientes', 'Cartera',
+  'Turnos', 'Reportes',
+  'Configuración',
 ]
 // El cajero tiene 8 de 21: pos.*, caja.*, fiado.gestionar, ventas.historial.
-const CASHIER_HIDDEN = ['Productos', 'Inventario', 'Compras', 'Reportes', 'Configuración']
-const CASHIER_VISIBLE = ['Ventas', 'Fiado', 'Historial', 'Turnos', 'Gastos']
+const CASHIER_HIDDEN = ['Catálogo', 'Inventario', 'Compras', 'Reportes', 'Configuración']
+const CASHIER_VISIBLE = ['Mostrador', 'Gastos', 'Historial', 'Clientes', 'Cartera', 'Turnos']
 
 // 🔴 ESTE SPEC MIDE LA UI, NO LA BASE — dicho en el nombre desde el 2026-09-02
 //    (deuda 66). El mutante M6 de A4 lo dejó 7/7 VERDE con `has_permission`
@@ -32,11 +39,29 @@ test.describe('RBAC — gating de UI por permiso', () => {
     }
   })
 
-  test('owner ve los 4 grupos del sidebar', async ({ page }) => {
+  test('owner ve los grupos de §5, y Mostrador NO está en ninguno', async ({ page }) => {
     await loginAsOwner(page)
-    for (const id of ['operacion', 'catalogo', 'clientes', 'admin']) {
+    for (const id of ['movimientos', 'existencias', 'cartera', 'resultados']) {
       await expect(page.getByTestId(`group-header-${id}`)).toBeVisible()
     }
+    // §5: «Mostrador va suelto arriba, sin título de grupo: es la pantalla del
+    // día y no pertenece a una categoría».
+    await expect(
+      page.getByTestId('nav-mostrador-suelto'),
+      'Mostrador va suelto arriba, fuera de todo grupo (§5)',
+    ).toBeVisible()
+  })
+
+  test('los títulos de grupo van en caja de oración, no en mayúscula sostenida', async ({ page }) => {
+    // §5 Reglas: «la mayúscula sostenida se reserva a etiquetas de columna y de
+    // KPI». Se mide el texto RENDERIZADO, no el CSS: `text-transform` es
+    // exactamente lo que hacía que el DOM dijera "Movimientos" y la pantalla
+    // mostrara "MOVIMIENTOS".
+    await loginAsOwner(page)
+    const h = page.getByTestId('group-header-movimientos')
+    const visible = await h.evaluate((el) => (el as HTMLElement).innerText)
+    expect(visible, 'el título se ve tal como se escribió').toContain('Movimientos')
+    expect(visible, 'no en mayúscula sostenida').not.toContain('MOVIMIENTOS')
   })
 
   test('cajero NO ve Productos, Inventario, Compras, Reportes ni Configuración', async ({ page }) => {
@@ -54,13 +79,15 @@ test.describe('RBAC — gating de UI por permiso', () => {
 
   test('cajero: grupos completos sin permiso desaparecen; los que tienen ≥1 item se ven', async ({ page }) => {
     await loginAsCashier(page)
-    // Sin productos.editar ni compras.gestionar → "Catálogo e inventario" no aparece.
-    await expect(page.getByTestId('group-header-catalogo')).toHaveCount(0)
-    // Sin reportes.financiero ni config.acceder → "Análisis y admin" no aparece.
-    await expect(page.getByTestId('group-header-admin')).toHaveCount(0)
-    // Con fiado.gestionar → "Clientes y cobros" SÍ aparece, con al menos Fiado dentro.
-    await expect(page.getByTestId('group-header-clientes')).toBeVisible()
-    await expect(page.getByRole('link', { name: 'Fiado' })).toBeVisible()
+    // Sin productos.editar ni inventario.ver → "Existencias" no aparece.
+    await expect(page.getByTestId('group-header-existencias')).toHaveCount(0)
+    // Con fiado.gestionar → "Cartera" SÍ aparece, con sus dos entradas.
+    await expect(page.getByTestId('group-header-cartera')).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Cartera' })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Clientes' })).toBeVisible()
+    // Con caja.cerrar → "Resultados" aparece por Turnos, aunque no vea Reportes.
+    await expect(page.getByTestId('group-header-resultados')).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Reportes' })).toHaveCount(0)
   })
 
   test('cajero SÍ ve Turnos y Gastos (caja.cerrar / caja.movimientos)', async ({ page }) => {

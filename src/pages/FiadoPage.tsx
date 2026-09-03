@@ -347,8 +347,12 @@ function CustomersTab({ onEdit }: { onEdit: (c: Customer | 'new') => void }) {
 }
 
 // ─── Page ────────────────────────────────────────────────────────
-export function FiadoPage() {
-  const [tab, setTab] = useState<Tab>('debts')
+export function FiadoPage({ tabInicial = 'debts' }: { tabInicial?: Tab } = {}) {
+  // 🔴 La pestaña inicial la fija la RUTA (A6 · tanda 1): `/fiado` abre
+  //    Cartera y `/clientes` abre Clientes. Antes el estado nacía siempre
+  //    en 'debts' y `?tab=` se ignoraba, así que Clientes no era
+  //    enlazable ni recuperable con el botón atrás.
+  const [tab, setTab] = useState<Tab>(tabInicial)
   const [editCustomer, setEditCustomer] = useState<Customer | 'new' | null>(null)
   const [abonoDebt, setAbonoDebt] = useState<Debt | null>(null)
 

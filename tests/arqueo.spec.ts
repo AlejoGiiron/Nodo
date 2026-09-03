@@ -100,7 +100,7 @@ async function sellMixed(page: Page, cash: number, nequi: number) {
 }
 async function addMovement(page: Page, kind: 'in' | 'out', amount: number) {
   await page.goto('/ventas')
-  await page.getByRole('button', { name: 'Movimientos' }).click()
+  await page.getByTestId('open-movements').click()
   await expect(page.getByText('Movimientos manuales', { exact: true })).toBeVisible()
   if (kind === 'out') {
     await page.getByRole('button', { name: 'Egreso', exact: true }).click()

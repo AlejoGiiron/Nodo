@@ -123,7 +123,7 @@ test.describe.serial('Compras / Proveedores', () => {
     // El egreso automático está en los movimientos de la jornada, con el
     // detalle que escribe la RPC ('Compra a proveedor X (factura N)').
     await page.goto('/ventas')
-    await page.getByRole('button', { name: 'Movimientos' }).click()
+    await page.getByTestId('open-movements').click()
     await expect(
       page.getByTestId('movement-item').filter({ hasText: `Compra a proveedor ${PROVEEDOR}` }).first(),
     ).toBeVisible()

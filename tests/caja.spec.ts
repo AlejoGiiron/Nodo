@@ -18,7 +18,7 @@ test.describe.serial('Caja', () => {
   test('registrar un movimiento de caja (ingreso, texto libre)', async ({ page }) => {
     await openShiftIfClosed(page, 0)
 
-    await page.getByRole('button', { name: 'Movimientos' }).click()
+    await page.getByTestId('open-movements').click()
     await expect(page.getByText('Movimientos manuales', { exact: true })).toBeVisible()
 
     // Ingreso seleccionado por defecto: motivo en texto libre.
@@ -52,7 +52,7 @@ test.describe.serial('Caja', () => {
     await closeShiftIfOpen(page)
     await openShiftIfClosed(page, 0)
 
-    await page.getByRole('button', { name: 'Movimientos' }).click()
+    await page.getByTestId('open-movements').click()
     await expect(page.getByText('Movimientos manuales', { exact: true })).toBeVisible()
 
     await page.getByRole('button', { name: 'Egreso', exact: true }).click()

@@ -197,7 +197,7 @@ test.describe.serial('Fiado / Cartera', () => {
 
     // El ingreso "Abono de <cliente>" aparece en los movimientos del turno.
     await page.goto('/ventas')
-    await page.getByRole('button', { name: 'Movimientos' }).click()
+    await page.getByTestId('open-movements').click()
     await expect(page.getByText(`Abono de ${CLIENTE}`).first()).toBeVisible()
   })
 
@@ -301,7 +301,7 @@ test.describe.serial('Fiado / Cartera', () => {
   test('gating: el cajero TAMBIÉN puede operar fiado (decisión de producto)', async ({ page }) => {
     await loginAsCashier(page)
     // El cajero ve la entrada de Fiado en el sidebar...
-    await expect(page.getByRole('link', { name: 'Fiado' })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Cartera' })).toBeVisible()
     // ...y el método "Fiado" aparece en el cobro del POS.
     await page.getByTestId('product-card').filter({ hasText: PRODUCT }).first().click()
     await expect(page.getByTestId('item-config-modal')).toBeVisible()

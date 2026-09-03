@@ -79,6 +79,11 @@ export function ShiftBanner() {
         <button
           onClick={() => setShowMovements(true)}
           title="Movimientos de caja"
+          // 🔴 Testid propio (A6 · tanda 1): al renombrar el grupo del nav a
+          //    "Movimientos" (§5) este botón dejó de ser localizable por su
+          //    nombre accesible — hay dos "Movimientos" en la misma pantalla.
+          //    El nombre visible NO se toca: el que cambia es el arnés.
+          data-testid="open-movements"
           style={{
             display: 'flex', alignItems: 'center', gap: 5,
             padding: '6px 10px', borderRadius: 8,

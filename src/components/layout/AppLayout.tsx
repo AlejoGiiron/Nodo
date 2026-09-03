@@ -15,6 +15,7 @@ import {
   Banknote,
   ChevronDown,
   X,
+  UserRound,
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { useAuth } from '@/hooks/useAuth'
@@ -23,6 +24,7 @@ import { useSedeConfig } from '@/hooks/useSedeConfig'
 import { useCashShift } from '@/hooks/useCashShift'
 import { useCollapsedGroups } from '@/hooks/useCollapsedGroups'
 import { ShiftBanner } from '@/components/shift/ShiftBanner'
+import { useOrganization } from '@/hooks/useOrganization'
 import { OpenShiftModal } from '@/components/shift/OpenShiftModal'
 import { StoreSelector } from '@/components/layout/StoreSelector'
 import { SubscriptionBanner } from '@/components/layout/SubscriptionBanner'
@@ -45,42 +47,68 @@ interface NavGroup {
   items: NavItem[]
 }
 
+/**
+ * 🔴 MOSTRADOR VA SUELTO, FUERA DE TODO GRUPO — §5: «es la pantalla del día y
+ *    no pertenece a una categoría». No es un grupo de un solo ítem.
+ */
+const NAV_MOSTRADOR: NavItem = { to: '/ventas', label: 'Mostrador', icon: ShoppingCart }
+
+/**
+ * Estructura de §5, literal. Reescrita el 2026-09-03 (A6 · tanda 1): la anterior
+ * agrupaba por `Operación · Catálogo e inventario · Clientes y cobros · Análisis
+ * y admin`, que no es de ninguna versión de la skill, y llamaba a las pantallas
+ * con los rótulos de VENTO (`Ventas · Productos · Fiado`).
+ *
+ * ⚠️ §5 pide además `Pedidos` en Movimientos y `Utilidades` en Resultados. **No
+ * se agregan**: no existen (deudas 85 y 86) y la misma §5 dice que *"no se
+ * agregan huecos de navegación para pantallas que no existen; lo que no está en
+ * la lista no aparece deshabilitado ni «próximamente»"*. Entran el día que la
+ * pantalla entre.
+ */
 const NAV_GROUPS: NavGroup[] = [
   {
-    id: 'operacion',
-    label: 'Operación',
+    id: 'movimientos',
+    label: 'Movimientos',
     items: [
-      { to: '/ventas', label: 'Ventas', icon: ShoppingCart },
-    ],
-  },
-  {
-    id: 'catalogo',
-    label: 'Catálogo e inventario',
-    items: [
-      { to: '/productos', label: 'Productos', icon: Package, permission: 'productos.editar' },
-      { to: '/inventario', label: 'Inventario', icon: Boxes, permission: 'inventario.ver' },
       { to: '/compras', label: 'Compras', icon: ShoppingBag, permission: 'compras.gestionar' },
-    ],
-  },
-  {
-    id: 'clientes',
-    label: 'Clientes y cobros',
-    items: [
-      { to: '/fiado', label: 'Fiado', icon: HandCoins, permission: 'fiado.gestionar' },
-      { to: '/historial', label: 'Historial', icon: Receipt, permission: 'ventas.historial' },
-      { to: '/historial-turnos', label: 'Turnos', icon: ClipboardList, permission: 'caja.cerrar' },
       { to: '/historial-gastos', label: 'Gastos', icon: Banknote, permission: 'caja.movimientos' },
+      { to: '/historial', label: 'Historial', icon: Receipt, permission: 'ventas.historial' },
     ],
   },
   {
-    id: 'admin',
-    label: 'Análisis y admin',
+    id: 'existencias',
+    label: 'Existencias',
     items: [
+      { to: '/productos', label: 'Catálogo', icon: Package, permission: 'productos.editar' },
+      { to: '/inventario', label: 'Inventario', icon: Boxes, permission: 'inventario.ver' },
+    ],
+  },
+  {
+    id: 'cartera',
+    label: 'Cartera',
+    items: [
+      // 🔴 Clientes gana ENTRADA Y DIRECCIÓN PROPIAS. Antes era una pestaña
+      //    dentro de /fiado y `?tab=` se ignoraba: no se podía enlazar ni
+      //    volver a ella con el botón atrás. A6 lo midió capturando.
+      { to: '/clientes', label: 'Clientes', icon: UserRound, permission: 'fiado.gestionar' },
+      { to: '/fiado', label: 'Cartera', icon: HandCoins, permission: 'fiado.gestionar' },
+    ],
+  },
+  {
+    id: 'resultados',
+    label: 'Resultados',
+    items: [
+      { to: '/historial-turnos', label: 'Turnos', icon: ClipboardList, permission: 'caja.cerrar' },
       { to: '/reportes', label: 'Reportes', icon: BarChart3, permission: 'reportes.financiero' },
-      { to: '/configuracion', label: 'Configuración', icon: Settings, permission: 'config.acceder' },
     ],
   },
 ]
+
+/** §5: Configuración va al PIE, junto al bloque de usuario — no es un momento
+ *  del día, es el sistema. Por eso sale de los grupos. */
+const NAV_CONFIG: NavItem = {
+  to: '/configuracion', label: 'Configuración', icon: Settings, permission: 'config.acceder',
+}
 
 const ROLE_LABELS: Record<UserRole, string> = {
   admin: 'Administrador',
@@ -93,8 +121,12 @@ export function AppLayout() {
   const { sede } = useSedeConfig()
   const { isOpen, isLoadingShift } = useCashShift()
 
-  // Branding de la SEDE activa (sedes): nombre + logo capturados en Config.
-  const brandName = sede?.name ?? 'Nodo'
+  // 🔴 §5 (decisión 2026-09-03): ORGANIZACIÓN arriba, SEDE debajo, y el nombre
+  //    del PRODUCTO fuera del sidebar — ese bloque es del tenant, y meter
+  //    nuestro nombre adentro mezcla dos identidades. "Nodo, de Giiron" vive en
+  //    Login y en Configuración.
+  const { organizationName } = useOrganization()
+  const sedeName = sede?.name ?? null
   const brandLogo = sede?.logo_url ?? null
   const navigate = useNavigate()
   const { pathname } = useLocation()
@@ -145,31 +177,63 @@ export function AppLayout() {
           className="px-4 py-4 flex items-center gap-2.5"
           style={{ borderBottom: '1px solid var(--border-2)' }}
         >
-          {brandLogo && (
+          {/* Tile de identidad — §1.1: una de las CUATRO superficies donde
+              `--brand` está permitida. El logo de la sede lo reemplaza si existe. */}
+          {brandLogo ? (
             <img
               src={brandLogo}
-              alt={brandName}
+              alt={organizationName ?? sedeName ?? ''}
               data-testid="sidebar-brand-logo"
               className="w-9 h-9 rounded-lg object-cover flex-shrink-0"
             />
+          ) : (
+            <div
+              data-testid="sidebar-brand-tile"
+              className="w-9 h-9 rounded-lg flex-shrink-0 grid place-items-center text-sm font-bold select-none"
+              style={{ background: 'var(--brand)', color: 'var(--brand-ink)' }}
+            >
+              {(organizationName ?? sedeName ?? '?').trim().charAt(0).toUpperCase()}
+            </div>
           )}
           <div className="min-w-0">
+            {/* ORGANIZACIÓN: el tenant. Mientras no cargue no se inventa un
+                relleno — se muestra la sede sola, que es un dato cierto. */}
             <span
-              data-testid="sidebar-brand-name"
+              data-testid="sidebar-org-name"
               className="block font-semibold text-base tracking-tight truncate"
               style={{ color: 'var(--ink)' }}
             >
-              {brandName}
+              {organizationName ?? sedeName ?? ''}
             </span>
-            {/* El tenant arriba y el PRODUCTO abajo, sin fusionarse (anexo de la
-                skill). Decía "Sistema POS": describía la categoría, no el
-                producto — y en un repo forkeado de un POS de restaurantes eso
-                es justo lo que hay que dejar de decir. */}
-            <span className="block text-xs mt-0.5" style={{ color: 'var(--ink-3)' }}>Nodo</span>
+            {/* SEDE: dónde estás parado. No se pierde porque el producto es
+                multi-sede y de eso depende todo lo que se escribe. */}
+            {organizationName && sedeName && (
+              <span
+                data-testid="sidebar-sede-name"
+                className="block text-xs mt-0.5 truncate"
+                style={{ color: 'var(--ink-3)' }}
+              >
+                {sedeName}
+              </span>
+            )}
           </div>
         </div>
 
         <nav className="sidebar-scroll flex-1 px-2 py-3 space-y-1 overflow-y-auto">
+          {/* §5: Mostrador suelto arriba, sin título de grupo. */}
+          <NavLink
+            to={NAV_MOSTRADOR.to}
+            data-testid="nav-mostrador-suelto"
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                isActive ? 'nodo-nav nodo-nav--activo' : 'nodo-nav'
+              }`
+            }
+          >
+            <NAV_MOSTRADOR.icon className="w-4 h-4 flex-shrink-0" />
+            <span className="flex-1">{NAV_MOSTRADOR.label}</span>
+          </NavLink>
+
           {visibleGroups.map(group => {
             // El grupo con la ruta activa se fuerza expandido (auto-expand),
             // aunque el usuario lo hubiera colapsado — nunca se pierde el contexto.
@@ -182,8 +246,13 @@ export function AppLayout() {
                   onClick={() => toggle(group.id)}
                   aria-expanded={expanded}
                   data-testid={`group-header-${group.id}`}
-                  className="flex items-center gap-2 w-full px-3 py-1.5 uppercase transition-colors"
-                  style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.04em', color: 'var(--ink-3)' }}
+                  // 🔴 SIN `uppercase` y SIN `letter-spacing` — §5 Reglas: «la
+                  //    mayúscula sostenida se reserva a etiquetas de columna y
+                  //    de KPI». El `text-transform` era lo que hacía que el DOM
+                  //    dijera "Movimientos" y la pantalla mostrara "MOVIMIENTOS":
+                  //    un grep del código no lo veía.
+                  className="flex items-center gap-2 w-full px-3 py-1.5 transition-colors"
+                  style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--ink-3)' }}
                 >
                   <ChevronDown
                     className={`w-3.5 h-3.5 flex-shrink-0 transition-transform ${expanded ? '' : '-rotate-90'}`}
@@ -216,14 +285,53 @@ export function AppLayout() {
           })}
         </nav>
 
+        {/* 🔴 EL PIE — §5: «bloque de sistema y usuario abajo», y la ADICIÓN
+            2026-09-01: «Configuración → el pie, junto al bloque de usuario: no
+            es un momento del día, es el sistema». */}
         <div className="p-2" style={{ borderTop: '1px solid var(--border-2)' }}>
-          <button
-            onClick={handleSignOut}
-            className="nodo-nav flex items-center gap-3 w-full px-3 py-2.5 text-sm font-medium transition-colors"
+          {(!NAV_CONFIG.permission || can(NAV_CONFIG.permission)) && (
+            <NavLink
+              to={NAV_CONFIG.to}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  isActive ? 'nodo-nav nodo-nav--activo' : 'nodo-nav'
+                }`
+              }
+            >
+              <NAV_CONFIG.icon className="w-4 h-4 flex-shrink-0" />
+              <span className="flex-1">{NAV_CONFIG.label}</span>
+            </NavLink>
+          )}
+
+          {/* Usuario y rol: §5 los pone acá, no en el encabezado. */}
+          <div
+            data-testid="sidebar-usuario"
+            className="flex items-center gap-2.5 px-3 py-2.5 mt-1"
+            style={{ borderTop: '1px solid var(--border-2)' }}
           >
-            <LogOut className="w-4 h-4 flex-shrink-0" />
-            Cerrar sesión
-          </button>
+            <div
+              className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-semibold select-none flex-shrink-0"
+              style={{ background: 'var(--border)', color: 'var(--ink-2)' }}
+            >
+              {initials ?? '?'}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-medium leading-tight truncate" style={{ color: 'var(--ink)' }}>
+                {profile?.full_name ?? '—'}
+              </p>
+              <p className="text-[11px] leading-tight" style={{ color: 'var(--ink-3)' }}>
+                {profile ? ROLE_LABELS[profile.role] : ''}
+              </p>
+            </div>
+            <button
+              onClick={handleSignOut}
+              title="Cerrar sesión"
+              aria-label="Cerrar sesión"
+              className="nodo-nav p-1.5 rounded-lg flex-shrink-0"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </aside>
 
@@ -237,23 +345,11 @@ export function AppLayout() {
           {/* Left: shift banner */}
           <ShiftBanner />
 
-          {/* Right: store selector + user info */}
+          {/* 🔴 El bloque de usuario se fue AL PIE del sidebar (§5). Acá queda
+              sólo el selector de sede, que es del encabezado porque cambia el
+              contexto de la pantalla que se está mirando. */}
           <div className="flex items-center gap-3">
             <StoreSelector />
-            <div className="text-right">
-              <p className="text-sm font-medium leading-tight" style={{ color: 'var(--ink)' }}>
-                {profile?.full_name ?? '—'}
-              </p>
-              <p className="text-xs" style={{ color: 'var(--ink-3)' }}>
-                {profile ? ROLE_LABELS[profile.role] : ''}
-              </p>
-            </div>
-            <div
-              className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold select-none"
-              style={{ background: 'var(--border)', color: 'var(--ink-2)' }}
-            >
-              {initials ?? '?'}
-            </div>
           </div>
         </header>
 

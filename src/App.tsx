@@ -93,6 +93,12 @@ function App() {
               </Route>
               <Route element={<ProtectedRoute permission="fiado.gestionar" />}>
                 <Route path="fiado" element={<FiadoPage />} />
+                {/* 🔴 Clientes gana DIRECCIÓN PROPIA (A6 · tanda 1). Era una
+                    pestaña dentro de /fiado y `?tab=` se ignoraba: no se podía
+                    enlazar, ni compartir, ni volver con el botón atrás. §5 le
+                    da entrada propia en el grupo Cartera; sin ruta, esa entrada
+                    no tendría a dónde apuntar. */}
+                <Route path="clientes" element={<FiadoPage tabInicial="customers" />} />
               </Route>
               <Route element={<ProtectedRoute permission="ventas.historial" />}>
                 <Route path="historial" element={<SalesHistoryPage />} />
