@@ -48,6 +48,30 @@ control que confirma que el título de la pantalla dice lo que se pidió. Se re-
 ⚠️ Y la corrección destapó un hallazgo real: **la pestaña Clientes no es direccionable por URL**
 (`/fiado?tab=customers` se ignora). Hay que hacer clic. Eso es evidencia de **S5**.
 
+### 🔴 Y el mismo instrumento volvió a fallar en la tanda 5 — con el control en verde
+
+*2026-09-03. **Novena falla de instrumento**, y la primera que es una REINCIDENCIA.*
+
+Al cerrar la tanda 5, la captura `maqueta/cartera-normal.png` era **el Mostrador**. La causa: en el
+sidebar, `Cartera` es a la vez **título de grupo** e **ítem de navegación**; los dos caen dentro de
+los 214px, y el primero en orden de DOM es el título, que no navega.
+
+🔴 **Lo grave no es el selector: es que el control agregado en la corrección anterior NO PODÍA DAR
+ROJO.** Miraba los primeros 200 caracteres de `body.innerText`, **que son el sidebar** — donde el
+rótulo pedido está siempre, se haya navegado o no. Un control que da verde con el defecto puesto no
+es un control (corolario de R4), y éste avaló una captura de la pantalla equivocada.
+
+⚠️ **La segunda causa raíz casi se repite otra vez.** El arreglo intermedio fue geométrico —*"el
+ítem lleva icono, el título de grupo no, así que el ítem no empieza en el margen"*— y dejó afuera a
+**Configuración**, que vive en el pie y tampoco tiene icono. **La propiedad que separa un ítem de un
+rótulo no es dónde está: es que NAVEGA.** La versión final prueba los candidatos del sidebar y se
+queda con el que hace cambiar el título del área de contenido: **el control elige en vez de
+confirmar**, así que no puede quedar de adorno.
+
+✅ **Alcance de la contaminación, enumerado y no supuesto:** se re-capturaron **las once** pantallas
+de la maqueta con el control nuevo. `Cartera` era la única cuyo rótulo colisiona con un título de
+grupo, y fue la única que cambió. Las diez restantes ya eran correctas.
+
 ### Las clases
 
 | clase | qué es | qué se hace |

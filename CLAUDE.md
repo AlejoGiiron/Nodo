@@ -976,6 +976,8 @@ estábamos contando.*
 | una consulta SQL de diagnóstico | vendido vs cobrado por día | el `left join` a `payments` **multiplicaba `o.total`** por cada pago: una venta mixta contaba doble | **un número no cerró con otro ya conocido**: 165 órdenes donde la app decía 158 |
 | grepear el FUENTE por un `@keyframes` | si la animación existía | el fuente no ve lo que **Tailwind emite en el build** | **compilando** y grepeando `dist/assets/*.css` |
 | `grep '\?\? new Set\('` en A1 | los `new Set()` como default | no veía `new Set<string>()` — el parámetro de tipo | **el control escrito de antemano**: la 54 TENÍA que aparecer, y dio cero |
+| el script de captura de A6 | la pantalla pedida **de la maqueta** | la que estuviera abierta: `getByText('Historial').last()` tomó un encabezado del panel de Clientes y **nunca navegó** | **mirando la captura**: era una imagen creíble de otra pantalla |
+| el **mismo** script, ya "arreglado" | ídem | ídem: `Cartera` es **título de grupo Y ítem de navegación**, y el primero en orden de DOM es el grupo, que no navega | **mirando la captura**: el par de Cartera mostraba el Mostrador |
 | `grep -cE '^  ok  [0-9]+'` sobre la salida de la suite | cuántos tests pasaron | asumía **dos espacios fijos**; el reporter **alinea el número por ancho**, así que `ok 1`, `ok  99` y `ok 219` no coinciden con el patrón. Contó **89 de 202** | **cruzando**: 89 no cerraba con las 202 del resumen. Con `^  ok +[0-9]+`: 202 + 17 skipped = **219**, el último número de test emitido |
 
 **Los tres daban un número creíble.** Ninguno daba error, ninguno se veía roto, y los tres
@@ -1016,6 +1018,36 @@ nota.
    práctico: al escribir una consulta de diagnóstico, **incluí una columna que ya sepas cuánto
    debe dar** — un conteo, un total del día — aunque no la necesites para la pregunta. Es el
    control negativo de los números.
+
+🔴 **LOS DOS ÚLTIMOS SON EL MISMO INSTRUMENTO, Y ESO ES EL HALLAZGO.** *2026-09-03, tanda 5 de A6.*
+
+> **Un instrumento arreglado con un control que no puede fallar queda peor que antes: ahora falla
+> igual, y con un verde encima.**
+
+La primera vez, la captura de la maqueta navegaba mal y **producía una imagen creíble de otra
+pantalla, sin error**. El arreglo acotó el selector al sidebar y —bien— **agregó un control**: que
+el título dijera lo que se pidió. El control era esto:
+
+```js
+const h = (await page.locator('body').innerText()).slice(0, 200);
+if (!h.includes(def.mock)) console.log('?? el título no confirma', def.mock);
+```
+
+**Los primeros 200 caracteres del `body` son EL SIDEBAR**, y en el sidebar el rótulo pedido está
+**siempre**, se haya navegado o no. El control no podía dar rojo. Dio verde sobre la captura del
+Mostrador rotulada `cartera-normal.png`, y esa captura se usó para cerrar una tanda.
+
+⚠️ **Y la segunda causa raíz es la que casi se repite otra vez.** Al arreglar el selector probé
+*«el rótulo que no empieza en el margen»* —el ítem lleva icono, el título de grupo no— y eso dejó
+afuera a **Configuración**, que vive en el pie y tampoco tiene icono. Dos criterios geométricos
+seguidos, los dos plausibles, los dos falsos. **La propiedad que separa un ítem de un rótulo no es
+dónde está: es que NAVEGA.** La versión que quedó prueba los candidatos y se queda con el que hace
+cambiar el título — **el control ELIGE en vez de confirmar**, así que no puede quedar de adorno.
+
+**Lo accionable, y es el corolario de R4 aplicado a los controles:** después de escribir un control,
+**escribí cómo se vería su rojo**. Si la respuesta es "no se me ocurre", el control es decorativo.
+Y si se puede, hacé que el control **decida** en vez de confirmar: un control que elige no se puede
+ignorar.
 
 🔴 **EL CUARTO ES DE OTRA ESPECIE, y por eso vale aparte: el instrumento era UN SCRIPT NUESTRO.**
 Los tres primeros median mal; éste **rompía el archivo**. Y lo relevante es que **había funcionado

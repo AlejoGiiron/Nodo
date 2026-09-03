@@ -74,9 +74,27 @@ test.describe('Reportes', () => {
     await expect(page.getByTestId('export-stock')).toBeVisible()
   })
 
-  test('el sidebar muestra el nombre del sede', async ({ page }) => {
-    const brand = page.getByTestId('sidebar-brand-name')
-    await expect(brand).toBeVisible()
-    await expect(brand).not.toHaveText('')
+  // 🔴 REESCRITO EN A6 · tanda 1. Este spec apuntaba a `sidebar-brand-name`, un
+  //    testid que dejo de existir cuando el bloque de identidad paso a ser DOS
+  //    lineas: la ORGANIZACION arriba y la SEDE debajo (§1.1 — `--brand` la
+  //    define el tenant, y hasta ahora el tile del cliente se pintaba sobre el
+  //    nombre de la sede, que no es su identidad).
+  //    La ASERCION sobrevivio al cambio de modelo —el sidebar sigue teniendo que
+  //    nombrar la sede— asi que no se borra: se re-deriva de la pantalla nueva.
+  //    Y asevera de mas que antes: el ORDEN, que es la decision que se tomo.
+  test('el sidebar nombra la organizacion arriba y la sede debajo', async ({ page }) => {
+    const org = page.getByTestId('sidebar-org-name')
+    const sede = page.getByTestId('sidebar-sede-name')
+    await expect(org, 'la organizacion es el tenant: va en el bloque de identidad').toBeVisible()
+    await expect(sede, 'y la sede no se pierde: el producto es multi-sede').toBeVisible()
+    await expect(org).not.toHaveText('')
+    await expect(sede).not.toHaveText('')
+
+    // El orden es la mitad que importa y la unica que puede invertirse sin que
+    // nada mas se rompa: con la sede arriba, el tile de marca vuelve a pintarse
+    // sobre un dato que no es la identidad del cliente.
+    const cajaOrg = await org.boundingBox()
+    const cajaSede = await sede.boundingBox()
+    expect(cajaOrg!.y, 'la ORGANIZACION va ARRIBA de la sede').toBeLessThan(cajaSede!.y)
   })
 })

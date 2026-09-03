@@ -68,7 +68,8 @@ const MAPA = {
 const browser = await chromium.launch();
 
 // ── LA APP ─────────────────────────────────────────────────────────────────
-{
+// SOLO_MAQUETA=1 salta esta mitad: recapturar la maqueta no necesita tocar el lab.
+if (!process.env.SOLO_MAQUETA) {
   const ctx = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: 1, locale: 'es-CO' });
   const page = await ctx.newPage();
   page.on('pageerror', (e) => console.log('[app pageerror]', String(e).slice(0, 200)));
@@ -122,20 +123,38 @@ const browser = await chromium.launch();
     //    "Historial · últimos 6 movimientos" del panel de Clientes y NUNCA
     //    navegó — la pantalla capturada era otra. El sidebar mide 214px, así que
     //    el ítem correcto es el que cae dentro de esa franja.
+    // 🔴 Y NO ALCANZA CON ACOTAR AL SIDEBAR: el TITULO DE GRUPO "Cartera" y el
+    //    ITEM "Cartera" se llaman igual y los dos caen en la franja. El primero
+    //    en orden de DOM es el titulo de grupo, que no navega — asi que la
+    //    captura de `cartera` salio siendo el MOSTRADOR. Los rotulos de grupo
+    //    arrancan pegados al borde (x~20) y los items van despues del icono
+    //    (x~52): el item es el que NO empieza en el margen.
+    //    ⚠️ Y la geometria tampoco alcanza: probe con «el rotulo que no empieza
+    //    en el margen» (x>40, el item lleva icono y el grupo no) y eso dejo
+    //    afuera a "Configuracion", que vive en el PIE y tampoco tiene icono. La
+    //    unica propiedad que separa un item de un rotulo no es donde esta: es
+    //    que NAVEGA. Asi que se prueban todos los candidatos del sidebar y se
+    //    queda el que hace cambiar el titulo — el control elige, no confirma.
     const cands = page.getByText(def.mock, { exact: true });
     const n = await cands.count();
-    let item = null;
-    for (let i = 0; i < n; i++) {
+    const titulo = async () => page.evaluate(() => {
+      const el = document.elementFromPoint(275, 28);
+      return el ? (el.textContent || '').trim().slice(0, 60) : '';
+    });
+    let ok = false;
+    for (let i = 0; i < n && !ok; i++) {
       const c = cands.nth(i);
       const box = await c.boundingBox().catch(() => null);
-      if (box && box.x < 214) { item = c; break; }
+      if (!box || box.x >= 214) continue;          // fuera del sidebar (214px)
+      await c.click().catch(() => {});
+      await page.waitForTimeout(600);
+      ok = (await titulo()).includes(def.mock);
     }
-    if (!item) { console.log('?? la maqueta no tiene la entrada', def.mock, '— NO se captura'); continue; }
-    await item.click();
-    await page.waitForTimeout(600);
-    // Control: el título de la pantalla tiene que decir lo que se pidió.
-    const h = (await page.locator('body').innerText()).slice(0, 200);
-    if (!h.includes(def.mock)) console.log('?? el título no confirma', def.mock);
+    if (!ok) {
+      console.log(`?? NO SE NAVEGO a "${def.mock}": el titulo dice "${await titulo()}" — NO se captura`);
+      continue;
+    }
+    console.log('   control: titulo =', JSON.stringify(await titulo()));
     const f = path.join(OUT_MOCK, `${nombre}-normal.png`);
     await page.screenshot({ path: f, fullPage: false });
     console.log('maqueta →', f);

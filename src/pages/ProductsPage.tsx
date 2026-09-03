@@ -45,10 +45,9 @@ function EmptyState({ query, onNew }: { query: string; onNew: () => void }) {
         onClick={onNew}
         style={{
           padding: '10px 20px', border: 'none',
-          background: 'var(--action)', borderRadius: 9,
+          background: 'var(--action)', borderRadius: 'var(--r-2)',
           cursor: 'pointer', fontSize: 13, fontWeight: 700, color: 'var(--surface)',
           display: 'inline-flex', alignItems: 'center', gap: 6,
-          boxShadow: '0 6px 16px rgba(16,185,129,.35)',
         }}
       >
         <Plus size={15} /> Crear primer producto
@@ -129,10 +128,9 @@ export function ProductsPage() {
             style={{
               display: 'flex', alignItems: 'center', gap: 7,
               padding: '10px 18px', border: 'none',
-              background: 'var(--action)', borderRadius: 10,
+              background: 'var(--action)', borderRadius: 'var(--r-2)',
               cursor: 'pointer', fontSize: 13.5, fontWeight: 700, color: 'var(--surface)',
-              boxShadow: '0 6px 16px rgba(16,185,129,.35)',
-              flexShrink: 0,
+                  flexShrink: 0,
             }}
           >
             <Plus size={16} strokeWidth={2.5} /> Nuevo producto
@@ -154,7 +152,7 @@ export function ProductsPage() {
           <div style={{
             display: 'flex', alignItems: 'center', gap: 8,
             background: 'var(--surface-2)', border: '1px solid var(--border)',
-            borderRadius: 9, padding: '8px 12px',
+            borderRadius: 'var(--r-2)', padding: '8px 12px',
             marginBottom: 4, flexShrink: 0, width: 220,
           }}>
             <Search size={15} color="var(--ink-4)" />
