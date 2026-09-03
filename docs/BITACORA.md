@@ -3096,3 +3096,57 @@ el procedimiento escrito para no borrar un test por obsoleto.
 Filtrar por una columna `date` **mató las dos conversiones a ISO con `-05:00`** que hacía el hook de
 gastos. Eran un borde de día calculado a mano, o sea el lugar donde R7 se paga. El filtro nuevo no
 tiene hora ni zona: las cadenas `YYYY-MM-DD` viajan tal cual.
+
+
+## 2026-09-02 · Cierre del BLOQUE 3 — la suite entera en verde
+
+**Los cinco números, leídos de adentro del archivo de salida (R9), no de la notificación:**
+
+| | |
+|---|---|
+| passed | **202** |
+| failed | **0** |
+| flaky | **0** |
+| skipped | **17** |
+| did not run | **0** |
+| `suite_exit=` | **0** |
+
+Duración 15,2 min. ⚠️ Los cuatro ceros son **ausencia de línea**: Playwright sólo imprime `failed`,
+`flaky` y `did not run` cuando son distintos de cero, así que se verificaron uno por uno en vez de
+leerse del resumen.
+
+🔴 **Y el control cruzado casi produce un susto que era del instrumento, no de la suite.** Contar las
+marcas por línea con `^  ok  [0-9]+` dio **89** contra las **202** del resumen. Dos cifras del mismo
+hecho que no cierran es la señal más barata que tenemos — y esta vez apuntaba a mi grep: el reporter
+**alinea el número por ancho**, así que `ok 1`, `ok  99` y `ok 219` no tienen el mismo espaciado y el
+patrón de dos espacios fijos se comía la mayoría. Con `^  ok +[0-9]+`: **202 ok + 17 skipped = 219**,
+que es exactamente el último número de test emitido. Recién ahí el verde valía algo.
+
+*Octava falla de instrumento del proyecto, y la segunda que se caza por no cerrar con un número ya
+conocido.*
+
+### Lo que cerró el bloque
+
+| deuda | qué era | qué quedó |
+|---|---|---|
+| **63 + M7** | "Gastos" sumaba compras a proveedor y retiros del dueño | filtra `categoria in ('gasto','otro')`; el arqueo intacto; el CHECK cruzado por fin tiene test |
+| **49** | anular/devolver una compra no existía en ninguna capa | `kind` + `register_purchase_return` + `adjust_cost` con motivo obligatorio y rastro; el costo **no** se reescribe |
+| **44** | sólo existía la fecha de tecleo | `document_date` en compras y gastos, con `hoy_bogota()` y guard de futuro por los dos caminos |
+
+### Tres cosas que aparecieron al ejecutar y no estaban en ninguna lista
+
+1. **`stock_movements.type='return'` ya tenía dueño** — el reverso de una venta. Reusarlo para la
+   devolución al proveedor habría dejado un valor describiendo dos direcciones opuestas. Cuarto caso
+   del criterio de los valores ambiguos, y el primero atajado **antes** de escribir el valor.
+2. **La premisa de la 44 era falsa**: los formularios de alta no tenían campo de fecha. Segundo caso
+   de *"la deuda es una hipótesis fechada"*, después de los 4.212 productos.
+3. **`current_date` habría fechado mal toda la franja del cierre de caja.** Medido a las 21:40 de
+   Bogotá, el servidor decía 2026-09-03.
+
+### Y una cuarta, encontrada enumerando para el bloque siguiente
+
+La deuda **45 tenía dos alcances apilados** —las seis subcategorías de la maqueta (2026-09-01) y las
+tres del archivo real del cliente (2026-09-02)— sin que ninguna reemplazara a la otra. **Tercer caso
+del mismo criterio, y edición por append otra vez**: la causa mecánica que A5 identificó para los tres
+pares contradictorios de `CLAUDE.md`, con regla escrita desde entonces. Se colapsó en una sola
+afirmación vigente, con lo superado marcado como superado al pie.
