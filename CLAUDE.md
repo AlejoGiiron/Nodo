@@ -978,6 +978,7 @@ estábamos contando.*
 | `grep '\?\? new Set\('` en A1 | los `new Set()` como default | no veía `new Set<string>()` — el parámetro de tipo | **el control escrito de antemano**: la 54 TENÍA que aparecer, y dio cero |
 | el script de captura de A6 | la pantalla pedida **de la maqueta** | la que estuviera abierta: `getByText('Historial').last()` tomó un encabezado del panel de Clientes y **nunca navegó** | **mirando la captura**: era una imagen creíble de otra pantalla |
 | el **mismo** script, ya "arreglado" | ídem | ídem: `Cartera` es **título de grupo Y ítem de navegación**, y el primero en orden de DOM es el grupo, que no navega | **mirando la captura**: el par de Cartera mostraba el Mostrador |
+| una marca en `window` + apretar **F5**, para medir `preventDefault` | que el atajo le gana al navegador | **nada**: Chromium bajo automatización **no ejecuta la acción de navegador** de las teclas de función, así que la página no se recargaba de ninguna forma y la marca sobrevivía siempre | **el mutante**: quitado el `preventDefault`, el caso siguió VERDE |
 | `grep -cE '^  ok  [0-9]+'` sobre la salida de la suite | cuántos tests pasaron | asumía **dos espacios fijos**; el reporter **alinea el número por ancho**, así que `ok 1`, `ok  99` y `ok 219` no coinciden con el patrón. Contó **89 de 202** | **cruzando**: 89 no cerraba con las 202 del resumen. Con `^  ok +[0-9]+`: 202 + 17 skipped = **219**, el último número de test emitido |
 
 **Los tres daban un número creíble.** Ninguno daba error, ninguno se veía roto, y los tres
@@ -1061,8 +1062,27 @@ automatización no ejecuta la acción de navegador de las teclas de función**, 
 recargaba de ninguna manera. El caso no medía nada — y el comentario que yo mismo había escrito en
 el spec afirmaba, con todas las letras, que ésa era *"la tecla que SÍ discrimina"*.
 
-⚠️ **Es la advertencia de arriba, incumplida por quien la acababa de escribir.** Pregunté cómo se
-vería el rojo y me contesté con una historia plausible en vez de con una corrida.
+🔴 **LO QUE LA HACE LA MÁS ALECCIONADORA DE LAS DIEZ NO ES EL INSTRUMENTO: ES QUIÉN FALLÓ.**
+
+> **No falló por desconocer la regla. Falló en quien acababa de redactarla, un turno antes, en este
+> mismo archivo.**
+
+La regla —*«después de escribir un control, escribí cómo se vería su rojo; si la respuesta es "no se
+me ocurre", el control es decorativo»*— tenía **minutos de escrita** cuando escribí un control
+decorativo. Y no lo escribí distraído: escribí **al lado** el comentario que afirmaba que ese caso
+*"SÍ discrimina"*, o sea que **contesté la pregunta de la regla** — con una historia plausible en vez
+de con una corrida.
+
+**Es «no fallamos en saber, fallamos en convocar» aplicado a la regla MÁS NUEVA del repo**, que es
+el peor caso posible para la hipótesis cómoda de que las reglas nuevas están frescas y por eso se
+aplican. Estaba fresca, estaba escrita por mí, estaba a media pantalla de distancia. **La distancia
+que importa no es la temporal ni la física: es entre la carga y la decisión** —el argumento del hook
+contra el recordatorio, medido otra vez y ahora contra mí mismo—. Contestar la pregunta de una regla
+no es aplicarla: aplicarla es **correr algo que pueda contestarla que no**.
+
+⚠️ Corolario incómodo y accionable: **una regla recién escrita no protege más que una vieja.** Si
+algo la hace cumplirse es un mecanismo —el mutante, acá—, no la frescura. El mutante existía en el
+procedimiento desde antes y **fue lo único que la atrapó**.
 
 ✅ **El instrumento que sí mide no observa la CONSECUENCIA: observa el HECHO.** No *"el navegador no
 hizo lo suyo"* —invisible acá— sino *"el evento salió con su default cortado"*:
@@ -1081,6 +1101,26 @@ igual.
 **adentro** del listener lo ata al orden de suscripción, y `useAtajos` se re-suscribe al navegar —
 así que el espía terminaba corriendo **antes** que la aplicación y veía `false` sobre una tecla que
 sí estaba cortada. Guardar el evento y leer el valor al final saca el orden de la ecuación.
+
+**LO ACCIONABLE, Y ES NUEVO — la regla general que sale de este caso:**
+
+> **Cuando la CONSECUENCIA de una acción no es observable en el entorno de prueba, se asevera EL
+> HECHO, no la consecuencia.**
+
+El entorno de prueba **no es el mundo**: un navegador bajo automatización no abre herramientas, no
+recarga por F5, no entra en pantalla completa, no imprime, no descarga, no pide permisos. Un test
+escrito sobre *"la consecuencia no ocurrió"* en un entorno **donde esa consecuencia nunca ocurre**
+está verde por construcción — y se lee exactamente igual que uno que mide.
+
+| Se quiere probar | ⛔ La consecuencia (invisible acá) | ✅ El hecho (observable siempre) |
+|---|---|---|
+| que el atajo le gana al navegador | la página no se recargó | el evento salió con `defaultPrevented` |
+| que no se abrió una pestaña | no hay pestaña nueva | se llamó `preventDefault` sobre el `click` |
+| que se disparó una impresión | salió el papel | se llamó `window.print` |
+
+⚠️ Y el detalle de implementación que no es opcional: **el hecho se lee DESPUÉS del despacho**, no
+adentro del listener — si no, se ata al orden de suscripción y vuelve a medir otra cosa (ver la
+tercera trampa, arriba).
 
 🔴 **EL CUARTO ES DE OTRA ESPECIE, y por eso vale aparte: el instrumento era UN SCRIPT NUESTRO.**
 Los tres primeros median mal; éste **rompía el archivo**. Y lo relevante es que **había funcionado
@@ -1996,11 +2036,27 @@ falsa. El estado es lo que se pudre, así que se escribe distinto.
   | *"Cuatro decisiones… con los cuatro casos"* | **cinco** filas | contradictorio a las horas de escrito |
   | *"TRES casos medidos"* | **cuatro** filas | contradictorio a los minutos |
 
-  **Es R1 en prosa, y es la tercera aparición del mismo patrón** después de dos que ya resolvimos en
-  código: `admin = ALL_PERMISSION_KEYS` **derivado** en vez de enumerado —enumerarlo dejó las cuatro
-  copias de Vento con 16/20/18/23— y `ALL_PERMISSION_KEYS` construido con `flatMap` sobre los grupos.
-  Las tres veces el defecto es el mismo: **un valor que se puede derivar, escrito a mano**, y con
-  nada que sincronice los dos lados.
+  **Es R1 en prosa, y es una aparición más del mismo patrón** — los casos de la tabla de abajo. El
+  defecto es siempre el mismo: **un valor que se puede derivar, escrito a mano**, y con nada que
+  sincronice los dos lados.
+
+  | Caso | El lado escrito a mano | Cómo se cerró EN EL MECANISMO |
+  |---|---|---|
+  | Catálogo RBAC | `admin` con sus claves **enumeradas** — dejó las cuatro copias de Vento con 16/20/18/23 | `admin = ALL_PERMISSION_KEYS`, **derivado** |
+  | `ALL_PERMISSION_KEYS` | la lista, repetida al lado de los grupos | `flatMap` sobre los grupos |
+  | Un conteo en prosa | *"cuatro decisiones"* al lado de cinco filas | **no escribir el número**: "los casos de la tabla" |
+  | 🔴 **El rótulo de un atajo** *(2026-09-03)* | «Cobrar — **F12**» escrito en el botón, y la tecla cableada —o no— en otro archivo | el botón **deriva** su texto de `src/lib/atajos.ts`: `Cobrar — {teclaDe('Cobrar')}` |
+
+  🔴 **El cuarto es el más caro de los cuatro y merece su diagnóstico, porque el lado congelado no
+  era una lista: era una TECLA QUE NO EXISTÍA.** El botón imprimió «Cobrar — F12» durante todo el
+  proyecto y **F12 no estaba cableada en ninguna parte** —cero `key === 'F…'` en todo `src/`—: la
+  cajera apretaba la tecla que el producto le ofrecía y le abría las herramientas del navegador.
+  Rótulo y tecla eran dos lados de un contrato sin sincronizador, y **se congeló el que nadie
+  tocaba** — nadie edita un `<Button>` que ya dice lo correcto.
+  ⚠️ Y la parte que lo hace peor que un catálogo desincronizado: **el lado visible era el que
+  mentía**. Un permiso que falta se nota cuando algo no funciona; un rótulo correcto sobre una tecla
+  muerta **se lee como confirmación** cada vez que alguien lo mira. Es el corolario de R4 —*leer una
+  declaración falsa la confirma*— pintado en la interfaz.
 
   ⚠️ **Lo que hace peor a la variante en prosa es que no hay verificador.** Un catálogo desincronizado
   lo caza un test o un check de árbol; una frase que dice "cuatro" al lado de cinco filas **no la caza
