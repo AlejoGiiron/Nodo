@@ -159,13 +159,29 @@ export function ItemConfigModal({
               {formatCOP(unitSubtotal)}
             </span>
           </div>
-          <button
-            data-testid="item-config-confirm"
-            onClick={handleConfirm}
-            style={{ width: '100%', height: 52, border: 'none', background: 'var(--action)', borderRadius: 'var(--r-2)', cursor: 'pointer', fontSize: 16, fontWeight: 700, color: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
-          >
-            <ShoppingCart size={16} /> {confirmLabel}
-          </button>
+          {/* 🔴 DEUDA 57. `isLoading` ya se usaba para el TEXTO de la lista
+              ("Cargando extras...") y no para el botón: se podía confirmar
+              mientras la pantalla decía que estaba cargando. `available` era
+              `[]`, así que `onConfirm([])` metía la línea al carrito SIN extras
+              y la venta se cobraba de menos. Es la 54 un paso más adelante, con
+              su propia ventana por producto (la consulta es por `product.id`).
+              El botón no existe mientras carga — no un spinner. */}
+          {isLoading ? (
+            <div
+              data-testid="item-config-cargando"
+              style={{ width: '100%', height: 52, borderRadius: 'var(--r-2)', background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--ink-3)', fontSize: 13.5, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              Cargando extras…
+            </div>
+          ) : (
+            <button
+              data-testid="item-config-confirm"
+              onClick={handleConfirm}
+              style={{ width: '100%', height: 52, border: 'none', background: 'var(--action)', borderRadius: 'var(--r-2)', cursor: 'pointer', fontSize: 16, fontWeight: 700, color: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+            >
+              <ShoppingCart size={16} /> {confirmLabel}
+            </button>
+          )}
         </div>
       </div>
     </div>

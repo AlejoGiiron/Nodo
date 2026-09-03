@@ -31,8 +31,14 @@ export function ProductModal({ product, categories, onClose }: ProductModalProps
   const { saveProduct, uploadImage, removeImage } = useProductMutations()
   const { data: allProducts = [] } = useProducts()
   const { extras } = useExtras()
-  const { assignedIds, reconcile } = useProductExtras(product?.id ?? null)
-  const { initialRows, reconcile: reconcileRecipe } = useProductComponents(product?.id ?? null)
+  // 🔴 DEUDA 56 · los dos `isLoading` ya estaban disponibles y no se leían.
+  //    Lo que este modal escribe no es sólo un dato nuevo: `reconcile` re-lee la
+  //    base y borra todo lo que no esté en la selección en memoria. Con la
+  //    selección todavía vacía, `toRemove` es TODO — y un compuesto sin receta
+  //    deja de descontar stock al venderse. Medido: la receta pasó de 1 fila a 0.
+  const { assignedIds, reconcile, isLoading: cargandoExtras } = useProductExtras(product?.id ?? null)
+  const { initialRows, reconcile: reconcileRecipe, isLoading: cargandoReceta } =
+    useProductComponents(product?.id ?? null)
   const formId = useId()
 
   const isEditing = !!product
@@ -43,12 +49,16 @@ export function ProductModal({ product, categories, onClose }: ProductModalProps
   const [extrasInit, setExtrasInit] = useState(false)
 
   // Inicializa la selección desde lo ya asignado en BD (modo edición).
+  // ⚠️ La condición es `!cargandoExtras`, NO `size > 0`: con `size > 0` un
+  //    producto SIN extras nunca marcaba `extrasInit`, así que "cargando" y "no
+  //    tiene ninguno" compartían estado — y si el usuario alcanzaba a marcar uno
+  //    antes de la respuesta, el efecto se lo pisaba al llegar.
   useEffect(() => {
-    if (!extrasInit && product && assignedIds.size > 0) {
+    if (!extrasInit && product && !cargandoExtras) {
       setSelectedExtras(new Set(assignedIds))
       setExtrasInit(true)
     }
-  }, [assignedIds, product, extrasInit])
+  }, [assignedIds, product, extrasInit, cargandoExtras])
 
   const toggleExtra = (id: string) => {
     setSelectedExtras(prev => {
@@ -74,17 +84,22 @@ export function ProductModal({ product, categories, onClose }: ProductModalProps
   const [recipeRows, setRecipeRows] = useState<RecipeRow[]>([])
   const [recipeInit, setRecipeInit] = useState(false)
   useEffect(() => {
-    if (!recipeInit && product && initialRows.length > 0) {
+    if (!recipeInit && product && !cargandoReceta) {
       setRecipeRows(initialRows)
       setRecipeInit(true)
     }
-  }, [initialRows, product, recipeInit])
+  }, [initialRows, product, recipeInit, cargandoReceta])
 
   // Stock actual (persistido): solo lectura aquí — se mueve por ventas/ajustes.
   const currentStock = product?.stock_qty ?? 0
 
   const priceNum = parseInt(price.replace(/\D/g, ''), 10) || 0
-  const isValid = name.trim().length > 0 && priceNum > 0 && categoryId
+
+  // 🔴 Al EDITAR, guardar reconcilia extras y receta contra la selección en
+  //    memoria: hasta que las dos hayan cargado, esa selección es una mentira.
+  //    Al CREAR no hay nada que cargar (las queries van `enabled: false`).
+  const insumosPendientes = isEditing && (cargandoExtras || cargandoReceta)
+  const isValid = name.trim().length > 0 && priceNum > 0 && categoryId && !insumosPendientes
 
   // Close on Escape
   useEffect(() => {
@@ -556,6 +571,23 @@ export function ProductModal({ product, categories, onClose }: ProductModalProps
           >
             Cancelar
           </button>
+          {/* 🔴 Mientras los insumos no cargaron, el botón NO EXISTE (deuda 56).
+              No es un spinner: un botón deshabilitado invita a esperar y
+              reintentar; uno ausente dice que la pantalla todavía no sabe lo
+              suficiente para ofrecer la acción — y acá la acción BORRA. */}
+          {insumosPendientes ? (
+            <div
+              data-testid="product-modal-cargando"
+              style={{
+                flex: 2, padding: '11px 16px', borderRadius: 9,
+                background: 'var(--surface-2)', border: '1px solid var(--border)',
+                color: 'var(--ink-3)', fontSize: 12.5, fontWeight: 600,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              Cargando extras y receta…
+            </div>
+          ) : (
           <button
             type="submit"
             form={formId}
@@ -574,6 +606,7 @@ export function ProductModal({ product, categories, onClose }: ProductModalProps
           >
             {saving ? 'Guardando...' : <><span>{isEditing ? 'Guardar cambios' : 'Crear producto'}</span><ChevronRight size={15} /></>}
           </button>
+          )}
         </div>
       </div>
     </div>
