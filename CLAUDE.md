@@ -1387,6 +1387,82 @@ número sin comando es una opinión con dígitos.
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · UN COMANDO ESCRITO EN ESTE ARCHIVO ES CÓDIGO EN PRODUCCIÓN, Y NECESITA LA MISMA VERIFICACIÓN
+
+*2026-09-03. Es el cierre de la serie de fallas de instrumento, y sale de que la última fue de otra
+especie que las doce anteriores.*
+
+> **Una sonda mala miente UNA VEZ. Un comando canónico miente SISTEMÁTICAMENTE, en toda corrida, y
+> con la autoridad de estar escrito.**
+
+Las doce primeras fueron **sondas de un turno**: un `grep` para contestar una pregunta, que se
+escribió, se corrió y se descartó. La decimotercera fue el **comando de los cinco números** —el que
+este archivo prescribe para leer *toda* corrida de la suite—, y leyó `17 skipped` como `0`.
+
+⚠️ **Y el modo de fallo tiene una propiedad que las sondas no tienen: DEJÓ DE FUNCIONAR SIN QUE
+NADA CAMBIARA DE NUESTRO LADO.** El comando era correcto cuando se escribió. Lo rompió que el
+reporter empezara a **reescribir la línea de progreso** antes del resumen, pegándole una secuencia
+de control a la primera línea. Nadie iba a notarlo, porque el comando *seguía funcionando* — seguía
+imprimiendo cinco líneas y cuatro de ellas eran ciertas.
+
+> **Un comando canónico se REVERIFICA cuando cambia lo que LEE**, no cuando se lo edita. Lo que lo
+> rompe está afuera: un reporter, un formato de salida, una versión de una herramienta, un esquema.
+
+**LO ACCIONABLE, y son las dos mitades:**
+
+1. **Ejecutarlo contra una entrada conocida, con control negativo** — lo mismo que se le exige a
+   cualquier instrumento. Un comando que nunca se corrió contra una salida real **no está
+   verificado: está sin refutar**, igual que el script de migración que funcionó cuatro veces.
+2. **Dejar escrito cuándo se verificó y contra qué**, porque de eso depende cuándo hay que
+   repetirlo.
+
+---
+
+#### 📋 INVENTARIO DE LOS COMANDOS CANÓNICOS — verificados por ejecución el 2026-09-03
+
+*Todos corridos contra entrada real ese día. La columna del control negativo es la que dice si el
+comando **puede** dar vacío: sin ella, un cero no se distingue de un patrón roto.*
+
+| Comando | Qué mide | Resultado | Control negativo |
+|---|---|---|---|
+| el bloque de los **cinco números** + `suite_exit` | el resultado de una suite | 255 · 0 · 0 · 17 · 0, cruce 272 ✅ | ✅ el patrón viejo, al lado, reproduciendo el defecto |
+| `grep -oE "'[a-z_]+\.[a-z_]+'" src/lib/permissions.ts \| sort -u \| wc -l` | claves del catálogo RBAC | **21** | ✅ 0 sobre un archivo sin claves |
+| `grep -rn restaurant_id src/ tests/ supabase/functions/` | el renombre de sede | **0** | ✅ `sede_id` da 324: el grep sí encuentra |
+| `grep -rnE "(<>\|!=\|=)\s*(public\.)?[a-z_]+\(\)" supabase/migrations/` | guards que comparan contra función (A2) | **72** candidatos | — |
+| `grep -nE "getByText…\|\.(first\|last)\(\)\|\.nth\("` | locators frágiles en un spec | 4 en `cobro-modal.spec` | ✅ 0 sobre un `.ts` sin locators |
+| `grep -oE "<[A-Z][A-Za-z]+" <pantalla> \| sort \| uniq -c` | componentes de una pantalla | Button 8, MoneyCell 4… | — |
+| `printf … \| sort \| uniq -d` | si un mapeo de locators es inyectivo | vacío | ✅ con un destino repetido, **lo imprime** |
+| `git log --oneline -S'<marcador>' -- src/ \| tail -1` | qué commit INTRODUJO un marcador | nombra el commit correcto | ✅ vacío para un marcador inventado |
+| `pnpm gen:rbac:check` | catálogo vs SQL generado | **exit 0** | — |
+| `pnpm test:unit` | los unitarios | **349 passed** | — |
+| `node --check .claude/hooks/sql-checklist.mjs` | que el hook no esté mudo | **exit 0** | — |
+
+🔴 **LOS DOS QUE NO PASARON, y son el hallazgo de la enumeración:**
+
+| Comando | Qué pasa al ejecutarlo |
+|---|---|
+| **`git rev-list --count develop..main`** | ⛔ **`fatal: ambiguous argument 'develop..main'`** — `main` **no existe** en este repo, ni local ni en `origin` (`git branch -a` → sólo `develop`) |
+| `pnpm exec supabase migration list --linked` | ⛔ **401 Unauthorized** — el token se rotó tras el incidente, así que *"17 migraciones al 2026-09-02"* **hoy no se puede reconfirmar** |
+| todo lo que consulta la BASE — `pnpm db:types`, `supabase gen types --linked`, `select proname, proacl from pg_proc …` | ⛔ misma causa: **sin token no se pueden correr**. No están rotos; están **fuera de alcance hasta el próximo token**, y eso es distinto de verificados |
+
+⚠️ **El primero es el peor de todo el inventario, y por dónde está escrito: es el EJEMPLO con el que
+este archivo enseña el principio *«mejor que fechar: decir cómo consultarlo»*.** La frase dice que
+ese comando *"vale más que cualquier frase sobre qué rama va adelante"* — **y no corre acá**. Vino
+copiado de Vento, donde `main` sí existe, junto con el resto de la convención.
+
+Es exactamente el **corolario del renombre**: un texto que nombra algo que vive fuera de este repo y
+que nadie movió en la misma pasada. La diferencia es que acá no desconecta un nombre — **desconecta
+la única demostración de la regla**.
+
+⚠️ **Y hay un peligro de LECTURA que este archivo se creó solo:** contiene **dos clases de comando
+mezcladas** — los canónicos (para usar) y los de la tabla de fallas de instrumento, que están ahí
+**como ejemplos de lo que NO hay que correr** (`grep -cE '^  ok  [0-9]+'`, `grep -coE '#[0-9a-fA-F]{6}'`,
+`grep -rl "const formatCOP" src/`, `grep '?? new Set('`). Un lector que grepee este documento buscando
+"el comando para contar hexes" **encuentra primero el roto**, porque está explicado con más detalle
+que ninguno. Los de esa tabla van leídos con su párrafo, nunca copiados sueltos.
+
+---
+
 ### ⚠️ CRITERIO SIN NÚMERO · LA MISMA REGLA PUEDE ELEGIR EL LADO PERMISIVO — Y ENTONCES HAY QUE ESCRIBIR EL DISPARADOR
 
 *Tercera aplicación de la asimetría de la dirección del fallo, y la primera en que el resultado es
@@ -2358,9 +2434,22 @@ falsa. El estado es lo que se pudre, así que se escribe distinto.
 - **TODA AFIRMACIÓN DE ESTADO VA FECHADA.** "182 tests" se lee como presente y miente a las dos
   semanas. "182 tests (2026-08-12)" es una referencia histórica honesta.
 - **MEJOR QUE FECHAR: DECIR CÓMO CONSULTARLO.** Un dato caduca; una instrucción para reproducirlo,
-  no. `git rev-list --count develop..main` vale más que cualquier frase sobre qué rama va adelante
-  — y de hecho ese bloque decía lo contrario de la realidad durante semanas. Cuando existan las
-  dos, va primero el comando y después el dato fechado.
+  no. `git rev-list --count origin/develop..develop` vale más que cualquier frase sobre si lo local
+  ya está publicado — y de hecho **ése es el comando que resolvió el deploy** el 2026-09-03: no
+  estaba mal configurado, faltaba un `push` de 18 commits. Cuando existan las dos, va primero el
+  comando y después el dato fechado.
+
+  🔴 **ESTE EJEMPLO ERA `git rev-list --count develop..main` Y NO CORRÍA EN ESTE REPO.** *Corregido
+  el 2026-09-03 al ejecutar el inventario de comandos canónicos.* `main` **no existe** —ni local ni
+  en `origin`—, así que el comando devolvía `fatal: ambiguous argument`. Vino copiado de Vento,
+  donde sí existe, junto con el resto de esta convención.
+
+  ⚠️ **Y lo que lo hacía el peor error posible es dónde estaba: era el EJEMPLO con el que esta
+  regla se enseña.** Una regla cuya única demostración no se puede ejecutar **se lee y se cree
+  igual** —nadie corre el ejemplo de una convención— así que sobrevivió intacta y un poco más
+  creíble cada vez, que es el corolario de R4 literal. Es también el **corolario del renombre**: un
+  texto que nombra algo de otro repo y que nadie movió en la misma pasada. La diferencia es que acá
+  no desconectaba un nombre: desconectaba la prueba.
 - **UNA AFIRMACIÓN DE ESTADO SE REEMPLAZA, NUNCA SE AGREGA AL LADO DE LA VIEJA.** *Medido en A5
   (2026-09-02): las tres peores falsas de este archivo eran PARES CONTRADICTORIOS escritos con horas
   de diferencia* —"23 claves de Vento" dos renglones arriba de "21 claves"; dos filas `settings.json +
