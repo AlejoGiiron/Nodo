@@ -869,11 +869,38 @@ nueva **no es un error del instrumento sino del entorno**. Corolario práctico: 
 números vengan todos vacíos, la hipótesis correcta **no es "no hubo fallos"** — es *"la corrida no
 existió"*, y se confirma mirando el largo del archivo antes que su contenido.
 
+🔴 **TERCER CASO, 2026-09-03 — Y EL INSTRUMENTO QUE FALLÓ FUE EL COMANDO DE ESTE MISMO BLOQUE.**
+
+El reporter `line` **reescribe la línea de progreso** con `\x1b[1A\x1b[2K` antes de imprimir el
+resumen, así que **la PRIMERA línea del resumen queda pegada a esa secuencia de control** y ya no
+empieza con espacios:
+
+```
+^[[1A^[[2K  17 skipped        ← el ^ del patrón no matchea: la línea arranca con el escape
+  255 passed (17.2m)          ← ésta sí, porque es la segunda
+```
+
+El comando de acá abajo, anclado en `^`, leyó **`skipped -> (ninguna línea: 0)`** sobre 17 skipped.
+
+⚠️ **Y la versión grave es la que no tocó esta vez: cuál línea se come el prefijo depende de cuál
+se imprime PRIMERO.** Acá fue `skipped` y el daño fue cosmético. Si en una corrida con fallos la
+primera es `failed`, **este comando reporta 0 fallos sobre una suite roja** — que es exactamente el
+modo de fallo que R9 existe para evitar, reintroducido por la herramienta que la aplica.
+
+✅ **Lo cazó el cruce, no el patrón** —255 no cerraba con los 272 tests emitidos—, que es la tercera
+técnica: *un número que no cierra con otro que ya conocías es la señal más barata que tenemos.*
+
+**LA VERSIÓN CORREGIDA: se limpian los escapes ANTES de contar.**
+
 ```bash
+sed 's/\x1b\[[0-9;]*[A-Za-z]//g' salida.txt > salida-limpia.txt
 for k in passed failed flaky skipped "did not run"; do
-  echo "$k -> $(grep -E "^  *[0-9]+ $k" salida.txt || echo '(ninguna línea: 0)')"
+  echo "$k -> $(grep -E "^ *[0-9]+ $k" salida-limpia.txt || echo '(ninguna línea: 0)')"
 done
-grep -n "suite_exit=" salida.txt      # R9: el exit va escrito ADENTRO del archivo
+grep -n "suite_exit=" salida-limpia.txt   # R9: el exit va escrito ADENTRO del archivo
+# y el CRUCE, que es lo que caza al patrón que discrimina mal:
+#   passed + skipped  ==  el último [N/N] emitido
+grep -oE "\[[0-9]+/[0-9]+\]" salida-limpia.txt | tail -1
 ```
 
 ⚠️ Y el complemento, que es lo que convierte el conteo en evidencia: **cruzarlo con un número que ya
