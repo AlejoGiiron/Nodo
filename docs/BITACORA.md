@@ -3366,3 +3366,56 @@ contada.
 
 Queda escrito porque **se cerró de rebote y no por diseño**, y un arreglo que nadie buscó es
 justamente el que nadie va a saber que existe.
+
+
+## 2026-09-03 · El precio editable — lo que ya era libre, y la red que no existía
+
+### El hallazgo que cambió cómo se lee esta deuda
+
+La deuda decía "el mostrador no permite editar el precio", y suena a una restricción que hay que
+soltar. **Al enumerar apareció lo contrario: el precio ya era libre en la base desde el primer día.**
+`add_order_items_with_extras` toma `(v_item->>'unit_price')::numeric` **directo del payload** y lo
+único que existe es `check (unit_price >= 0)`. Nunca hubo comparación contra `products.price`.
+
+Lo que faltaba no era abrir nada: era **poner la única red que va a haber**. Eso convirtió la
+confirmación de "deseable" en requisito, y es la razón por la que se escribió con el umbral y no
+con un aviso genérico.
+
+### Dos ejes que conviven sin saber uno del otro
+
+| | qué contesta | dónde vive |
+|---|---|---|
+| precio de la línea | lo acordado con **este** cliente por **este** producto | `CartItem.price` → `order_items.unit_price` |
+| `discount_amount` | una rebaja **sobre** lo acordado | la ORDEN entera |
+
+El descuento no cambió de significado ni una línea de su código. Su única superficie compartida con
+el precio es el **subtotal**, que ahora suma precios pactados en vez de precios de catálogo — y el
+spec lo asevera: descuento del 10% sobre el precio pactado, no sobre el de lista.
+
+### El precio de la línea es un SNAPSHOT, igual que el de los extras
+
+`CartItem.price` nace copiando `products.price` y después no vuelve a mirarlo. Si el catálogo cambia
+con la venta a medio armar, la línea sigue diciendo lo que se acordó. Es el mismo criterio que ya
+tenía `CartExtra.price`, y el mismo que congela el costo al vender: **lo pactado es un hecho, y un
+hecho no se recalcula.**
+
+⚠️ Y por eso las ventas en espera funcionaron sin trabajo extra: `HeldOrder` guarda los ítems
+enteros, así que el precio pactado sobrevive a pausar y retomar una venta.
+
+### Un punto que no estaba en el enunciado y se decidió al enumerar
+
+`ItemConfigModal` calculaba su subtotal con `product.price`. Al editar los extras de un ítem cuyo
+precio ya se negoció, habría mostrado un número distinto al de la línea que estaba configurando.
+
+Se resolvió pasándole el precio pactado **para mostrar, no para editar**: el precio se cambia en
+**un solo lugar**. Dos puntos de edición del mismo valor serían dos lados sin nada que los
+sincronice — R1 en una pantalla.
+
+### El cruce que la 80 hizo posible
+
+El caso principal del spec no asevera sólo que la línea guarde el precio pactado: asevera que
+**`orders.total`, derivado por el servidor, sale de ese precio**. Antes de la 80 esa aserción no
+habría probado nada —el total lo mandaba el mismo cliente que mandaba el precio, así que coincidían
+por construcción—. Ahora son dos caminos independientes que tienen que dar el mismo número.
+
+**Ése era el argumento para hacer la 80 primero, y quedó verificado en vez de argumentado.**

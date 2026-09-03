@@ -9,7 +9,9 @@ import {
 import { toast } from 'react-hot-toast'
 import { useQueryClient } from '@tanstack/react-query'
 import { useScrollOverflow } from '@/hooks/useScrollOverflow'
-import { useCartStore, cartItemTotal } from '@/stores/cartStore'
+import {
+  useCartStore, cartItemTotal, precioLejosDelCatalogo, desvioDelCatalogo,
+} from '@/stores/cartStore'
 import { useProducts } from '@/hooks/useProducts'
 import { useCategories } from '@/hooks/useCategories'
 import { useProductsWithExtras } from '@/hooks/useProductsWithExtras'
@@ -164,7 +166,9 @@ function PrintTicket({
         <div key={i} style={{ marginBottom: 3 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span style={{ fontWeight: 600 }}>{item.qty}x {item.product.name}</span>
-            <span>{formatCOP(item.product.price * item.qty)}</span>
+            {/* El precio PACTADO, no el de lista (deuda 75): el ticket es
+                lo que el cliente se lleva y tiene que decir lo que pagó. */}
+            <span>{formatCOP(item.price * item.qty)}</span>
           </div>
           {item.extras.map((ex) => (
             <div key={ex.extra_id} style={{ display: 'flex', justifyContent: 'space-between', paddingLeft: 14, fontSize: 10 }}>
@@ -296,6 +300,7 @@ function CartLine({ item, index, noting, onToggleNote, hasExtras, onEditExtras }
   hasExtras: boolean; onEditExtras: () => void
 }) {
   const setQty = useCartStore((s) => s.setQty)
+  const setPrice = useCartStore((s) => s.setPrice)
   const setNote = useCartStore((s) => s.setNote)
   const remove = useCartStore((s) => s.remove)
   const color = item.product.categories?.color ?? 'var(--ink-4)'
@@ -319,13 +324,54 @@ function CartLine({ item, index, noting, onToggleNote, hasExtras, onEditExtras }
             style={{ fontSize: 14, fontWeight: 700, flexShrink: 0 }}
           />
         </div>
-        <div style={{ fontSize: 11.5, color: 'var(--ink-4)', marginTop: 2 }}>
-          <MoneyCell
-            value={item.product.price}
-            style={{ fontSize: 11.5, fontWeight: 400, color: 'var(--ink-4)' }}
-          />{' '}
-          c/u
+        {/* 🔴 PRECIO EDITABLE EN LA LÍNEA — deuda 75. El del catálogo pasa a
+            ser una SUGERENCIA: el cliente negocia el mismo producto a 109.000,
+            110.000 y 115.000 (medido en su archivo real). No es un descuento —
+            `discount_amount` sigue siendo la rebaja SOBRE lo acordado. */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
+          <input
+            data-testid="cart-item-price"
+            inputMode="numeric"
+            value={item.price ? formatCOP(item.price).replace(/[^\d.]/g, '') : ''}
+            onChange={(e) => setPrice(index, Number(e.target.value.replace(/\D/g, '')))}
+            aria-label={`Precio unitario de ${item.product.name}`}
+            style={{
+              width: 96, padding: '3px 7px', borderRadius: 6, fontSize: 11.5,
+              fontVariantNumeric: 'tabular-nums', textAlign: 'right',
+              border: `1px solid ${precioLejosDelCatalogo(item) ? 'var(--warning-border)' : 'var(--border)'}`,
+              background: precioLejosDelCatalogo(item) ? 'var(--warning-soft)' : 'var(--surface)',
+              color: 'var(--ink-2)', outline: 'none',
+            }}
+          />
+          <span style={{ fontSize: 11.5, color: 'var(--ink-4)' }}>c/u</span>
+          {item.price !== item.product.price && (
+            <span style={{ fontSize: 11, color: 'var(--ink-4)' }}>
+              lista {formatCOP(item.product.price)}
+            </span>
+          )}
         </div>
+
+        {/* 🔴 LA ÚNICA RED QUE VA A EXISTIR. El servidor NUNCA compara
+            `unit_price` contra `products.price` —la RPC lo toma directo del
+            payload—, así que con precio libre un typo de 15.000 por 115.000 no
+            lo detecta nada más que esto. Advierte y deja seguir: negociar es
+            normal en este negocio, y un aviso que sale siempre deja de leerse. */}
+        {precioLejosDelCatalogo(item) && (
+          <div
+            data-testid="precio-lejos-del-catalogo"
+            style={{
+              marginTop: 4, padding: '5px 8px', borderRadius: 'var(--r-2)',
+              background: 'var(--warning-soft)', color: 'var(--warning-on-soft)',
+              fontSize: 11, lineHeight: 1.4,
+            }}
+          >
+            {(() => {
+              const d = desvioDelCatalogo(item)
+              const pct = d == null ? 0 : Math.round(Math.abs(d) * 100)
+              return `${pct}% ${d != null && d < 0 ? 'por debajo' : 'por encima'} del precio de lista. Confirmá que es el precio acordado.`
+            })()}
+          </div>
+        )}
 
         {/* Extras del ítem */}
         {item.extras.length > 0 && (
@@ -908,7 +954,9 @@ function CheckoutModal({
         items.map((item) => ({
           product_id: item.product.id,
           qty: item.qty,
-          unit_price: item.product.price,
+          // 🔴 El precio PACTADO. `products.price` quedó como sugerencia y no
+          //    se persiste en ningún lado (deuda 75).
+          unit_price: item.price,
           notes: item.note || null,
           extras: item.extras.map((ex) => ({ extra_id: ex.extra_id, qty: ex.qty })),
         })),
@@ -1919,6 +1967,7 @@ export function POSPage() {
       {editingItem && (
         <ItemConfigModal
           product={editingItem.product}
+          precioUnitario={editingItem.price}
           initial={editingItem.extras}
           confirmLabel="Guardar extras"
           onConfirm={(extras) => { updateItemExtras(editingItem.id, extras); setEditingItem(null) }}

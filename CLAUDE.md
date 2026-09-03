@@ -1195,6 +1195,43 @@ pasado no cumple está diciendo algo sobre el pasado, y borrarlo es borrar el ha
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · EL ORDEN ENTRE DOS DEUDAS SE DECIDE MIDIENDO, NO OPINANDO
+
+*2026-09-02/03, la deuda 80 antes del precio editable. Es la primera vez que el proyecto tiene un
+criterio **verificable** para decidir qué va primero.*
+
+> **Si la deuda A hace que el spec de B pueda medir algo que antes no medía, A va primero — y eso
+> no es una preferencia de orden: es una propiedad comprobable del spec de B.**
+
+**El caso.** Se decidió hacer la 80 —derivar `orders.total` en el servidor— antes del precio editable,
+con este argumento: *"hoy el total y las líneas coinciden por construcción, y el precio editable
+convierte esa coincidencia estructural en una convención"*. Era un argumento, no un dato.
+
+**El spec del precio lo convirtió en medición.** Su caso principal no asevera sólo que la línea guarde
+el precio pactado: asevera que **`orders.total`, derivado por el servidor, sale de ese precio**.
+
+| | si el precio hubiera ido primero | con la 80 puesta |
+|---|---|---|
+| Quién calcula el total | el **mismo** cliente que manda el precio | el **servidor**, desde las líneas |
+| Qué prueba la aserción | **nada**: coinciden por construcción | que **dos caminos independientes** dan el mismo número |
+| Color del spec | **verde** | verde |
+
+🔴 **Y ahí está lo que lo hace un criterio y no una anécdota: el spec habría estado VERDE en los dos
+casos.** Yendo el precio primero, ese verde no habría probado nada — R10 literal, *un test que pasa
+por la razón equivocada da confianza sin cobertura*. El orden equivocado no produce un rojo que
+avise: produce **un verde que miente**, y encima uno que después nadie revisa porque "ya está
+probado".
+
+**LO ACCIONABLE, y es una pregunta que se contesta antes de elegir el orden:** para cada aserción del
+spec de B, preguntá **qué la haría fallar**. Si la respuesta es "nada, porque los dos lados salen del
+mismo cálculo", entonces B **no se puede probar todavía** y lo que falta es A.
+
+⚠️ Es el corolario de R4 —*una verificación que no podía haber salido mal no es una verificación*—
+aplicado a la **planificación** en vez de a un test suelto: el orden de las deudas también se puede
+elegir de una forma que garantice tautologías.
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · ¿DE DÓNDE SALE ESTE DATO CUANDO ALGUIEN LO MIRA?
 
 *El detector del principio de arriba. Va aparte y con la misma jerarquía a propósito: el principio
@@ -1249,6 +1286,7 @@ escribió en algún momento, mirando algo — y **a veces ese algo no fue el có
 | Compras y Gastos **ya dejan elegir la fecha**, sólo falta la columna (deuda 44) | `grep 'type="date"' src/` → **diez apariciones, las diez filtros de historiales**. Ningún formulario de alta tenía campo de fecha | la deuda parecía "dos columnas" y eran dos columnas, dos guards, dos formularios y cuatro consultas |
 | las subcategorías de gasto son **las seis del diseño** — Arriendo, Servicios, Transporte, Sueldos, Impuestos, Otros (deuda 45) | el archivo real del cliente usa **tres**: publicidad, adecuación, activo. La propia entrada las llamaba *"las seis del dibujo"* | se habría sembrado la lista del producto con el vocabulario de una maqueta en vez del de un negocio |
 | la cartera **ordena por antigüedad** (enunciado de la deuda 46) | ordenaba por **saldo**: `arr.sort((a, b) => b.saldoTotal - a.saldoTotal)` | ninguno, y **por eso es el caso más instructivo**: ver abajo |
+| *"el mostrador **no permite** editar el precio"* (deuda 75) | el precio **ya era libre**: la RPC toma `unit_price` del payload y sólo existe `check (unit_price >= 0)` | ⬇️ el único que describía mal la **dirección** |
 
 **Por qué pasa, y por qué no se arregla escribiendo mejor.** Una maqueta y una app se describen con
 las mismas palabras. Cuando una descripción de la maqueta entra a una tabla de decisiones, **pierde
@@ -1267,6 +1305,23 @@ No es desconfianza del que escribió: es que el alcance escrito y el código son
 distintas**, y sólo una ejecuta. Si al enumerar coinciden, costó dos minutos. Si no coinciden
 —**todas las veces hasta ahora**—, lo que se encontró es justamente lo que habría hecho fallar el
 plan, o el registro de lo que se hizo.
+
+🔴 **EL ÚLTIMO CASO ES DE OTRA ESPECIE: LOS DEMÁS DESCRIBÍAN MAL EL ALCANCE; ÉSE DESCRIBÍA MAL LA
+DIRECCIÓN.**
+
+*"El mostrador no permite editar el precio"* se lee como una **restricción que hay que soltar**. La
+realidad medida es la contraria: el precio **ya era libre en la base desde el primer día** —
+`add_order_items_with_extras` toma `unit_price` directo del payload y lo único que existe es
+`check (unit_price >= 0)`—. El trabajo no era abrir nada: era **poner la única red que va a haber**.
+
+⚠️ **Y por eso es el más caro de los cinco:** los otros, ejecutados según su enunciado, habrían dado
+un resultado incompleto o mal dimensionado. Éste, ejecutado según su enunciado, **habría dejado el
+sistema peor que antes** — se habría "habilitado" algo que ya estaba habilitado, sin la confirmación,
+y con la sensación de haber cerrado la deuda.
+
+**Lo accionable que agrega:** al leer una deuda, preguntá también **hacia dónde** dice que hay que
+moverse, no sólo cuánto. Un enunciado en negativo —*"no permite"*, *"falta"*, *"no existe"*— es el
+que más fácil invierte el signo del trabajo, porque describe una ausencia sin decir dónde la midió.
 
 🔴 **EL CUARTO CASO ES EL QUE MEJOR EXPLICA POR QUÉ ESTO VALE LA PENA, justamente porque NO costó
 nada.** El enunciado decía "ordena por antigüedad, cambialo a días vencidos"; el código ordenaba por

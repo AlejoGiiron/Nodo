@@ -24,6 +24,17 @@ export interface CartItem {
   qty: number
   note: string
   extras: CartExtra[]
+  /**
+   * 🔴 PRECIO UNITARIO PACTADO EN ESTA LÍNEA — deuda 75. Nace copiando
+   * `product.price`, que pasa a ser una **sugerencia**: el cliente negocia el
+   * mismo producto a 109.000, 110.000 y 115.000 (medido en `Control_Mp.xlsx`).
+   *
+   * ⚠️ Es un SNAPSHOT, igual que `CartExtra.price`: si el catálogo cambia con la
+   * venta a medio armar, esta línea sigue diciendo lo que se acordó. Y es lo que
+   * viaja como `unit_price` a la RPC — el precio del catálogo ya no se persiste
+   * en ningún lado.
+   */
+  price: number
 }
 
 export type DiscountType = 'pct' | 'fixed'
@@ -33,9 +44,41 @@ export function cartItemExtrasUnit(item: Pick<CartItem, 'extras'>): number {
   return item.extras.reduce((a, e) => a + e.price * e.qty, 0)
 }
 
-/** Total de la línea: (precio producto + extras por unidad) × qty. */
-export function cartItemTotal(item: Pick<CartItem, 'product' | 'qty' | 'extras'>): number {
-  return (item.product.price + cartItemExtrasUnit(item)) * item.qty
+/**
+ * Total de la línea: (precio PACTADO + extras por unidad) × qty.
+ *
+ * ⚠️ Lee `item.price`, no `item.product.price` (deuda 75). El del producto es la
+ * sugerencia con la que nació la línea; el de la línea es lo acordado.
+ */
+export function cartItemTotal(item: Pick<CartItem, 'price' | 'qty' | 'extras'>): number {
+  return (item.price + cartItemExtrasUnit(item)) * item.qty
+}
+
+/**
+ * Cuánto se aleja el precio pactado del catálogo, en tanto por uno con signo.
+ * `null` cuando el catálogo es 0: no hay contra qué comparar, y devolver 0
+ * afirmaría que coincide.
+ */
+export function desvioDelCatalogo(item: Pick<CartItem, 'price' | 'product'>): number | null {
+  const lista = item.product.price
+  if (!lista) return null
+  return (item.price - lista) / lista
+}
+
+/**
+ * 🔴 El umbral que dispara la confirmación — deuda 75. ±20%: negociar 109.000
+ * sobre 110.000 no molesta, y un typo de un dígito (15.000 por 115.000) cae
+ * holgado afuera.
+ *
+ * Es la ÚNICA red que existe: el servidor nunca compara `unit_price` contra
+ * `products.price` — la RPC lo toma directo del payload y lo único que hay es
+ * `check (unit_price >= 0)`.
+ */
+export const UMBRAL_PRECIO = 0.20
+
+export function precioLejosDelCatalogo(item: Pick<CartItem, 'price' | 'product'>): boolean {
+  const d = desvioDelCatalogo(item)
+  return d !== null && Math.abs(d) > UMBRAL_PRECIO
 }
 
 /**
@@ -76,6 +119,7 @@ interface CartStore {
   add: (product: ProductWithCategory) => void
   addItem: (product: ProductWithCategory, extras: CartExtra[]) => void
   setQty: (index: number, qty: number) => void
+  setPrice: (index: number, price: number) => void
   setNote: (index: number, note: string) => void
   updateItemExtras: (id: string, extras: CartExtra[]) => void
   remove: (index: number) => void
@@ -110,7 +154,7 @@ export const useCartStore = create<CartStore>((set) => ({
         next[idx] = { ...next[idx], qty: next[idx].qty + 1 }
         return { items: next }
       }
-      return { items: [...state.items, { id: genId(), product, qty: 1, note: '', extras: [] }] }
+      return { items: [...state.items, { id: genId(), product, qty: 1, note: '', extras: [], price: product.price }] }
     }),
 
   // Alta con extras: siempre crea una línea nueva (no fusiona) para no mezclar
@@ -127,7 +171,7 @@ export const useCartStore = create<CartStore>((set) => ({
           return { items: next }
         }
       }
-      return { items: [...state.items, { id: genId(), product, qty: 1, note: '', extras }] }
+      return { items: [...state.items, { id: genId(), product, qty: 1, note: '', extras, price: product.price }] }
     }),
 
   setQty: (index, qty) =>
@@ -135,6 +179,17 @@ export const useCartStore = create<CartStore>((set) => ({
       if (qty <= 0) return { items: state.items.filter((_, i) => i !== index) }
       const next = [...state.items]
       next[index] = { ...next[index], qty }
+      return { items: next }
+    }),
+
+  // 🔴 Deuda 75. Sin clamp ni redondeo: el precio lo pacta una persona y el
+  //    sistema no lo corrige — valida (R6). Lo único que se impide es el
+  //    negativo, que no es un precio pactado sino un error de tipeo, y que la
+  //    base rechaza igual con `check (unit_price >= 0)`.
+  setPrice: (index, price) =>
+    set((state) => {
+      const next = [...state.items]
+      next[index] = { ...next[index], price: Math.max(0, Math.round(price)) }
       return { items: next }
     }),
 

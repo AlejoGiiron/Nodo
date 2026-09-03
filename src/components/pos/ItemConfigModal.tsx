@@ -16,6 +16,7 @@ const formatCOP = (n: number) =>
  */
 export function ItemConfigModal({
   product,
+  precioUnitario,
   initial = [],
   confirmLabel = 'Agregar al carrito',
   onConfirm,
@@ -25,6 +26,18 @@ export function ItemConfigModal({
   initial?: CartExtra[]
   confirmLabel?: string
   onConfirm: (extras: CartExtra[]) => void
+  /**
+   * 🔴 Precio unitario PACTADO de la línea (deuda 75). Al agregar un producto
+   * todavía no hay línea, así que cae en `product.price` — que es justamente la
+   * sugerencia con la que va a nacer. Al EDITAR los extras de un ítem del
+   * carrito hay que pasarlo: sin esto el modal mostraría un subtotal calculado
+   * con el precio de lista mientras la línea ya vale otra cosa.
+   *
+   * ⚠️ Se muestra y NO se edita acá a propósito: el precio se cambia en UN solo
+   * lugar, la fila del carrito. Dos puntos de edición del mismo valor serían
+   * dos lados sin nada que los sincronice.
+   */
+  precioUnitario?: number
   onClose: () => void
 }) {
   const { productExtras, isLoading } = useProductExtras(product.id)
@@ -49,7 +62,8 @@ export function ItemConfigModal({
     setQtys((prev) => ({ ...prev, [id]: Math.max(0, qty) }))
 
   const extrasUnit = available.reduce((a, e) => a + Number(e.price) * (qtys[e.id] ?? 0), 0)
-  const unitSubtotal = product.price + extrasUnit
+  const precio = precioUnitario ?? product.price
+  const unitSubtotal = precio + extrasUnit
 
   const handleConfirm = () => {
     const extras: CartExtra[] = available
