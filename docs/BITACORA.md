@@ -2801,3 +2801,52 @@ el defecto es tan inútil como un verde que no lo mide*.
 veces** —el `{isLoading ? (` de la lista y el del botón— y `replace(..., 1)` tomó el primero. El test
 murió por el texto de la lista, no por el gate. **Un ancla no única no es un ancla**, y el arnés de
 mutación tiene que fallar si la encuentra repetida.
+
+
+## 2026-09-02 · Cierre del bloque 2 · M8 — el contrato de Utilidades, por fin medido
+
+*`tests/costo-congelado.spec.ts`. Acá el rojo no venía del código: el código estaba bien. Venía del
+mutante — R10 en su forma pura.*
+
+### Lo que se estaba apoyando en aire
+
+El costo congelado en la línea de venta sostiene **tres decisiones de esquema ya tomadas**: el método
+de costeo (promedio ponderado móvil), descartar la compra en negativo, y `adjust_cost` como hecho
+nuevo que no reescribe el pasado. A4 mutó la RPC para que insertara `null` en `unit_cost` —o sea,
+para que el costo **no se congelara**— y **la suite entera pasó**. `grep -rn unit_cost tests/` daba
+una sola aparición, y era el costo de compra.
+
+> **Un contrato que nadie prueba existe hasta el primer refactor que lo rompa en silencio.**
+
+### Tres casos, y los dos de más son los que lo hacen medir
+
+| caso | qué impide |
+|---|---|
+| vender a 80, subir el costo a 94, la línea sigue en 80 | que las utilidades del pasado se reescriban solas con cada compra (R7: no revienta, da distinto cada vez) |
+| **contraste**: la venta siguiente congela 94 | que un `unit_cost` clavado en una constante pase el primero sin congelar nada |
+| **null**: un producto nunca comprado congela `null`, no `0` | que "no sé el costo" se convierta en "costó nada" — la misma clase que el `?? 0` de A1, y la utilidad saldría igual al precio |
+
+### El mutante, con las dos condiciones que se pagaron hoy
+
+- **Ancla única, verificada antes de aplicar** (1 ocurrencia en el texto vivo). La lección de hace dos
+  horas: un ancla repetida toma la equivocada y el test muere por la razón de al lado.
+- **Árbol limpio, verificado con `git status` antes.** Y el revert no fue una sustitución inversa
+  sino **el texto original completo**, capturado antes de mutar y comparado **byte a byte** después
+  —incluidos `SECURITY DEFINER` y el ACL—.
+
+Muere con `Expected 80, Received null`: dice el número y la causa.
+
+⚠️ **Y lo que este test NO puede cubrir, dicho.** El mensaje *"Expected 80, Received 94"* corresponde a
+**otro** modo de fallo: que un CONSUMIDOR lea `products.cost_price` en vez de `order_items.unit_cost`.
+En el esquema actual eso no puede venir de la RPC —una vez escrita, la columna no se mueve—, sino de
+la pantalla de Utilidades, **que todavía no existe**. Queda como deuda 74 con su disparador: el test
+que produce ese rojo se escribe en la misma sesión que esa pantalla, no después.
+
+### El precedente que deja el bloque 2
+
+La 58 dejó un arreglo **preventivo con la razón dicha**: su segundo mecanismo no tiene rojo
+determinista porque el caché de AppLayout cierra la ventana, y forzarlo habría exigido un escenario
+que no representa el uso real. **Es el primer arreglo del proyecto que se acepta sin rojo propio, y
+la alternativa era peor**: un rojo inventado que habría quedado en la suite pareciendo cobertura.
+Vale escribirlo como precedente — *cuando un defecto no se puede reproducir de forma honesta, el
+arreglo se hace igual y la ausencia de rojo se anota; lo que no se hace es fabricar el rojo.*
