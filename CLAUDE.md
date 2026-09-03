@@ -1747,7 +1747,7 @@ que dice algo falso con toda confianza.
 
 | Nombre | Qué nombra afuera | Si se renombraba |
 |---|---|---|
-| `owner.test@gvento.com` · `cajero.test@gvento.com` | Cuentas que **existen en el backend del lab** | `tests/README.md` pasaba de cierto a **falso**: instrucciones para entrar con un usuario inexistente. |
+| `owner.test@nodo.test` · `cajero.test@nodo.test` | Cuentas que **existen en el backend del lab** | `tests/README.md` pasaría de cierto a **falso**: instrucciones para entrar con un usuario inexistente. |<br>*(Esta celda decía `@gvento.com` **en presente** y era falso: las cuentas de Nodo se crearon `@nodo.test` —lo dicen `tests/README.md`, `.env.test.example` y el `.env.test` real—. El caso heredado de Vento sí fue con `@gvento.com`; lo que caducó es el ejemplo, no la regla. Corregido el 2026-09-03 al leerlas para el deploy.)*
 | `src/design-system.md` — *"Vento Design System"* | La identidad de **otro producto**. Nodo necesita el suyo (CLAUDE.md) | El título afirmaría que ese es el design system de Nodo. Un **pendiente honesto** se convertiría en una **nota falsa**. |
 | `VITE_VENTO_SUPABASE_URL` | Una clave del `.env` de cada máquina, **fuera de git** | ✅ Sí se renombró — pero **no alcanzaba con el código**: exige que cada quien cambie su `.env`, y por eso se pidió confirmación en vez de darlo por cerrado. |
 

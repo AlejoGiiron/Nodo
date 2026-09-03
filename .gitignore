@@ -58,3 +58,9 @@ design_handoff_*/
 
 # Temporal que genera vite al cargar vite.config.ts
 vite.config.ts.timestamp-*.mjs
+
+# ── Datos del cliente y planes de sesión: NO viajan al repo ──────────────
+# `Control Mp.xlsx` nombra a 11 clientes reales de Muscle Pro (PII de terceros).
+# Una vez en el historial de GitHub no se saca sin reescribir todos los commits.
+docs/Control Mp.xlsx
+docs/PLAN-2026-09-02.md
