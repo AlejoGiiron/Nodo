@@ -6,6 +6,17 @@ import { CustomerFormModal } from '@/components/fiado/CustomerFormModal'
 interface CustomerPickerProps {
   value: string | null
   onChange: (customerId: string, customerName: string) => void
+  /**
+   * Prefijo de los `data-testid`.
+   *
+   * 🔴 Tercera vez la misma lección en este corte: con el cobro en línea las DOS
+   * superficies pueden estar montadas a la vez —la columna y el modal encima—,
+   * así que dos instancias con el mismo testid hacen que cada locator resuelva a
+   * dos elementos. Es la clase «un locator apoyado en unicidad no declarada».
+   * ⚠️ Los sufijos NO cambian: con el default, los testids quedan byte a byte
+   * como estaban y ningún spec existente se toca.
+   */
+  prefijo?: string
 }
 
 const inputStyle: React.CSSProperties = {
@@ -17,7 +28,7 @@ const inputStyle: React.CSSProperties = {
  * (value = customerId). Reutilizado por el cobro del POS, el cierre de mesa y
  * (potencialmente) cualquier flujo que exija elegir cliente.
  */
-export function CustomerPicker({ value, onChange }: CustomerPickerProps) {
+export function CustomerPicker({ value, onChange, prefijo = 'customer' }: CustomerPickerProps) {
   const { customers } = useCustomers()
   const [search, setSearch] = useState('')
   const [creating, setCreating] = useState(false)
@@ -31,18 +42,18 @@ export function CustomerPicker({ value, onChange }: CustomerPickerProps) {
   }, [customers, search])
 
   return (
-    <div data-testid="customer-picker">
+    <div data-testid={`${prefijo}-picker`}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, border: '1.5px solid var(--border)', borderRadius: 9, padding: '10px 12px', background: 'var(--surface)' }}>
         <Search size={15} color="var(--ink-4)" />
         <input
-          data-testid="customer-search"
+          data-testid={`${prefijo}-search`}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Buscar cliente por nombre, teléfono o documento"
           style={inputStyle}
         />
         <button
-          data-testid="customer-quick-create"
+          data-testid={`${prefijo}-quick-create`}
           onClick={() => setCreating(true)}
           title="Crear cliente"
           style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 10px', border: '1.5px dashed var(--success-border)', background: 'var(--action-soft)', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 700, color: 'var(--action-on-soft)', flex: '0 0 auto' }}
@@ -62,7 +73,7 @@ export function CustomerPicker({ value, onChange }: CustomerPickerProps) {
             return (
               <button
                 key={c.id}
-                data-testid="customer-option"
+                data-testid={`${prefijo}-option`}
                 onClick={() => onChange(c.id, c.name)}
                 style={{
                   width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 10,

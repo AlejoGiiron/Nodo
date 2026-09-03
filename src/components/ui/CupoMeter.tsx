@@ -23,7 +23,10 @@ export function CupoMeter({
   asignado,
   consumido,
   ventaEnCurso = 0,
+  prefijo = 'cupo',
 }: {
+  /** Prefijo de los testid: dos instancias montadas a la vez colisionan. */
+  prefijo?: string
   /** `null` ⇒ el cliente no tiene cupo asignado (o el dato no existe todavía). */
   asignado: number | null
   consumido: number
@@ -31,7 +34,7 @@ export function CupoMeter({
 }) {
   if (asignado === null) {
     return (
-      <div data-testid="cupo-meter" data-cupo-estado="sin-dato">
+      <div data-testid={`${prefijo}-meter`} data-cupo-estado="sin-dato">
         <Etiqueta />
         <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--ink-4)' }}>—</div>
         <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 2 }}>
@@ -55,7 +58,7 @@ export function CupoMeter({
     proyectado < 0 ? 'excedido' : pctConsumido >= 95 ? 'consumido' : pctConsumido >= 80 ? 'ajustado' : 'holgado'
 
   return (
-    <div data-testid="cupo-meter" data-cupo-estado={estado}>
+    <div data-testid={`${prefijo}-meter`} data-cupo-estado={estado}>
       <Etiqueta />
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10 }}>
         <div style={{ fontSize: 13, color: 'var(--ink-3)', fontVariantNumeric: 'tabular-nums' }}>
@@ -63,7 +66,7 @@ export function CupoMeter({
           {ventaEnCurso > 0 && <> − {formatoCOP(ventaEnCurso)}</>}
         </div>
         <div
-          data-testid="cupo-proyectado"
+          data-testid={`${prefijo}-proyectado`}
           style={{
             fontSize: 20,
             fontWeight: 700,

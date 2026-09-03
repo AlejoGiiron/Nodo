@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { loginAsOwner, ownerCreds } from './helpers/auth'
@@ -88,7 +88,69 @@ test.beforeAll(async () => {
   if (error) throw error
   const uid = (await db.auth.getUser()).data.user!.id
   SEDE = (await db.from('profiles').select('sede_id').eq('id', uid).single()).data!.sede_id as string
+
+  // Cliente fijo para la equivalencia: se elige por NOMBRE y no con `.first()` —
+  // el primero de la lista depende de qué dejó otro spec, que es la clase
+  // «locator apoyado en unicidad no declarada» (deuda 67).
+  //
+  // 🔴 Y SE ASEGURA QUE QUEDE **ACTIVO**, que es lo que la primera versión de
+  //    esto no miraba. El lab tiene 151 clientes y **todos desactivados**: los
+  //    specs de fiado los dan de baja al limpiar, y `getCustomers` filtra por
+  //    `is_active`. Así que el picker mostraba «Aún no hay clientes» y el caso
+  //    fallaba por un estado del lab, no por el cobro.
+  //    La primera versión además IGNORABA el error del insert —fail-open—: si
+  //    fallaba, el spec seguía y el rojo aparecía trescientas líneas después.
+  await clienteDelLab(CLIENTE_EQ, 30)
+  // 🔴 El del caso del plazo se crea ACÁ y no dentro del test: `useCustomers`
+  //    cachea 60 s, así que un cliente insertado con la app ya cargada NO
+  //    aparece en el picker. La primera versión lo creaba en el test y el caso
+  //    fallaba esperando una opción que la consulta nunca había vuelto a pedir.
+  //    Y se RESETEA a 15: el propio caso le pone 90 al final, así que sin el
+  //    reset la segunda corrida arrancaría desde el estado que dejó la primera.
+  CLIENTE_PLAZO_ID = await clienteDelLab(CLIENTE_PLAZO, 15)
 })
+
+/** Un cliente estable para los casos que no miden la eleccion en si. */
+const CLIENTE_EQ = 'E2E Cobro Equivalencia'
+/** El del caso del plazo congelado: su plazo se muta DENTRO del caso. */
+const CLIENTE_PLAZO = 'E2E Cobro Plazo'
+let CLIENTE_PLAZO_ID: string
+
+/**
+ * Deja un cliente del lab ACTIVO y con el plazo pedido, exista o no.
+ *
+ * ⚠️ El `is_active` no es un detalle: el lab tiene 151 clientes y **todos
+ * desactivados** —los specs de fiado los dan de baja al limpiar— y
+ * `getCustomers` filtra por activos. Sin esto el picker dice «Aún no hay
+ * clientes» y el caso falla por el estado del lab, no por el cobro.
+ */
+async function clienteDelLab(nombre: string, plazo: number): Promise<string> {
+  const { data, error } = await db.from('customers')
+    .select('id').eq('sede_id', SEDE).eq('name', nombre).limit(1)
+  if (error) throw error
+  if (data?.length) {
+    const { error: e2 } = await db.from('customers')
+      .update({ is_active: true, plazo_dias: plazo }).eq('id', data[0].id)
+    if (e2) throw e2
+    return data[0].id as string
+  }
+  const { data: nuevo, error: e3 } = await db.from('customers')
+    .insert({ sede_id: SEDE, name: nombre, plazo_dias: plazo, is_active: true })
+    .select('id').single()
+  if (e3) throw e3
+  return nuevo!.id as string
+}
+
+/**
+ * Elige el cliente estable del spec — POR NOMBRE, no con `.first()`.
+ * El primero de la lista depende de qué dejó otro spec: es exactamente la clase
+ * «un locator apoyado en unicidad no declarada» que este proyecto ya pagó cuatro
+ * veces.
+ */
+async function elegirCliente(page: Page, nombre = CLIENTE_EQ, prefijo = 'cobro-cliente'): Promise<void> {
+  await page.getByTestId(`${prefijo}-search`).fill(nombre)
+  await page.getByTestId(`${prefijo}-option`).filter({ hasText: nombre }).first().click()
+}
 
 test.beforeEach(async ({ page }) => {
   await loginAsOwner(page)
@@ -234,19 +296,30 @@ test('🔴 F12 pone el FOCO en Cobrar; el Enter confirma — dos actos', async (
   ).toBeVisible({ timeout: 20_000 })
 })
 
-test('🔴 con crédito elegido el botón dice qué hace, y NO cobra', async ({ page }) => {
-  // El flujo de fiado todavía vive en el modal (corte 3), así que el botón de la
-  // columna cambia de rótulo. Un botón que a veces cobra y a veces abre algo
-  // TIENE que decirlo: es lo mismo que se rechazó para F12.
+test('🔴 con crédito el botón COBRA — ya no deriva a otra pantalla', async ({ page }) => {
+  // 🔴 RE-DERIVADO EN EL CORTE 3. Este caso aseveraba que el botón decía
+  //    «Continuar» y ABRÍA el cobro completo: era cierto mientras el fiado
+  //    viviera en el modal, y el rótulo distinto era la forma honesta de decir
+  //    que el botón hacía dos cosas.
+  //    Con el crédito en la columna el botón vuelve a hacer UNA sola, así que la
+  //    aserción se re-deriva de la pantalla nueva: el rótulo es siempre
+  //    «Cobrar», y con crédito elegido NO se abre ningún modal.
+  //    Se re-deriva y no se borra porque su expectativa sobrevive: el botón
+  //    tiene que decir lo que hace.
   await addPosProduct(page)
   await page.getByTestId('cobro-medio-fiado').click()
   await expect(
     page.getByTestId('cobro-confirmar'),
-    'con crédito el botón lleva al paso que falta, y el rótulo lo dice',
-  ).toContainText('Continuar')
+    'el botón hace una sola cosa otra vez: cobrar',
+  ).toContainText('Cobrar')
+  await elegirCliente(page)
   await page.getByTestId('cobro-confirmar').click()
-  await expect(page.getByTestId('checkout-total'), 'abre el cobro completo').toBeVisible({ timeout: 10_000 })
-  await expect(page.getByTestId('success-order-number')).toHaveCount(0)
+  await expect(
+    page.getByTestId('checkout-total'),
+    'el crédito ya no deriva al cobro completo: se cobra en la columna',
+  ).toHaveCount(0)
+  await expect(page.getByTestId('success-order-number').or(page.getByTestId('success-sin-numero')))
+    .toBeVisible({ timeout: 20_000 })
 })
 
 test('🔴 el producto del lab sigue siendo el que arma el carrito', async ({ page }) => {
@@ -371,4 +444,164 @@ test('🔴 con crédito NO se ofrece dividir — y la base lo respalda', async (
     page.getByTestId('cobro-dividir'),
     'una venta a crédito no se reparte entre medios: no se cobra nada hoy',
   ).toHaveCount(0)
+})
+
+// ============================================================================
+// CORTE 3 · el FIADO baja a la columna
+//
+// La maqueta dibuja tres cosas del crédito —nombre del cliente, `Cambiar
+// cliente` y el bloque de cupo—. **Todo el resto del flujo es (d)**, enumerado
+// en A6 §12 antes de tocarlo: buscar cliente, alta rápida, el plazo como
+// DESPLEGABLE (no input libre), la precarga, «Sin plazo», la frase que explica
+// el congelado, el aviso de que no entra dinero a caja, y Cobrar deshabilitado
+// sin cliente.
+// ============================================================================
+
+test('🔴 el crédito se arma en la columna: cliente y plazo, sin abrir nada', async ({ page }) => {
+  await addPosProduct(page)
+  await page.getByTestId('cobro-medio-fiado').click()
+  await expect(
+    page.getByTestId('cobro-cliente-picker'),
+    'elegir el cliente es parte del cobro, y el cobro está en la columna',
+  ).toBeVisible()
+  await expect(page.getByTestId('checkout-total'), 'sin abrir el modal').toHaveCount(0)
+})
+
+test('🔴 F4 cambia de cliente — la tecla entra CON su control, no antes', async ({ page }) => {
+  // §5 asigna F4 a «cambiar cliente» y hasta hoy no estaba cableada, porque el
+  // mostrador no tenía control de cliente. Un atajo que lleva a nada es
+  // exactamente lo que se acaba de arreglar con F12: las dos mitades juntas.
+  await addPosProduct(page)
+  await page.getByTestId('cobro-medio-fiado').click()
+  await elegirCliente(page)
+  await expect(page.getByTestId('cobro-cliente-nombre')).toBeVisible()
+
+  await page.keyboard.press('F4')
+  await expect(
+    page.getByTestId('cobro-cliente-search'),
+    'F4 tiene que devolver el buscador de clientes: es lo que §5 le asigna',
+  ).toBeVisible()
+})
+
+test('🔴 el plazo es un DESPLEGABLE, no un número libre', async ({ page }) => {
+  // Decisión tomada con su razón escrita (deuda 46): «el typo de 3 por 30 no lo
+  // detecta nada, y una venta a 3 días se lee como vencida a los cuatro».
+  // Convertirlo en input no rompe nada hoy y empeora la cartera meses después.
+  await addPosProduct(page)
+  await page.getByTestId('cobro-medio-fiado').click()
+  await elegirCliente(page)
+  const plazo = page.getByTestId('cobro-plazo')
+  await expect(plazo).toBeVisible()
+  expect(
+    await plazo.evaluate((el) => el.tagName),
+    'un input numérico admite el typo que este desplegable existe para impedir',
+  ).toBe('SELECT')
+  const opciones = await plazo.locator('option').allTextContents()
+  expect(opciones, '«Sin plazo» es una opción explícita, no la ausencia de elección')
+    .toContain('Sin plazo')
+})
+
+test('🔴 la FRASE que explica el congelado sigue en pantalla', async ({ page }) => {
+  // 🔴 Un (d) que no es un control: es la ÚNICA explicación en pantalla de que
+  //    el plazo se congela en la venta. Se borra en un re-skin sin que nada
+  //    falle y sin que nadie la eche de menos — y sin ella alguien va a
+  //    "arreglar" que cambiarle el plazo al cliente no mueva sus ventas viejas.
+  // ⚠️ Se asevera que el bloque EXISTE, no su redacción: el copy puede cambiar,
+  //    lo que no puede es desaparecer.
+  await addPosProduct(page)
+  await page.getByTestId('cobro-medio-fiado').click()
+  await elegirCliente(page)
+  await expect(page.getByTestId('cobro-plazo-nota')).toBeVisible()
+})
+
+test('🔴 sin cliente NO se puede cobrar a crédito', async ({ page }) => {
+  await addPosProduct(page)
+  await page.getByTestId('cobro-medio-fiado').click()
+  await expect(
+    page.getByTestId('cobro-confirmar'),
+    'una venta a crédito sin deudor no es una venta a crédito',
+  ).toBeDisabled()
+})
+
+test('🔴 el aviso de que el fiado NO entra a la caja sigue en pantalla', async ({ page }) => {
+  // Otro (d)-frase: sin él, el cajero busca la plata del fiado en el arqueo.
+  await addPosProduct(page)
+  await page.getByTestId('cobro-medio-fiado').click()
+  await expect(page.getByTestId('cobro-fiado-aviso')).toBeVisible()
+})
+
+test('🔴 PLAZO CONGELADO: cambiarle el plazo al cliente NO mueve la venta ya hecha', async ({ page }) => {
+  // 🔴 LA ASERCIÓN CENTRAL DEL CORTE, y la única forma de distinguir «lo
+  //    congeló» de «lo lee del cliente y hoy coinciden» — que es el mismo verde
+  //    por construcción que tenía el corte 1 con una sola fila de pago.
+  //    Quinto caso del principio «la historia no se reescribe, se le agrega»: la
+  //    cartera DERIVA de `orders`, así que con el plazo sólo en el cliente el
+  //    mismo `select` daría otro vencimiento mañana para una venta de enero.
+  await addPosProduct(page)
+  await page.getByTestId('cobro-medio-fiado').click()
+  await elegirCliente(page, CLIENTE_PLAZO)
+  await expect(page.getByTestId('cobro-plazo'), 'el plazo se PRECARGA del cliente')
+    .toHaveValue('15')
+  await page.getByTestId('cobro-confirmar').click()
+  await expect(page.getByTestId('success-order-number').or(page.getByTestId('success-sin-numero')))
+    .toBeVisible({ timeout: 20_000 })
+
+  const ordenId = await ultimaOrden()
+  const plazoDe = async (id: string) =>
+    (await db.from('orders').select('plazo_dias').eq('id', id).single()).data!.plazo_dias
+  expect(await plazoDe(ordenId), 'la venta guarda el plazo pactado').toBe(15)
+
+  // El mutante del principio: al cliente se le cambia el plazo DESPUÉS.
+  const { error: errMut } = await db.from('customers')
+    .update({ plazo_dias: 90 }).eq('id', CLIENTE_PLAZO_ID)
+  if (errMut) throw errMut
+  expect(
+    await plazoDe(ordenId),
+    'la venta TIENE que conservar su plazo: si sigue al cliente, el vencimiento de una venta ' +
+    'de enero cambia mañana y la cartera deja de ser reproducible',
+  ).toBe(15)
+
+  // ⚠️ LÍMITE DE ESTE CASO, dicho para que nadie lea de más en su verde.
+  //    El mutante que lo mata es el de la PRIMERA mitad —no guardar el plazo en
+  //    la orden—, y muere ahí. La SEGUNDA mitad —cambiarle el plazo al cliente y
+  //    que la orden no se mueva— **hoy es cierta por construcción**: el plazo es
+  //    una columna de `orders` y nada escribe hacia atrás. O sea que es un
+  //    TRIPWIRE para un cambio futuro, no una medición del código de hoy, y no
+  //    hay mutante razonable que la mate sin cambiar el esquema.
+  //    🔴 Y lo que NO cubre, que es donde vive el riesgo real: si algún día
+  //    `getDebts` leyera el plazo del CLIENTE en vez de la orden, este caso
+  //    seguiría verde — mira `orders.plazo_dias` directo. Ese lado se prueba en
+  //    la cartera, no acá.
+})
+
+test('🔴 EQUIVALENCIA A CRÉDITO: columna y modal escriben la misma orden', async ({ page }) => {
+  const cobrarFiado = async (
+    abrirCredito: () => Promise<void>, prefijo: string, prefijoCliente: string,
+  ) => {
+    await addPosProduct(page)
+    await abrirCredito()
+    await elegirCliente(page, CLIENTE_EQ, prefijoCliente)
+    await page.getByTestId(prefijo).click()
+    await expect(page.getByTestId('success-order-number').or(page.getByTestId('success-sin-numero')))
+      .toBeVisible({ timeout: 20_000 })
+    return loQueQuedo(await ultimaOrden())
+  }
+
+  const porLaColumna = await cobrarFiado(
+    async () => { await page.getByTestId('cobro-medio-fiado').click() },
+    'cobro-confirmar', 'cobro-cliente',
+  )
+  expect(porLaColumna.estadoDePago, 'a crédito la orden queda pendiente').toBe('pending')
+  expect(porLaColumna.pagos, 'y NO registra pago: no entró dinero').toEqual([])
+
+  await page.goto('/ventas')
+  await waitPosReady(page)
+  const porElModal = await cobrarFiado(async () => {
+    await page.getByTestId('cobro-mas-opciones').click()
+    await expect(page.getByTestId('checkout-total')).toBeVisible({ timeout: 10_000 })
+    await page.getByTestId('pay-method-fiado').click()
+  }, 'checkout-continue', 'customer')
+
+  expect(porLaColumna, 'las dos superficies escriben la misma orden a crédito')
+    .toEqual(porElModal)
 })

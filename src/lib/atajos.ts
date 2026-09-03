@@ -39,6 +39,11 @@ export const ATAJOS: Atajo[] = [
   { tecla: 'F1',  ambito: 'global',    que: 'Mostrador',      ruta: '/ventas' },
   { tecla: 'F2',  ambito: 'mostrador', que: 'Buscar producto' },
   { tecla: 'F3',  ambito: 'global',    que: 'Compras',        ruta: '/compras' },
+  // F4 entra acá el 2026-09-03, con el corte 3 del cobro en línea: recién ahora
+  // existe el control de cliente en el mostrador. Es 'mostrador' y no 'global'
+  // porque cambiar de cliente sólo significa algo con una venta a crédito en
+  // curso.
+  { tecla: 'F4',  ambito: 'mostrador', que: 'Cambiar cliente' },
   { tecla: 'F5',  ambito: 'global',    que: 'Catálogo',       ruta: '/productos' },
   { tecla: 'F6',  ambito: 'global',    que: 'Clientes',       ruta: '/clientes' },
   { tecla: 'F7',  ambito: 'global',    que: 'Cartera',        ruta: '/fiado' },
@@ -134,11 +139,9 @@ export function elFocoEstaEscribiendo(): boolean {
  * porque el que lo aprieta cree que llegó.
  */
 export const ATAJOS_SIN_DESTINO: { tecla: string; que: string; porque: string }[] = [
-  {
-    tecla: 'F4', que: 'Cambiar cliente',
-    porque: 'el mostrador no tiene control de cliente: se elige DENTRO del cobro y sólo para fiado. ' +
-            'Ponerlo es la columna de cobro de A6 (D1–D5), no un atajo.',
-  },
+  // ✅ F4 salió de esta lista el 2026-09-03: el corte 3 le dio su control
+  //    (`Cambiar cliente` en la columna) y las dos mitades entraron juntas. Un
+  //    atajo que lleva a nada es lo que se acababa de arreglar con F12.
   {
     tecla: 'F8', que: 'Pedidos',
     porque: 'la pantalla de Pedidos NO EXISTE (A6, clase (c)). Es alcance, no re-skin.',

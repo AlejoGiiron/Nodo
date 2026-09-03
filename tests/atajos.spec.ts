@@ -117,12 +117,23 @@ test.describe('Atajos de teclado (§5)', () => {
     }
 
     // 🔴 CONTROL NEGATIVO. Sin él este caso no distingue «lo corté» de «el
-    //    espía siempre dice true»: F4 es la tecla de §5 que NO se cableó a
-    //    propósito, así que tiene que salir con su default INTACTO.
-    await page.keyboard.press('F4')
-    const conF4 = await loEspiado(page)
+    //    espía siempre dice true»: se aprieta una tecla de §5 que NO está
+    //    cableada, y tiene que salir con su default INTACTO.
+    //
+    // ⚠️ ERA F4, y el corte 3 del cobro en línea LA CABLEÓ —«cambiar cliente»,
+    //    que hasta entonces no tenía control—. El control se puso rojo, y eso
+    //    es exactamente lo que un control existe para hacer: **no falló el
+    //    producto, falló la premisa del control**. Pasa a F8, que sigue sin
+    //    destino porque la pantalla de Pedidos no existe (deuda 85).
+    // 🔴 Y queda la lección: un control negativo se apoya en una propiedad del
+    //    producto —«esta tecla no hace nada»— así que **caduca cuando el
+    //    producto crece**. El día que Pedidos exista, este control hay que
+    //    moverlo otra vez; `src/lib/atajos.test.ts` lo hace fallar al toque,
+    //    porque asevera que ninguna tecla esté cableada Y sin destino.
+    await page.keyboard.press('F8')
+    const conNoCableada = await loEspiado(page)
     expect(
-      conF4['F4'],
+      conNoCableada['F8'],
       'el espía dice que TODO viene con el default cortado: no está midiendo nada',
     ).toBe(false)
   })

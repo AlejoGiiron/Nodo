@@ -2308,6 +2308,25 @@ de que alguien se acuerde **en el momento correcto** falla, y falla más cuanto 
 arreglo. Por eso el corolario de abajo es un **comando**, no una actitud — se corre aunque uno esté
 seguro de que no hace falta, que es cuando más hace falta.
 
+🔴 **QUINTA APARICIÓN, Y LA QUE PONE PRECIO AL BARRIDO.** *Corte 3, 2026-09-03.* La migración del
+cobro monta las dos superficies a la vez, así que **todo componente compartido necesita prefijo de
+testid**. Los descubrí **de a uno por rojo**: `TenderSelector` en el corte 1, `PaymentSplitEditor`
+en el 2, `CustomerPicker` en el 3 — con la clase ya escrita en este archivo desde el corte 1.
+
+**El precio, medido:**
+
+| | costo |
+|---|---|
+| **enumerar** | `grep -oE "<[A-Z][A-Za-z]+" <pantalla> \| sort \| uniq -c` — **un comando** |
+| **descubrirlo por rojo** | ×3: correr el grupo (~2 min), leer el artefacto, diagnosticar, editar el componente, editar el spec, re-correr |
+
+Y al correr por fin el comando apareció un **cuarto** —`CupoMeter`— que todavía no había mordido:
+o sea que el método reactivo iba **atrasado**, no empatado.
+
+✅ Corrido antes del corte 4 sobre **todos** los componentes de la pantalla: no hay un quinto.
+`TotalRow` no tiene testids, `MoneyCell` recibe el suyo del llamador, y los dos montajes de
+`ItemConfigModal` son excluyentes por estado.
+
 **Corolario operativo:** cuando arregles un locator de esta clase, corré el grep de la forma **en el
 archivo entero antes de cerrar**, no sólo en la línea del rojo:
 
@@ -2343,6 +2362,29 @@ apoyado en que hubiera una sola instancia**, que es una propiedad del producto, 
 **Lo accionable, y es barato:** el camino compartido va a un **helper**, no repetido en cada spec —
 acá eran 26 repeticiones del mismo clic, y el camino va a cambiar otras tres veces antes de que el
 corte termine. Un camino repetido N veces es R1 dentro de la suite.
+
+**🔴 HAY ASERCIONES QUE NO MIDEN EL CÓDIGO DE HOY: SON TRIPWIRES PARA MAÑANA. NO SON INÚTILES Y NO
+SON EVIDENCIA.**
+*2026-09-03, corte 3 del cobro en línea.*
+
+Una aserción **cierta por construcción** —el esquema no permite que sea falsa— no está midiendo
+nada del código actual. Está midiendo que **nadie cambie el esquema mañana**. Las dos cosas son
+legítimas y **no son la misma**, y confundirlas infla lo que un verde significa.
+
+**El caso.** *«Cambiarle el plazo al cliente NO mueve la venta ya hecha»*. Hoy `plazo_dias` es una
+columna de `orders` y **nada escribe hacia atrás**: la aserción no puede ser falsa. El mutante que
+mata el caso es el de la otra mitad —no guardar el plazo en la orden—, y muere ahí.
+
+> **EL CRITERIO PARA RECONOCERLAS, y es una pregunta sola: ¿existe un mutante razonable que la mate
+> SIN cambiar el esquema? Si no existe, es tripwire y no medición.**
+
+⚠️ **Por qué importa la distinción y no es semántica:** un tripwire cuenta como cobertura en la
+cabeza de quien lee la lista de casos, y no lo es. Si alguien pregunta *"¿esto está probado?"*, la
+respuesta honesta es *"está protegido contra un cambio de esquema, y el comportamiento de hoy lo
+prueba la otra mitad"*.
+
+**Lo accionable:** la distinción **se escribe en el propio caso**, no en un documento aparte — es
+donde la va a leer quien interprete su verde. Y el tripwire dice **contra qué cambio** protege.
 
 **🔴 UNA ASERCIÓN SOBRE UNA COLECCIÓN NO ESTÁ EJERCIDA HASTA QUE EL ESCENARIO TIENE MÁS DE UN
 ELEMENTO.**
