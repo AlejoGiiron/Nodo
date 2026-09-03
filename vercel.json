@@ -1,5 +1,8 @@
 {
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+  "buildCommand": "pnpm build && rm -f dist/assets/*.map",
+  "routes": [
+    { "src": "/.*\\.map$", "status": 404 },
+    { "handle": "filesystem" },
+    { "src": "/.*", "dest": "/index.html" }
   ]
 }

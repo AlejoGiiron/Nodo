@@ -1398,6 +1398,38 @@ recurso no se puede saltar.
 token era de proyecto y después que no podía serlo, **las dos veces sin mirar**, y lo resolvió abrir
 la pantalla.
 
+### 🔴 UN SOLO PROYECTO DE SUPABASE, Y LAB CONVIVE CON LOS DATOS REALES
+
+*Decidido el 2026-09-03, al preparar el despliegue.*
+
+El despliegue apunta **al mismo proyecto de Supabase** que va a usar el cliente. Un segundo proyecto
+significaría mantener dos bases sincronizadas, duplicar el seed y volver a pagar el problema de los
+artefactos generados fuera de `migrations/` — no vale la complejidad para un cliente.
+
+**La consecuencia, aceptada:** la organización **LAB convive con los datos reales**. El aislamiento
+está medido, no supuesto: la auditoría A2 (2026-09-02) probó **cero cruces entre organizaciones**
+sobre la matriz completa.
+
+🔴 **Y por eso el guard de `tests/global-setup.ts` pasa de higiene a CRÍTICO.** Aborta la suite si la
+organización del owner no se llama `LAB`, consultándolo **contra la base** y no contra una variable:
+
+```
+PELIGRO: las credenciales de prueba no son del laboratorio (org actual: …).
+```
+
+Verificado el 2026-09-03: sigue enganchado en `playwright.config.ts`, no hay variable de escape
+(`SKIP_*` ni equivalente), y la purga posterior fija las sedes **por UUID** de LAB, no por nombre.
+
+⚠️ **Lo que el guard NO cubre, y hay que decirlo:** protege contra correr la suite con credenciales
+**equivocadas**. No protege contra que alguien apunte a LAB con credenciales **correctas** el día que
+los datos de LAB ya no sean descartables.
+
+> **Por eso, cuando Muscle Pro entre a operar, LAB SE RETIRA — no se borra.**
+
+Mismo criterio que el resto del proyecto: *la historia no se reescribe, se le agrega*. Retirar es
+dejar de usarla y dejar de apuntarle la suite; borrarla destruiría la única referencia de qué había
+cuando se tomaron las decisiones de estos meses.
+
 ### El token no vive en ningún archivo
 
 Ni en el repo, ni en `.env`, ni en `config.toml`, ni en un script, ni en un mensaje de commit. Va

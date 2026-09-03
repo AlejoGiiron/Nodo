@@ -3511,3 +3511,54 @@ inferencia *sobre* el registro presentada como una lectura *del* registro.
 > leído sobre la jerarquía.
 
 ✅ Las dos se corrigieron **antes** de entrar al registro, que es donde dejaban de ser reversibles.
+
+
+## 2026-09-03 · Preparando el deploy — un fail-open que sólo se ve sin la credencial
+
+### El hallazgo
+
+`vite.config.ts` está bien pensado: `sourcemap: 'hidden'` genera los mapas sin el comentario
+`sourceMappingURL`, y el plugin de Sentry los **borra después de subirlos**, así que quedan en Sentry
+y no en el hosting. El comentario del archivo lo explica en esos términos.
+
+**Pero todo eso vive dentro de un `if (SENTRY_AUTH_TOKEN)`.** Sin token el plugin no se agrega, nadie
+borra nada, y el build termina con **exit 0** dejando `index-*.js.map` —5,5 MB de código fuente— en
+`dist/`. Medido corriendo `pnpm build` sin token: dos `.map` en `dist/assets/`.
+
+> **La privacidad del código dependía de una credencial cuyo propósito es otra cosa.**
+
+Y la decisión de arrancar **sin Sentry** —que por sí sola es razonable, porque el gate del código ya
+lo apaga sin DSN— convertía ese defecto latente en **permanente**: sin Sentry, los mapas se publican
+siempre. Por eso pasó de deuda a bloqueante del deploy en el mismo movimiento.
+
+⚠️ **Lo que lo hace del tipo que este proyecto persigue:** no hay error, no hay aviso, y el build que
+publica el fuente es **idéntico** al que no lo publica salvo por una variable de entorno ausente.
+
+### El detalle de mecanismo que casi lo deja abierto
+
+La reacción natural es agregar un `rewrite` que niegue los `.map`. **No habría funcionado.** El orden
+de ruteo de Vercel es `headers` → `redirects` → **filesystem** → `rewrites`: un archivo que existe lo
+sirve el filesystem **antes** de que el rewrite se evalúe. Sólo `routes` corre antes del filesystem.
+
+Es la misma clase que el trigger diferido de la 80: **una consecuencia del ORDEN, que no se ve
+leyendo la configuración sino sabiendo cuándo corre cada etapa.**
+
+### Se cerró con dos mecanismos independientes
+
+1. **`buildCommand: pnpm build && rm -f dist/assets/*.map`** — lo que no existe no se puede servir.
+   Compatible con Sentry a futuro: el plugin sube los mapas *durante* el build.
+2. **`{ src: "/.*\\.map$", status: 404 }`** — por si el build cambia y vuelve a emitirlos.
+
+Uno solo habría alcanzado. Van los dos porque el modo de fallo es silencioso: si el primero deja de
+aplicarse, nadie se entera hasta que alguien pide el archivo.
+
+🔴 **Y la verificación no es leer el `vercel.json`:** después del deploy hay que **pedir la URL de un
+`.map` y ver un 404**. Es exactamente el corolario de R4 — dos declaraciones de acuerdo entre sí no
+son evidencia; acá la declaración es la config y la cosa real es la respuesta HTTP.
+
+### Lo que se acepta a cambio, dicho
+
+Sin Sentry, **el primer error en producción no deja rastro**. El reporte va a ser *"no me dejó
+cobrar"*, no un stack con el `code` de PostgREST. Es tolerable mientras el cliente **prueba** y está
+al lado para contarlo; deja de serlo cuando **opere**. El disparador quedó escrito con esa frontera y
+no con una fecha.
