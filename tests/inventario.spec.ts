@@ -70,7 +70,7 @@ async function sellCash(page: Page, name: string) {
   await page.goto('/ventas')
   await openShiftIfClosed(page, 0)
   await page.getByPlaceholder('Buscar producto...').fill(name)
-  await page.getByTestId('product-card').first().click()
+  await page.getByTestId('product-card').filter({ hasText: name }).first().click()
   await page.getByTestId('cobro-medio-efectivo').click()
   await page.getByTestId('cobro-recibe').fill('200000')
   await page.getByTestId('cobro-confirmar').click()

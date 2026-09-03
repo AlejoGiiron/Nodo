@@ -48,7 +48,7 @@ async function sellSimple(page: Page, productName: string): Promise<number> {
   await page.goto('/ventas')
   await openShiftIfClosed(page, 0)
   await page.getByPlaceholder('Buscar producto...').fill(productName)
-  await page.getByTestId('product-card').first().click()
+  await page.getByTestId('product-card').filter({ hasText: productName }).first().click()
 
   await page.getByTestId('cobro-medio-efectivo').click()
   await page.getByTestId('cobro-recibe').fill('200000')
@@ -66,7 +66,7 @@ async function sellWithExtra(page: Page): Promise<number> {
   await page.goto('/ventas')
   await openShiftIfClosed(page, 0)
   await page.getByPlaceholder('Buscar producto...').fill(P_BASE)
-  await page.getByTestId('product-card').first().click()
+  await page.getByTestId('product-card').filter({ hasText: P_BASE }).first().click()
 
   await expect(page.getByTestId('item-config-modal')).toBeVisible()
   await page.getByTestId('item-config-extra').filter({ hasText: E_LIBRE })

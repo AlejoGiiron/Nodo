@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { createHmac } from 'node:crypto'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { loginAsOwner, ownerCreds } from './helpers/auth'
-import { waitPosReady } from './helpers/pos'
+import { waitPosReady, addPosProduct } from './helpers/pos'
 
 // ============================================================================
 // FASE 2 — el banner que LEE la bandera de suscripción.
@@ -262,7 +262,7 @@ test('grace no bloquea nada: el POS sigue operable', async ({ page }) => {
   await recargarPos(page)
   await expect(banner(page)).toBeVisible()
 
-  await page.getByTestId('product-card').first().click()
+  await addPosProduct(page)
   await expect(page.getByText('Carrito vacío')).toHaveCount(0)
   const total = Number((await page.getByTestId('cart-total').innerText()).replace(/[^\d]/g, ''))
   expect(total).toBeGreaterThan(0)

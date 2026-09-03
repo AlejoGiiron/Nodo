@@ -76,7 +76,7 @@ async function sellBaseWithExtra(page: Page, extraName: string, extraQty: number
   await page.goto('/ventas')
   await openShiftIfClosed(page, 0)
   await page.getByPlaceholder('Buscar producto...').fill(P_BASE)
-  await page.getByTestId('product-card').first().click()
+  await page.getByTestId('product-card').filter({ hasText: P_BASE }).first().click()
 
   // Modal de configuración de extras.
   await expect(page.getByTestId('item-config-modal')).toBeVisible()
@@ -130,7 +130,7 @@ test.describe.serial('Extras en POS', () => {
     await loginAsOwner(page)
     await page.goto('/ventas')
     await page.getByPlaceholder('Buscar producto...').fill(P_BASE)
-    await page.getByTestId('product-card').first().click()
+    await page.getByTestId('product-card').filter({ hasText: P_BASE }).first().click()
 
     await expect(page.getByTestId('item-config-modal')).toBeVisible()
     await page.getByTestId('item-config-extra').filter({ hasText: E_FREE })
@@ -145,7 +145,7 @@ test.describe.serial('Extras en POS', () => {
     await loginAsOwner(page)
     await page.goto('/ventas')
     await page.getByPlaceholder('Buscar producto...').fill(P_BASE)
-    await page.getByTestId('product-card').first().click()
+    await page.getByTestId('product-card').filter({ hasText: P_BASE }).first().click()
 
     const inc = page.getByTestId('item-config-extra').filter({ hasText: E_FREE }).getByTestId('extra-qty-inc')
     await inc.click()
@@ -162,7 +162,7 @@ test.describe.serial('Extras en POS', () => {
     await loginAsOwner(page)
     await page.goto('/ventas')
     await page.getByPlaceholder('Buscar producto...').fill(P_SIMPLE)
-    await page.getByTestId('product-card').first().click()
+    await page.getByTestId('product-card').filter({ hasText: P_SIMPLE }).first().click()
 
     await expect(page.getByTestId('item-config-modal')).toHaveCount(0)
     expect(parseCOP(await page.getByTestId('cart-total').innerText())).toBe(8000)
