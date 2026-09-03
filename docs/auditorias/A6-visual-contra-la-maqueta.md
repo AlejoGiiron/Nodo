@@ -671,27 +671,35 @@ que decidió §8.17 — ese momento tiene diálogo propio.
 
 ---
 
-## 13 · Dudas abiertas por el cobro en línea
+## 13 · Dudas que abrió el cobro en línea *(y qué pasó con ellas cuando se revirtió)*
 
-### 🟡 «Cambio» vs «Vuelto» — dos palabras para la misma cosa, y las introdujo la migración
+### ✅ «Cambio» vs «Vuelto» — CERRADA el 2026-09-03, y no por una decisión
 
-*2026-09-03, corte 4.*
+**El producto dice «Vuelto» en los tres sitios.** Verificado grepeando el fuente ese día:
 
-| dónde | qué dice | de dónde salió |
-|---|---|---|
-| `POSPage:1004` — la columna | **Cambio** | la maqueta, que rotula `CAMBIO` |
-| `POSPage:1371` — el diálogo del después | **Vuelto** | el modal original |
-| `POSPage:201` — el comprobante impreso | **Vuelto** | el ticket original |
+| dónde | qué dice |
+|---|---|
+| el paso del monto del modal | **Vuelto** |
+| el diálogo del después | **Vuelto** |
+| el comprobante impreso | **Vuelto** |
 
-**Cómo se creó:** al migrar el cobro tomé el vocabulario de la maqueta para la superficie nueva, y
-las superficies viejas conservaron el suyo. No es una decisión: es un residuo.
+🔴 **Lo que la cerró no fue elegir una palabra: fue que la otra dejara de existir.** «Cambio» vivía
+en **un solo lugar** —el panel del cobro en línea, donde entró copiado de la maqueta— y **§8.15 se
+revirtió el mismo día**. La divergencia se fue con la superficie que la trajo.
 
-⛔ **NO se resuelve de paso, y el precedente es explícito.** La deuda 38 —*turno* vs *jornada*, 24
-apariciones— se decidió **no renombrar a medias** porque renombrar la mitad **crea un tercer
-vocabulario**. Acá es lo mismo a menor escala: cambiar sólo el diálogo deja el ticket; cambiar los
-tres es una decisión de producto sobre qué palabra lee el cajero —y *vuelto* es la palabra corriente
-en Colombia, mientras *cambio* es la que eligió el dibujo—.
+⚠️ **Y por eso vale conservar la entrada en vez de borrarla**, con la forma que generaliza:
 
-✅ **Mientras tanto, los specs aseveran el TESTID** (`cobro-cambio`), que mide el número y es correcto
-con cualquiera de las dos palabras. Lo que no se puede es dejar que la elección la haga el orden en
-que se tocaron los archivos.
+> **Una duda tiene un sujeto. Si el sujeto desaparece, la duda no se resuelve — se disuelve, y eso
+> NO es lo mismo que haberla contestado.**
+
+Nadie decidió qué palabra lee el cajero. Si el cobro volviera a la columna, o si alguien copiara ese
+panel a otra pantalla, **la duda vuelve exactamente igual** — y sin esta nota, volvería como
+hallazgo nuevo y se pagaría el diagnóstico de nuevo. Lo que sigue siendo cierto es el argumento de
+fondo: *vuelto* es la palabra corriente en Colombia y *cambio* es la que eligió el dibujo, así que
+**si la maqueta vuelve a ganar en otra pantalla, la que cede es la maqueta.**
+
+⛔ Y el precedente que sigue en pie sin cambios: la deuda 38 —*turno* vs *jornada*— **no se renombra
+a medias**, porque renombrar la mitad crea un tercer vocabulario.
+
+✅ Los specs siguen aseverando el **testid** (`checkout-change`), que mide el número y es correcto
+con cualquier palabra. Eso no cambió, y es lo que hizo que la disolución no costara nada.

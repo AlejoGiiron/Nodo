@@ -93,12 +93,14 @@ test.describe('POS — venta y carrito', () => {
     await page.getByTestId('pay-method-efectivo').click()
     await page.getByTestId('checkout-continue').click()
     await page.getByTestId('checkout-received').fill('100000')
-    // 🔴 POR TESTID Y NO POR LA PALABRA. El re-mapeo del corte 4 cambió los
-    //    testids y NO el copy, y acá se ve por qué importa: la columna rotula
-    //    «Cambio» (la palabra de la maqueta) y el diálogo del éxito y el ticket
-    //    siguen diciendo «Vuelto». Son DOS PALABRAS PARA LA MISMA COSA en el
-    //    mismo flujo, introducidas al migrar. Queda anotado como divergencia de
-    //    vocabulario; el testid mide el número, que es lo que este caso quiere.
+    // 🔴 POR TESTID Y NO POR LA PALABRA, y la razón de ayer ya no aplica.
+    //    Acá decía que el producto usaba DOS PALABRAS para lo mismo —«Cambio»
+    //    en la columna, «Vuelto» en el diálogo y en el ticket—, anotado como
+    //    divergencia de vocabulario. **La palabra «Cambio» la había introducido
+    //    la columna del cobro en línea y murió con ella**: hoy los tres sitios
+    //    dicen «Vuelto». La duda tenía un sujeto y el sujeto dejó de existir.
+    // ⚠️ El testid se queda igual, por la razón que sobrevive: mide el NÚMERO,
+    //    que es lo que este caso quiere, y no se rompe si mañana el copy cambia.
     await expect(page.getByTestId('checkout-change')).toBeVisible()
 
     // No se confirma el cobro (no crea orden). Se cierra el turno abierto para el setup.

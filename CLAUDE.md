@@ -1454,6 +1454,43 @@ Es exactamente el **corolario del renombre**: un texto que nombra algo que vive 
 que nadie movió en la misma pasada. La diferencia es que acá no desconecta un nombre — **desconecta
 la única demostración de la regla**.
 
+🔴 **LA CONSECUENCIA DEL SEGUNDO, Y ES MÁS GRANDE QUE EL COMANDO:**
+
+> **Un comando canónico que no se puede correr convierte en NO VERIFICABLES todas las afirmaciones
+> que lo citan — sin que ninguna de ellas cambie de texto.**
+
+*"17 migraciones aplicadas al 2026-09-02. Reconfirmar con `pnpm exec supabase migration list
+--linked`"* está escrito exactamente como la convención manda: dato fechado **más** el comando que
+lo reproduce. Y hoy es **una afirmación de estado que no se puede reconfirmar**, que es justo lo que
+la convención existe para impedir.
+
+⚠️ **Lo que lo hace distinto de una nota que envejece: la nota no se movió.** Sigue diciendo lo
+mismo, con su fecha y su comando, y se lee igual de sólida que el día que se escribió. Lo que
+cambió está **afuera del documento** — un token que se rotó. Una nota vieja al menos tiene una fecha
+vieja que invita a dudar; ésta **no tiene ningún síntoma**.
+
+🔴 **Y sólo se ve cuando alguien INTENTA EJECUTAR el comando.** No hay lectura, por atenta que sea,
+que distinga *"dato fechado con su comando"* de *"dato fechado con un comando que hoy da 401"*. Las
+dos frases son idénticas.
+
+**Lo accionable, y son dos:**
+
+1. **La convención se cumple en dos tiempos.** Escribir el comando al lado del dato es la mitad;
+   la otra es que el comando **siga corriendo**. Un dato con un comando muerto no está mejor que un
+   dato solo — está **peor**, porque el comando lo hace parecer verificado.
+2. 🔴 **Cuando se reponga el acceso, esos tres se corren ANTES de citar cualquier dato que dependan.**
+   No es una tarea de mantenimiento: es la condición para que las afirmaciones que los citan
+   vuelvan a ser afirmaciones. Los tres son
+   `pnpm exec supabase migration list --linked` · `pnpm db:types` (y su `git diff --exit-code`) ·
+   `select proname, proacl from pg_proc … where prosecdef`, y lo que sostienen es, en orden: el
+   conteo de migraciones, el contrato de `database.types.ts` (R1 punto 5) y que ninguna función
+   `SECURITY DEFINER` tenga `anon=X`.
+
+⚠️ **Y el tercero es el que más pesa**, porque su afirmación no es un número sino una garantía de
+seguridad: *"de las quince funciones DEFINER, ninguna deja entrar a `anon`"*. Esa frase, sin poder
+correr el `select`, es exactamente lo que la regla llama **una garantía falsa donde se decide** —
+no porque sea falsa, sino porque **nadie puede saber si sigue siendo cierta**.
+
 ⚠️ **Y hay un peligro de LECTURA que este archivo se creó solo:** contiene **dos clases de comando
 mezcladas** — los canónicos (para usar) y los de la tabla de fallas de instrumento, que están ahí
 **como ejemplos de lo que NO hay que correr** (`grep -cE '^  ok  [0-9]+'`, `grep -coE '#[0-9a-fA-F]{6}'`,
