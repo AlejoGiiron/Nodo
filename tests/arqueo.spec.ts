@@ -246,6 +246,109 @@ test.describe.serial('Arqueo multi-método', () => {
     expect(html).toContain('1 vta')
   })
 
+  test('🔴 no se puede cerrar con un insumo sin cargar: el arqueo se PERSISTE y se reimprime', async ({ page }) => {
+    // ════════════════════════════════════════════════════════════════════
+    // DEUDA 55 · A1 §3.1 — el más grave de los cuatro rojos de A1, y por una
+    // razón que ningún otro tiene: **el dato malo no se recomputa nunca**.
+    // `expected_amount`, `difference` y el snapshot `close_reconciliation` se
+    // PERSISTEN, y la reimpresión los lee tal cual (por diseño: recomputar un
+    // turno cerrado sumaría pagos posteriores). Un cierre hecho un segundo
+    // antes de que responda la consulta de pagos queda guardado con el arqueo
+    // equivocado **para siempre**, y cada reimpresión lo repite.
+    //
+    // La carrera es real —hay una vuelta de red— pero no se puede ganar a mano
+    // de forma determinista, así que se PROVOCA: se bloquea la respuesta de
+    // `payments` (el insumo `salesSummary`) y se intenta cerrar en esa ventana.
+    //
+    // Criterio (CLAUDE.md): *una escritura que persiste un cálculo se
+    // deshabilita hasta que TODOS sus insumos hayan cargado; no es un spinner,
+    // es que el botón no exista*.
+    // ════════════════════════════════════════════════════════════════════
+    const APERTURA = 40000 + Number(SUFFIX.slice(-4))
+    await loginAsOwner(page)
+    await page.goto('/ventas')
+    await closeShiftIfOpen(page)
+    await openShiftIfClosed(page, APERTURA)
+    await sellCash(page)                    // 18.000 en efectivo, ya en la base
+    const shiftId = await openShiftId()
+
+    // Lo que el arqueo TIENE que decir si los insumos cargaron.
+    const ESPERADO_REAL = APERTURA + PRICE
+
+    // 🔒 La consulta de pagos no responde: `salesSummary` queda en null y
+    //    `salesSummary?.cash ?? 0` da 0 — el default que no distingue "todavía
+    //    no sé" de "no hubo ventas".
+    // Sólo la consulta del RESUMEN (`getShiftPayments`, `select=*`), no la del
+    // conteo de ventas (`getShiftSalesCount`, `select=order_id`) que la mutación
+    // hace al cerrar: bloquear las dos colgaría el cierre entero y el test
+    // mediría otra cosa — el primer intento dio `expected_amount` inexistente en
+    // vez de un arqueo falso, que es un rojo por la razón equivocada.
+    await page.route('**/rest/v1/payments*', async (route) => {
+      const url = route.request().url()
+      const esElResumen = route.request().method() === 'GET' && /select=\*/.test(url)
+      if (esElResumen) return                       // colgada a propósito
+      await route.continue()
+    })
+
+    await page.goto('/ventas')
+    await page.getByRole('button', { name: 'Cerrar turno', exact: true }).click()
+    await expect(page.getByText('Cerrar turno de caja')).toBeVisible()
+    await page.getByTestId('close-shift-declared').fill(String(ESPERADO_REAL))
+
+    const confirmar = page.getByRole('button', { name: 'Confirmar cierre' })
+    const seOfrece = (await confirmar.count()) > 0
+
+    // Si el botón EXISTE en esta ventana, el defecto está vivo. Se aprieta a
+    // propósito para que el rojo diga QUÉ se persistió, no sólo que el botón
+    // estaba habilitado: el número guardado es la mitad del hallazgo.
+    if (seOfrece) {
+      await confirmar.click()
+      await page.waitForTimeout(2_000)
+      const c = await db()
+      const { data } = await c
+        .from('jornadas')
+        .select('expected_amount, difference')
+        .eq('id', shiftId)
+        .single()
+      expect(
+        Number(data?.expected_amount ?? -1),
+        `SE PERSISTIÓ UN ARQUEO FALSO: expected_amount quedó calculado sobre salesSummary vacío ` +
+        `(apertura ${APERTURA} + ventas 0) en vez de apertura + ${PRICE}. Y no se recomputa: ` +
+        `la reimpresión lee este snapshot`,
+      ).toBe(ESPERADO_REAL)
+      expect(
+        Number(data?.difference ?? -1),
+        'y la diferencia quedó guardada como un sobrante que no existió',
+      ).toBe(0)
+    }
+
+    expect(
+      seOfrece,
+      'el botón de cerrar NO debe existir hasta que TODOS los insumos hayan cargado ' +
+      '(apertura, pagos y movimientos): lo que se escribe es permanente y se reimprime',
+    ).toBe(false)
+
+    // Con la carga liberada, el botón vuelve y el cierre es correcto: sin esto,
+    // un botón que nunca aparece también pasaría el caso de arriba.
+    await page.unroute('**/rest/v1/payments*')
+    await page.reload()
+    await page.getByRole('button', { name: 'Cerrar turno', exact: true }).click()
+    await expect(page.getByText('Cerrar turno de caja')).toBeVisible()
+    await page.getByTestId('close-shift-declared').fill(String(ESPERADO_REAL))
+    await expect(
+      page.getByRole('button', { name: 'Confirmar cierre' }),
+      'liberada la carga, el cierre TIENE que poder hacerse',
+    ).toBeVisible({ timeout: 15_000 })
+    await page.getByRole('button', { name: 'Confirmar cierre' }).click()
+    await expect(page.getByText('Sin turno')).toBeVisible({ timeout: 15_000 })
+
+    const c2 = await db()
+    const { data: fin } = await c2
+      .from('jornadas').select('expected_amount, difference').eq('id', shiftId).single()
+    expect(Number(fin?.expected_amount), 'el arqueo bueno: apertura + ventas en efectivo').toBe(ESPERADO_REAL)
+    expect(Number(fin?.difference), 'declarado igual al esperado: cuadre exacto').toBe(0)
+  })
+
   test('limpieza: cerrar turno del lab', async ({ page }) => {
     await loginAsOwner(page)
     await page.goto('/ventas')

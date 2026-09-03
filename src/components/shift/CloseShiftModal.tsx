@@ -29,7 +29,11 @@ interface CloseShiftModalProps {
 }
 
 export function CloseShiftModal({ onClose }: CloseShiftModalProps) {
-  const { currentShift, salesSummary, movements, closeShift, isClosingShift } = useCashShift()
+  const {
+    currentShift, salesSummary, movements, closeShift, isClosingShift,
+    isLoadingShift, isLoadingSales, isLoadingMovements,
+    shiftFallo, salesFallo, movementsFallo,
+  } = useCashShift()
   const { sede } = useSedeConfig()
   const [rawAmount, setRawAmount] = useState('')
   // Arqueo multi-método: declarado por método NO-efectivo (blanco = 0) + comentario.
@@ -63,7 +67,28 @@ export function CloseShiftModal({ onClose }: CloseShiftModalProps) {
   const declaredTotal = declared + otherRows.reduce((s, r) => s + r.declared, 0)
   const differenceTotal = declaredTotal - expectedTotal
 
-  const canClose = rawAmount.length > 0
+  // ════════════════════════════════════════════════════════════════════════
+  // 🔴 DEUDA 55 · UNA ESCRITURA QUE PERSISTE UN CÁLCULO NO EXISTE HASTA QUE
+  //    TODOS SUS INSUMOS HAYAN CARGADO.
+  //
+  //    Lo que este modal escribe —`expected_amount`, `difference` y el snapshot
+  //    `close_reconciliation`— es PERMANENTE, y la reimpresión lo lee tal cual
+  //    (por diseño: recomputar un turno cerrado sumaría pagos posteriores). Un
+  //    cierre hecho antes de que respondan las consultas quedaba guardado con
+  //    `salesSummary ?? 0` y `movements = []`, o sea un arqueo falso que se
+  //    reimprime igual para siempre. Medido: `expected_amount` 47.987 donde lo
+  //    real era 65.987 (A1 §3.1).
+  //
+  //    Son TRES insumos y se exigen los tres: con uno solo cargado el arqueo
+  //    sigue siendo falso. Y NO es un spinner sobre el botón —eso invita a
+  //    esperar y volver a intentar—: el botón NO EXISTE hasta entonces.
+  //
+  //    `declared` no entra: es la entrada humana, no un dato que se carga.
+  // ════════════════════════════════════════════════════════════════════════
+  const insumoFallo = shiftFallo || salesFallo || movementsFallo
+  const insumosListos =
+    !insumoFallo && !isLoadingShift && !isLoadingSales && !isLoadingMovements && !!currentShift
+  const canClose = insumosListos && rawAmount.length > 0
 
   // 🔴 DEUDA 64. Los cinco sitios de este bloque decidian su color con
   //    `difference > 0 ? success : danger`, o sea: **el sobrante en verde**, en
@@ -78,7 +103,9 @@ export function CloseShiftModal({ onClose }: CloseShiftModalProps) {
   const c = TONO_COLOR[tono.rol]
 
   const handleClose = async () => {
-    if (!canClose || isClosingShift) return
+    // Redundante con el botón ausente, y a propósito: es la garantía que no
+    // depende de que el render haya llegado a tiempo.
+    if (!insumosListos || !canClose || isClosingShift) return
     // Snapshot del arqueo: efectivo (F1) + los 3 otros métodos + totales.
     // sales_count lo completa la mutación al cerrar.
     const otherMethodsObj = Object.fromEntries(
@@ -448,20 +475,52 @@ export function CloseShiftModal({ onClose }: CloseShiftModalProps) {
           >
             Cancelar
           </button>
-          <button
-            onClick={handleClose}
-            disabled={!canClose || isClosingShift}
-            style={{
-              flex: 2, padding: '11px 16px', border: 'none',
-              background: !canClose || isClosingShift ? 'var(--ink-4)' : 'var(--ink)',
-              borderRadius: 9,
-              cursor: !canClose || isClosingShift ? 'not-allowed' : 'pointer',
-              fontSize: 13.5, fontWeight: 700, color: 'var(--surface)',
-              transition: 'all .15s',
-            }}
-          >
-            {isClosingShift ? 'Cerrando turno...' : 'Confirmar cierre'}
-          </button>
+          {/* 🔴 El botón NO SE RENDERIZA hasta que los tres insumos cargaron
+              (deuda 55). En su lugar va lo que la pantalla sí sabe: que todavía
+              no puede ofrecer la acción, o que un insumo falló — y un error de
+              carga es un ESTADO del formulario, no un cero. */}
+          {insumoFallo ? (
+            <div
+              data-testid="close-shift-insumo-fallo"
+              style={{
+                flex: 2, padding: '11px 16px', borderRadius: 9,
+                background: 'var(--danger-soft)', border: '1px solid var(--danger-soft)',
+                color: 'var(--danger-on-soft)', fontSize: 12.5, fontWeight: 600,
+                display: 'flex', alignItems: 'center', gap: 8, lineHeight: 1.35,
+              }}
+            >
+              <AlertTriangle size={16} style={{ flexShrink: 0 }} />
+              No se pudo cargar el resumen del turno. No se puede cerrar sin él:
+              el arqueo quedaría guardado mal. Recargá la página.
+            </div>
+          ) : !insumosListos ? (
+            <div
+              data-testid="close-shift-cargando"
+              style={{
+                flex: 2, padding: '11px 16px', borderRadius: 9,
+                background: 'var(--surface-2)', border: '1px solid var(--border)',
+                color: 'var(--ink-3)', fontSize: 12.5, fontWeight: 600,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              Cargando el resumen del turno…
+            </div>
+          ) : (
+            <button
+              onClick={handleClose}
+              disabled={!canClose || isClosingShift}
+              style={{
+                flex: 2, padding: '11px 16px', border: 'none',
+                background: !canClose || isClosingShift ? 'var(--ink-4)' : 'var(--ink)',
+                borderRadius: 9,
+                cursor: !canClose || isClosingShift ? 'not-allowed' : 'pointer',
+                fontSize: 13.5, fontWeight: 700, color: 'var(--surface)',
+                transition: 'all .15s',
+              }}
+            >
+              {isClosingShift ? 'Cerrando turno...' : 'Confirmar cierre'}
+            </button>
+          )}
         </div>
       </div>
     </div>

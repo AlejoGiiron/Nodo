@@ -33,7 +33,7 @@ export function useCashShift() {
   const queryClient = useQueryClient()
   const sedeId = profile?.sede_id
 
-  const { data: currentShift = null, isLoading: isLoadingShift } = useQuery({
+  const { data: currentShift = null, isLoading: isLoadingShift, isError: shiftFallo } = useQuery({
     queryKey: ['cash_shift_open', sedeId],
     queryFn: async () => {
       const { data, error } = await getOpenShift(sedeId!)
@@ -44,7 +44,17 @@ export function useCashShift() {
     staleTime: 10_000,
   })
 
-  const { data: salesSummary = null, refetch: refetchSales } = useQuery({
+  // 🔴 DEUDA 55. `isLoading` e `isError` se EXPONEN porque el consumidor no
+  //    tiene otra forma de saberlo: el default de esta query es `null` y
+  //    `salesSummary?.cash ?? 0` da 0, que es indistinguible de "no hubo ventas".
+  //    Es el corolario de CLAUDE.md: un hook que devuelve un valor derivado
+  //    tiene que devolver también su carga.
+  const {
+    data: salesSummary = null,
+    refetch: refetchSales,
+    isLoading: isLoadingSales,
+    isError: salesFallo,
+  } = useQuery({
     queryKey: ['shift_payments', currentShift?.id],
     queryFn: async () => {
       const { data, error } = await getShiftPayments(
@@ -65,7 +75,13 @@ export function useCashShift() {
     refetchInterval: 5_000,
   })
 
-  const { data: movements = [] } = useQuery({
+  // Mismo caso: el default es `[]`, y una lista vacía dice "no hubo
+  // movimientos" con la misma cara que "todavía no sé".
+  const {
+    data: movements = [],
+    isLoading: isLoadingMovements,
+    isError: movementsFallo,
+  } = useQuery({
     queryKey: ['cash_movements', currentShift?.id],
     queryFn: async () => {
       const { data, error } = await getCashMovements(currentShift!.id)
@@ -198,6 +214,14 @@ export function useCashShift() {
     isLoadingShift,
     salesSummary,
     movements,
+    // 🔴 La carga de los TRES insumos del arqueo. El cierre persiste un cálculo
+    //    hecho con ellos y la reimpresión lee ese snapshot sin recomputar: si
+    //    alguno no cargó, lo que se guarda es permanente y falso (deuda 55).
+    isLoadingSales,
+    isLoadingMovements,
+    salesFallo,
+    movementsFallo,
+    shiftFallo,
     refetchSales,
     openShift: openShiftMutation.mutateAsync,
     closeShift: closeShiftMutation.mutateAsync,

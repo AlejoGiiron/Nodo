@@ -2654,3 +2654,87 @@ fuera, un vuelto, la base"**. El color dejó de mentir y el texto pasó a explic
 Las tres eran afirmaciones falsas del producto sobre sus propios números, y **ninguna la habría
 encontrado un test**: la del IVA vivía en un HTML que no se podía aseverar, la de "ventas" en un
 rótulo sobre un cálculo correcto, y la del sobrante en un color. Las tres salieron de A3.
+
+
+## 2026-09-02 · La 64 encontró su causa raíz ENUMERANDO — y explica por qué la primera corrección llegó a media pantalla
+
+*Nota aparte porque el hallazgo no es del arqueo: es del método.*
+
+La corrección de septiembre dio el sobrante en verde por resuelto. A3 encontró que seguía vivo en el
+modal. Al arreglarlo, la **enumeración previa** —exigida antes de tocar nada— destapó algo que ninguna
+de las dos veces anteriores se había visto:
+
+> **La regla del rol estaba escrita DOS VECES**, una en `CloseShiftModal` y otra en
+> `ShiftHistoryPage`, cada una con su propio `? :`. **El mecanismo de sincronización era la memoria.**
+
+Por eso la primera corrección llegó a una sola pantalla y nadie se enteró: no hubo error, ni test
+rojo, ni nada que dijera que faltaba la otra mitad. Es **R1 en el lugar exacto donde ya habíamos
+"corregido" el defecto una vez** — y es la explicación mecánica de la entrada falsa de la bitácora,
+que hasta ahora se había leído como un descuido de redacción.
+
+**Lo que esto agrega a lo ya escrito:**
+
+- *"Corregido se verifica enumerando los sitios"* explicaba cómo **detectar** el error. Esto explica
+  cómo **se produce**: cuando la regla vive en N lugares, corregir uno se siente completo, porque el
+  que corrige está mirando el único que conoce.
+- Y da el criterio para el arreglo: **si la enumeración devuelve más de un sitio, el arreglo no es
+  corregir los N — es que haya uno.** `cuadreTone()` no existe para ahorrar líneas: existe para que
+  la próxima corrección no pueda llegar a medias.
+
+⚠️ Corolario práctico, barato: **cuando un defecto reaparece donde ya lo habíamos arreglado, la
+pregunta no es "¿qué se nos pasó?" sino "¿en cuántos lados vive esta regla?"**. La segunda pregunta
+tiene respuesta con un grep; la primera se contesta con memoria, que es lo que falló.
+
+## 2026-09-02 · Fase B, bloque 2 · Deuda 55 — el arqueo que se persiste y se reimprime
+
+*La más grave de A1, y por una razón que ninguno de los otros tres rojos tiene: **el dato malo no se
+recomputa nunca**.*
+
+### La enumeración primero: cuatro insumos, y sólo uno exponía su carga
+
+| insumo | default silencioso | ¿exponía su carga? | entra a |
+|---|---|---|---|
+| `currentShift.opening_amount` | `?? 0` | **sí** (`isLoadingShift`), y sin usar | esperado, diferencia, snapshot |
+| `salesSummary.cash` | `?? 0` | **no** | esperado, diferencia, snapshot |
+| `salesSummary.card/transfer/nequi` | `?? 0` | **no** | esperado por método, totales, snapshot |
+| `movements` (ingresos/egresos) | `= []` | **no** | esperado, diferencia, snapshot, y el papel |
+
+⚠️ **Y acá la forma de A1 se invierte, que es la razón por la que enumerar era obligatorio.** A1 midió
+que *"en tres de los cuatro rojos `isLoading` estaba disponible y el consumidor no lo leyó"*. En el
+cierre es al revés: **de los cuatro insumos, sólo uno lo exponía**. Aplicar la receta a ciegas —"leer
+la carga donde se decide"— habría tapado `currentShift` y dejado los otros tres con el mismo hueco.
+Lo que corresponde es el corolario del mismo criterio: *un hook que devuelve un valor derivado tiene
+que devolver también su carga*.
+
+Dos insumos quedan fuera del gate a propósito: `declared` es entrada humana, y `sede` (nombre y
+dirección) **no entra a lo que se persiste** — sólo al papel. Anotado, no bloqueante.
+
+### El rojo, que dice el número guardado
+
+La carrera es real pero no se gana a mano, así que se **provocó**: bloquear la respuesta de la
+consulta del resumen e intentar cerrar en esa ventana. El rojo:
+
+```
+SE PERSISTIÓ UN ARQUEO FALSO: expected_amount quedó calculado sobre salesSummary
+vacío (apertura 47.987 + ventas 0) en vez de apertura + 18.000
+    Expected: 65987
+    Received: 47987
+```
+
+⚠️ **El primer intento fue un rojo por la razón equivocada** y valió la pena mirarlo: al bloquear
+*todas* las consultas a `payments` también se colgó la que la mutación hace para contar ventas, así
+que el cierre no llegó a persistir nada y el test falló con `expected_amount` inexistente (`-1`). El
+mensaje decía "se persistió un arqueo falso" y **no se había persistido nada**. Se afinó el bloqueo a
+la consulta del resumen (`select=*`) y no a la del conteo (`select=order_id`). Un rojo que no
+reproduce el defecto es tan inútil como un verde que no lo mide.
+
+### El arreglo
+
+El hook expone `isLoadingSales`, `isLoadingMovements` y sus `*Fallo`; el modal exige los tres y **no
+renderiza el botón** hasta entonces. No es un spinner sobre el botón: un botón deshabilitado con
+spinner invita a esperar y reintentar, uno ausente dice que la pantalla todavía no sabe lo suficiente
+para ofrecer la acción. Y si un insumo **falló**, el pie lo dice con su motivo —*"no se puede cerrar
+sin él: el arqueo quedaría guardado mal"*— en vez de ofrecer cerrar con ceros.
+
+`handleClose` repite la condición, a propósito: es la garantía que no depende de que el render haya
+llegado a tiempo.
