@@ -768,6 +768,25 @@ la pantalla que lo generó, ni en un instructivo, ni en la cabeza de quien lo ex
 hoja de definiciones son diez líneas al lado del código que arma las columnas; explicarlo después,
 cuando alguien pregunta por qué dos archivos no cierran, cuesta el diagnóstico entero.
 
+🔴 **UNA MIGRACIÓN APLICADA ES UN ARTEFACTO QUE SE ARCHIVA, Y POR ESO UN NÚMERO INVENTADO EN SU
+CABECERA TIENE LA MISMA FORMA QUE UN EXCEL SIN DEFINICIONES.** *Error propio, 2026-09-02, deuda 46.*
+
+Escribí en la cabecera de la migración *"Filas contadas ANTES de tocar: customers 5, orders 173"*
+**sin haberlas contado**. Los números reales eran **74 y 1.320**.
+
+Lo que lo hace de esta familia y no un descuido cualquiera: **por R5 una migración aplicada no se
+edita nunca**. Es registro histórico por definición, se lee meses después, fuera de contexto y con la
+autoridad de estar en `supabase/migrations/`. Nadie que la lea va a poder distinguir un conteo medido
+de uno verosímil — exactamente como nadie podía distinguir por qué dos Excel del mismo período daban
+totales distintos.
+
+✅ **Lo cazó el hook**, que ante un `.sql` pide las cuatro preguntas de R0 e incluye *"contar las filas
+ANTES de tocarlas"*. Leerla me mandó a medir, y ahí no coincidió. **Se corrigió antes del `db push`,
+que es el momento exacto en que dejaba de ser reversible.**
+
+**La regla, que ya existía y acá cobra su forma más cara:** *un número sin comando es una opinión con
+dígitos*. En una nota se corrige; **en una migración aplicada, no.**
+
 ---
 
 ### 🔴 CRITERIO SIN NÚMERO · EN EL RESUMEN DE UNA SUITE, LOS CEROS SON **AUSENCIA DE LÍNEA**
@@ -1113,8 +1132,10 @@ que la suite E2E pueda correr: es el único verificador que mira esta clase.
 
 ### 🔴 CRITERIO SIN NÚMERO · LA HISTORIA NO SE REESCRIBE, SE LE AGREGA — Y BORRAR DE UNA LISTA ES DEJAR DE OFRECERLA
 
-*Cuatro decisiones tomadas por separado entre el 2026-08-31 y el 2026-09-02 que resultaron ser la
-misma. Se escribe una vez, con los cuatro casos, en vez de cuatro decisiones que se parecen.*
+*CINCO decisiones tomadas por separado entre el 2026-08-31 y el 2026-09-02 que resultaron ser la
+misma. Se escribe una vez, con los cinco casos, en vez de cinco decisiones que se parecen.*
+*(Decía "cuatro" con cinco filas en la tabla: par contradictorio propio, corregido al agregar el
+quinto. La regla del append aplica también al que la escribió.)*
 
 > **Un hecho ocurrido no se corrige cambiándolo: se corrige agregando otro hecho.** Y una lista de
 > opciones no es la historia: **sacar un valor de la lista es dejar de OFRECERLO, nunca reescribir
@@ -1132,13 +1153,6 @@ misma. Se escribe una vez, con los cuatro casos, en vez de cuatro decisiones que
 que **una pregunta sobre el pasado cambie de respuesta según cuándo se la haga**. Ese es el defecto,
 y es el perfil de R7: no revienta, no avisa, y el número sigue siendo plausible.
 
-🔴 **Y el quinto agrega el detector, que es más barato que el principio:** la pregunta no es
-filosófica sino mecánica — **¿de dónde sale este dato cuando alguien lo mira?** El plazo parecía
-seguro en `customers` hasta que la enumeración mostró que **la cartera no guarda la deuda, la deriva
-de `orders` en cada consulta**. Un dato que se lee por un `select` derivado no está congelado por
-mucho que su origen sea estable: se recalcula entero cada vez. **Antes de decidir dónde vive un dato,
-enumerá quién lo va a leer y si esa lectura es una tabla o un cálculo.**
-
 ⚠️ **El corolario que decide los casos nuevos, y es una pregunta sola:** ¿este cambio hace que un
 reporte ya impreso deje de reproducirse? Si la respuesta es sí, **no es una corrección: es una
 reescritura**, y lo que corresponde es agregar un hecho.
@@ -1150,9 +1164,44 @@ etiqueta.
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · ¿DE DÓNDE SALE ESTE DATO CUANDO ALGUIEN LO MIRA?
+
+*El detector del principio de arriba. Va aparte y con la misma jerarquía a propósito: el principio
+dice qué hacer una vez que reconociste el caso, y **esto es lo que hace que lo reconozcas antes**.
+Cinco casos ya eran un principio; esto lo vuelve aplicable sin haber pagado los cinco.*
+
+> **La pregunta útil no es "¿este dato puede cambiar?" — es "¿DE DÓNDE SALE cuando alguien lo
+> mira?"**
+
+La primera es filosófica y casi siempre se contesta que sí, así que no discrimina. La segunda es
+**mecánica** y se contesta enumerando: se abre el consumidor y se mira si lee **una columna** o si
+**la calcula**.
+
+| Cómo se lee el dato | Qué pasa cuando su origen cambia |
+|---|---|
+| de una **columna** de la fila del hecho | nada: la fila dice lo que decía |
+| de un **`select` derivado**, un join o un cálculo | **se recalcula entero cada vez**, así que el pasado cambia de respuesta sin que nadie lo toque |
+
+**El caso que lo destapó (deuda 46).** El plazo de crédito parecía perfectamente seguro en
+`customers`: ahí es donde se pacta, y es el dato más estable del cliente. **La estabilidad del origen
+no era la pregunta.** Al enumerar apareció que **la cartera no guarda la deuda: la deriva de `orders`
+en cada consulta** —`getDebts` lee las órdenes pendientes y calcula el saldo contra `debt_payments`,
+no hay tabla de cuentas por cobrar—. Con el plazo sólo en el cliente, **el mismo `select` habría
+devuelto otro vencimiento mañana** para una venta de enero.
+
+⚠️ **Y por eso el detector es más barato que el principio:** el principio pide reconocer que estás por
+reescribir la historia, que es un juicio. El detector pide **abrir el consumidor y mirar**, que no lo
+es. Cuesta un `grep` del nombre de la tabla.
+
+**Lo accionable, y es el orden que importa:** antes de decidir **dónde vive** un dato, enumerá
+**quién lo va a leer** y si esa lectura es una tabla o un cálculo. La decisión de dónde guardarlo se
+toma después de esa respuesta, no antes.
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · LA DEUDA ES UNA HIPÓTESIS FECHADA; EL CÓDIGO ES EL DATO
 
-*TRES casos medidos el 2026-09-02, el mismo día y con la misma causa.*
+*CUATRO casos medidos el 2026-09-02, el mismo día. Los tres primeros comparten causa —el alcance venía de la maqueta—; el cuarto es de otra especie y por eso está explicado aparte.*
 
 `docs/DEUDAS.md` se lee al planificar, y por eso cada entrada trae su **alcance**. Ese alcance se
 escribió en algún momento, mirando algo — y **a veces ese algo no fue el código.**
@@ -1168,6 +1217,7 @@ escribió en algún momento, mirando algo — y **a veces ese algo no fue el có
 | el catálogo del cliente son **~4.212 productos** (deuda 50) | el archivo real de Muscle Pro tiene **37** | el import masivo estuvo declarado *bloqueante del alta* durante días, ordenando el trabajo |
 | Compras y Gastos **ya dejan elegir la fecha**, sólo falta la columna (deuda 44) | `grep 'type="date"' src/` → **diez apariciones, las diez filtros de historiales**. Ningún formulario de alta tenía campo de fecha | la deuda parecía "dos columnas" y eran dos columnas, dos guards, dos formularios y cuatro consultas |
 | las subcategorías de gasto son **las seis del diseño** — Arriendo, Servicios, Transporte, Sueldos, Impuestos, Otros (deuda 45) | el archivo real del cliente usa **tres**: publicidad, adecuación, activo. La propia entrada las llamaba *"las seis del dibujo"* | se habría sembrado la lista del producto con el vocabulario de una maqueta en vez del de un negocio |
+| la cartera **ordena por antigüedad** (enunciado de la deuda 46) | ordenaba por **saldo**: `arr.sort((a, b) => b.saldoTotal - a.saldoTotal)` | ninguno, y **por eso es el caso más instructivo**: ver abajo |
 
 **Por qué pasa, y por qué no se arregla escribiendo mejor.** Una maqueta y una app se describen con
 las mismas palabras. Cuando una descripción de la maqueta entra a una tabla de decisiones, **pierde
@@ -1183,8 +1233,19 @@ chico algo que no lo era.
 > **La enumeración previa se hace igual, aunque la deuda ya diga el alcance.**
 
 No es desconfianza del que escribió: es que el alcance escrito y el código son **dos fuentes
-distintas**, y sólo una ejecuta. Si al enumerar coinciden, costó dos minutos. Si no coinciden —**tres
-de tres veces, hasta ahora**—, lo que se encontró es justamente lo que habría hecho fallar el plan.
+distintas**, y sólo una ejecuta. Si al enumerar coinciden, costó dos minutos. Si no coinciden
+—**cuatro de cuatro veces, hasta ahora**—, lo que se encontró es justamente lo que habría hecho
+fallar el plan, o el registro de lo que se hizo.
+
+🔴 **EL CUARTO CASO ES EL QUE MEJOR EXPLICA POR QUÉ ESTO VALE LA PENA, justamente porque NO costó
+nada.** El enunciado decía "ordena por antigüedad, cambialo a días vencidos"; el código ordenaba por
+**saldo**. La decisión no cambió —días vencidos sigue siendo lo correcto— pero **el punto de partida
+era otro**, y eso es lo que una enumeración compra: no evitar una decisión equivocada, sino saber
+**desde dónde** se está moviendo.
+
+Sin enumerar, el commit habría dicho "pasa de antigüedad a días vencidos", que es **falso**, y habría
+quedado archivado como si fuera lo que ocurrió. Un registro falso sobre un cambio correcto sigue
+siendo un registro falso — y es el que va a leer el próximo.
 
 ⚠️ **Y el tercer caso agrega una forma que los dos primeros no tenían: las DOS versiones convivían.**
 La deuda 45 tenía la lista de la maqueta (2026-09-01) y la del archivo real (2026-09-02) **apiladas**,

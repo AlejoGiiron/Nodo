@@ -3252,6 +3252,19 @@ El caso que discrimina está escrito: `2026-01-11T04:00:00Z` son las 23:00 del *
 plazo 0 vence el 10, así que el 11 lleva **1 día**. Leyendo el timestamp crudo daría **0** — "al día"
 sobre algo vencido.
 
+### La premisa que corregí sin que cambiara la decisión
+
+El enunciado decía que la cartera **ordena por antigüedad**. El código ordenaba por **saldo**:
+`arr.sort((a, b) => b.saldoTotal - a.saldoTotal)`.
+
+La decisión no cambió —días vencidos sigue siendo lo correcto— y por eso es el caso que mejor explica
+para qué sirve enumerar: **no evitó una decisión equivocada, evitó un registro falso**. Sin
+enumerar, el commit habría dicho "pasa de antigüedad a días vencidos", y eso queda archivado como si
+fuera lo que ocurrió. Un registro falso sobre un cambio correcto sigue siendo falso, y es el que va a
+leer el próximo.
+
+Cuarta vez que un enunciado —mío o de una deuda— resulta ser una hipótesis y no una medición.
+
 ### Un error propio, atajado por el hook
 
 Escribí en la cabecera de la migración *"customers 5, orders 173"* **sin haberlos medido**. Los conté
