@@ -3562,3 +3562,71 @@ Sin Sentry, **el primer error en producción no deja rastro**. El reporte va a s
 cobrar"*, no un stack con el `code` de PostgREST. Es tolerable mientras el cliente **prueba** y está
 al lado para contarlo; deja de serlo cuando **opere**. El disparador quedó escrito con esa frontera y
 no con una fecha.
+
+---
+
+## 2026-09-03 · §8.15 tuvo tres estados en tres días, y sólo el tercero se decidió MIRANDO
+
+**Modal → en línea → modal.** Las tres versiones están en la skill, la vigente arriba y las
+anteriores tachadas. Lo que vale registrarse no es la decisión final —volvió al punto de
+partida— sino **cómo se tomó cada una**, porque las dos primeras se decidieron razonando y la
+tercera midiendo, y la tercera fue la única que produjo información nueva.
+
+| # | Fecha | Decisión | Cómo se decidió | Qué la derrotó |
+|---|---|---|---|---|
+| 1 | 2026-09-01 | el cobro **se queda en modal** | *"el modal está probado: 51/51 specs"* | un argumento mejor |
+| 2 | 2026-09-02 | el cobro **va en línea** | *"el modal es un paso extra por venta, para siempre; el rediseño es una vez"* | **construirlo y verlo** |
+| 3 | 2026-09-03 | el cobro **vuelve al modal** | *"en la columna todo queda chico y amontonado"* | — |
+
+### 🔴 El dato estaba a la vista y lo leímos como un ajuste de layout
+
+Con el cobro en la columna, el panel de tinta pasó a **485px** y la lista del carrito **colapsó a
+cero** en todo viewport de hasta ~1050px de alto: la cajera no veía qué estaba vendiendo. La venta
+salía bien, la base quedaba perfecta, y **la suite estaba entera verde** —`toBeVisible()` pasa para
+un elemento clipeado por un contenedor de altura 0—.
+
+Se arregló con un mínimo de alto para la lista y **scroll en el medio del panel de cobro**. Ese
+arreglo funcionó, y con él se cerró la fase.
+
+> **Un arreglo que consiste en hacer scroll dentro de una columna de 420px de ancho es la confesión
+> de que el contenido no entra.**
+
+Nadie lo leyó así en el momento: se leyó como una restricción de alto, que es lo que era en la
+superficie. El dato de que el contenido no cabía **estaba en el arreglo mismo**.
+
+⚠️ Y es la segunda vez que este proyecto encuentra un defecto **mirando** y no ejecutando —la
+primera fue el botón "Cobrar" deshabilitado que se veía más claro que habilitado—. Las dos veces la
+suite estuvo verde y las dos veces el defecto vivía enteramente en lo que el ojo recibe.
+
+### Qué se quedó del intento, porque no era del cobro en línea
+
+La reversión **no se hizo con `git revert`** de los cuatro cortes. Se enumeró primero qué había en
+esos commits que no fuera del modal, y la mayor parte no lo era:
+
+| Lo que quedó | Por qué no era del cobro en línea |
+|---|---|
+| los atajos §5 enteros (F1–F12 con `preventDefault`, E/T/C) | entraron **antes** del corte 1 |
+| `useCobro` — una sola escritura para el cobro | ídem; nació para que dos superficies no divergieran y sigue siendo el lugar correcto con una |
+| **F4** deja de ser tecla sin destino | cambió a qué apunta, no si apunta |
+| el mínimo de alto de la lista | ataja una **clase**, no el caso |
+| los `prefijo` de los cuatro componentes y `Button` con `forwardRef` | infraestructura de testids |
+
+Por eso el fuente de `POSPage` se **restauró de `f3954e8`** —el modal ya con `useCobro` y los
+atajos— y encima se re-aplicaron las cuatro decisiones. Un `git revert` habría desechado las cinco
+filas de la tabla.
+
+### 🔴 Los 33 sitios de `cobro-confirmar` NO tenían mapeo, y uno no era lo que parecía
+
+`cobro-confirmar` iba a **tres destinos distintos** en el modal según el medio elegido
+(`checkout-continue` · `checkout-confirm-efectivo` · `checkout-confirm-mixto`), así que un renombre
+en masa era imposible. Se decidió sitio por sitio.
+
+**Y uno de los 33 no era un confirmador: era la PUERTA.** El caso *"sin turno el cobro no procede"*
+de `pos.spec` apretaba `cobro-confirmar` para medir que **no** cobrara — su destino es
+`cobro-abrir`, un botón que en ese escenario ni siquiera abre nada. Un renombre en masa lo habría
+mandado a un botón inexistente y el rojo habría dicho *"no apareció el modal"* en vez de nombrar el
+turno.
+
+El resto del mapeo —19 pares de testid— pasó `sort | uniq -d` **sin destinos repetidos**, y por eso
+el botón del paso del monto y el del reparto quedaron con nombre propio en vez de compartir uno: un
+destino con dos orígenes es la forma que ya nos costó tres sitios con dobles clics.

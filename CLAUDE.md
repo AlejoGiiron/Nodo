@@ -1420,6 +1420,78 @@ cumplido**. Si lo está, el lado permisivo nunca fue una opción.
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · UNA FIXTURE VACÍA NO ES EL CASO COMÚN: ES EL DEGENERADO
+
+*Medido el 2026-09-03, al sembrar el lab con la forma real de la operación. Es el hermano de
+entrada del control negativo: allá el INSTRUMENTO no discrimina, acá la ENTRADA no discrimina.*
+
+> **Una aserción escrita contra una base vacía mide el vacío mientras afirma medir lo normal.**
+
+**El caso.** `pos-categorias-layout` tenía un caso llamado *"con POCAS categorías el layout no
+cambia"* que terminaba en `expect(pos-category-tabs-fade).toHaveCount(0)` — *no hay máscara de
+"hay más"*. Pasó verde durante semanas. Se puso **rojo** el día que el lab pasó de **1 categoría a
+9**, y la primera lectura fue *"el strip se rompió"*.
+
+**No se rompió.** Su línea de base de *"pocas"* era **una sola categoría**, porque el lab estaba
+vacío — y con una categoría el strip no desborda a ningún ancho. *"No hay máscara"* era cierto
+**por construcción**: el verde no venía del layout, venía de la fixture.
+
+⚠️ **Por qué es peor de detectar que un instrumento roto.** El test se ve impecable: nombre
+correcto, sujeto correcto, aserción legible. Nada en el archivo dice con cuántas filas se escribió.
+Y el rojo no llega cuando se introduce el defecto — llega **meses después, disfrazado de
+regresión**, el día que aparecen datos de verdad. La reacción natural entonces es "arreglar" el
+producto para que el test vuelva a verde, que es exactamente el movimiento equivocado.
+
+**LO ACCIONABLE, y son dos preguntas al escribir el caso:**
+
+1. **¿Con cuántas filas se cumple esta aserción, y con cuántas dejaría de cumplirse?** Si la
+   respuesta a la segunda es *"con más datos"*, la fixture es el sujeto y no el escenario.
+2. 🔴 **Preferí aseverar la RELACIÓN antes que la CONSTANTE.** *"No hay máscara"* es una constante
+   y depende del catálogo. *"Hay máscara si y sólo si desborda"* es la invariante que el strip tiene
+   que cumplir **con cualquier catálogo**, y tiene mutantes vivos por los dos lados: una máscara
+   permanente es decoración, una ausente esconde que hay más.
+
+⚠️ Y el corolario para el lab: **poblarlo con la forma de una operación real es un instrumento de
+auditoría de la suite**, no sólo material de demo. El seed de Muscle Pro puso rojo un caso que
+llevaba semanas mintiendo, y ése fue su hallazgo más caro.
+
+---
+
+### 🔴 CRITERIO SIN NÚMERO · UN FILTRO QUE SE APOYA EN UN CAMPO VECINO ES UN PROXY, Y CADUCA SIN AVISO
+
+*Medido el 2026-09-03, moviendo F4 al modal. Es "clasificar leyendo el nombre" aplicado a una
+aserción sobre una colección — y esta vez el proxy vivía DENTRO del test.*
+
+> **Cuando dos campos coinciden hoy, el que se usa para filtrar no es el sujeto: es el que estaba
+> más a mano.**
+
+**El caso.** `atajos.test.ts` aseveraba *"los medios de pago NO usan teclas de función"* así:
+
+```ts
+const deCobro = ATAJOS.filter((a) => a.ambito === 'cobro')   // ⛔ el proxy
+expect(deCobro.filter((t) => /^F\d+$/.test(t))).toBe('ninguna')
+```
+
+**El sujeto es `medio`; el filtro es `ambito`.** Coincidían **exactamente** —los únicos atajos del
+ámbito del cobro eran los tres medios— hasta que F4 (*"cambiar cliente"*) se mudó adentro del modal
+y pasó a ser del ámbito del cobro **sin ser un medio**. El caso se puso rojo, y el producto estaba
+bien: **falló la premisa del filtro**.
+
+✅ **Y eso es lo que un tripwire existe para hacer**, así que el rojo es el resultado bueno. Lo que
+hay que no hacer es tratarlo como una regresión y "arreglar" el producto.
+
+**LO ACCIONABLE:** al escribir un filtro dentro de una aserción, preguntá **si el campo por el que
+filtrás es el sujeto o algo que hoy lo acompaña**. Si es lo segundo, filtrá por el sujeto —acá,
+`a.medio != null`— y dejá el campo vecino en una aserción **aparte**, que es donde su cambio se lee
+como información en vez de como falla:
+
+```ts
+expect(deCobro, 'F4 vive en el ámbito del cobro y NO es un medio de pago')
+  .toEqual(['F4', 'c', 'e', 't'])
+```
+
+---
+
 ### ⚠️ CRITERIO SIN NÚMERO · MIGRAR UN TEST ENTRE DOS UI CONSERVA EL SUJETO, NO LAS ASERCIONES
 
 *Defecto propio, medido el 2026-09-01.*

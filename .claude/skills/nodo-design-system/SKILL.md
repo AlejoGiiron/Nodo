@@ -457,11 +457,19 @@ Mostrador va suelto arriba, sin título de grupo: es la pantalla del día y no p
 *La entrega asignaba `F9 Gastos / efectivo`, `F10 Inventario / transferencia` y
 `F11 Utilidades / crédito`. **Se retira el segundo significado de las tres.***
 
-**Por qué la entrega pudo asignarlo, y por qué deja de poder.** El doble significado sólo se
-sostenía porque el cobro era un **modal**: un modal crea un MODO —está o no está— y el modo
-desambigua. **§8.15 reabierta: el cobro va EN LÍNEA**, con el panel siempre visible. Sin modal no
-hay modo, y lo que queda es un valor que significa dos cosas — el criterio sin número de
-`CLAUDE.md`, en su quinta aparición y la primera sobre una tecla en vez de sobre una columna.
+**Por qué se retira, y son DOS razones — una murió, la otra no.**
+
+⚠️ **La que murió (2026-09-03, misma tarde).** Decía: *el doble significado sólo se sostenía porque
+el cobro era un modal, y §8.15 lo pasó a EN LÍNEA, así que sin modo no hay forma de desambiguar.*
+**§8.15 se revirtió el mismo día y el cobro volvió al modal**, así que hay modo otra vez y este
+argumento ya no sostiene nada. Se deja escrito en vez de borrarse: una decisión que se conserva
+tiene que decir cuál de sus razones caducó, o la próxima lectura la respalda con un argumento
+falso.
+
+🔴 **La que queda, y es la principal — la de abajo, la del campo de dinero.** No depende de dónde
+viva el cobro. Un valor que significa dos cosas es el criterio sin número de `CLAUDE.md`; que las
+teclas de función se queden con **navegar** es lo que hace que ninguna dependa del foco ni del
+estado del carrito.
 
 **La decisión, y su razón:** **la navegación se queda con F9/F10/F11; los medios de pago se van a
 otras teclas.** La navegación es **global** y esta misma sección promete que *los atajos funcionan
@@ -491,31 +499,59 @@ descuento, nombre de cliente. La decisión es **por tipo de control y el default
 una lista de campos, porque una lista se congela y el próximo input nacería desprotegido. Un campo
 donde las letras son inertes **lo declara** (`data-letras-inertes`), y ésa es la única excepción.
 
-⛔ **`F4` (cambiar cliente) se cablea CON SU CONTROL, no antes.** Hoy no está cableada justamente
-porque el mostrador no tiene control de cliente: se elige dentro del cobro y sólo para fiado. Las
-dos mitades —el control y su tecla— entran juntas, con el flujo de fiado.
+✅ **`F4` (cambiar cliente) CABLEADA el 2026-09-03 — apunta al BUSCADOR de clientes del cobro.**
+La regla era *se cablea con su control, no antes*, y se cumplió: entró junto con el control y se
+quedó cuando el cobro volvió al modal, cambiando **a qué apunta** y no **si apunta**.
 
-⛔ **Pendiente, y es CONDICIÓN DEL COBRO EN LÍNEA:** *«E con el foco en el campo de dinero elige
-efectivo»* está aseverada **en dos mitades** —la regla, en `src/lib/atajos.test.ts`; y que el campo
-real lleve la declaración, en `tests/atajos.spec.ts`— pero **no de punta a punta**, porque el modal
-parte el cobro en dos pasos y la grilla de medios nunca convive con el campo de dinero. Con el panel
-en línea conviven, y ahí se cierra.
+🔴 **Y NO lleva un botón «Cambiar cliente», que es lo que la maqueta dibuja.** El picker del modal
+**no colapsa** al elegir: muestra la lista completa con el elegido marcado (`aria-pressed`), así que
+se cambia de cliente clickeando otro. El botón de la maqueta existe porque ahí el picker colapsaba a
+un nombre. **Agregar un botón sólo para darle destino a la tecla habría sido inventar el control en
+vez de encontrarlo** — y un control de más es peor que uno de menos: ocupa el lugar donde va la
+información.
 
-#### 🔴 F12 = poner el FOCO en Cobrar. El Enter confirma.
+⚠️ Su ámbito es el del **crédito**, que es el único lugar donde existe un cliente. Es el mismo
+alcance acotado que tiene `F2`, que tampoco hace nada fuera del mostrador.
 
-*Decidido el 2026-09-03, con el cobro en línea.*
+✅ **CERRADA el 2026-09-03, y no como se esperaba.** *«E con el foco en el campo de dinero elige
+efectivo»* estaba aseverada **en dos mitades que pasaban por separado** —la regla en
+`src/lib/atajos.test.ts`, la declaración del campo en `tests/atajos.spec.ts`—, que es un verde que
+no puede fallar. Se dio por condición del cobro en línea: con el panel siempre visible, la grilla y
+el campo conviven y se aseveran juntos.
 
-Con el cobro en un modal, F12 **abría un diálogo**: un acto reversible, y el modal era la
-confirmación. Con el panel en línea no hay nada que abrir, así que la misma tecla pasaría a
-**cobrar de una** — de abrir un diálogo a ejecutar una venta irreversible, **sin que la cajera tenga
-cómo notar el cambio**. La tecla se ve igual, el rótulo se ve igual, el riesgo no.
+🔴 **El cobro volvió al modal y las dos mitades siguen sin convivir — y la propiedad se asevera
+igual.** El caso —`tests/cobro-modal.spec.ts`— la mide en dos aserciones que **se cierran dentro del
+mismo caso**: (1) la letra **no se escribe** en el campo de dinero, y (2) **sin embargo el medio
+cambió**, comprobado volviendo al paso del método. Sin la segunda, un manejador borrado pasaría: el
+campo se ve igual de vacío con el atajo vivo que muerto.
 
-> **F12 mueve el foco al botón Cobrar. Enter confirma.** Dos actos para una acción irreversible, y
-> el segundo es el que quien teclea ya asocia con *confirmar*.
+⚠️ **Lo accionable que deja:** *"esto no se puede aseverar hasta que la pantalla cambie"* casi
+siempre significa *"no encontré cómo"*. La propiedad no exigía que los dos controles se vieran
+juntos — exigía **una lectura de cada lado y un único caso que las una**.
+
+#### 🔴 F12 ABRE el cobro. El Enter, adentro, confirma.
+
+*Vigente desde el 2026-09-03, con el cobro de vuelta en modal.*
+
+> **F12 abre el modal de cobro. Enter confirma el primario del paso.** Dos actos para una acción
+> irreversible, y el segundo es el que quien teclea ya asocia con *confirmar*.
+
+**LO QUE NO CAMBIA AUNQUE EL COBRO SE MUDE, y es la regla:** *F12 nunca es UN solo acto.* Con el
+cobro en línea no había nada que abrir, así que la tecla habría pasado a **cobrar de una** — de
+abrir un diálogo a ejecutar una venta irreversible **sin que la cajera tenga cómo notar el cambio**:
+la tecla se ve igual, el rótulo se ve igual, el riesgo no. La solución de entonces fue *F12 pone el
+foco en Cobrar, Enter confirma*; la de ahora es *F12 abre, Enter confirma*. **Es la misma decisión
+contra la misma pantalla nueva**, y por eso se escribe como invariante y no como mecánica.
 
 ⛔ **Descartada la variante "F12 confirma si el panel está completo":** haría que la misma tecla a
 veces cobre y a veces no, según un estado que no se ve. Es la misma familia que el valor con dos
 significados, movida al tiempo en vez de al espacio.
+
+⚠️ **Enter tiene que hacer EXACTAMENTE lo que hace el botón, y eso es una restricción de
+implementación, no una nota.** Los tres primarios del modal —continuar/cobrar, confirmar efectivo,
+confirmar reparto— se declaran **una sola vez** y los consumen el botón y la tecla. Escribir la
+condición dos veces es R1 en el flujo más caro del producto: el día que una gane un guard y la otra
+no, **Enter cobra donde el botón ya no deja**.
 
 ### Alcance de la navegación
 
@@ -648,33 +684,64 @@ Nada de esta lista debe leerse como resuelto. Si la implementación necesita una
 12. **Marca madre Giiron.** El endoso es texto plano; el lockup definitivo se diseña aparte. El símbolo será la doble i, pero no está construido.
 13. **Pantallas futuras.** Vienen más cuando el esquema de datos esté definido. No anticiparlas ni dejarles hueco.
 
-15. **🔴 REABIERTA Y REVERTIDA el 2026-09-03 — EL COBRO VA EN LÍNEA, COMO LA MAQUETA.**
+15. **✅ CERRADA POR SEGUNDA VEZ el 2026-09-03 — EL COBRO SE QUEDA EN MODAL, AHORA CON EVIDENCIA
+    DE USO.**
 
-    *La decisión de abajo se tomó el 2026-09-01 y se revierte hoy **con evidencia nueva**, no por
-    cambio de opinión. Se conserva entera —tachada, no borrada— porque sus razones siguen siendo
-    ciertas y explican qué cambió.*
+    *Esta entrada tuvo TRES estados en tres días —modal, en línea, modal— y las tres versiones están
+    acá, la vigente arriba y las anteriores tachadas. No se borran: la que se revirtió tenía razones
+    ciertas, y lo que las derrotó fue medir en vez de razonar.*
 
-    **Lo que cambió, y es lo único que hacía falta:**
-    1. **El cliente va a PROBAR, y tiene que ver lo que aprobó.** El argumento del 2026-09-01 era
-       *"es una hipótesis de diseño sin validar contra un cajero real"*. Ahora hay un cajero real
-       que va a usarlo esta semana, y la maqueta es lo que él aprobó.
-    2. **El modal es un paso extra POR VENTA, para siempre; el rediseño es una vez.** Ese cálculo no
-       estaba hecho: el 2026-09-01 se comparó "modal probado" contra "rediseño costoso" sin poner el
-       costo recurrente del lado del modal.
+    **QUÉ LO DECIDIÓ, y es lo único que hacía falta: se construyó y se MIRÓ.**
 
-    **Consecuencias — invierten las de abajo:**
-    - **`TenderSelector` vuelve a fondo `--ink`**, en la columna derecha. Los `--on-dark-*` vuelven a
-      ser suyos. ⚠️ Y son **cinco** medios, no tres (§8.16 sigue en pie: el diseño se adapta al
-      producto).
-    - **`CupoMeter` y el bloque de cliente vuelven a la columna derecha.** La regla 7.1 se cumple
-      igual: cambia dónde, no cuándo. ⚠️ El cupo **sigue sin existir en el esquema** (deuda 40).
-    - **La columna derecha lleva:** cliente, cupo, líneas, descuento, medios, recibe/cambio y total.
-    - El "Confirmar cobro" verde **sigue siendo violación de §1.2** y sigue pasando a `--action`.
+    > *"En la columna todo queda chico y amontonado, y el scroll dentro del panel es el síntoma de
+    > que no cabe."*
 
-    ⚠️ **Lo que NO cambió y hay que decirlo:** los 51 specs del modal siguen verdes y siguen siendo
-    la definición de "cobrar funciona". El cambio de flujo **no puede salir hasta que esos casos
-    pasen contra el flujo nuevo** — y va en su propio turno, después de la lista (a) del Mostrador,
-    porque son dos cambios sobre la misma pantalla y un rojo no se atribuiría.
+    🔴 **Y ese scroll lo habíamos puesto NOSOTROS, dos días antes, como arreglo.** El panel de tinta
+    pasó a 485px, la lista del carrito colapsó a cero en todo viewport de hasta ~1050px de alto, y
+    la respuesta fue hacer scrollear el medio del panel. **Un arreglo que consiste en hacer scroll
+    dentro de una columna de 420px de ancho es la confesión de que el contenido no entra.** Se leyó
+    como un ajuste de layout y era el dato.
+
+    **El modal compra 540px de ancho a cambio de un clic**, y el cobro es la pantalla del producto
+    que menos tolera apretar: cinco medios de pago, un campo de dinero grande, el picker de cliente,
+    el plazo, el cupo y el reparto entre métodos. La maqueta dibuja tres medios y ningún reparto
+    (§8.16, §8.15 de abajo) — dibuja un cobro que el producto no tiene.
+
+    ⚠️ **Lo que esto NO invalida.** El argumento del 2026-09-02 —*"el modal es un paso extra por
+    venta, para siempre; el rediseño es una vez"*— **sigue siendo cierto**. Lo que resultó falso es
+    su premisa implícita: que el rediseño en línea fuera viable con este contenido. El costo
+    recurrente del clic es real y se paga; lo que no se puede pagar es que la cajera no vea qué
+    está vendiendo.
+
+    🔴 **LA LECCIÓN, y es la que vale más que la decisión:** las dos primeras versiones de esta
+    entrada se decidieron **razonando** —"el modal está probado" contra "el clic se paga siempre"— y
+    la tercera se decidió **mirando la pantalla construida**. Ninguna cantidad de argumento habría
+    producido el dato de que no cabe. Es la misma familia que *"hay una clase de defecto que ningún
+    test caza: el que está en lo que se ve"*: la suite estaba **entera verde** con la lista del
+    carrito en cero.
+
+    **Consecuencias — vuelven a ser las del 2026-09-01, y §4 ya las tenía escritas así:**
+    - **`TenderSelector` sobre superficie CLARA**, dentro del modal. Los `--on-dark-*` son del panel
+      de cobro del mostrador y de los diálogos, no del selector. ⚠️ Cinco medios, no tres.
+    - **`CupoMeter` y el bloque de cliente DENTRO del modal**, en el paso del crédito.
+    - **La columna derecha lleva** canal, líneas, descuento, total y el botón Cobrar sobre `--ink`.
+    - El "Confirmar cobro" verde **era** violación de §1.2 y **ya pasó** a `--action`.
+
+    **Lo que SÍ se quedó del intento, porque no era del cobro en línea:**
+    - Los **atajos** enteros (§5): F1–F12 cableadas con `preventDefault`, y E/T/C para los medios.
+    - **F4** dejó de ser una tecla sin destino — apunta al buscador de clientes del modal.
+    - El **mínimo de alto de la lista del carrito**, que hoy no contiene nada y se conserva como
+      tripwire de la clase que lo produjo.
+    - **`useCobro`**: una sola escritura para el cobro, que nació para que dos superficies no
+      divergieran y sigue siendo el lugar correcto con una sola.
+
+    ---
+
+    <s>**🔴 REABIERTA Y REVERTIDA el 2026-09-03 — EL COBRO VA EN LÍNEA, COMO LA MAQUETA.**</s>
+
+    *Vigente menos de un día. Sus dos argumentos: que el cliente va a probar y tiene que ver lo que
+    aprobó, y que el modal es un paso extra por venta para siempre mientras el rediseño es una vez.
+    El segundo sigue en pie; el primero lo derrotó construirlo y mirarlo.*
 
     ---
 
