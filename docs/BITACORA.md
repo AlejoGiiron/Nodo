@@ -2738,3 +2738,66 @@ sin él: el arqueo quedaría guardado mal"*— en vez de ofrecer cerrar con cero
 
 `handleClose` repite la condición, a propósito: es la garantía que no depende de que el render haya
 llegado a tiempo.
+
+
+## 2026-09-02 · Fase B, bloque 2 · 56, 57 y 58 — la misma clase, tres formas distintas
+
+*Los tres rojos que quedaban de A1. Se enumeraron por separado antes de tocar, y la enumeración
+volvió a pagar: **la 58 no era la misma forma que las otras dos** y se separó.*
+
+| | insumo | ¿exponía su carga? | forma del arreglo |
+|---|---|---|---|
+| **56** | `assignedIds` y `initialRows` | **sí los dos**, sin leer | leer donde se decide |
+| **57** | `productExtras` | **sí**, y ya se usaba para el TEXTO de la lista, no para el botón | una línea |
+| **58** | `config` | sí, pero los `useState` corrían **antes** del gate | dos componentes + un guard fail-closed en el hook |
+
+### La 56 no persiste mal: BORRA
+
+Es la única de las cuatro de A1 que destruye datos ya guardados. `reconcile` re-lee la base y calcula
+`toRemove` contra la selección **en memoria**; con la selección todavía vacía, `toRemove` es todo.
+El rojo lo dice con el número: **la receta del compuesto pasó de 1 fila a 0**, y un compuesto sin
+receta deja de descontar stock al venderse.
+
+Y había un segundo defecto en el mismo efecto, que el arreglo se lleva puesto: la condición era
+`size > 0`, así que un producto **sin** extras nunca marcaba el flag de inicializado — "cargando" y
+"no tiene ninguno" compartían estado, y una selección hecha rápido podía ser pisada al llegar la
+respuesta. Ahora la condición es `!isLoading`.
+
+### La 58 es otra cosa, y por eso fue aparte
+
+No es "leer la carga donde se decide": el gate **ya existía** (`if (isLoading) return <Skeleton/>`).
+El problema es que los `useState` corrían **arriba** de ese gate, y React fija el estado inicial en el
+primer render sin reinicializarlo después. Los locales nacían con los defaults y el formulario los
+mostraba **como si fueran lo guardado**.
+
+Un `if` no puede ir antes de un hook, así que la única forma de que el estado nazca con datos reales
+es que el componente que los tiene **no se monte hasta que existan**: de ahí el par
+`SectionCaja` / `SectionCajaForm`. Y el segundo mecanismo —el spread sobre `{}` que borraba `slug` y
+`nequi_qr_url`— se movió a `mergeSedeConfig`, una función pura que **falla cerrado**.
+
+⚠️ **Y lo que NO se pudo hacer, dicho:** el mecanismo del estado inicial **no tiene rojo
+determinista**. Su ventana la cierra el caché que AppLayout deja puesto al cargar la sede, y forzarla
+exigiría un escenario que no representa el uso real. El arreglo es **preventivo**, y se anota como
+tal en vez de inventar un rojo que no reproduce el defecto — que es justo lo que el criterio nuevo
+prohíbe. El mecanismo del `{}`, que es **el que estaba abierto**, sí tiene su rojo.
+
+### Tres correcciones del arnés, todas de la misma familia
+
+Los tres bloqueos de red que escribí alcanzaron de más, y las tres veces el rojo mentía:
+
+1. **55** · bloquear todas las consultas a `payments` colgaba también la que la mutación usa al
+   cerrar: el rojo decía "se persistió un arqueo falso" y **no se había persistido nada**.
+2. **56** · bloquear `product_components` colgaba el GET que hace el propio `reconcile`: el rojo
+   decía "el botón se ofrece" y la receta seguía intacta — **el destrozo no se demostraba**.
+3. **57** · bloquear `product_extras` desde el arranque dejaba vacío el Set de
+   `useProductsWithExtras`, así que el POS **ni abría el modal**: fallaba por una razón que no era
+   el defecto.
+
+Las tres se arreglaron igual: **el bloqueo se enciende y se apaga en el momento exacto**, no durante
+todo el test. Y las tres confirman el criterio que se acababa de escribir: *un rojo que no reproduce
+el defecto es tan inútil como un verde que no lo mide*.
+
+⚠️ Cuarta del día, y de otra especie: el mutante de la 57 se aplicó con un ancla que aparecía **dos
+veces** —el `{isLoading ? (` de la lista y el del botón— y `replace(..., 1)` tomó el primero. El test
+murió por el texto de la lista, no por el gate. **Un ancla no única no es un ancla**, y el arnés de
+mutación tiene que fallar si la encuentra repetida.

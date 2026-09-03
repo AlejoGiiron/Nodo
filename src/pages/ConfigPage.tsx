@@ -24,6 +24,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { useSedeConfig } from '@/hooks/useSedeConfig'
+import type { SedeConfig } from '@/lib/sedeConfig'
 import { useUsers } from '@/hooks/useUsers'
 import { useAuth } from '@/hooks/useAuth'
 import { usePermissions } from '@/hooks/usePermissions'
@@ -688,12 +689,53 @@ function SectionUsers() {
 
 // ─── Section 3: Caja ──────────────────────────────────────────────
 
+// 🔴 DEUDA 58 · A1 §3.4 — EL GATE VA ANTES DE LOS `useState`, Y POR ESO SON DOS
+//    COMPONENTES. Antes, `useState(config.cash_out_reasons ?? DEFAULT)` corría
+//    ARRIBA del `if (isLoading) return <Skeleton/>`: React fija el estado
+//    inicial en el PRIMER render, así que si ese render ocurría con la sede sin
+//    cargar, los locales quedaban con los DEFAULTS — y `useState` no
+//    reinicializa cuando el dato llega. El formulario mostraba los defaults
+//    **como si fueran lo guardado**, y guardar los persistía encima.
+//
+//    Un `if` no puede ir antes de un hook (regla de hooks), así que la única
+//    forma de que el estado nazca con datos reales es que el componente que los
+//    tiene **no se monte hasta que existan**. Eso es este par.
 function SectionCaja() {
-  const { config, isLoading, updateConfig, isSaving } = useSedeConfig()
+  const { config, isLoading, sede } = useSedeConfig()
+  if (isLoading) return <Skeleton />
+  // Sin sede no hay configuración conocida: guardar acá borraría claves ajenas
+  // (es lo que `mergeSedeConfig` impide del lado del hook). Se dice y no se
+  // ofrece el formulario.
+  if (!sede) {
+    return (
+      <div>
+        <SectionTitle>Caja</SectionTitle>
+        <div
+          data-testid="config-caja-sin-sede"
+          style={{
+            padding: '14px 16px', borderRadius: 10,
+            background: 'var(--danger-soft)', border: '1px solid var(--danger-soft)',
+            color: 'var(--danger-on-soft)', fontSize: 13, lineHeight: 1.5,
+          }}
+        >
+          No se pudo cargar la configuración de la sede. No se muestra el formulario
+          a propósito: guardar sin haberla leído borraría lo que no estás editando.
+          Recargá la página.
+        </div>
+      </div>
+    )
+  }
+  return <SectionCajaForm config={config} />
+}
+
+function SectionCajaForm({ config }: { config: SedeConfig }) {
+  const { updateConfig, isSaving } = useSedeConfig()
   const { profile } = useAuth()
   const nequiInputRef = useRef<HTMLInputElement>(null)
   const [uploadingQR, setUploadingQR] = useState(false)
 
+  // Ahora estos defaults se aplican sobre una configuración REAL: si la sede no
+  // tiene la clave, el default es la respuesta correcta — no un relleno.
   const reasons: string[] = config.cash_out_reasons ?? DEFAULT_CASH_OUT_REASONS
   const methods: PaymentMethod[] = config.payment_methods ?? ['cash', 'card', 'transfer', 'nequi']
 
@@ -718,8 +760,6 @@ function SectionCaja() {
     if (!url) { toast.error('Error al subir el QR'); return }
     await updateConfig({ nequi_qr_url: url })
   }
-
-  if (isLoading) return <Skeleton />
 
   return (
     <div>
