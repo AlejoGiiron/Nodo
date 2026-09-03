@@ -668,3 +668,30 @@ se resuelve de paso.
 
 🔴 Los cuatro son (d): **la maqueta no dibuja nada de lo que pasa después de apretar Cobrar.** Es lo
 que decidió §8.17 — ese momento tiene diálogo propio.
+
+---
+
+## 13 · Dudas abiertas por el cobro en línea
+
+### 🟡 «Cambio» vs «Vuelto» — dos palabras para la misma cosa, y las introdujo la migración
+
+*2026-09-03, corte 4.*
+
+| dónde | qué dice | de dónde salió |
+|---|---|---|
+| `POSPage:1004` — la columna | **Cambio** | la maqueta, que rotula `CAMBIO` |
+| `POSPage:1371` — el diálogo del después | **Vuelto** | el modal original |
+| `POSPage:201` — el comprobante impreso | **Vuelto** | el ticket original |
+
+**Cómo se creó:** al migrar el cobro tomé el vocabulario de la maqueta para la superficie nueva, y
+las superficies viejas conservaron el suyo. No es una decisión: es un residuo.
+
+⛔ **NO se resuelve de paso, y el precedente es explícito.** La deuda 38 —*turno* vs *jornada*, 24
+apariciones— se decidió **no renombrar a medias** porque renombrar la mitad **crea un tercer
+vocabulario**. Acá es lo mismo a menor escala: cambiar sólo el diálogo deja el ticket; cambiar los
+tres es una decisión de producto sobre qué palabra lee el cajero —y *vuelto* es la palabra corriente
+en Colombia, mientras *cambio* es la que eligió el dibujo—.
+
+✅ **Mientras tanto, los specs aseveran el TESTID** (`cobro-cambio`), que mide el número y es correcto
+con cualquiera de las dos palabras. Lo que no se puede es dejar que la elección la haga el orden en
+que se tocaron los archivos.

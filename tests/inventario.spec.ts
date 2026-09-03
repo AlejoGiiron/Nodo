@@ -2,7 +2,6 @@ import { test, expect, type Page } from '@playwright/test'
 import { loginAsOwner } from './helpers/auth'
 import { openShiftIfClosed, closeShiftIfOpen } from './helpers/shift'
 import { saveProductAndClose } from './helpers/product'
-import { abrirCobroCompleto } from './helpers/pos'
 
 const SUFFIX = Date.now().toString().slice(-6)
 const CAT = `E2E Inv ${SUFFIX}`
@@ -72,11 +71,9 @@ async function sellCash(page: Page, name: string) {
   await openShiftIfClosed(page, 0)
   await page.getByPlaceholder('Buscar producto...').fill(name)
   await page.getByTestId('product-card').first().click()
-  await abrirCobroCompleto(page)
-  await page.getByTestId('pay-method-efectivo').click()
-  await page.getByRole('button', { name: /Continuar/ }).click()
-  await page.getByTestId('checkout-received').fill('200000')
-  await page.getByRole('button', { name: /Confirmar cobro/ }).click()
+  await page.getByTestId('cobro-medio-efectivo').click()
+  await page.getByTestId('cobro-recibe').fill('200000')
+  await page.getByTestId('cobro-confirmar').click()
   await expect(
     page.getByText('¡Cobro exitoso!').or(page.getByText(/¡Venta #\d+ registrada!/)),
   ).toBeVisible({ timeout: 15_000 })

@@ -882,6 +882,38 @@ Si no cierra, una de las dos cuentas está mal — y averiguar cuál es el traba
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · UNA CORRIDA EN SEGUNDO PLANO Y UNA EDICIÓN SON EXCLUYENTES
+
+*2026-09-03, corte 4. Defecto propio, y con el agravante de que la advertencia estaba escrita por mí
+unas horas antes, en esta misma sesión.*
+
+> **Una corrida en segundo plano congela el árbol para EL QUE LA LEE, no para el que edita.**
+
+El `webServer` de Playwright es `pnpm dev`, con HMR. Editar `src/` con una suite corriendo **cambia
+la aplicación debajo de los tests que ya empezaron**: los que corrieron antes midieron un código y
+los de después miden otro, y **el resumen los suma como si fueran la misma corrida**. El resultado no
+es un falso rojo ni un falso verde: es un número **que no corresponde a ningún estado del árbol**.
+
+**El caso.** Lancé los diez specs re-derivados en background y seguí retirando el modal. La corrida
+devolvió 8 rojos que no eran evidencia de nada — ni de que el cambio estuviera mal, ni de que
+estuviera bien. Se descartó entera y hubo que repetirla.
+
+⚠️ **Y el motivo por el que la advertencia no alcanzó es el de siempre:** *"mientras tanto"* se
+siente libre. Una corrida en background da exactamente la sensación de que el tiempo está
+disponible, que es cuando la regla haría falta y es cuando no se convoca.
+
+**LO ACCIONABLE, y NO es acordarse:** **la corrida en background y la edición de `src/` son
+excluyentes por regla**, igual que el mutante se aplica y se revierte sobre árbol limpio. Mientras
+una suite corre: se leen artefactos, se escriben documentos, se enumera con `grep` — **no se toca el
+código que la suite está midiendo**. Si hace falta editar, se mata la corrida y se relanza después;
+descartar quince minutos de suite cuesta menos que interpretar un resultado que no existe.
+
+⚠️ Corolario para el que lee un resultado: si entre el lanzamiento y el cierre hubo ediciones en
+`src/`, **el resultado se descarta sin mirarlo**. No se salva ningún caso: no hay forma de saber
+cuáles corrieron contra qué.
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · CÓMO SE APLICA Y SE REVIERTE UN MUTANTE (arnés, no test)
 
 *Tres fallas encadenadas el 2026-09-02, todas mías, en una sola verificación de cuatro minutos.*
@@ -2207,6 +2239,59 @@ specs operaban el MISMO campo con acciones incompatibles** —uno `fill` de inpu
 tocar `timeout`, abrir el artefacto y ver qué locator se esperaba. Subirlo convierte un fallo de 30s
 en uno de 60s.
 
+🔴 **SEGUNDA VEZ QUE UN TIMEOUT NO ES LENTITUD, Y ESTA VEZ EL LOCATOR SÍ EXISTÍA.**
+*2026-09-03, corte 4 del cobro en línea.* La primera fueron tres specs esperando un control del modal
+de movimientos que ya no estaba. Acá el control **estaba, y estaba deshabilitado** —`disabled` con el
+rótulo `Cobrando…`— porque el propio test lo había apretado dos veces. El artefacto lo dice entero:
+
+```
+locator resolved to <button disabled … data-testid="cobro-confirmar">Cobrando…</button>
+attempting click action — 2 × waiting for element to be visible, enabled and stable
+```
+
+⚠️ **Y por eso la lectura del artefacto tiene un paso más de lo que decía esta nota:** no alcanza con
+*"¿qué locator se esperaba?"* — hay que mirar **en qué estado lo encontró**. «No lo encontré» y «lo
+encontré apagado» son diagnósticos opuestos y el mensaje de arriba es el mismo.
+
+---
+
+### 🔴 CRITERIO SIN NÚMERO · UN MAPEO CON DOS ENTRADAS AL MISMO DESTINO COLAPSA DOS ACCIONES EN UNA
+
+*Medido el 2026-09-03, re-derivando diez specs al retirar el modal de cobro.*
+
+Al mover una pantalla, el trabajo se hace con una **tabla de reemplazos**: locator viejo → locator
+nuevo. Es mecánico, se aplica con un script, y funciona — salvo por una propiedad que nadie mira:
+
+> **Si dos entradas distintas apuntan al MISMO destino, el mapeo pierde información.** Dos acciones
+> que el usuario hacía por separado pasan a ser la misma, y en todo sitio que usaba las dos queda
+> una repetida.
+
+**El caso.** `checkout-continue` (el paso *método → monto*) y `checkout-confirm` (cobrar) eran dos
+botones distintos del modal. Los dos se mapearon a `cobro-confirmar`, porque en la columna el paso
+intermedio no existe. Donde el flujo usaba ambos —efectivo: *Continuar*, teclear el monto,
+*Confirmar*— quedó **un doble clic sobre el mismo botón**: el segundo pega mientras el primero está
+en vuelo, el botón está deshabilitado, y el caso muere por timeout. Tres sitios, dos archivos.
+
+🔴 **Lo que lo hace peligroso es que ningún verificador lo ve.** El locator existe, el testid es
+correcto, `tsc` compila, ESLint calla. **No es un error de referencia: es una secuencia que se
+ejecuta y hace de más.** Y su síntoma —un timeout— apunta al lugar equivocado.
+
+**LO ACCIONABLE, y es un comando antes de aplicar el mapeo:**
+
+```bash
+# la columna de DESTINOS del mapa, buscando repetidos
+printf '%s
+' "${destinos[@]}" | sort | uniq -d
+```
+
+Si hay repetidos, el mapeo **no es una traducción: es una fusión**, y hay que decidir qué pasa en
+cada sitio que usaba las dos entradas. La señal estaba en la tabla desde el principio —dos flechas
+al mismo lado— y mirarla cuesta menos que los tres timeouts de 30 segundos que costó no mirarla.
+
+⚠️ Corolario, y vale para cualquier renombre masivo: **la pregunta no es si cada reemplazo es
+correcto, sino si el mapa es INYECTIVO.** Cada reemplazo puede ser correcto y el conjunto perder
+información igual.
+
 **🔴 ANTES DE BORRAR UN TEST POR OBSOLETO, VERIFICÁ SI SU ASERCIÓN SIGUE SIENDO VERDADERA BAJO EL
 MODELO NUEVO.** *El sujeto puede haber cambiado y la expectativa seguir valiendo.*
 
@@ -2362,6 +2447,37 @@ apoyado en que hubiera una sola instancia**, que es una propiedad del producto, 
 **Lo accionable, y es barato:** el camino compartido va a un **helper**, no repetido en cada spec —
 acá eran 26 repeticiones del mismo clic, y el camino va a cambiar otras tres veces antes de que el
 corte termine. Un camino repetido N veces es R1 dentro de la suite.
+
+**🔴 DOS CIFRAS QUE COINCIDEN POR CONSTRUCCIÓN NO SE VERIFICAN ENTRE SÍ — CUARTA APARICIÓN, Y LA
+PRIMERA ANOTADA ANTES DE QUE MUERDA.**
+*2026-09-03, corte 4 del cobro en línea.*
+
+| # | las dos cifras | cómo se descubrió |
+|---|---|---|
+| 1 | `orders.total` vs la suma de las líneas | **al llegar** al precio editable, que las separaba (deuda 80) |
+| 2 | la lista de `payments` vs su total, con **una sola fila** | **al llegar** al pago mixto, que traía dos |
+| 3 | el plazo de la orden vs el del cliente | **al llegar** al caso que cambia el del cliente |
+| 4 | 🟡 `checkout-total` (el modal) vs `cart-total` (la columna) | **antes de que muerda** |
+
+**El caso.** Al re-derivar los specs, `checkout-total` —*«el total que el cobro va a cobrar»*— se
+reemplaza por `cart-total` —*«el total del carrito»*—. Hoy son **el mismo número por construcción**:
+el cobro toma el total del carrito y no hay nada en el medio. El reemplazo es correcto y la aserción
+sigue siendo cierta.
+
+⚠️ **Lo que cambia es qué AFIRMA la aserción.** Antes decía *"el cobro va a cobrar esto"*; ahora
+dice *"el carrito suma esto"*. Mientras las dos cifras salgan del mismo cálculo, un spec que asevera
+la segunda **no está verificando la primera** — está escribiéndola dos veces.
+
+🔴 **DISPARADOR, concreto:** el día que exista **un cargo, un redondeo o un impuesto entre el
+carrito y el cobro**. Ahí las dos cifras se separan, y todo spec que asevere `cart-token` creyendo
+medir el cobro pasa a medir otra cosa **sin ponerse rojo**.
+
+✅ **Lo que agrega ser la primera anotada antes:** las tres anteriores costaron el diagnóstico
+entero cada una —se descubrieron *al llegar* al caso que las separaba, y hasta entonces su verde se
+leyó como cobertura—. Ésta se anotó **mirando el reemplazo**, no sufriéndolo. La pregunta que la
+detectó es de una línea y sirve para cualquier renombre de locator:
+
+> **¿Este testid nuevo afirma LO MISMO que el viejo, o afirma algo que hoy coincide con lo mismo?**
 
 **🔴 HAY ASERCIONES QUE NO MIDEN EL CÓDIGO DE HOY: SON TRIPWIRES PARA MAÑANA. NO SON INÚTILES Y NO
 SON EVIDENCIA.**

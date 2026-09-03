@@ -245,34 +245,12 @@ test('🔴 los chips de monto rápido viajaron a la columna — son un (d) del p
   await expect(page.getByTestId('cobro-recibe')).toHaveValue(formatoCOP(8_000))
 })
 
-test('🔴 EQUIVALENCIA: columna y modal escriben lo mismo sobre el mismo escenario', async ({ page }) => {
-  // La condición de los cortes. Si `useCobro` es de verdad una sola escritura,
-  // las dos superficies tienen que dejar filas idénticas.
-  await addPosProduct(page)
-  await page.getByTestId('cobro-medio-transferencia').click()
-  await page.getByTestId('cobro-confirmar').click()
-  await expect(page.getByTestId('success-order-number').or(page.getByTestId('success-sin-numero')))
-    .toBeVisible({ timeout: 20_000 })
-  const porLaColumna = await loQueQuedo(await ultimaOrden())
-
-  // Y ahora el MISMO cobro por el modal, que sigue vivo hasta el corte 4.
-  await page.goto('/ventas')
-  await waitPosReady(page)
-  await addPosProduct(page)
-  await page.getByTestId('cobro-mas-opciones').click()
-  await expect(page.getByTestId('checkout-total')).toBeVisible({ timeout: 10_000 })
-  await page.getByTestId('pay-method-transferencia').click()
-  await page.getByTestId('checkout-continue').click()
-  await expect(page.getByTestId('success-order-number').or(page.getByTestId('success-sin-numero')))
-    .toBeVisible({ timeout: 20_000 })
-  const porElModal = await loQueQuedo(await ultimaOrden())
-
-  expect(
-    porLaColumna,
-    'columna y modal tienen que dejar la MISMA fila: si no, «comparten la escritura» era una ' +
-    'afirmación de diseño y no un hecho',
-  ).toEqual(porElModal)
-})
+// 🔴 ACÁ VIVÍA «EQUIVALENCIA: columna y modal escriben lo mismo», y se BORRÓ en
+//    el corte 4 junto con su sujeto: ya no hay dos superficies que comparar.
+//    Sus aserciones contra la BASE no se perdieron — el caso «la columna cobra
+//    sin abrir el modal» de arriba ya asevera total, filas de pago y estado de
+//    pago sobre la misma venta. Lo que se fue es la comparación, que sin la
+//    segunda superficie no significa nada.
 
 test('🔴 F12 pone el FOCO en Cobrar; el Enter confirma — dos actos', async ({ page }) => {
   // §5, decidido con el cobro en línea: con el panel siempre visible, F12
@@ -314,10 +292,9 @@ test('🔴 con crédito el botón COBRA — ya no deriva a otra pantalla', async
   ).toContainText('Cobrar')
   await elegirCliente(page)
   await page.getByTestId('cobro-confirmar').click()
-  await expect(
-    page.getByTestId('checkout-total'),
-    'el crédito ya no deriva al cobro completo: se cobra en la columna',
-  ).toHaveCount(0)
+  // ⚠️ Acá había una aserción de que NO se abría el cobro completo. Desde el
+  //    corte 4 ese modal no existe, así que sería cierta siempre. Lo que queda
+  //    midiendo el caso es que el botón cobra: el diálogo del después aparece.
   await expect(page.getByTestId('success-order-number').or(page.getByTestId('success-sin-numero')))
     .toBeVisible({ timeout: 20_000 })
 })
@@ -349,7 +326,10 @@ test('🔴 el reparto vive en la columna: no hay que abrir nada para dividir', a
     page.getByTestId('cobro-line-method-0'),
     'dividir el pago es parte del cobro, y el cobro está en la columna',
   ).toBeVisible()
-  await expect(page.getByTestId('checkout-total'), 'sin abrir el modal').toHaveCount(0)
+  // ⚠️ Ya no se asevera «sin abrir el modal»: desde el corte 4 el modal de cobro
+  //    NO EXISTE, así que la aserción sería cierta siempre — un verde que no
+  //    puede fallar. Lo que queda medido es que el control esté en la columna,
+  //    arriba.
 })
 
 test('🔴 un método NO se repite entre líneas del reparto', async ({ page }) => {
@@ -383,50 +363,31 @@ test('🔴 el reparto dice CUÁNTO FALTA antes de que la RPC lo rechace', async 
   ).toContainText('5.000')
 })
 
-test('🔴 EQUIVALENCIA DEL REPARTO: columna y modal escriben las MISMAS FILAS', async ({ page }) => {
-  // 🔴 ES LA ASERCIÓN QUE EL CORTE 1 ESCRIBIÓ Y NO PUDO EJERCER. Allá el
-  //    escenario tenía UNA fila de pago, y con una fila comparar la lista y
-  //    comparar el total son la misma aserción. Acá hay dos, y la propiedad que
-  //    la comparación por filas existe para atrapar —**dos repartos distintos
-  //    que suman lo mismo**— por fin se puede medir.
-  const reparto = async (prefijo: string) => {
-    await page.getByTestId(`${prefijo}-line-amount-0`).fill('5000')
-    await page.getByTestId(`${prefijo}-add-method`).click()
-    await page.getByTestId(`${prefijo}-line-method-1`).selectOption('nequi')
-    await page.getByTestId(`${prefijo}-line-amount-1`).fill('3000')
-  }
-
+test('🔴 el reparto queda en la base FILA POR FILA, no sólo su total', async ({ page }) => {
+  // 🔴 RE-ALOJADO en el corte 4. Este caso era «EQUIVALENCIA DEL REPARTO:
+  //    columna y modal escriben las MISMAS FILAS» y su sujeto —las dos
+  //    superficies— dejó de existir. Lo que NO se pierde son sus aserciones
+  //    contra la base, que son las que valían: **dos repartos distintos suman lo
+  //    mismo**, así que el total es justamente lo que no distingue.
   await addPosProduct(page)
   await page.getByTestId('cobro-dividir').click()
   await page.getByTestId('cobro-line-method-0').selectOption('cash')
-  await reparto('cobro')
+  await page.getByTestId('cobro-line-amount-0').fill('5000')
+  await page.getByTestId('cobro-add-method').click()
+  await page.getByTestId('cobro-line-method-1').selectOption('nequi')
+  await page.getByTestId('cobro-line-amount-1').fill('3000')
   await page.getByTestId('cobro-confirmar').click()
   await expect(page.getByTestId('success-order-number').or(page.getByTestId('success-sin-numero')))
     .toBeVisible({ timeout: 20_000 })
-  const porLaColumna = await loQueQuedo(await ultimaOrden())
-  expect(porLaColumna.pagos.length, 'el escenario TIENE que tener dos filas, o no mide nada')
-    .toBe(2)
 
-  // El mismo reparto por el modal, que sigue vivo hasta el corte 4.
-  await page.goto('/ventas')
-  await waitPosReady(page)
-  await addPosProduct(page)
-  await page.getByTestId('cobro-mas-opciones').click()
-  await expect(page.getByTestId('checkout-total')).toBeVisible({ timeout: 10_000 })
-  await page.getByTestId('pay-split-toggle').click()
-  await page.getByTestId('pay-line-method-0').selectOption('cash')
-  await reparto('pay')
-  await page.getByTestId('checkout-confirm').click()
-  await expect(page.getByTestId('success-order-number').or(page.getByTestId('success-sin-numero')))
-    .toBeVisible({ timeout: 20_000 })
-  const porElModal = await loQueQuedo(await ultimaOrden())
-
+  const quedo = await loQueQuedo(await ultimaOrden())
+  expect(quedo.pagos.length, 'el escenario TIENE que tener dos filas, o no mide nada').toBe(2)
   expect(
-    porLaColumna.pagos,
-    'las FILAS de pago tienen que ser idénticas: dos repartos distintos suman lo mismo, ' +
-    'así que el total es justamente lo que NO distingue',
-  ).toEqual(porElModal.pagos)
-  expect(porLaColumna, 'y el resto de la orden también').toEqual(porElModal)
+    quedo.pagos,
+    'cada fila con SU método y SU monto: un reparto 3.000/5.000 y uno 5.000/3.000 ' +
+    'suman igual y son ventas distintas',
+  ).toEqual([{ metodo: 'nequi', monto: 3_000 }, { metodo: 'cash', monto: 5_000 }])
+  expect(quedo.total, 'y el total lo deriva el servidor de las líneas').toBe(8_000)
 })
 
 test('🔴 con crédito NO se ofrece dividir — y la base lo respalda', async ({ page }) => {
@@ -464,7 +425,10 @@ test('🔴 el crédito se arma en la columna: cliente y plazo, sin abrir nada', 
     page.getByTestId('cobro-cliente-picker'),
     'elegir el cliente es parte del cobro, y el cobro está en la columna',
   ).toBeVisible()
-  await expect(page.getByTestId('checkout-total'), 'sin abrir el modal').toHaveCount(0)
+  // ⚠️ Ya no se asevera «sin abrir el modal»: desde el corte 4 el modal de cobro
+  //    NO EXISTE, así que la aserción sería cierta siempre — un verde que no
+  //    puede fallar. Lo que queda medido es que el control esté en la columna,
+  //    arriba.
 })
 
 test('🔴 F4 cambia de cliente — la tecla entra CON su control, no antes', async ({ page }) => {
@@ -574,34 +538,19 @@ test('🔴 PLAZO CONGELADO: cambiarle el plazo al cliente NO mueve la venta ya h
   //    la cartera, no acá.
 })
 
-test('🔴 EQUIVALENCIA A CRÉDITO: columna y modal escriben la misma orden', async ({ page }) => {
-  const cobrarFiado = async (
-    abrirCredito: () => Promise<void>, prefijo: string, prefijoCliente: string,
-  ) => {
-    await addPosProduct(page)
-    await abrirCredito()
-    await elegirCliente(page, CLIENTE_EQ, prefijoCliente)
-    await page.getByTestId(prefijo).click()
-    await expect(page.getByTestId('success-order-number').or(page.getByTestId('success-sin-numero')))
-      .toBeVisible({ timeout: 20_000 })
-    return loQueQuedo(await ultimaOrden())
-  }
+test('🔴 la venta a crédito queda pendiente, SIN pago y con su plazo', async ({ page }) => {
+  // 🔴 RE-ALOJADO en el corte 4, igual que el del reparto: era «EQUIVALENCIA A
+  //    CRÉDITO» y su sujeto se fue con el modal. Sus aserciones contra la base
+  //    —lo que de verdad medía— quedan acá.
+  await addPosProduct(page)
+  await page.getByTestId('cobro-medio-fiado').click()
+  await elegirCliente(page, CLIENTE_EQ)
+  await page.getByTestId('cobro-confirmar').click()
+  await expect(page.getByTestId('success-order-number').or(page.getByTestId('success-sin-numero')))
+    .toBeVisible({ timeout: 20_000 })
 
-  const porLaColumna = await cobrarFiado(
-    async () => { await page.getByTestId('cobro-medio-fiado').click() },
-    'cobro-confirmar', 'cobro-cliente',
-  )
-  expect(porLaColumna.estadoDePago, 'a crédito la orden queda pendiente').toBe('pending')
-  expect(porLaColumna.pagos, 'y NO registra pago: no entró dinero').toEqual([])
-
-  await page.goto('/ventas')
-  await waitPosReady(page)
-  const porElModal = await cobrarFiado(async () => {
-    await page.getByTestId('cobro-mas-opciones').click()
-    await expect(page.getByTestId('checkout-total')).toBeVisible({ timeout: 10_000 })
-    await page.getByTestId('pay-method-fiado').click()
-  }, 'checkout-continue', 'customer')
-
-  expect(porLaColumna, 'las dos superficies escriben la misma orden a crédito')
-    .toEqual(porElModal)
+  const quedo = await loQueQuedo(await ultimaOrden())
+  expect(quedo.estadoDePago, 'a crédito la orden queda pendiente de pago').toBe('pending')
+  expect(quedo.pagos, 'y NO registra pago: no entró dinero a la caja').toEqual([])
+  expect(quedo.total, 'el total se deriva igual: la mercancía salió').toBe(8_000)
 })

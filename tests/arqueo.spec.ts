@@ -3,7 +3,6 @@ import { readFileSync } from 'node:fs'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { loginAsOwner } from './helpers/auth'
 import { openShiftIfClosed, closeShiftIfOpen } from './helpers/shift'
-import { abrirCobroCompleto } from './helpers/pos'
 
 // Arqueo multi-método (cierre de turno con conciliación por método). Corre en LAB.
 // Verifica el snapshot persistido (close_reconciliation), el esperado por método
@@ -74,29 +73,26 @@ async function finishSale(page: Page) {
 }
 async function sellCash(page: Page) {
   await addProductPOS(page)
-  await abrirCobroCompleto(page)
-  await page.getByTestId('pay-method-efectivo').click()
-  await page.getByTestId('checkout-continue').click()
-  await page.getByTestId('checkout-received').fill(String(PRICE))
-  await page.getByRole('button', { name: /Confirmar cobro/ }).click()
+  await page.getByTestId('cobro-medio-efectivo').click()
+  // (el paso «Continuar» del modal no existe: el monto se teclea en la columna)
+  await page.getByTestId('cobro-recibe').fill(String(PRICE))
+  await page.getByTestId('cobro-confirmar').click()
   await finishSale(page)
 }
 async function sellNequi(page: Page) {
   await addProductPOS(page)
-  await abrirCobroCompleto(page)
-  await page.getByTestId('pay-method-nequi').click()
-  await page.getByTestId('checkout-continue').click()
+  await page.getByTestId('cobro-medio-nequi').click()
+  await page.getByTestId('cobro-confirmar').click()
   await finishSale(page)
 }
 async function sellMixed(page: Page, cash: number, nequi: number) {
   await addProductPOS(page)
-  await abrirCobroCompleto(page)
-  await page.getByTestId('pay-split-toggle').click()
-  await page.getByTestId('pay-line-amount-0').fill(String(cash))
-  await page.getByTestId('pay-add-method').click()
-  await page.getByTestId('pay-line-method-1').selectOption('nequi')
-  await page.getByTestId('pay-line-amount-1').fill(String(nequi))
-  await page.getByTestId('checkout-confirm').click()
+  await page.getByTestId('cobro-dividir').click()
+  await page.getByTestId('cobro-line-amount-0').fill(String(cash))
+  await page.getByTestId('cobro-add-method').click()
+  await page.getByTestId('cobro-line-method-1').selectOption('nequi')
+  await page.getByTestId('cobro-line-amount-1').fill(String(nequi))
+  await page.getByTestId('cobro-confirmar').click()
   await finishSale(page)
 }
 async function addMovement(page: Page, kind: 'in' | 'out', amount: number) {

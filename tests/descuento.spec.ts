@@ -3,7 +3,6 @@ import { readFileSync } from 'node:fs'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { loginAsOwner } from './helpers/auth'
 import { openShiftIfClosed, closeShiftIfOpen } from './helpers/shift'
-import { abrirCobroCompleto } from './helpers/pos'
 
 // Descuentos en el POS. Corre en LAB.
 //
@@ -79,8 +78,8 @@ function orderNumberFromBanner(text: string): number {
   return Number(text.match(/#(\d+)/)![1])
 }
 async function payNequiAndFinish(page: Page): Promise<number> {
-  await page.getByTestId('pay-method-nequi').click()
-  await page.getByTestId('checkout-continue').click()
+  await page.getByTestId('cobro-medio-nequi').click()
+  await page.getByTestId('cobro-confirmar').click()
   const banner = page.getByText(/Venta #\d+ registrada/)
   await expect(banner).toBeVisible({ timeout: 15_000 })
   const n = orderNumberFromBanner(await banner.innerText())
@@ -100,8 +99,7 @@ test.describe.serial('Descuentos', () => {
     await page.getByTestId('discount-amount').fill('4000')
     await expect(page.getByTestId('cart-total')).toContainText('14.000')
 
-    await abrirCobroCompleto(page)
-    const n = await payNequiAndFinish(page)
+      const n = await payNequiAndFinish(page)
     await page.getByRole('button', { name: 'Nueva venta' }).click()
 
     const order = await orderByNumber(n)
@@ -118,8 +116,7 @@ test.describe.serial('Descuentos', () => {
     await addProductPOS(page)
     await page.getByRole('button', { name: '10%', exact: true }).click()
 
-    await abrirCobroCompleto(page)
-    const n = await payNequiAndFinish(page)
+      const n = await payNequiAndFinish(page)
     await page.getByRole('button', { name: 'Nueva venta' }).click()
 
     const order = await orderByNumber(n)
@@ -143,13 +140,12 @@ test.describe.serial('Descuentos', () => {
     await page.getByRole('button', { name: '$', exact: true }).click()
     await page.getByTestId('discount-amount').fill('25000')
 
-    await abrirCobroCompleto(page)
-    // El re-skin sacó el símbolo de moneda de las cifras (§2 del design system:
+      // El re-skin sacó el símbolo de moneda de las cifras (§2 del design system:
     // sin símbolo, el rótulo ya dice qué es). La EXPECTATIVA no cambió — el total
     // a cobrar de una venta gratis es cero —, cambió el formato en que se
     // escribe. Y se aprovecha para endurecerla: `toContainText('0')` habría
     // pasado con "10.000"; `toHaveText` exige que el total SEA cero.
-    await expect(page.getByTestId('checkout-total')).toHaveText('0')
+    await expect(page.getByTestId('cart-total')).toHaveText('0')
 
     // Se cierra SIN pago: continuar dispara handleConfirm, que salta el cobro.
     const n = await payNequiAndFinish(page)

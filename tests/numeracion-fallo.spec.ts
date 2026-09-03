@@ -2,7 +2,6 @@ import { test, expect, type Page } from '@playwright/test'
 import { loginAsOwner } from './helpers/auth'
 import { openShiftIfClosed, closeShiftIfOpen } from './helpers/shift'
 import { saveProductAndClose } from './helpers/product'
-import { abrirCobroCompleto } from './helpers/pos'
 
 /**
  * ⚠️  Suite para el LABORATORIO. NO correr contra producción.
@@ -36,18 +35,34 @@ function parseVentaNumber(text: string): number {
   return Number(m[1])
 }
 
-/** Cobra el producto al contado y deja el modal en el paso de éxito. */
+/**
+ * Cobra el producto al contado y deja el diálogo del DESPUÉS en pantalla.
+ *
+ * 🔴 RE-DERIVADO en el corte 4 del cobro en línea, y este spec se re-derivó
+ * PRIMERO y SOLO porque es el único de los siete cuyo SUJETO vive en el cobro:
+ * los otros seis lo usan de camino. Acá el sujeto es una venta **cobrada** cuyo
+ * número falló, y su reintento — que §8.17 decidió que tiene diálogo propio.
+ *
+ * ⚠️ QUÉ CAMBIÓ Y QUÉ NO, comparado caso por caso contra el original antes de
+ * borrar nada. Lo que cambió es el CAMINO: cinco pasos del modal —abrir, elegir
+ * método, «Continuar», el monto en el segundo paso, «Confirmar cobro»— pasan a
+ * tres en la columna. **Ninguna aserción se movió**: las cuatro del original
+ * vivían todas acá adentro, en el camino, y los casos no tenían ninguna sobre el
+ * modal. Por eso el helper queda más corto y los casos quedan **idénticos** —
+ * la simplificación es del camino, no de lo que se asevera, que es la distinción
+ * que había que comprobar antes de dar el paso.
+ */
 async function cobrar(page: Page) {
   await page.goto('/ventas')
   await openShiftIfClosed(page, 0)
   await page.getByPlaceholder('Buscar producto...').fill(PROD)
-  await page.getByTestId('product-card').first().click()
+  // Por NOMBRE y no `.first()`: el buscador acota, pero apoyarse en que acote a
+  // uno es la clase «locator apoyado en unicidad no declarada» (deuda 67).
+  await page.getByTestId('product-card').filter({ hasText: PROD }).first().click()
 
-  await abrirCobroCompleto(page)
-  await page.getByTestId('pay-method-efectivo').click()
-  await page.getByRole('button', { name: /Continuar/ }).click()
-  await page.getByTestId('checkout-received').fill('200000')
-  await page.getByRole('button', { name: /Confirmar cobro/ }).click()
+  await page.getByTestId('cobro-medio-efectivo').click()
+  await page.getByTestId('cobro-recibe').fill('200000')
+  await page.getByTestId('cobro-confirmar').click()
 }
 
 test.describe.serial('Numeración: fallo visible + reintento', () => {
