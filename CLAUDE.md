@@ -1664,7 +1664,28 @@ Received: "claves que DESAPARECIERON del catálogo: ventas.anular"
 ```
 
 **La regla:** un test no termina cuando se pone rojo con el defecto puesto — termina cuando **el
-mensaje del rojo nombra qué cambió**. Hay que trabajar activamente para que dirija; por defecto no
+mensaje del rojo nombra qué cambió**.
+
+🔴 **Y LA OTRA MITAD, que es la que engaña: UN ROJO QUE NO REPRODUCE EL DEFECTO ES TAN INÚTIL COMO UN
+VERDE QUE NO LO MIDE.** *Medido el 2026-09-02, escribiendo el rojo de la deuda 55.*
+
+> El mensaje tiene que ser **claro** Y **cierto**. Un rojo con un mensaje impecable sobre algo que no
+> pasó dirige perfecto hacia el lugar equivocado.
+
+**El caso.** El test debía probar que cerrar la caja antes de que cargue el resumen **persiste un
+arqueo falso**. Para provocar la carrera se bloqueó la respuesta de `payments`… y con eso se colgó
+también la consulta que la mutación hace al cerrar, así que **el cierre no llegó a persistir nada**.
+El rojo decía, con todas las letras, *"SE PERSISTIÓ UN ARQUEO FALSO: expected_amount quedó calculado
+sobre salesSummary vacío"* — y no se había persistido nada. Lo delató el valor recibido: `-1`, el
+default de "no encontré la fila", en vez de un número plausible.
+
+**Lo accionable, y es una lectura de treinta segundos:** ante un rojo, mirá **el valor recibido**, no
+sólo el mensaje. Si es el default del propio test —`-1`, `null`, `0`, `undefined`, lista vacía—, lo
+más probable es que el escenario no se haya montado y el defecto ni siquiera se haya ejercido. Un
+rojo por la razón equivocada se arregla "arreglando" lo que no estaba roto.
+
+⚠️ Es la misma familia que el control negativo, del otro lado: allá se comprueba que el instrumento
+**puede decir que no**; acá, que el rojo **está diciendo que sí por la razón que dice**. Hay que trabajar activamente para que dirija; por defecto no
 lo hace. Corolario práctico: al auditar por mutación (R10), **leé el mensaje**, no solo el
 `✓`/`×` — el mutante puede morir y el rojo ser inútil igual.
 
