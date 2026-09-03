@@ -716,6 +716,32 @@ un string.
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · UN ARTEFACTO QUE SE ARCHIVA TIENE QUE TRAER SU CONTEXTO ADENTRO
+
+*Complemento del criterio de arriba. Aquél dice que lo que sale del producto tiene que ser
+**aseverable**; éste, que tiene que ser **autoexplicativo**.*
+
+> **El contexto no viaja con el archivo.** La pantalla se corrige mañana y el usuario vuelve a
+> mirarla; un archivo guardado en diciembre se abre en marzo tal como salió, sin la app al lado, sin
+> la conversación que lo explicaba, y sin nadie que recuerde de dónde vino el número.
+
+**Dos casos medidos el 2026-09-02:**
+
+| artefacto | qué le faltaba | qué trae ahora |
+|---|---|---|
+| **Excel financiero y de stock** (deuda 53) | dos libros del mismo período con totales distintos —vendido, cobrado y venta bruta— y **ninguna hoja decía por qué** | una hoja `Definiciones` en cada libro, con qué mide cada columna y por qué la venta bruta **no** coincide con el vendido |
+| **Ticket de venta** (deuda 62a) | no decía **qué era**: ni "Factura" ni nada. Se entrega y quien lo recibe supone que es soporte tributario | dice `COMPROBANTE DE VENTA` |
+
+**Lo accionable, en una pregunta:** de lo que este archivo o papel afirma, ¿cuánto se entiende **sin
+la app abierta y sin nadie que lo explique**? Lo que no se entienda, va adentro del artefacto — no en
+la pantalla que lo generó, ni en un instructivo, ni en la cabeza de quien lo exportó.
+
+⚠️ Y el corolario que lo hace barato: **el lugar donde ponerlo es el mismo donde se construye**. Una
+hoja de definiciones son diez líneas al lado del código que arma las columnas; explicarlo después,
+cuando alguien pregunta por qué dos archivos no cierran, cuesta el diagnóstico entero.
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · CÓMO SE APLICA Y SE REVIERTE UN MUTANTE (arnés, no test)
 
 *Tres fallas encadenadas el 2026-09-02, todas mías, en una sola verificación de cuatro minutos.*

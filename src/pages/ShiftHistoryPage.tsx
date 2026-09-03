@@ -9,6 +9,7 @@ import {
   type ClosedShiftRow, type HistoryScope,
 } from '@/hooks/useShiftHistory'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { cuadreTone } from '@/lib/shiftCalc'
 import { formatoCOP } from '@/lib/formato'
 
 // ─── Helpers ──────────────────────────────────────────────────────
@@ -46,11 +47,22 @@ function daysAgoBogota(days: number): string {
 //    Faltante -> --danger (falta plata: es lo más grave)
 //    Sobrante -> --warning (hay un descuadre; se puede seguir, pide revisar)
 //    Cuadrado -> --success (el único uso legítimo del verde acá)
+//    ✅ Desde el 2026-09-02 el ROL no se decide aca: sale de `cuadreTone`
+//       (`src/lib/shiftCalc.ts`), fuente unica. Esta regla estaba escrita DOS
+//       VECES —aca y en `CloseShiftModal`— y por eso la correccion llego a una
+//       sola pantalla: el modal siguio pintando el sobrante en verde mientras
+//       esta ya estaba bien (deuda 64, R1).
+const TONO_BG = {
+  success: { color: 'var(--success-on-soft)', bg: 'var(--success-soft)' },
+  warning: { color: 'var(--warning-on-soft)', bg: 'var(--warning-soft)' },
+  danger: { color: 'var(--danger-on-soft)', bg: 'var(--danger-soft)' },
+} as const
+
 function diffStyle(diff: number | null): { label: string; color: string; bg: string } {
   if (diff == null) return { label: '—', color: 'var(--ink-4)', bg: 'transparent' }
-  if (diff < 0) return { label: `${formatoCOP(diff)} faltante`, color: 'var(--danger-on-soft)', bg: 'var(--danger-soft)' }
-  if (diff > 0) return { label: `+${formatoCOP(diff)} sobrante`, color: 'var(--warning-on-soft)', bg: 'var(--warning-soft)' }
-  return { label: 'Cuadrado', color: 'var(--success-on-soft)', bg: 'var(--success-soft)' }
+  const t = cuadreTone(diff)
+  const label = diff === 0 ? 'Cuadrado' : `${diff > 0 ? '+' : ''}${formatoCOP(diff)} ${t.etiqueta.toLowerCase()}`
+  return { label, ...TONO_BG[t.rol] }
 }
 
 const inputStyle: React.CSSProperties = {

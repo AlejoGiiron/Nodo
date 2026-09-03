@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { X, DollarSign, TrendingUp, TrendingDown, Minus, AlertTriangle } from 'lucide-react'
 import { useCashShift } from '@/hooks/useCashShift'
 import { useSedeConfig } from '@/hooks/useSedeConfig'
-import { calcShiftBalance } from '@/lib/shiftCalc'
+import { calcShiftBalance, cuadreTone } from '@/lib/shiftCalc'
 import type { ShiftReconciliation, MethodReconciliation } from '@/lib/shiftCalc'
 import { printCashReport, buildCashReportData } from '@/lib/printer'
 
@@ -64,6 +64,18 @@ export function CloseShiftModal({ onClose }: CloseShiftModalProps) {
   const differenceTotal = declaredTotal - expectedTotal
 
   const canClose = rawAmount.length > 0
+
+  // 🔴 DEUDA 64. Los cinco sitios de este bloque decidian su color con
+  //    `difference > 0 ? success : danger`, o sea: **el sobrante en verde**, en
+  //    la pantalla donde se decide cerrar. Ahora salen de `cuadreTone`, que es
+  //    la fuente unica — la misma que usa el historial.
+  const tono = cuadreTone(difference)
+  const TONO_COLOR = {
+    success: { bg: 'var(--success-soft)', bd: 'var(--success-border)', fg: 'var(--success-on-soft)', fuerte: 'var(--success-700)' },
+    warning: { bg: 'var(--warning-soft)', bd: 'var(--warning-border)', fg: 'var(--warning-on-soft)', fuerte: 'var(--warning-700)' },
+    danger: { bg: 'var(--danger-soft)', bd: 'var(--danger-soft)', fg: 'var(--danger-on-soft)', fuerte: 'var(--danger)' },
+  } as const
+  const c = TONO_COLOR[tono.rol]
 
   const handleClose = async () => {
     if (!canClose || isClosingShift) return
@@ -297,27 +309,31 @@ export function CloseShiftModal({ onClose }: CloseShiftModalProps) {
           {canClose && (
             <div style={{
               padding: '14px 16px', borderRadius: 10,
-              background: difference === 0 ? 'var(--success-soft)' : difference > 0 ? 'var(--success-soft)' : 'var(--danger-soft)',
-              border: `1px solid ${difference === 0 ? 'var(--success-border)' : difference > 0 ? 'var(--success-border)' : 'var(--danger-soft)'}`,
+              background: c.bg,
+              border: `1px solid ${c.bd}`,
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {/* El icono sigue al ROL, no al signo: la flecha hacia arriba
+                    del sobrante iba en verde y ahora va en ambar. */}
                 {difference > 0
-                  ? <TrendingUp size={16} color="var(--success-700)" />
+                  ? <TrendingUp size={16} color={c.fuerte} />
                   : difference < 0
-                    ? <TrendingDown size={16} color="var(--danger)" />
-                    : <Minus size={16} color="var(--success-700)" />
+                    ? <TrendingDown size={16} color={c.fuerte} />
+                    : <Minus size={16} color={c.fuerte} />
                 }
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: difference >= 0 ? 'var(--success-on-soft)' : 'var(--danger-on-soft)' }}>
-                    {difference > 0 ? 'Sobrante' : difference < 0 ? 'Faltante' : 'Cuadre exacto'}
+                  <div style={{ fontSize: 12, fontWeight: 600, color: c.fg }}>
+                    {tono.etiqueta}
                   </div>
-                  <div style={{ fontSize: 11.5, color: difference >= 0 ? 'var(--success-700)' : 'var(--danger-on-soft)', marginTop: 1 }}>
+                  {/* Y la frase dice QUE SIGNIFICA, no solo el signo: "hay mas
+                      efectivo del esperado" se lee como una buena noticia. */}
+                  <div style={{ fontSize: 11.5, color: c.fg, marginTop: 1 }}>
                     {difference === 0
                       ? 'El monto declarado coincide exactamente'
                       : difference > 0
-                        ? 'Hay más efectivo del esperado'
-                        : 'Hay menos efectivo del esperado'}
+                        ? 'Sobra efectivo: algo no se registró — una venta cobrada por fuera, un vuelto, la base'
+                        : 'Falta efectivo respecto de lo esperado'}
                   </div>
                 </div>
               </div>
@@ -325,7 +341,7 @@ export function CloseShiftModal({ onClose }: CloseShiftModalProps) {
                 data-testid="shift-cash-difference"
                 style={{
                   fontVariantNumeric: 'tabular-nums', fontSize: 17, fontWeight: 700,
-                  color: difference >= 0 ? 'var(--success-700)' : 'var(--danger)',
+                  color: c.fuerte,
                 }}
               >
                 {difference >= 0 ? '+' : ''}{formatCOP(difference)}
@@ -361,7 +377,7 @@ export function CloseShiftModal({ onClose }: CloseShiftModalProps) {
                   />
                   <span
                     data-testid={`pay-diff-${r.method}`}
-                    style={{ fontSize: 12.5, fontVariantNumeric: 'tabular-nums', textAlign: 'right', fontWeight: 600, color: r.difference === 0 ? 'var(--ink-3)' : r.difference > 0 ? 'var(--success-700)' : 'var(--danger)' }}
+                    style={{ fontSize: 12.5, fontVariantNumeric: 'tabular-nums', textAlign: 'right', fontWeight: 600, color: r.difference === 0 ? 'var(--ink-3)' : TONO_COLOR[cuadreTone(r.difference).rol].fuerte }}
                   >
                     {r.difference > 0 ? '+' : ''}{formatCOP(r.difference)}
                   </span>

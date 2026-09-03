@@ -2603,3 +2603,54 @@ error nuevo apareció entre cinco warnings viejos.
 `hourly_sales` y `user_performance` siguen midiendo cobrado. La primera ya lo **dice** en su rótulo
 ("Cobrado por hora del día"), que es el criterio de la 53 cumplido sin tocar SQL; la segunda no tiene
 consumidor. Anotado como deuda 73 con su disparador, en vez de arrastrar el alcance.
+
+
+## 2026-09-02 · Fase B, bloque 1 · El sobrante en verde — y la causa raíz que la primera corrección no vio
+
+*Deuda 64. Cierra el bloque 1.*
+
+### La enumeración primero, que es lo que faltó la vez pasada
+
+Antes de tocar nada se enumeraron **todos** los sitios donde una diferencia de arqueo decide color o
+texto. El resultado no coincide con lo que la bitácora recordaba:
+
+| dónde | estado antes de hoy |
+|---|---|
+| `CloseShiftModal`, bloque "Diferencia": fondo, borde, ícono, etiqueta, frase, cifra | **5 decisiones en 8 líneas — sin corregir** |
+| `CloseShiftModal`, columna "Dif." por método | **sin corregir** |
+| `CloseShiftModal`, pie sobre tinta | ya corregido |
+| `ShiftHistoryPage`, `diffStyle()` | ya corregido |
+| `printer.ts`, arqueo impreso (2 sitios) | sin color, y el texto no afirma nada falso |
+
+**Seis sitios de decisión, dos corregidos y cuatro no** — no "el arqueo, corregido", que es lo que la
+entrada de septiembre daba por hecho. *"Corregido" se verifica enumerando los sitios, no recordando
+el commit*: la regla ya estaba escrita y esta vez se aplicó **antes**, no después.
+
+### 🔴 La causa raíz, que la enumeración destapó sola
+
+La regla del rol estaba **escrita dos veces**: una en el modal y otra en el historial, cada una con su
+propio `? :`. Por eso la corrección llegó a una sola pantalla y la otra siguió en verde durante todo
+ese tiempo, sin que nada lo dijera. **Es R1 en su forma más limpia:** un contrato en dos lados sin
+nada que los sincronice, y el mecanismo de sincronización era la memoria.
+
+El arreglo no fue cambiar ocho líneas de color: fue **`cuadreTone(difference)` como fuente única** en
+`shiftCalc.ts`, con sus cuatro casos unitarios en rojo antes. Las dos pantallas la consumen. Ahora
+hay un solo lugar donde la regla puede estar mal, y un test que la mira.
+
+### Y la frase, que también afirmaba
+
+Junto al color había una frase: *"Hay más efectivo del esperado"* — descriptiva, neutra, y se lee
+como una buena noticia. Ahora dice **"Sobra efectivo: algo no se registró — una venta cobrada por
+fuera, un vuelto, la base"**. El color dejó de mentir y el texto pasó a explicar.
+
+### Cierre del bloque 1
+
+| deuda | qué salía del producto | estado |
+|---|---|---|
+| **62(a)** | el ticket afirmaba un IVA que no existe en el esquema | ✅ fuera; y el papel dice `COMPROBANTE DE VENTA` |
+| **53** | dos definiciones de "ventas", y dos Excel que no cerraban | ✅ una definición por métrica, dicha; y los libros traen sus definiciones |
+| **64** | el sobrante en verde donde se decide el cierre | ✅ fuente única, con test |
+
+Las tres eran afirmaciones falsas del producto sobre sus propios números, y **ninguna la habría
+encontrado un test**: la del IVA vivía en un HTML que no se podía aseverar, la de "ventas" en un
+rótulo sobre un cálculo correcto, y la del sobrante en un color. Las tres salieron de A3.

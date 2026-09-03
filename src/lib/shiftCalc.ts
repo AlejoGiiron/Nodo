@@ -64,6 +64,39 @@ export function availableCash(
   return input.openingAmount + input.cashSales + input.movementsIn - input.movementsOut
 }
 
+/** Rol visual del cuadre y su etiqueta. */
+export interface CuadreTone {
+  /** Rol del design system: `success` SOLO para el cuadre exacto. */
+  rol: 'success' | 'warning' | 'danger'
+  etiqueta: 'Cuadre exacto' | 'Sobrante' | 'Faltante'
+}
+
+/**
+ * QUE AFIRMA EL COLOR DEL ARQUEO. Fuente unica — deuda 64.
+ *
+ * 🔴 **El unico resultado bueno del arqueo es CUADRADO.** Sobrante y faltante
+ *    son los dos descuadres: que a la caja le sobre plata significa que algo
+ *    **no se registro** — una venta cobrada por fuera del sistema, un vuelto mal
+ *    dado, una base mal contada.
+ *
+ * 🔴 **Por que el sobrante en verde es PEOR que un faltante mal pintado:** un
+ *    faltante duele y se investiga aunque el color este mal. Un sobrante en
+ *    verde **se archiva**, y la plata de mas se queda en el cajon sin que nadie
+ *    busque de donde salio. Es la *confirmacion falsa* de R?: no produce una
+ *    accion equivocada, produce **la ausencia de una accion correcta**.
+ *
+ * ⚠️ **Y por que es una funcion y no un `? :` en cada pantalla:** esta regla
+ *    estaba escrita DOS VECES —`CloseShiftModal` y `ShiftHistoryPage`— y la
+ *    correccion llego a una sola. La bitacora la dio por hecha mientras el
+ *    modal, que es donde se decide el cierre, seguia en verde. Un contrato en
+ *    dos lados sin nada que los sincronice (R1). Aca hay uno.
+ */
+export function cuadreTone(difference: number): CuadreTone {
+  if (difference === 0) return { rol: 'success', etiqueta: 'Cuadre exacto' }
+  if (difference > 0) return { rol: 'warning', etiqueta: 'Sobrante' }
+  return { rol: 'danger', etiqueta: 'Faltante' }
+}
+
 /** Calcula el cuadre del turno a partir de los montos del turno. */
 export function calcShiftBalance(input: ShiftBalanceInput): ShiftBalance {
   const expectedCash = availableCash(input)
