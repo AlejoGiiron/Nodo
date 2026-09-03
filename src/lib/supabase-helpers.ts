@@ -781,6 +781,9 @@ export type CashOutRow = {
   id: string
   amount: number
   reason: string
+  /** `gasto` u `otro` (ver CATEGORIAS_DE_GASTO): se muestra por fila para que
+   *  `otro` sea visible como tal y no se confunda con un gasto clasificado. */
+  categoria: string
   created_at: string
   created_by: string
   jornada_id: string
@@ -796,18 +799,38 @@ export interface CashOutFilters {
   pageSize: number
 }
 
+/**
+ * 🔴 CATEGORIAS DE GASTO — deuda 63. `type='out'` es "salió de la caja", NO "es
+ *    un gasto". `register_purchase` registra cada compra pagada en efectivo como
+ *    `out · compra`, y un retiro del dueño es `out · retiro`: ninguno de los dos
+ *    es un gasto del negocio.
+ *
+ *    Medido en el archivo real del cliente (2026-09-02): mete "Compra de
+ *    inventario" en su hoja de gastos y **3.511.500 de sus 5.495.500 son
+ *    compras**. Sin este filtro le devolvemos su mismo número inflado.
+ *
+ *    Se incluye `otro` a propósito: el CHECK le exige detalle libre, así que
+ *    siempre viene explicado, y dejarlo afuera **escondería** plata — que en un
+ *    reporte de gastos es peor que mostrar de más (dirección del fallo).
+ *
+ * ⚠️ El ARQUEO no usa esto y no debe: allí `movementsOut` suma todos los `out`
+ *    porque todos salieron del cajón. Son dos preguntas sobre la misma tabla.
+ */
+export const CATEGORIAS_DE_GASTO = ['gasto', 'otro'] as const
+
 export const getCashOutMovements = ({
   sedeId, userId, from, to, page, pageSize,
 }: CashOutFilters) => {
   let q = supabase
     .from('cash_movements')
     .select(
-      'id, amount, reason, created_at, created_by, jornada_id, ' +
+      'id, amount, reason, categoria, created_at, created_by, jornada_id, ' +
       'autor:profiles!cash_movements_created_by_fkey(full_name)',
       { count: 'exact' },
     )
     .eq('sede_id', sedeId)
     .eq('type', 'out')
+    .in('categoria', CATEGORIAS_DE_GASTO)
   if (userId) q = q.eq('created_by', userId)
   if (from) q = q.gte('created_at', from)
   if (to) q = q.lte('created_at', to)
@@ -825,6 +848,7 @@ export const getCashOutTotal = ({
     .select('amount')
     .eq('sede_id', sedeId)
     .eq('type', 'out')
+    .in('categoria', CATEGORIAS_DE_GASTO)   // el total y la lista, la misma pregunta
   if (userId) q = q.eq('created_by', userId)
   if (from) q = q.gte('created_at', from)
   if (to) q = q.lte('created_at', to)

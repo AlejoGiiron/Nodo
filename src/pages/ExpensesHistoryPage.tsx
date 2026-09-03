@@ -71,18 +71,41 @@ export function ExpensesHistoryPage() {
           <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink)', letterSpacing: -0.3 }}>
             Historial de gastos
           </div>
+          {/* 🔴 Decía "N egresos" mientras el título decía gastos: la pantalla se
+              contradecía sola. Ahora las dos palabras dicen lo mismo, y es lo
+              que la consulta trae (deuda 63). */}
           <div style={{ fontSize: 12, color: 'var(--ink-4)', fontVariantNumeric: 'tabular-nums' }}>
-            {count} {count === 1 ? 'egreso' : 'egresos'}
+            {count} {count === 1 ? 'gasto' : 'gastos'}
           </div>
           {/* Total del período (todas las filas filtradas, no solo la página) */}
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'baseline', gap: 8 }}>
             <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
               Total del período
             </span>
-            <span data-testid="expenses-total" style={{ fontSize: 18, fontWeight: 700, color: 'var(--danger)', fontVariantNumeric: 'tabular-nums', letterSpacing: -0.4 }}>
+            {/* El total ya no va en `--danger`: un gasto es una categoría de
+                movimiento, no un error (A3-7). */}
+            <span data-testid="expenses-total" style={{ fontSize: 18, fontWeight: 700, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums', letterSpacing: -0.4 }}>
               {formatCOP(periodTotal)}
             </span>
           </div>
+        </div>
+
+        {/* 🔴 QUÉ CUENTA ESTA PANTALLA Y QUÉ DEJA AFUERA. Sin esto, un total más
+            chico que el del Excel del cliente parece un error nuestro — y el
+            suyo mezcla compras con gastos: 3.511.500 de 5.495.500. Criterio del
+            artefacto autoexplicativo (CLAUDE.md). */}
+        <div
+          data-testid="expenses-alcance"
+          style={{
+            fontSize: 12, color: 'var(--ink-3)', lineHeight: 1.5, marginBottom: 12,
+            background: 'var(--surface-2)', border: '1px solid var(--border)',
+            borderRadius: 'var(--r-2)', padding: '8px 11px',
+          }}
+        >
+          Suma los egresos de caja clasificados como <strong>gasto</strong> u <strong>otro</strong>.
+          Las <strong>compras</strong> a proveedores no están acá — se registran en{' '}
+          <strong>Compras</strong> y salen de la caja igual —, y los <strong>retiros</strong> del
+          dueño tampoco son un gasto del negocio. El arqueo del turno sí los suma todos.
         </div>
 
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -134,7 +157,8 @@ export function ExpensesHistoryPage() {
         ) : (
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border-2)', borderRadius: 12, overflow: 'hidden', opacity: isFetching ? 0.7 : 1, transition: 'opacity .12s' }}>
             {/* Head */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 180px 150px 110px', gap: 12, padding: '11px 16px', borderBottom: '1px solid var(--border-2)', background: 'var(--surface-2)', fontSize: 11, fontWeight: 700, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: 0.4 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '90px 1fr 180px 150px 110px', gap: 12, padding: '11px 16px', borderBottom: '1px solid var(--border-2)', background: 'var(--surface-2)', fontSize: 11, fontWeight: 700, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: 0.4 }}>
+              <span>Tipo</span>
               <span>Motivo</span>
               <span>Quién · Cuándo</span>
               <span>Turno</span>
@@ -146,10 +170,15 @@ export function ExpensesHistoryPage() {
                 key={row.id}
                 data-testid="expense-row"
                 style={{
-                  display: 'grid', gridTemplateColumns: '1fr 180px 150px 110px', gap: 12, alignItems: 'center',
+                  display: 'grid', gridTemplateColumns: '90px 1fr 180px 150px 110px', gap: 12, alignItems: 'center',
                   padding: '13px 16px', borderBottom: '1px solid var(--surface-2)',
                 }}
               >
+                {/* `otro` visible como tal: el CHECK le exige detalle, así que
+                    siempre viene explicado, pero no es un gasto clasificado. */}
+                <span data-testid="expense-categoria" style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--ink-3)', textTransform: 'capitalize' }}>
+                  {row.categoria}
+                </span>
                 <span data-testid="expense-reason" style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {row.reason}
                 </span>
@@ -164,7 +193,7 @@ export function ExpensesHistoryPage() {
                 <span style={{ fontSize: 12, color: 'var(--ink-4)', fontVariantNumeric: 'tabular-nums' }}>
                   #{row.jornada_id.slice(-6).toUpperCase()}
                 </span>
-                <span data-testid="expense-amount" style={{ textAlign: 'right', fontSize: 14, fontWeight: 700, color: 'var(--danger)', fontVariantNumeric: 'tabular-nums' }}>
+                <span data-testid="expense-amount" style={{ textAlign: 'right', fontSize: 14, fontWeight: 700, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>
                   −{formatCOP(row.amount)}
                 </span>
               </div>

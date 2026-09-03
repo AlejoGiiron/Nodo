@@ -2931,3 +2931,46 @@ grande, precios de lista y gastos bien clasificados.
 ⚠️ Y el que más cambia el trabajo es el que **no estaba en ninguna lista**: el precio negociado. No
 fue un hueco que alguien no cerró — fue una suposición tan básica que nadie la escribió como
 suposición. Se descubre mirando qué hace el cliente, no revisando lo que escribimos.
+
+
+## 2026-09-02 · Fase B, bloque 3 · La 63 — "gastos" no es "todo lo que salió de la caja"
+
+*Y el dato que la volvió urgente no salió de una auditoría: salió del archivo del cliente.*
+
+`type='out'` responde *"¿salió plata del cajón?"*. La pantalla de Gastos preguntaba eso y lo rotulaba
+como gastos, así que sumaba las **compras a proveedores** —que `register_purchase` registra como
+`out · compra` cada vez que se paga en efectivo— y los **retiros del dueño**.
+
+**Muscle Pro ya comete ese error en su propio Excel: 3.511.500 de sus 5.495.500 de "gastos" son
+compras de inventario.** Sin el filtro, le devolvíamos su mismo número inflado con la autoridad de un
+sistema — que es peor que su hoja de cálculo, porque el sistema no parece opinable.
+
+### Tres decisiones, y las tres se pueden discutir por separado
+
+- **`otro` entra.** El CHECK le exige detalle libre, así que siempre viene explicado, y **esconder
+  plata en un reporte de gastos es peor que mostrar de más** (dirección del fallo). Pero entra
+  **visible como tal**: la fila muestra su categoría, para que no se lea como un gasto clasificado.
+- **Los retiros salen.** Plata del dueño no es un gasto del negocio, aunque salga del mismo cajón.
+- **El arqueo no se toca.** Ahí `movementsOut` suma todos los `out` y está bien: todos salieron.
+  **Son dos preguntas distintas sobre la misma tabla, y por eso `categoria` existe** aparte de
+  `reason` — el caso 1 de *"un valor que significa dos cosas no es un dato"*, cobrando por segunda vez.
+
+Y la pantalla **dice qué dejó afuera y dónde está**. Sin eso, un total más chico que el del Excel
+parece un error nuestro; con eso, es una corrección explicada. Criterio del artefacto autoexplicativo.
+
+### M7, y una lección que sólo aparece al mutar constraints
+
+El CHECK que cruza `type` con `categoria` no lo ejercitaba nadie: con el constraint borrado,
+`caja.spec` quedaba 5/5 verde porque la UI sólo manda combinaciones válidas. Ahora tiene su test —
+rechazo con `23514`, contraste de que la misma categoría con el `type` correcto **sí** entra, y `otro`
+sin detalle rechazado.
+
+🔴 **Y al correr el mutante apareció algo que mutar funciones nunca muestra:** con el CHECK borrado, el
+test **insertó la fila inválida que venía a probar**, y después el `add constraint` falló con
+*"is violated by some row"*. **Un constraint no vuelve si los datos que entraron mientras no existía lo
+violan.** Hubo que borrar la fila con privilegios de administrador para restaurarlo.
+
+⚠️ Lo agrava que `cash_movements` **no tenga policy de DELETE** —correcto por diseño: un movimiento de
+caja es un asiento, se compensa, no se borra—, así que el `afterAll` del spec fallaba **en silencio**.
+Queda anotado como deuda 76, y el spec quedó escrito para **tolerar el residuo** en vez de fingir que
+lo limpia: fija el rango en hoy y calcula el esperado contra la base.
