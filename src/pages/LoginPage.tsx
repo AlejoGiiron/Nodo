@@ -13,10 +13,29 @@ function Spinner() {
   )
 }
 
+/**
+ * 🔴 ESTE COPY SE VERIFICA CONTRA LO QUE EXISTE, NO SE HEREDA — A6 · tanda 2.
+ *
+ * La versión anterior prometía tres cosas y **dos eran falsas**:
+ *   · *"cupo de crédito"* — el cupo **no existe en el esquema** (deuda 40).
+ *   · *"Facturación rápida"* / *"comienza a facturar"* — el cliente **no factura
+ *     electrónicamente**; es la fase F1, pospuesta, y por eso el ticket dice
+ *     *"Comprobante de venta"* y no *"Factura"* (deuda 62a).
+ * La tercera decía *"por turno"*, que es el vocabulario que la deuda 38 renombra.
+ *
+ * ⚠️ **Es la SEGUNDA vez que esta clase muerde en este repo.** La primera está
+ * escrita en `CLAUDE.md`: el `LoginPage` de Vento prometía *"Gestión de mesas y
+ * comandas en tiempo real"* con los dos módulos ya podados. Misma pantalla,
+ * mismo repo, mismo mecanismo — **el copy de UI afirma cosas del producto y
+ * ningún verificador lo mira**: `tsc` ve un string y ESLint ve un string.
+ *
+ * Lo accionable, y es de escritura: **una frase que promete una funcionalidad se
+ * comprueba contra la funcionalidad, no contra la frase anterior.**
+ */
 const FEATURES = [
-  { Icon: ShoppingCart, text: 'Facturación rápida con inventario sincronizado' },
-  { Icon: Users,        text: 'Clientes, cupo de crédito y cartera al día' },
-  { Icon: BarChart3,    text: 'Reportes de cierre y análisis por turno' },
+  { Icon: ShoppingCart, text: 'Mostrador rápido con inventario sincronizado' },
+  { Icon: Users,        text: 'Clientes, crédito y cartera al día' },
+  { Icon: BarChart3,    text: 'Cierre de caja y reportes del período' },
 ]
 
 export function LoginPage() {
@@ -74,22 +93,37 @@ export function LoginPage() {
           overflow: 'hidden',
         }}
       >
-        {/* Radial glows */}
-        <div style={{ position: 'absolute', top: '-20%', left: '-10%', width: 460, height: 460, background: 'radial-gradient(circle, rgba(16,185,129,.18) 0%, transparent 60%)', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', bottom: '-15%', right: '-10%', width: 380, height: 380, background: 'radial-gradient(circle, rgba(16,185,129,.10) 0%, transparent 60%)', pointerEvents: 'none' }} />
+        {/* Halos del fondo. 🔴 Eran `rgba(16,185,129,…)` — el emerald de VENTO,
+            literal y dos veces. Pasan a la familia de acción, que es la fría del
+            sistema (§1.2) y la única que no comunica estado. */}
+        <div style={{ position: 'absolute', top: '-20%', left: '-10%', width: 460, height: 460, background: 'radial-gradient(circle, rgba(2,132,199,.18) 0%, transparent 60%)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: '-15%', right: '-10%', width: 380, height: 380, background: 'radial-gradient(circle, rgba(2,132,199,.10) 0%, transparent 60%)', pointerEvents: 'none' }} />
 
         {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative', zIndex: 1 }}>
           <div style={{
             width: 44, height: 44, borderRadius: 11,
-            background: 'linear-gradient(135deg, var(--action), var(--success-700))',
+            // 🔴 Era `linear-gradient(--action → --success-700)`: VERDE, y §1.2
+            //    dice que **verde es sólo confirmación y ninguna acción lo usa**.
+            //    Peor: ese verde es el acento de VENTO (#10b981), o sea la marca
+            //    de otro producto en la primera pantalla de éste.
+            //    Login es una de las CUATRO superficies donde `--brand` está
+            //    permitida (§1.1), así que el tile usa `--brand`, que es lo que
+            //    corresponde.
+            background: 'var(--brand)',
             display: 'grid', placeItems: 'center',
-            color: 'var(--surface)', fontWeight: 800, fontSize: 20,
-            boxShadow: '0 0 0 1px rgba(255,255,255,.08) inset, 0 8px 20px rgba(16,185,129,.25)',
-          }}>G</div>
+            color: 'var(--brand-ink)', fontWeight: 800, fontSize: 20,
+            boxShadow: '0 0 0 1px rgba(255,255,255,.10) inset',
+          }}>N</div>
           <div>
+            {/* Decía "G" — residuo de `G-Nexo`/`gvento`. La convención de
+                CLAUDE.md retiró el prefijo: los productos son la raíz sola,
+                «sin guion y sin "g"». El producto es Nodo. */}
             <div style={{ fontWeight: 700, fontSize: 18, color: 'var(--surface-2)', letterSpacing: -0.3 }}>Nodo</div>
-            <div style={{ fontSize: 11.5, color: 'var(--ink-3)', marginTop: 1 }}>POS · Sedes</div>
+            {/* Decía "POS · Sedes": "POS" es vocabulario de Vento — acá la
+                pantalla se llama Mostrador. Y hacia afuera se dice
+                "Nodo, de Giiron" (convención de marca). */}
+            <div style={{ fontSize: 11.5, color: 'var(--ink-3)', marginTop: 1 }}>de Giiron</div>
           </div>
         </div>
 
@@ -100,7 +134,7 @@ export function LoginPage() {
             <span style={{ color: 'var(--action)' }}>de vuelta.</span>
           </h1>
           <p style={{ fontSize: 14, color: 'var(--ink-4)', marginTop: 14, marginBottom: 0, lineHeight: 1.55, maxWidth: 340 }}>
-            Ingresa a tu turno y comienza a facturar. Todo lo que tu sede necesita, en un solo lugar.
+            Abrí la caja y empezá a vender. Todo lo que tu negocio necesita, en un solo lugar.
           </p>
 
           {/* Features */}
@@ -109,10 +143,12 @@ export function LoginPage() {
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{
                   width: 32, height: 32, borderRadius: 8,
-                  background: 'rgba(16,185,129,.12)',
+                  // Eran dos emerald de Vento más. El ícono ya usaba --action;
+                  // el fondo y el borde ahora también, en la misma familia fría.
+                  background: 'rgba(2,132,199,.12)',
                   color: 'var(--action)',
                   display: 'grid', placeItems: 'center',
-                  border: '1px solid rgba(16,185,129,.22)',
+                  border: '1px solid rgba(2,132,199,.22)',
                   flexShrink: 0,
                 }}>
                   <Icon size={15} />
@@ -128,7 +164,11 @@ export function LoginPage() {
           <div>© 2026 Nodo</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--action)', display: 'inline-block' }} />
-            Sistema operativo · v2.4.1
+            {/* 🔴 Decía "Sistema operativo · v2.4.1": un número de versión
+                INVENTADO que no corresponde a ningún artefacto del repo. Un
+                número sin fuente es una opinión con dígitos, y acá encima lo lee
+                un cliente. Se quita en vez de inventar otro. */}
+            Nodo, de Giiron
           </div>
         </div>
       </div>
@@ -261,7 +301,8 @@ export function LoginPage() {
                 fontSize: 14, fontWeight: 700, color: 'var(--surface)',
                 fontFamily: 'inherit',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                boxShadow: (submitting || !email || !password) ? 'none' : '0 6px 16px rgba(16,185,129,.35)',
+                // Sombra del botón primario: era emerald bajo un fondo --action.
+                boxShadow: (submitting || !email || !password) ? 'none' : '0 6px 16px rgba(2,132,199,.35)',
                 transition: 'all .15s',
               }}
             >
