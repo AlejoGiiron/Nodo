@@ -327,3 +327,93 @@ pasar, en la misma pantalla y en el mismo repo, es el dato.
 píldora "Sin turno" · imagen de producto · "+ Nueva categoría" · chips de filtro de Inventario ·
 pestaña Proveedores · columna Devolución · nota de alcance de Gastos · columna Turno y filtro
 Todos/Míos · paginación · rótulo de orden de Cartera · sub-nav de Configuración · **Reportes entero**.
+
+---
+
+## 10 · Resultado de las cinco tandas (2026-09-03)
+
+Cada tanda cerró **comparando su par de capturas contra la maqueta renderizada**, no contra hexes
+ni contra una suite verde. Los pares viven en `docs/auditorias/A6/{app,maqueta}/`.
+
+| # | tanda | commit | par comparado | qué cambió |
+|---|---|---|---|---|
+| 1 | **Sidebar** | `2a22b0c` | `mostrador` | Mostrador suelto arriba; cuatro grupos (movimientos · existencias · cartera · resultados); Configuración al pie; bloque de identidad con **organización arriba y sede debajo** sobre el tile `--brand`; encabezados de grupo en caja de oración |
+| 2 | **Login** | `983a44c` | `login` | cuatro afirmaciones falsas fuera (entre ellas una versión inventada) y el **emerald de Vento** reemplazado por `--action` |
+| 3 | **Gastos** | `ffabb6b` | `gastos` | formulario lateral de §7.8: **la pantalla no podía registrar un gasto** — el único alta vivía en el banner de turno, en Mostrador |
+| 4 | **Catálogo** | `79962cb` | `catalogo` | tarjetas → **filas** (§7.3), conservando los cuatro (d): miniatura, existencia, confirmación de desactivar y alerta de sobreventa **con su cifra en el texto** |
+| 5 | **El resto** | `4478a49` | `cartera` · `inventario` · `configuracion` | "Nombre de la sede"; vocabulario neutro en Inventario (§7.15); KPI **Vencido**, badge de mora y fila en mora pintada como fila (§4) en Cartera |
+| — | **arreglos** | `0c79c79` | — | el rojo que dejó la tanda 1 y el emerald que sobrevivió a la 4 (ver abajo) |
+
+**Suite entera, con los cinco números verificados uno por uno y el exit leído de adentro del
+archivo (R9):**
+
+```
+passed       -> 223 passed (14.8m)
+failed       -> (ninguna línea: 0)
+flaky        -> (ninguna línea: 0)
+skipped      -> 17 skipped
+did not run  -> (ninguna línea: 0)
+suite_exit=0
+control cruzado: 223 + 17 = 240 = el último número de test emitido ✅
+```
+
+### 🔴 Lo que la suite entera encontró y las tandas no
+
+**Un rojo: `reportes.spec › el sidebar muestra el nombre del sede`.** Apuntaba a
+`sidebar-brand-name`, un testid que **la tanda 1 eliminó** al partir el bloque de identidad en dos
+líneas. La tanda cerró con *tsc + lint + el grupo afectado* y `reportes` no estaba en ese grupo.
+
+> **El sidebar está en las once pantallas, así que el grupo afectado por un cambio de sidebar es
+> cualquier spec que lo mire.** El recorte del grupo fue mío, no del criterio.
+
+La **aserción sobrevivió al modelo nuevo** —el sidebar sigue teniendo que nombrar la sede— así que
+no se borró: se re-derivó de la pantalla nueva y ahora asevera **de más**, el orden. Mutante
+aplicado (los dos testids intercambiados): muere nombrando qué cambió, *"la ORGANIZACION va ARRIBA
+de la sede", 42 donde esperaba < 16*.
+
+**Y dos cosas que encontró MIRAR los pares, no ejecutar:**
+
+- `ProductsPage` tenía dos botones con fondo `--action` (azul) y **halo `rgba(16,185,129,.35)`** —el
+  emerald de Vento— más tres radios fuera de la escala del §3. Es la pantalla de la tanda 4, cerrada
+  en verde. **El censo de hexes no lo vio porque un `boxShadow` no es un `background`:** el barrido
+  migró el color que se ve y dejó el que se irradia. Y §1.2 es explícito: `--shadow-1` es el único
+  nivel de elevación y está reservado a diálogos.
+- El conteo de emerald que se venía arrastrando era falso —"49 en 18 archivos"— y son **52 en 20**,
+  de las cuales **3 son comentarios que documentan la remoción**. Enumerar, no contar.
+
+### Dudas abiertas — no se decidieron solas, por regla
+
+**No se toca porque cambia qué puede hacer un usuario:**
+
+1. 🔴 **`Cobrar — F12` está impreso y F12 NO EXISTE.** Enumerado: cero teclas de función cableadas en
+   `src/` (ningún `key === 'F…'`), y el rótulo pintado en el botón del POS. **No es que falte el
+   control "Atajos": es que el producto promete hoy un atajo que no funciona**, en el botón que la
+   cajera usa cientos de veces al día. §5 lo declara *la única excepción permanente*, o sea que la
+   maqueta cuenta con que exista. Construir "Atajos" antes de cablear las teclas sería revelar una
+   lista de promesas falsas.
+2. **Cartera sigue siendo maestro-detalle**, no la tabla ancha de la maqueta con columna `VENCIDO` y
+   botón `Abonar` por fila. Convertirla mueve dónde se cobra, que es R1 sobre un flujo de plata.
+3. **Los chevrones colapsables del sidebar** se conservaron: son una capacidad que la maqueta no
+   dibuja.
+
+**No se toca porque la maqueta no lo dibuja y habría que inventarlo:**
+
+4. **KPI `RECAUDADO HOY`** de Cartera: exige sumar los abonos del día, consulta que hoy no existe.
+   Inventar el número sería peor que no mostrarlo. **Hueco de pantalla, no de esquema.**
+5. **Ficha de cliente (C-1/C-2/C-3)**: bloqueada por el cupo (deuda 40).
+6. **Configuración no tiene diseño**: la maqueta dice literalmente *"su diseño no es parte de la
+   Entrega 1"*, así que su par sólo valida el sidebar y el encabezado.
+
+**Divergencias nuevas, no clasificadas en A6 — anotadas y sin tocar:**
+
+7. El KPI **"Total por cobrar"** se pinta con la variante de alerta (`--debt-soft` + borde) igual que
+   "Vencido"; la maqueta lo pinta neutro y reserva el rojo para lo vencido. **Pintar de rojo todo lo
+   que hay por cobrar afirma que cobrar es un problema** — es la familia de *qué afirma el color*.
+8. Inventario dice **"Productos con existencia"** donde la maqueta dice *"Referencias"*. Se eligió
+   `Productos` por §7.15, pero es una divergencia deliberada con la maqueta.
+9. Las pestañas de Inventario en la maqueta llevan **subtítulo** (*"la foto: cuánto hay y cuánto
+   vale"* / *"la película: entradas y salidas"*); las de la app no.
+10. **Catálogo muestra 4 KPI donde la maqueta muestra 3**, y **Cartera 4 donde muestra 3**: en los dos
+    casos el de más es un **(d)**, y un (d) no se toca.
+11. **52 ocurrencias del emerald de Vento en 20 archivos**, casi todas en modales — **invisibles para
+    A6 por construcción**, porque una captura en estado normal no abre modales.
