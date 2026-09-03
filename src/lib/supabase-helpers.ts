@@ -1153,6 +1153,8 @@ export interface DebtRow {
   created_at: string
   total: number
   payment_status: string             // 'pending' | 'partial'
+  /** Plazo CONGELADO de esta venta (deuda 46). null = sin plazo pactado. */
+  plazo_dias: number | null
   customer_id: string | null
   customer_name: string | null
   customers: { name: string } | null
@@ -1165,8 +1167,11 @@ export const getDebts = (sedeId: string) =>
   supabase
     .from('orders')
     .select(
+      // `plazo_dias` es el plazo CONGELADO de esta venta (deuda 46). No se lee
+      // del cliente: renegociarlo no puede mover el vencimiento de una venta
+      // vieja, y esta consulta es justamente la que lo calcularía distinto.
       'id, order_number, created_at, total, payment_status, customer_id, customer_name, ' +
-        'customers(name), debt_payments(amount)',
+        'plazo_dias, customers(name), debt_payments(amount)',
     )
     .eq('sede_id', sedeId)
     .in('payment_status', ['pending', 'partial'])

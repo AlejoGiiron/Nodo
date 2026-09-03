@@ -168,6 +168,12 @@ const COLUMNAS_DEL_ESQUEMA: ColumnaEsquema[] = [
   // verifica que no salga, como el resto.
   { tabla: 'cash_movements', columna: 'subcategoria', ejemplo: 'mantenimiento-de-vitrinas' },
 
+  // Migración `plazo_de_credito` (2026-09-02, deuda 46). Un plazo no identifica
+  // a nadie por sí solo, pero CRUZADO con el resto de la fila dice cuánto
+  // crédito le damos a una persona concreta: se verifica que no salga.
+  { tabla: 'customers', columna: 'plazo_dias', ejemplo: 47 },
+  { tabla: 'orders', columna: 'plazo_dias', ejemplo: 63 },
+
   // ── stock_movements / store_sequences
   { tabla: 'stock_movements', columna: 'notes', ejemplo: 'Ajuste hecho por Ana' },
   { tabla: 'stock_movements', columna: 'reference_id', ejemplo: '3f2b1c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d', permitida: true },

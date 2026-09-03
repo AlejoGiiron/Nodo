@@ -18,6 +18,14 @@ export interface SedeConfig {
    * "publicidad" y "Publicidad" serían dos filas del reporte.
    */
   expense_subcategories?: string[]
+  /**
+   * 🔴 PLAZOS DE CRÉDITO OFRECIDOS — deuda 46. Enteros de DÍAS, nunca
+   * etiquetas: "30 días" como texto no se puede sumar a una fecha. Va por sede
+   * por la misma razón que las subcategorías: otro negocio maneja otros plazos.
+   */
+  plazos_credito?: number[]
+  /** El que se ofrece cuando el cliente no tiene plazo pactado. */
+  plazo_credito_default?: number
   payment_methods?: PaymentMethod[]
   nequi_qr_url?: string | null
 }
@@ -31,6 +39,10 @@ export interface SedeConfig {
  *    3.511.500 de sus 5.495.500 de "gastos" son compras (deuda 63).
  */
 export const DEFAULT_EXPENSE_SUBCATEGORIES = ['Publicidad', 'Adecuación', 'Activo']
+
+/** Sembrados con los que el cliente confirmó que maneja. Editables por sede. */
+export const DEFAULT_PLAZOS_CREDITO = [8, 15, 30]
+export const DEFAULT_PLAZO_CREDITO = 30
 
 /**
  * Un activo no se consume en el mes. Se dice DONDE SE ELIGE, no en un

@@ -25,7 +25,7 @@ import {
 } from 'lucide-react'
 import { useSedeConfig } from '@/hooks/useSedeConfig'
 import type { SedeConfig } from '@/lib/sedeConfig'
-import { DEFAULT_EXPENSE_SUBCATEGORIES } from '@/lib/sedeConfig'
+import { DEFAULT_EXPENSE_SUBCATEGORIES, DEFAULT_PLAZOS_CREDITO } from '@/lib/sedeConfig'
 import { useUsers } from '@/hooks/useUsers'
 import { useAuth } from '@/hooks/useAuth'
 import { usePermissions } from '@/hooks/usePermissions'
@@ -752,6 +752,11 @@ function SectionCajaForm({ config }: { config: SedeConfig }) {
   const [localSubcats, setLocalSubcats] = useState<string[]>(
     config.expense_subcategories ?? DEFAULT_EXPENSE_SUBCATEGORIES,
   )
+  // 🔴 Deuda 46: los plazos de crédito de la sede. Se editan como texto y se
+  //    guardan como ENTEROS — "30 días" no se puede sumar a una fecha.
+  const [localPlazos, setLocalPlazos] = useState<string[]>(
+    (config.plazos_credito ?? DEFAULT_PLAZOS_CREDITO).map(String),
+  )
   const [localMethods, setLocalMethods] = useState<PaymentMethod[]>(methods)
 
   const toggleMethod = (m: PaymentMethod) =>
@@ -804,6 +809,27 @@ function SectionCajaForm({ config }: { config: SedeConfig }) {
           items={localSubcats}
           onChange={setLocalSubcats}
           placeholder="Nueva subcategoría..."
+        />
+      </div>
+
+      {/* 🔴 PLAZOS DE CRÉDITO — deuda 46 */}
+      <div style={{ marginBottom: 28 }}>
+        <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)', marginBottom: 4 }}>
+          Plazos de crédito
+        </h3>
+        <p style={{ fontSize: 12, color: 'var(--ink-3)', marginBottom: 16, lineHeight: 1.5 }}>
+          En días. Se ofrecen al pactar el crédito con un cliente y al vender a
+          crédito, siempre de una lista: teclear el plazo sólo agrega el typo de
+          3 por 30, que nadie detecta y que hace ver vencida una venta que está
+          en plazo.
+          <br />
+          ⚠️ El plazo <strong>queda guardado en cada venta</strong>: cambiarlo acá
+          o en el cliente no mueve el vencimiento de las ventas ya hechas.
+        </p>
+        <EditableList
+          items={localPlazos}
+          onChange={setLocalPlazos}
+          placeholder="Nuevo plazo en días..."
         />
       </div>
 
@@ -882,6 +908,13 @@ function SectionCajaForm({ config }: { config: SedeConfig }) {
           cash_out_reasons: localReasons,
           payment_methods: localMethods,
           expense_subcategories: localSubcats,
+          // Sólo enteros >= 0, sin repetidos y ordenados: lo que se teclea es
+          // texto y lo que se guarda es el dato.
+          plazos_credito: [...new Set(
+            localPlazos
+              .map((x) => Number(String(x).replace(/\D/g, '')))
+              .filter((n) => Number.isInteger(n) && n >= 0),
+          )].sort((a, b) => a - b),
         })}
         loading={isSaving}
       />

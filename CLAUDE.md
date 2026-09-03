@@ -1126,10 +1126,18 @@ misma. Se escribe una vez, con los cuatro casos, en vez de cuatro decisiones que
 | **Fecha del documento** (deuda 44) | usar `created_at` para todo | dos columnas. `created_at` dice cuándo se tecleó y cuadra la caja; `document_date` dice de cuándo es el papel y ordena los reportes |
 | **Devolución de compra** (deuda 49) | revertir la compra y recalcular el promedio ponderado | la devolución es un **hecho nuevo con su propia fecha**, y **no toca `cost_price`**: ese costo ya se propagó a las ventas del medio |
 | **Subcategoría retirada** (deuda 45) | borrar o migrar las filas que usaban la subcategoría que el dueño sacó de su lista | la fila **conserva** su valor y la pantalla la muestra **marcada como retirada**; lo que desaparece es poder volver a elegirla |
+| **plazo de crédito** (deuda 46) | guardarlo sólo en el cliente, que es donde se pacta | se guarda **también en la venta**. La cartera **deriva de `orders`**, así que con el plazo sólo en el cliente el mismo `select` **calcularía otro vencimiento mañana** para una venta de enero |
 
-**Por qué es el mismo principio y no cuatro parecidos:** en los cuatro, la alternativa cómoda hace
+**Por qué es el mismo principio y no cinco parecidos:** en los cinco, la alternativa cómoda hace
 que **una pregunta sobre el pasado cambie de respuesta según cuándo se la haga**. Ese es el defecto,
 y es el perfil de R7: no revienta, no avisa, y el número sigue siendo plausible.
+
+🔴 **Y el quinto agrega el detector, que es más barato que el principio:** la pregunta no es
+filosófica sino mecánica — **¿de dónde sale este dato cuando alguien lo mira?** El plazo parecía
+seguro en `customers` hasta que la enumeración mostró que **la cartera no guarda la deuda, la deriva
+de `orders` en cada consulta**. Un dato que se lee por un `select` derivado no está congelado por
+mucho que su origen sea estable: se recalcula entero cada vez. **Antes de decidir dónde vive un dato,
+enumerá quién lo va a leer y si esa lectura es una tabla o un cálculo.**
 
 ⚠️ **El corolario que decide los casos nuevos, y es una pregunta sola:** ¿este cambio hace que un
 reporte ya impreso deje de reproducirse? Si la respuesta es sí, **no es una corrección: es una

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button'
 import { KpiCard } from '@/components/ui/KpiCard'
 import { MoneyCell } from '@/components/ui/MoneyCell'
 import { AgingBar, AgingBarLeyenda } from '@/components/ui/AgingBar'
+import { diasVencidosMax } from '@/lib/cartera'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { formatoCOP } from '@/lib/formato'
 
@@ -46,6 +47,12 @@ interface CustomerGroup {
   count: number          // nº de fiados con saldo>0
   saldoTotal: number     // Σ saldos del cliente
   fiados: Debt[]         // ASC por fecha: el más viejo (más tiempo debiendo) arriba
+  /**
+   * 🔴 Días vencidos del cliente = el MÁXIMO de sus ventas (deuda 46). Lo que
+   * dispara la acción es la deuda más atrasada, no el promedio.
+   * `null` = ninguna de sus ventas tiene plazo pactado: no se puede decir.
+   */
+  diasVencidos: number | null
 }
 
 // ─── Cartera (maestro-detalle por cliente) ───────────────────────
@@ -75,6 +82,7 @@ function DebtsTab({ onAbono }: { onAbono: (d: Debt) => void }) {
         count: 0,
         saldoTotal: 0,
         fiados: [] as Debt[],
+        diasVencidos: null as number | null,
       }
       g.count += 1
       g.saldoTotal += d.saldo
@@ -82,8 +90,24 @@ function DebtsTab({ onAbono }: { onAbono: (d: Debt) => void }) {
       map.set(key, g)
     }
     const arr = [...map.values()]
-    for (const g of arr) g.fiados.sort((a, b) => a.created_at.localeCompare(b.created_at))
-    return arr.sort((a, b) => b.saldoTotal - a.saldoTotal)
+    for (const g of arr) {
+      g.fiados.sort((a, b) => a.created_at.localeCompare(b.created_at))
+      g.diasVencidos = diasVencidosMax(g.fiados)
+    }
+    // 🔴 ORDENA POR DÍAS VENCIDOS, no por saldo (deuda 46). El saldo dice cuánto
+    //    se debe; los días vencidos dicen **a quién hay que llamar hoy**, que es
+    //    lo que esta pantalla existe para contestar. El saldo queda de desempate
+    //    entre dos clientes igual de atrasados.
+    //    ⚠️ Los `null` —sin plazo pactado— van al final: no se puede afirmar que
+    //    estén al día, así que tampoco pueden competir por el primer lugar.
+    return arr.sort((a, b) => {
+      const av = a.diasVencidos, bv = b.diasVencidos
+      if (av == null && bv == null) return b.saldoTotal - a.saldoTotal
+      if (av == null) return 1
+      if (bv == null) return -1
+      if (av !== bv) return bv - av
+      return b.saldoTotal - a.saldoTotal
+    })
   }, [debts, phoneById])
 
   // KPIs de la cartera completa (independientes del buscador).
@@ -138,6 +162,16 @@ function DebtsTab({ onAbono }: { onAbono: (d: Debt) => void }) {
               Al pie de nueve filas queda debajo del pliegue — cumple la letra y
               falla el propósito. Dice "Antigüedad", que es lo que la barra
               mide: no "Vencido", que exigiría un plazo que no existe. */}
+          {/* 🔴 LOS DOS RÓTULOS, JUNTOS Y A PROPÓSITO (deuda 46). La fila muestra
+              dos números distintos sobre el mismo cliente —cuánto hace que se
+              vendió, y cuánto hace que se pasó el plazo— y los dos son
+              verdaderos. Sin decir cuál es cuál, es exactamente cómo nació la
+              deuda 53: dos cifras del mismo hecho sin definición. */}
+          <div data-testid="debt-orden-por" style={{ fontSize: 11.5, color: 'var(--ink-3)', padding: '0 2px', lineHeight: 1.5 }}>
+            Ordenado por <strong>días vencidos</strong> — primero a quien hay que
+            cobrarle. La barra de color mide <strong>antigüedad desde la venta</strong>,
+            que es otra cosa.
+          </div>
           {filtered.length > 0 && (
             <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-3)', overflow: 'hidden' }}>
               <AgingBarLeyenda />
@@ -171,6 +205,16 @@ function DebtsTab({ onAbono }: { onAbono: (d: Debt) => void }) {
                         columna VENCIDO de la maqueta no se pinta. */}
                     <div style={{ marginTop: 3 }}>
                       <AgingBar fechas={g.fiados.map((d) => d.created_at)} testid="customer-row-antiguedad" />
+                    </div>
+                    {/* Vencido: es el número por el que se ordena, así que se ve.
+                        `—` cuando no hay plazo pactado: no se puede afirmar que
+                        esté al día, y un 0 lo afirmaría. */}
+                    <div data-testid="customer-row-vencido" style={{ marginTop: 2, fontSize: 11.5, color: (g.diasVencidos ?? 0) > 0 ? 'var(--debt-on-soft)' : 'var(--ink-4)' }}>
+                      {g.diasVencidos == null
+                        ? '— sin plazo pactado'
+                        : g.diasVencidos > 0
+                          ? `${g.diasVencidos} ${g.diasVencidos === 1 ? 'día' : 'días'} vencido`
+                          : 'En plazo'}
                     </div>
                   </div>
                   <MoneyCell

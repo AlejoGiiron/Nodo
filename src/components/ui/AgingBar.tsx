@@ -72,6 +72,7 @@ export function AgingBar({
 export function AgingBarLeyenda() {
   return (
     <div
+      data-testid="aging-leyenda"
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -82,9 +83,17 @@ export function AgingBarLeyenda() {
         color: 'var(--ink-3)',
       }}
     >
+      {/* 🔴 SIGUE DICIENDO "ANTIGÜEDAD" AUNQUE YA EXISTA EL VENCIMIENTO
+          (deuda 46). Son dos preguntas distintas sobre la misma fila —cuánto
+          hace que se vendió, y cuánto hace que se pasó el plazo— y las dos son
+          verdaderas. Renombrar la barra a "vencido" la volvería falsa: una
+          venta de 40 días con plazo de 30 está en el tramo 31–60 de antigüedad
+          y lleva 10 días vencida. Dos números distintos para la misma fila SIN
+          rótulo es cómo nace la próxima deuda 53. */}
       <span style={{ fontWeight: 600, letterSpacing: '.04em', textTransform: 'uppercase' }}>
         Antigüedad
       </span>
+      <span style={{ color: 'var(--ink-4)' }}>desde la venta, no el vencimiento</span>
       {[
         { t: 'var(--d1)', l: '0–30 días' },
         { t: 'var(--d2)', l: '31–60' },

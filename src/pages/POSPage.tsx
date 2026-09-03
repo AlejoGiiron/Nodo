@@ -24,6 +24,8 @@ import { createOrder, addOrderItemsWithExtras, registerSalePayment, assignOrderN
 import type { SalePaymentPart } from '@/lib/supabase-helpers'
 import { captureError } from '@/lib/sentry'
 import { CustomerPicker } from '@/components/fiado/CustomerPicker'
+import { useCustomers } from '@/hooks/useCustomers'
+import { DEFAULT_PLAZOS_CREDITO, DEFAULT_PLAZO_CREDITO } from '@/lib/sedeConfig'
 import { cashQuickAmounts } from '@/lib/cashRounding'
 import { stockStatus, esAlertaDeStock } from '@/lib/stockStatus'
 import type { ProductWithCategory, CartItem, DiscountType, HeldOrder } from '@/stores/cartStore'
@@ -814,7 +816,7 @@ function CheckoutModal({
 }) {
   const { profile } = useAuth()
   const { can } = usePermissions()
-  const { sede } = useSedeConfig()
+  const { sede, config: sedeConfig } = useSedeConfig()
   const { refetchSales } = useCashShift()
   const queryClient = useQueryClient()
   const [step, setStep] = useState<'method' | 'amount' | 'success'>('method')
@@ -829,6 +831,14 @@ function CheckoutModal({
   const [reintentandoNumero, setReintentandoNumero] = useState(false)
   // Fiado: cliente seleccionado (solo aplica si method === 'fiado').
   const [customerId, setCustomerId] = useState<string | null>(null)
+  // 🔴 Deuda 46. El plazo se PRECARGA del cliente y queda editable: se pacta por
+  //    venta. Lo que se manda a `orders` es este valor, no el del cliente — si
+  //    la venta leyera el plazo del cliente al mostrarse en cartera,
+  //    renegociarlo movería el vencimiento de todas sus ventas viejas.
+  const [plazoDias, setPlazoDias] = useState<number | null>(null)
+  const { customers } = useCustomers()
+  const plazosSede = sedeConfig.plazos_credito ?? DEFAULT_PLAZOS_CREDITO
+  const plazoDefaultSede = sedeConfig.plazo_credito_default ?? DEFAULT_PLAZO_CREDITO
   const [customerName, setCustomerName] = useState<string>('')
   // Pago dividido (mixto): activo bajo demanda vía "Dividir pago".
   const [split, setSplit] = useState(false)
@@ -880,7 +890,13 @@ function CheckoutModal({
         discount_type: discountAmt > 0 ? discountType : null,
         discount_reason: discountAmt > 0 ? (discountReason.trim() || null) : null,
         ...(isFiado
-          ? { payment_status: 'pending', customer_id: customerId, customer_name: customerName }
+          ? {
+              payment_status: 'pending' as const,
+              customer_id: customerId,
+              customer_name: customerName,
+              // El plazo se CONGELA acá. Ver el comentario del estado.
+              plazo_dias: plazoDias,
+            }
           : {}),
       })
       if (orderErr || !order) throw orderErr ?? new Error('Error al crear orden')
@@ -1039,8 +1055,45 @@ function CheckoutModal({
                   </div>
                   <CustomerPicker
                     value={customerId}
-                    onChange={(id, name) => { setCustomerId(id); setCustomerName(name) }}
+                    onChange={(id, name) => {
+                      setCustomerId(id)
+                      setCustomerName(name)
+                      // Precarga del plazo pactado con ese cliente; si no tiene,
+                      // el default de la sede. Queda editable.
+                      const c = customers.find((x) => x.id === id)
+                      setPlazoDias(c?.plazo_dias ?? plazoDefaultSede)
+                    }}
                   />
+
+                  {/* 🔴 PLAZO DE LA VENTA — deuda 46. Desplegable y no número
+                      libre: el typo de 3 por 30 no lo detecta nada, y una venta
+                      a 3 días se lee como vencida a los cuatro. */}
+                  {customerId && (
+                    <div style={{ marginTop: 12 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink-2)', marginBottom: 6 }}>
+                        Plazo de pago
+                      </div>
+                      <select
+                        data-testid="pos-plazo"
+                        value={plazoDias == null ? '' : String(plazoDias)}
+                        onChange={(e) => setPlazoDias(e.target.value === '' ? null : Number(e.target.value))}
+                        style={{
+                          width: '100%', padding: '9px 12px', borderRadius: 'var(--r-2)',
+                          border: '1px solid var(--border)', background: 'var(--surface)',
+                          color: 'var(--ink)', fontSize: 13, cursor: 'pointer', appearance: 'auto',
+                        }}
+                      >
+                        <option value="">Sin plazo</option>
+                        {plazosSede.map((d) => (
+                          <option key={d} value={String(d)}>{d} días</option>
+                        ))}
+                      </select>
+                      <div style={{ marginTop: 6, fontSize: 11.5, color: 'var(--ink-3)' }}>
+                        Queda guardado en esta venta: cambiarle el plazo al cliente
+                        después no mueve el vencimiento de ésta.
+                      </div>
+                    </div>
+                  )}
                   {/* CupoMeter (§4). Vive ACÁ —dentro del modal, en el paso del
                       crédito— por la ubicación fijada al cerrar §8.15. La regla
                       7.1 se cumple igual: el cupo se proyecta con la venta en

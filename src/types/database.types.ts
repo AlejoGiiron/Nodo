@@ -159,6 +159,7 @@ export type Database = {
           name: string
           notes: string | null
           phone: string | null
+          plazo_dias: number | null
           sede_id: string
           updated_at: string
         }
@@ -170,6 +171,7 @@ export type Database = {
           name: string
           notes?: string | null
           phone?: string | null
+          plazo_dias?: number | null
           sede_id: string
           updated_at?: string
         }
@@ -181,6 +183,7 @@ export type Database = {
           name?: string
           notes?: string | null
           phone?: string | null
+          plazo_dias?: number | null
           sede_id?: string
           updated_at?: string
         }
@@ -491,6 +494,7 @@ export type Database = {
           notes: string | null
           order_number: number | null
           payment_status: string
+          plazo_dias: number | null
           sede_id: string
           status: Database["public"]["Enums"]["order_status"]
           total: number
@@ -513,6 +517,7 @@ export type Database = {
           notes?: string | null
           order_number?: number | null
           payment_status?: string
+          plazo_dias?: number | null
           sede_id: string
           status?: Database["public"]["Enums"]["order_status"]
           total?: number
@@ -535,6 +540,7 @@ export type Database = {
           notes?: string | null
           order_number?: number | null
           payment_status?: string
+          plazo_dias?: number | null
           sede_id?: string
           status?: Database["public"]["Enums"]["order_status"]
           total?: number

@@ -3208,3 +3208,52 @@ El cliente pidió que el activo fijo entre como subcategoría de gasto y no como
 razonable hoy y va a dejar de serlo: **cuando compare meses, el mes en que compró muebles va a
 parecer malo sin serlo**. El aviso va **en el formulario, al elegir la subcategoría** —no en un
 instructivo ni en la documentación— porque ahí es donde alguien puede hacer algo con él.
+
+
+## 2026-09-02 · La 46 — el plazo de crédito, y por qué tenía que estar en dos lados
+
+### Lo que decidió el diseño no fue el plazo: fue la forma de la cartera
+
+Guardar el plazo en `customers` es lo obvio: ahí se pacta. Lo que obligó a guardarlo **también** en la
+venta salió de la enumeración previa, no del enunciado: **la cartera no guarda la deuda, la deriva de
+`orders`**. `getDebts` lee las órdenes con `payment_status in ('pending','partial')` y calcula el
+saldo contra `debt_payments`; no hay tabla de cuentas por cobrar.
+
+Con eso a la vista, el defecto deja de ser una hipótesis: **el mismo `select` devolvería otro
+vencimiento mañana** para una venta de enero, en cuanto alguien renegocie el plazo del cliente. Sin
+error, sin aviso, con el número plausible — y quien lo lee **llama a cobrar algo que no venció**.
+
+🔴 **Y de ahí sale el detector, que vale más que el quinto caso:** la pregunta no es "¿este dato puede
+cambiar?" sino **"¿de dónde sale cuando alguien lo mira?"**. Un dato leído por un cálculo derivado no
+está congelado por estable que sea su origen: se recalcula entero cada vez.
+
+### Dos números verdaderos sobre la misma fila
+
+Con el plazo puesto, la cartera tiene **antigüedad** (cuánto hace que se vendió) y **vencido** (cuánto
+hace que se pasó el plazo). Una venta de 40 días con plazo de 30 está en el tramo *31–60* de la
+AgingBar y lleva *10 días vencida*. **Los dos son correctos y dan números distintos.**
+
+Se ordenó por **días vencidos** —es el que dispara la acción— y la barra se quedó midiendo antigüedad
+sin cambiar. Lo que se agregó es el rótulo: la pantalla dice por qué está ordenada y aclara que la
+barra mide otra cosa. Dos cifras del mismo hecho sin definición es exactamente cómo nació la deuda 53,
+y esta vez el rótulo llegó antes que el reclamo.
+
+⚠️ Y una decisión chica que se paga sola: los clientes **sin plazo pactado van al final del orden**, no
+al principio. `null` no es 0 — no se puede afirmar que estén al día, así que tampoco pueden competir
+por el primer lugar.
+
+### La aritmética como función pura, no como vista
+
+`diasVencidos` vive en `src/lib/cartera.ts` con 10 tests unitarios. La razón es R7: es una frontera de
+día sobre un `timestamptz`, y **una función pura se puede poner roja con una fecha inventada**,
+mientras que una vista sólo se prueba con datos reales y un reloj que no controlamos.
+
+El caso que discrimina está escrito: `2026-01-11T04:00:00Z` son las 23:00 del **10** en Bogotá. Con
+plazo 0 vence el 10, así que el 11 lleva **1 día**. Leyendo el timestamp crudo daría **0** — "al día"
+sobre algo vencido.
+
+### Un error propio, atajado por el hook
+
+Escribí en la cabecera de la migración *"customers 5, orders 173"* **sin haberlos medido**. Los conté
+antes de aplicar: **74 y 1.320**. Un número sin comando es una opinión con dígitos, y esta vez la
+opinión estaba en un archivo que se archiva. Corregido antes del push.

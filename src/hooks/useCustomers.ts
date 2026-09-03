@@ -47,7 +47,10 @@ export function useCustomerMutations() {
 
   const save = useMutation({
     mutationFn: async (
-      input: Pick<TablesInsert<'customers'>, 'name' | 'phone' | 'document' | 'notes'>
+      input: Pick<
+        TablesInsert<'customers'>,
+        'name' | 'phone' | 'document' | 'notes' | 'plazo_dias'
+      >
         & { id?: string },
     ) => {
       const { data, error } = await upsertCustomer({

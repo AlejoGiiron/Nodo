@@ -1,3 +1,5 @@
+import { useSedeConfig } from '@/hooks/useSedeConfig'
+import { DEFAULT_PLAZOS_CREDITO } from '@/lib/sedeConfig'
 import { useState } from 'react'
 import { X, Loader2 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
@@ -27,6 +29,13 @@ export function CustomerFormModal({ customer, onClose, onSaved }: CustomerFormMo
   const [phone, setPhone] = useState(isNew ? '' : customer.phone ?? '')
   const [document, setDocument] = useState(isNew ? '' : customer.document ?? '')
   const [notes, setNotes] = useState(isNew ? '' : customer.notes ?? '')
+  // 🔴 Deuda 46. '' = sin plazo pactado, que NO es lo mismo que 0 días: cero
+  //    afirmaría "vence el mismo día" y sin plazo no se puede afirmar nada.
+  const { config } = useSedeConfig()
+  const plazos = config.plazos_credito ?? DEFAULT_PLAZOS_CREDITO
+  const [plazo, setPlazo] = useState<string>(
+    isNew ? '' : (customer.plazo_dias == null ? '' : String(customer.plazo_dias)),
+  )
 
   const handleSave = async () => {
     if (!name.trim()) { toast.error('Ingresa el nombre del cliente'); return }
@@ -36,6 +45,7 @@ export function CustomerFormModal({ customer, onClose, onSaved }: CustomerFormMo
       phone: phone.trim() || null,
       document: document.trim() || null,
       notes: notes.trim() || null,
+      plazo_dias: plazo === '' ? null : Number(plazo),
     })
     if (saved) onSaved?.(saved as Customer)
     onClose()
@@ -74,6 +84,24 @@ export function CustomerFormModal({ customer, onClose, onSaved }: CustomerFormMo
           </div>
           <div>
             <label style={fieldLabel}>Notas</label>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--ink-2)', margin: '0 0 6px' }}>
+              Plazo de crédito
+            </label>
+            {/* 🔴 DESPLEGABLE, NO UN NÚMERO LIBRE (deuda 46). Con tres valores
+                conocidos, teclear sólo agrega el typo de 3 por 30 — que nadie
+                detecta, y que hace que una venta a 30 días se lea como vencida
+                a los cuatro. La lista sale de la SEDE. */}
+            <select
+              data-testid="customer-plazo"
+              value={plazo}
+              onChange={(e) => setPlazo(e.target.value)}
+              style={{ ...inputStyle, cursor: 'pointer', appearance: 'auto', marginBottom: 14 }}
+            >
+              <option value="">Sin plazo pactado</option>
+              {plazos.map((d) => (
+                <option key={d} value={String(d)}>{d} días</option>
+              ))}
+            </select>
             <textarea data-testid="customer-notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Observaciones del cliente..." rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
           </div>
         </div>
