@@ -1132,10 +1132,10 @@ que la suite E2E pueda correr: es el único verificador que mira esta clase.
 
 ### 🔴 CRITERIO SIN NÚMERO · LA HISTORIA NO SE REESCRIBE, SE LE AGREGA — Y BORRAR DE UNA LISTA ES DEJAR DE OFRECERLA
 
-*CINCO decisiones tomadas por separado entre el 2026-08-31 y el 2026-09-02 que resultaron ser la
-misma. Se escribe una vez, con los cinco casos, en vez de cinco decisiones que se parecen.*
-*(Decía "cuatro" con cinco filas en la tabla: par contradictorio propio, corregido al agregar el
-quinto. La regla del append aplica también al que la escribió.)*
+*Decisiones tomadas por separado entre el 2026-08-31 y el 2026-09-02 que resultaron ser la misma.
+Se escribe una vez, con los casos de la tabla, en vez de tantas decisiones que se parecen.*
+*(Esta frase decía "cuatro decisiones" y la tabla tenía cinco filas. El número salió de acá a
+propósito: ver el criterio del conteo en prosa, más abajo.)*
 
 > **Un hecho ocurrido no se corrige cambiándolo: se corrige agregando otro hecho.** Y una lista de
 > opciones no es la historia: **sacar un valor de la lista es dejar de OFRECERLO, nunca reescribir
@@ -1149,7 +1149,7 @@ quinto. La regla del append aplica también al que la escribió.)*
 | **Subcategoría retirada** (deuda 45) | borrar o migrar las filas que usaban la subcategoría que el dueño sacó de su lista | la fila **conserva** su valor y la pantalla la muestra **marcada como retirada**; lo que desaparece es poder volver a elegirla |
 | **plazo de crédito** (deuda 46) | guardarlo sólo en el cliente, que es donde se pacta | se guarda **también en la venta**. La cartera **deriva de `orders`**, así que con el plazo sólo en el cliente el mismo `select` **calcularía otro vencimiento mañana** para una venta de enero |
 
-**Por qué es el mismo principio y no cinco parecidos:** en los cinco, la alternativa cómoda hace
+**Por qué es el mismo principio y no varios parecidos:** en todos, la alternativa cómoda hace
 que **una pregunta sobre el pasado cambie de respuesta según cuándo se la haga**. Ese es el defecto,
 y es el perfil de R7: no revienta, no avisa, y el número sigue siendo plausible.
 
@@ -1201,7 +1201,7 @@ toma después de esa respuesta, no antes.
 
 ### 🔴 CRITERIO SIN NÚMERO · LA DEUDA ES UNA HIPÓTESIS FECHADA; EL CÓDIGO ES EL DATO
 
-*CUATRO casos medidos el 2026-09-02, el mismo día. Los tres primeros comparten causa —el alcance venía de la maqueta—; el cuarto es de otra especie y por eso está explicado aparte.*
+*Casos medidos el 2026-09-02, el mismo día. Los de arriba de la tabla comparten causa —el alcance venía de la maqueta—; el último es de otra especie y por eso está explicado aparte.*
 
 `docs/DEUDAS.md` se lee al planificar, y por eso cada entrada trae su **alcance**. Ese alcance se
 escribió en algún momento, mirando algo — y **a veces ese algo no fue el código.**
@@ -1234,8 +1234,8 @@ chico algo que no lo era.
 
 No es desconfianza del que escribió: es que el alcance escrito y el código son **dos fuentes
 distintas**, y sólo una ejecuta. Si al enumerar coinciden, costó dos minutos. Si no coinciden
-—**cuatro de cuatro veces, hasta ahora**—, lo que se encontró es justamente lo que habría hecho
-fallar el plan, o el registro de lo que se hizo.
+—**todas las veces hasta ahora**—, lo que se encontró es justamente lo que habría hecho fallar el
+plan, o el registro de lo que se hizo.
 
 🔴 **EL CUARTO CASO ES EL QUE MEJOR EXPLICA POR QUÉ ESTO VALE LA PENA, justamente porque NO costó
 nada.** El enunciado decía "ordena por antigüedad, cambialo a días vencidos"; el código ordenaba por
@@ -1804,6 +1804,36 @@ falsa. El estado es lo que se pudre, así que se escribe distinto.
   no es enumerar los sitios.** Antes de escribir "se corrigió X": grep de la forma, lista de sitios,
   estado de cada uno. Si se tocaron dos de tres, la nota dice cuáles. Lo cazó A3 porque el plan exigía
   que el caso **apareciera** en vez de darlo por cerrado.
+- 🔴 **UN CONTEO DENTRO DE UNA FRASE ES UN LADO MÁS DEL CONTRATO CON SU TABLA — Y LA SOLUCIÓN NO ES
+  ACORDARSE DE ACTUALIZARLO: ES NO ESCRIBIR EL NÚMERO.** *Dos casos propios, 2026-09-02, y los dos
+  creados **el mismo día en que estaba citando la regla del append**.*
+
+  | Frase | Tabla al lado | Estado |
+  |---|---|---|
+  | *"Cuatro decisiones… con los cuatro casos"* | **cinco** filas | contradictorio a las horas de escrito |
+  | *"TRES casos medidos"* | **cuatro** filas | contradictorio a los minutos |
+
+  **Es R1 en prosa, y es la tercera aparición del mismo patrón** después de dos que ya resolvimos en
+  código: `admin = ALL_PERMISSION_KEYS` **derivado** en vez de enumerado —enumerarlo dejó las cuatro
+  copias de Vento con 16/20/18/23— y `ALL_PERMISSION_KEYS` construido con `flatMap` sobre los grupos.
+  Las tres veces el defecto es el mismo: **un valor que se puede derivar, escrito a mano**, y con
+  nada que sincronice los dos lados.
+
+  ⚠️ **Lo que hace peor a la variante en prosa es que no hay verificador.** Un catálogo desincronizado
+  lo caza un test o un check de árbol; una frase que dice "cuatro" al lado de cinco filas **no la caza
+  nadie**, y encima *el número es lo primero que se lee y lo último que se revisa*. Yo escribí los dos
+  mientras aplicaba la regla que los prohíbe: **acordarse no funciona, ni siquiera con la regla
+  cargada y en uso.**
+
+  **LO ACCIONABLE, y cuesta menos que la alternativa: no escribas el número.** *"Los casos de la
+  tabla"*, *"todas las veces hasta ahora"*, *"los de arriba"*. Se lee igual, no se puede desincronizar,
+  y el lector cuenta las filas si le importa el número. **Cerrar el defecto en el mecanismo, no en la
+  instancia** — que es lo que ya hicimos las otras dos veces.
+
+  ⚠️ Cuándo SÍ va el número: cuando es una **medición fechada** que no depende de nada de al lado
+  —"202 passed", "37 productos (Control_Mp.xlsx)", "74 filas contadas antes de tocar"—. Ahí el número
+  **es** el dato. Lo que no va es un número que **cuenta algo que está escrito al lado**.
+
 - **UNA NOTA QUE DIRIGE MAL CUESTA MÁS QUE UNA AUSENTE.** Las dos peores del documento no eran
   omisiones: describían código eliminado y una relación de ramas invertida. Si no podés verificar
   una afirmación, no la escribas como hecho.

@@ -3270,3 +3270,46 @@ Cuarta vez que un enunciado —mío o de una deuda— resulta ser una hipótesis
 Escribí en la cabecera de la migración *"customers 5, orders 173"* **sin haberlos medido**. Los conté
 antes de aplicar: **74 y 1.320**. Un número sin comando es una opinión con dígitos, y esta vez la
 opinión estaba en un archivo que se archiva. Corregido antes del push.
+
+
+## 2026-09-02 · Dos pares contradictorios míos, escritos el día que citaba la regla que los prohíbe
+
+*Registro con atribución: los dos los escribí yo, con horas de diferencia, mientras aplicaba la regla
+del append en otros archivos.*
+
+| Frase que escribí | Tabla que tenía al lado | Cuánto duró siendo cierta |
+|---|---|---|
+| *"Cuatro decisiones… con los cuatro casos"* | cinco filas | unas horas |
+| *"TRES casos medidos el 2026-09-02"* | cuatro filas | minutos |
+
+Los dos aparecieron **al agregar una fila a la tabla y no tocar la frase de arriba**. Ninguno de los
+dos es un descuido aislado: son el mismo movimiento, y lo hice dos veces el mismo día.
+
+### Lo que cambia es lo accionable, no el diagnóstico
+
+La lectura fácil sería "hay que acordarse de actualizar el número". **La evidencia dice que eso no
+funciona:** los escribí con la regla cargada, citándola, y en un archivo donde la regla está escrita
+tres párrafos más arriba.
+
+> **Un conteo dentro de una frase es un LADO MÁS del contrato con la tabla que acompaña.** Y como
+> todo contrato en N lados, no se arregla con disciplina: se arregla **quitando el lado**.
+
+**La forma de no pagarlo es no escribir el número.** *"Los casos de la tabla"*, *"todas las veces
+hasta ahora"*, *"los de arriba"*. Se lee igual y no se puede desincronizar.
+
+### Tercera aparición del mismo patrón, y la primera en prosa
+
+| Dónde | El defecto | Cómo se cerró |
+|---|---|---|
+| `SYSTEM_ROLES.admin` | los permisos del admin **enumerados** a mano | `admin = ALL_PERMISSION_KEYS`, **derivado**. Enumerarlo había dejado las copias de Vento con 16/20/18/23 según el archivo |
+| `ALL_PERMISSION_KEYS` | la lista de claves escrita aparte de los grupos | construida con `flatMap` sobre `PERMISSION_GROUPS` |
+| **una frase con un conteo** | el número escrito al lado de la tabla que lo produce | **se saca el número de la frase** |
+
+Las tres veces: **un valor que se puede derivar, escrito a mano, sin nada que sincronice los lados.**
+Cerrar el defecto en el mecanismo y no en la instancia.
+
+⚠️ **Y lo que hace peor a la variante en prosa: no hay verificador.** Un catálogo desincronizado lo
+caza un test o un check de árbol. Una frase que dice "cuatro" al lado de cinco filas **no la caza
+nadie** — y el número es lo primero que se lee y lo último que se revisa.
+
+✅ Ya se aplicó en las dos frases que lo provocaron, en el mismo commit que escribió el criterio.
