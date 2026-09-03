@@ -7,12 +7,10 @@ import {
   Pause, Play, Clock, AlertTriangle, HandCoins, SplitSquareHorizontal,
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
-import { useScrollOverflow } from '@/hooks/useScrollOverflow'
 import {
   useCartStore, cartItemTotal, precioLejosDelCatalogo, desvioDelCatalogo,
 } from '@/stores/cartStore'
 import { useProducts } from '@/hooks/useProducts'
-import { useCategories } from '@/hooks/useCategories'
 import { useProductsWithExtras } from '@/hooks/useProductsWithExtras'
 import { useAuth } from '@/hooks/useAuth'
 import { usePermissions } from '@/hooks/usePermissions'
@@ -287,6 +285,41 @@ function ProductRow({ product, onAdd }: { product: ProductWithCategory; onAdd: (
           <AlertTriangle size={10} /> {badge.label}
         </span>
       )}
+      {/* ── COLUMNA CATEGORÍA ─────────────────────────────────────────────
+          Entra al sacar el strip: si el catálogo se ve entero, la categoría
+          deja de estar implícita en «qué pestaña estoy mirando» y pasa a ser
+          un dato de la fila.
+
+          🔴 VA EN TEXTO, SIN EL COLOR DE `categories.color`, y NO es una
+             omisión: §4 dice que **una categoría no se pinta con la paleta de
+             los estados**. Se midieron los ocho colores sembrados contra los
+             tokens y la colisión es literal, no potencial:
+
+               Farmacología  #0ea5e9  ===  --action-500   (venta en curso)
+               Pre entrenos  #f59e0b  ===  --warning-500  (aviso)
+               Proteína      #10b981  ===  el emerald de VENTO (deuda 88), y
+                                           verde es SÓLO confirmación (§1.2)
+               Quemadores    #ef4444  →    familia --danger
+               Snack         #a855f7  →    violeta, que §4 dice que "ni siquiera
+                                           existe en el sistema"
+
+             Dos son coincidencia EXACTA de byte con un token semántico. Pintar
+             el punto acá pondría un disco verde al lado del badge «Sin stock»
+             en la misma fila: el color afirmaría «esto salió bien» sobre una
+             categoría, que no afirma nada.
+          ✅ Y aplica el corolario de §4: el color era REDUNDANTE — el nombre ya
+             distingue la categoría, así que al quitarlo no se pierde
+             información, se deja de afirmar de más. */}
+      <span
+        data-testid="product-categoria"
+        style={{
+          flexShrink: 0, minWidth: 108, maxWidth: 132,
+          fontSize: 12, color: 'var(--ink-3)',
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+        }}
+      >
+        {product.categories?.name ?? '—'}
+      </span>
       <MoneyCell value={product.price} style={{ flexShrink: 0, minWidth: 88 }} />
     </button>
   )
@@ -1696,7 +1729,6 @@ function ResumeConflictDialog({ onKeep, onDiscardCurrent, onCancel }: {
 
 // ─── Main page export ────────────────────────────────────────────
 export function POSPage() {
-  const [activeCat, setActiveCat] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [canal, setCanal] = useState<Canal>(DEFAULT_CANAL)
   const [checkout, setCheckout] = useState(false)
@@ -1719,17 +1751,7 @@ export function POSPage() {
     setCheckout(true)
   }
 
-  const { data: categories = [], isLoading: catsLoading } = useCategories()
-
-  // Máscara de continuación del strip de categorías. `categories` como dep:
-  // el ResizeObserver ve el contenedor, no los tabs que entran o salen.
-  const { ref: tabsRef, hasMore: tabsHasMore } = useScrollOverflow<HTMLDivElement>('x', categories)
   const { data: products = [], isLoading: prodsLoading } = useProducts()
-
-  // Set first category as default
-  useEffect(() => {
-    if (!activeCat && categories.length > 0) setActiveCat(categories[0].id)
-  }, [activeCat, categories])
 
   // Atajos del MOSTRADOR (§5): F2 buscar producto, F12 cobrar. El `/` ya
   // estaba y se conserva — es el único atajo impreso además de F12.
@@ -1773,20 +1795,35 @@ export function POSPage() {
     return () => style.remove()
   }, [])
 
-  const resolvedCat = activeCat ?? categories[0]?.id ?? null
-
+  /**
+   * La lista del mostrador: **todo el catálogo**, y el buscador lo acota.
+   *
+   * 🔴 ACÁ VIVÍA EL DEFECTO QUE DESTAPÓ SACAR EL STRIP, y no era de layout.
+   *    La versión anterior filtraba por `resolvedCat = activeCat ?? categories[0].id`,
+   *    con un `useEffect` que fijaba la primera categoría al cargar. **No había
+   *    opción «Todos».** O sea que, sin escribir en el buscador, el mostrador
+   *    mostraba UNA sola categoría —la primera por `sort_order`— y las otras
+   *    siete estaban a un clic que nadie veía. Con el catálogo real del cliente
+   *    eso deja la mayor parte del producto inalcanzable por defecto.
+   *    El strip no filtraba: **poblaba**.
+   *
+   * 🔴 Y LA CATEGORÍA ENTRA AL BUSCADOR, que es la mitad sin la cual sacar el
+   *    strip habría RETIRADO una capacidad en vez de moverla. El argumento que
+   *    justificó la decisión —«teclear es más rápido que navegar por
+   *    pestañas»— **era falso mientras el buscador no mirara la categoría**:
+   *    teclear «farma» no encontraba nada. La decisión se apoyaba en una
+   *    capacidad que no existía todavía.
+   */
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    if (q) {
-      return products.filter(
-        (p) => p.name.toLowerCase().includes(q) || (p.description ?? '').toLowerCase().includes(q),
-      )
-    }
-    if (!resolvedCat) return products
-    return products.filter((p) => p.category_id === resolvedCat)
-  }, [products, resolvedCat, query])
-
-  const activeCatObj = categories.find((c) => c.id === resolvedCat)
+    if (!q) return products
+    return products.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        (p.description ?? '').toLowerCase().includes(q) ||
+        (p.categories?.name ?? '').toLowerCase().includes(q),
+    )
+  }, [products, query])
 
   const items = useCartStore((s) => s.items)
   // El atajo se suscribe una sola vez y lee por ref, para no re-suscribir el
@@ -1862,7 +1899,7 @@ export function POSPage() {
   const afterDiscount = subtotal - discountAmt
   const total = afterDiscount
 
-  if (catsLoading || prodsLoading) {
+  if (prodsLoading) {
     return (
       <div className="flex items-center justify-center h-full text-slate-400 text-sm">
         Cargando productos...
@@ -1952,63 +1989,52 @@ export function POSPage() {
             </div>
           </div>
 
-          {/* Category tabs */}
-          {/*
-            El wrapper `position: relative` ancla la máscara. Y los botones llevan
-            `flexShrink: 0` a propósito: una vez que el panel está acotado, sin eso
-            los tabs se COMPRIMIRÍAN en vez de desbordar, y el overflow seguiría sin
-            activarse — el bug se mudaría en lugar de resolverse.
-          */}
-          <div style={{ position: 'relative' }}>
-          <div ref={tabsRef} data-testid="pos-category-tabs" style={{ display: 'flex', gap: 4, overflowX: 'auto', paddingBottom: 2, scrollbarWidth: 'none' }}>
-            {categories.map((c) => {
-              const active = resolvedCat === c.id && !query
-              return (
-                <button
-                  key={c.id}
-                  onClick={() => { setActiveCat(c.id); setQuery('') }}
-                  style={{
-                    padding: '12px 16px 14px',
-                    border: 'none', background: 'transparent',
-                    borderBottom: active ? `3px solid ${c.color}` : '3px solid transparent',
-                    color: active ? c.color : 'var(--ink-3)',
-                    fontWeight: active ? 700 : 500, fontSize: 14,
-                    fontFamily: 'Inter, sans-serif', cursor: 'pointer',
-                    whiteSpace: 'nowrap', letterSpacing: -0.2, transition: 'color .12s',
-                    flexShrink: 0,
-                  }}
-                >
-                  {c.name}
-                </button>
-              )
-            })}
-          </div>
+          {/* ── ACÁ VIVÍA EL STRIP DE CATEGORÍAS, Y SE RETIRÓ (2026-09-03) ────
+              La lista muestra el catálogo entero, como la maqueta, y el
+              buscador lo acota. Se anota en negativo porque el motivo no es
+              estético y no se puede reconstruir mirando el código que queda:
 
-          {/* Máscara de continuación: la scrollbar está oculta
-              (`scrollbarWidth: none`), así que sin esto el cajero no tiene NINGUNA
-              señal de que quedan categorías a la derecha. Solo aparece si de verdad
-              hay más (ver useScrollOverflow). Mismo patrón que Productos y Delivery. */}
-          {tabsHasMore && (
-            <div
-              aria-hidden
-              data-testid="pos-category-tabs-fade"
-              style={{
-                position: 'absolute', top: 0, bottom: 2, right: 0, width: 36,
-                background: 'linear-gradient(to left, var(--surface-3) 25%, transparent)',
-                pointerEvents: 'none',
-              }}
-            />
-          )}
-          </div>
+              1. 🔴 EL STRIP NO FILTRABA: POBLABA. Sin escribir en el buscador
+                 el mostrador mostraba UNA sola categoría —la primera— porque
+                 no existía la opción «Todos». Con las ocho categorías reales
+                 del cliente, siete octavos del catálogo estaban a un clic que
+                 nadie ve. Eso no es layout: es el producto no mostrando lo que
+                 tiene.
+              2. **Su tamaño lo decidían los datos del CLIENTE.** Con 8
+                 categorías ya desborda a 1280 y aparece la máscara; en agosto
+                 empujó el carrito fuera de pantalla. Un elemento que crece con
+                 el catálogo es un defecto de layout esperando el dato correcto.
+              3. El brief dice que **la velocidad de búsqueda es el cuello de
+                 botella**, y navegar por pestañas es más lento que teclear tres
+                 letras — pero eso exigió que el buscador mirara la categoría,
+                 ver `filtered`.
+
+              ⚠️ Lo que se fue con él, enumerado antes de tocarlo: elegir una
+              tab limpiaba el buscador; el color de la categoría pintaba la
+              barra y la pastilla del encabezado; la máscara era la ÚNICA señal
+              de que había más (la scrollbar está oculta); y un `useEffect`
+              fijaba la primera categoría al cargar — que es lo que producía (1).
+              `useScrollOverflow` NO se poda: lo usa `CategoryTabs` en Productos. */}
         </div>
 
-        {/* Section header */}
+        {/* Encabezado de la lista.
+            🔴 EL CONTEO SE CONSERVA, Y SUBE DE VALOR AL SACAR SU VECINO. Con el
+               strip, «N productos» era una nota al margen: el rótulo de al lado
+               ya decía qué se estaba mirando y la lista era corta. Con el
+               catálogo entero a la vista es **la única señal de cuánto hay** —y
+               la única forma de notar que el buscador acotó a tres de treinta y
+               dos—. Es un (d) que no cambió de código y cambió de importancia.
+            ⚠️ Se fue la PASTILLA DE COLOR: pintaba `activeCatObj.color`, y sin
+               categoría activa no tiene qué afirmar. Ver la nota de la columna
+               CATEGORÍA en `ProductRow` para por qué el color no se muda ahí. */}
         <div style={{ padding: '16px 24px 8px', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 4, height: 18, borderRadius: 2, background: activeCatObj?.color ?? 'var(--ink-4)', flexShrink: 0 }} />
           <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)', letterSpacing: -0.3 }}>
-            {query ? `"${query}"` : (activeCatObj?.name ?? 'Todos')}
+            {query ? `"${query}"` : 'Todos los productos'}
           </div>
-          <div style={{ fontSize: 12, color: 'var(--ink-4)', fontVariantNumeric: 'tabular-nums' }}>
+          <div
+            data-testid="pos-conteo-productos"
+            style={{ fontSize: 12, color: 'var(--ink-4)', fontVariantNumeric: 'tabular-nums' }}
+          >
             {filtered.length} {filtered.length === 1 ? 'producto' : 'productos'}
           </div>
         </div>
