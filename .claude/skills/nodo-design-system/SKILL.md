@@ -499,6 +499,25 @@ descuento, nombre de cliente. La decisión es **por tipo de control y el default
 una lista de campos, porque una lista se congela y el próximo input nacería desprotegido. Un campo
 donde las letras son inertes **lo declara** (`data-letras-inertes`), y ésa es la única excepción.
 
+🔴 **Y DÓNDE NO MANDA AUNQUE PUEDA: EN EL PASO DEL MONTO.** *Decidido el 2026-09-03, al volver el
+cobro al modal.*
+
+> **Un atajo que cambia un estado que no está en pantalla no es un atajo: es un cambio silencioso.**
+
+El modal parte el cobro en dos pasos, y en el del **monto** la grilla de medios no está montada. La
+letra podría dispararse igual —el campo la descarta, que es la propiedad de arriba— y cambiaría el
+medio de pago **sin ninguna retroalimentación**, con el foco adentro del campo del dinero. El estado
+que decide **a dónde va la plata**, mudo, en el control que la cajera está usando. Se apaga.
+
+⚠️ **Esto NO debilita la razón de haber elegido letras**, que es la de arriba y no depende de dónde
+viva el cobro. Lo que cambia no es si la letra *puede* dispararse: es que **en ese paso no hay qué
+mostrar**.
+
+✅ Y se asevera en las dos mitades, porque ninguna sirve sola: con la grilla visible la letra
+**manda**; en el paso del monto **no cambia el medio** —comprobado volviendo con «Atrás»— y tampoco
+se escribe en el campo. Un manejador que responde siempre pasaría la primera; uno borrado pasaría la
+segunda.
+
 ✅ **`F4` (cambiar cliente) CABLEADA el 2026-09-03 — apunta al BUSCADOR de clientes del cobro.**
 La regla era *se cablea con su control, no antes*, y se cumplió: entró junto con el control y se
 quedó cuando el cobro volvió al modal, cambiando **a qué apunta** y no **si apunta**.

@@ -1457,6 +1457,39 @@ llevaba semanas mintiendo, y ése fue su hallazgo más caro.
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · UN ESTADO QUE SÓLO SE COMUNICA CON COLOR O POSICIÓN NO SE PUEDE PROBAR QUE EXISTA
+
+*Dos casos, 2026-09-03. Es el hermano del defecto que sólo vive en lo que se ve, mirado desde el
+otro lado: allá el problema es que nadie lo VE bien; acá, que nadie lo puede ASEVERAR.*
+
+> **Si el único portador de un estado es un color, un ícono o una posición, no existe para ningún
+> verificador — y el día que se rompa, la suite entera va a estar verde.**
+
+| Caso | Dónde vivía el estado | Qué se le agregó |
+|---|---|---|
+| el rótulo **«Cobrar — F12»** | el texto del botón afirmaba una tecla; la tecla vivía —o no— en otro archivo | el texto se **deriva** de `atajos.ts` |
+| el cliente **elegido** en `CustomerPicker` | fondo `--action-soft` + un ícono de check, y **nada más** | `aria-pressed={selected}` |
+
+**Por qué se repite:** para el ojo el estado **está ahí**, y con toda claridad — un check azul sobre
+fondo celeste no es sutil—. La forma se ve terminada, así que nadie busca un portador adicional. El
+hueco sólo aparece cuando alguien intenta escribir la aserción y descubre que no hay nada que
+aseverar salvo un píxel.
+
+⚠️ **Y el modo de fallo es el peor de los tres tipos de afirmación falsa:** el estado puede
+**desaparecer en un re-skin** sin que nada se ponga rojo. El botón de F12 imprimió una tecla muerta
+durante todo el proyecto; el picker podía dejar de marcar al elegido y ningún caso lo habría notado.
+
+**LO ACCIONABLE, y cuesta un atributo:** cuando un estado se comunique con color, ícono o posición,
+dale además un portador **semántico** — `aria-pressed`, `aria-selected`, `aria-current`, `data-*`.
+No es un testid: es el estado mismo, y por eso sirve dos veces — lo asevera la suite **y** lo
+anuncia el lector de pantalla. Un `data-testid` dice *quién es este elemento*; lo que falta acá es
+*en qué estado está*.
+
+⚠️ Corolario de diseño: si al escribir el caso no encontrás qué aseverar, **el hueco no es del test
+— es de la pantalla**. Agregar el atributo es arreglar el producto, no instrumentarlo.
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · UN FILTRO QUE SE APOYA EN UN CAMPO VECINO ES UN PROXY, Y CADUCA SIN AVISO
 
 *Medido el 2026-09-03, moviendo F4 al modal. Es "clasificar leyendo el nombre" aplicado a una
@@ -2384,6 +2417,32 @@ falsa. El estado es lo que se pudre, así que se escribe distinto.
   —"202 passed", "37 productos (Control_Mp.xlsx)", "74 filas contadas antes de tocar"—. Ahí el número
   **es** el dato. Lo que no va es un número que **cuenta algo que está escrito al lado**.
 
+- 🔴 **UNA RAZÓN QUE CADUCÓ SE MARCA COMO CADUCA — NO SE BORRA, Y NO SE DEJA EN PIE.** *2026-09-03,
+  al revertir §8.15 por segunda vez.*
+
+  Una decisión sostenida por dos razones puede sobrevivir a que **una de las dos muera**. Los medios
+  de pago pasaron a `E/T/C` por dos argumentos: el campo de dinero consume dígitos (principal), y
+  *"con el cobro en línea no hay modo, y sin modo el doble significado no se puede desambiguar"*
+  (secundario). El cobro volvió al modal el mismo día: **hay modo otra vez** y el segundo argumento
+  dejó de sostener nada. La decisión sigue siendo correcta por el primero.
+
+  **Las tres salidas, y sólo una es buena:**
+
+  | qué se hace con la razón muerta | qué produce |
+  |---|---|
+  | **borrarla** | la decisión queda con menos respaldo del que tuvo, y nadie sabe que se evaluó ese eje |
+  | **dejarla en pie** | 🔴 es **la que alguien va a citar para revertir la decisión** — encuentra un argumento falso y concluye que la decisión también lo es |
+  | **marcarla como caduca, con su fecha y qué la mató** | ✅ el lector ve que el eje se evaluó, que caducó, y **cuál de las razones sigue cargando el peso** |
+
+  ⚠️ **La del medio es el modo de fallo real, y es el mismo de "una nota que dirige mal":** un
+  argumento que ya no es cierto **no se lee como obsoleto — se lee como equivocado**, y contamina la
+  decisión entera. El que llega no tiene forma de saber que era el secundario.
+
+  **Lo accionable:** al conservar una decisión cuyo contexto cambió, la nota dice **cuál razón murió,
+  qué la mató, y cuál queda**. Se aplica igual en el código —el comentario de `atajos.ts`—, en la
+  skill y en este archivo: los tres lados de esa decisión llevan la marca, porque un solo lado
+  marcado es otra vez un par contradictorio.
+
 - **UNA NOTA QUE DIRIGE MAL CUESTA MÁS QUE UNA AUSENTE.** Las dos peores del documento no eran
   omisiones: describían código eliminado y una relación de ramas invertida. Si no podés verificar
   una afirmación, no la escribas como hecho.
@@ -2493,6 +2552,32 @@ al mismo lado— y mirarla cuesta menos que los tres timeouts de 30 segundos que
 ⚠️ Corolario, y vale para cualquier renombre masivo: **la pregunta no es si cada reemplazo es
 correcto, sino si el mapa es INYECTIVO.** Cada reemplazo puede ser correcto y el conjunto perder
 información igual.
+
+🔴 **SEGUNDO CASO, 2026-09-03 — Y EL PRIMERO CAZADO ANTES DE APLICARLO.** Al volver el cobro al
+modal hubo que hacer el camino inverso: `cobro-confirmar` (uno) → **tres** botones del modal
+(`checkout-continue` · `checkout-confirm-efectivo` · `checkout-confirm-mixto`), según el medio. O
+sea que no había mapeo posible: había **33 decisiones, una por sitio**.
+
+**Y uno de los 33 no era un confirmador: era la PUERTA.** El caso *«sin turno el cobro no procede»*
+de `pos.spec` apretaba `cobro-confirmar` para medir que **NO** cobrara. Su destino correcto es
+`cobro-abrir` — un botón que en ese escenario ni siquiera abre nada.
+
+⚠️ **Y por eso este caso es el que muestra el costo real de no mirar.** Un renombre mecánico lo
+habría mandado a un confirmador que en ese escenario no existe, y el resultado no es un rojo
+honesto: es un rojo que dice *«no apareció el modal»* en vez de nombrar el turno — o, si el
+escenario hubiera sido un poco distinto, **un verde**, porque *«el botón que buscaba no está»* y
+*«el cobro no procedió»* se parecen demasiado.
+
+> **En un mapeo de locators, el sitio más peligroso no es el que usa dos entradas: es el que usaba
+> la entrada para medir que NO pasara nada.**
+
+Un locator que existe para verificar una **ausencia** sobrevive a casi cualquier reemplazo
+equivocado, porque su aserción ya espera que no haya nada.
+
+✅ **Lo accionable que agrega, y es una pregunta antes del `sort | uniq -d`:** de los N sitios,
+**¿cuáles aseveran que algo NO ocurre?** Ésos se leen uno por uno **aunque el mapa sea inyectivo**;
+el `uniq -d` no los ve, porque su problema no es el destino repetido sino que el destino correcto es
+**otra cosa entera**.
 
 **🔴 ANTES DE BORRAR UN TEST POR OBSOLETO, VERIFICÁ SI SU ASERCIÓN SIGUE SIENDO VERDADERA BAJO EL
 MODELO NUEVO.** *El sujeto puede haber cambiado y la expectativa seguir valiendo.*
