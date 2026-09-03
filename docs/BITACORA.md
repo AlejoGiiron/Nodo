@@ -2881,3 +2881,53 @@ sólo para el botón que lo dispara.
 ⚠️ Y lo que esto dice del método: **el gate del botón era necesario y no suficiente.** La enumeración
 de insumos identificó bien QUÉ faltaba cargar; lo que no preguntó es **qué puede tocar el usuario
 mientras tanto**. Es una pregunta nueva para la próxima de esta clase.
+
+
+## 2026-09-02 · El archivo real del cliente — y una cifra inventada que se citó como dato durante días
+
+*`Control_Mp.xlsx`, el primer archivo real de Muscle Pro. Cambió dos deudas, descartó una prioridad y
+abrió una bloqueante nueva.*
+
+### 🔴 El error, con atribución: 4.212 productos que nunca existieron
+
+El balance de esquema y la deuda 50 decían que el catálogo del cliente tenía **miles de referencias**,
+y sobre eso se declaró el import masivo como **el bloqueo de arranque más grande**. Medido contra el
+archivo: **son 37 productos.**
+
+**De dónde salió el número: de la maqueta de diseño.** Alguien —yo— necesitaba un catálogo grande para
+justificar decisiones de UI —filas en vez de tarjetas, paginación, búsqueda— y usó una cifra
+verosímil. Esa cifra **cruzó de la maqueta al balance de deudas y se citó como dato del cliente**
+durante días, en una tabla que decidía el orden del trabajo.
+
+> **Un número inventado para poblar una maqueta es indistinguible de un dato medido en cuanto se
+> escribe en una tabla.** No lleva marca de origen, y la tabla le presta autoridad.
+
+⚠️ Es primo del corolario de R4 —*la coincidencia entre dos declaraciones no es evidencia*— con un
+agravante: acá no hubo ni siquiera dos fuentes. Hubo una, inventada, repetida. Y encajaba: un
+catálogo grande hacía más urgente el import, que era lo que se quería concluir.
+
+**Lo accionable, y es de escritura:** una cifra que entra a un documento de decisión **dice de dónde
+salió, o no entra**. "37 (Control_Mp.xlsx, hoja Maestro)" y "≈4.000 (supuesto de la maqueta)" son dos
+clases de dato distintas, y sólo la primera puede sostener una prioridad.
+
+### Lo que el archivo enseñó, medido
+
+| hallazgo | consecuencia |
+|---|---|
+| **37 productos**, no 4.212 | la 50 deja de ser bloqueante: se cargan a mano |
+| **17 de 37** se movieron sin estar en el maestro; el mismo producto con **grafías distintas** entre hojas | un import por nombre **fabricaría duplicados**. La carga se **cura con el cliente**, no se importa — y eso no lo hace un parser |
+| **el mismo producto vendido a 109.000, 110.000 y 115.000** | 🔴 **el precio se negocia por venta y el mostrador no lo permite** → deuda 75, bloqueante |
+| **un solo costo por producto** en todas sus ventas | el cliente **ya congela el costo por línea** sin llamarlo así: el modelo que elegimos coincide con su práctica |
+| compras del **31 de agosto registradas el 2 de septiembre** | la 44 deja de ser hipotética |
+| **3.511.500 de 5.495.500** de "gastos" son compras de inventario | la 63 no es higiene: le devolveríamos su propio número inflado |
+
+### La lectura que vale más que los seis puntos
+
+**Cinco de los seis hallazgos contradicen o precisan algo que ya estaba escrito**, y ninguno lo
+encontró leer el código, dibujar una pantalla ni auditar. Los encontró **un archivo del cliente**. El
+producto llevaba semanas decidiendo sobre un cliente imaginado, y el imaginado tenía un catálogo
+grande, precios de lista y gastos bien clasificados.
+
+⚠️ Y el que más cambia el trabajo es el que **no estaba en ninguna lista**: el precio negociado. No
+fue un hueco que alguien no cerró — fue una suposición tan básica que nadie la escribió como
+suposición. Se descubre mirando qué hace el cliente, no revisando lo que escribimos.
