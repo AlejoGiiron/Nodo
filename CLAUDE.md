@@ -884,13 +884,25 @@ Si no cierra, una de las dos cuentas está mal — y averiguar cuál es el traba
 
 ### 🔴 CRITERIO SIN NÚMERO · INFERIR LA CAUSA ANTES DE MIRARLA — TRES VECES EN UN DÍA
 
-*2026-09-03. El patrón es de quien escribe esto, y se repite dentro de la misma sesión.*
+*2026-09-03. Tres veces en una sesión — y el patrón tiene DOS puntas, no una.*
 
 | # | lo que inferí | lo que era |
 |---|---|---|
 | 1 | *«el guard de mixto/fiado sólo vive en una condición de render»* | estaba en la RPC, con su `raise` y su comentario |
 | 2 | *«el marcador dice que la tanda 4 llegó»* | el marcador no fechaba: el commit lo conservó |
 | 3 | *«el deploy debe apuntar a otra rama»* | faltaba un `git push` — 18 commits locales |
+
+🔴 **Y LA ATRIBUCIÓN COMPLETA, porque la mitad se pierde si sólo se anota la primera:** en los tres
+casos la hipótesis se **inventó** de un lado y se **aceptó** del otro **sin pedir el comando**. El
+más caro es el primero: la deuda del guard no sólo se escribió sobre una descripción — se
+**aprobó**, con alcance y clase asignados (*«es la misma forma que la deuda 24 antes de las
+policies»*), sin exigir la definición de la RPC. Iba a entrar al registro con la autoridad de una
+clase conocida.
+
+⚠️ **Que encaje con un caso real del repo es lo que la hace pasar, no lo que la hace cierta.** Una
+hipótesis que confirma lo que el otro ya esperaba **se revisa menos** — es el corolario de R4 leído
+sobre la jerarquía, y por eso el criterio tiene que nombrar las dos puntas y no sólo a quien
+escribe.
 
 **Las tres tienen la misma forma:** una hipótesis **plausible y estructurada** —tiene clase, tiene
 precedente en el proyecto, se explica bien— construida **antes** de correr el comando que la
@@ -904,7 +916,8 @@ de que no lo estén**.
 
 **Lo accionable, y es de las dos puntas:** quien infiere **dice que está infiriendo** —«sospecho»,
 no «es»— y corre el comando antes de escribirlo en un registro. Quien recibe una causa **pide la
-salida del comando, no el razonamiento**.
+salida del comando, no el razonamiento** — y sobre un invariante, el `raise` textual antes de
+asignarle clase a una deuda.
 
 ⚠️ Es el corolario de R4 aplicado al diagnóstico en vez de a la verificación: **una explicación que
 encaja no es evidencia de que sea la explicación.**
@@ -1184,6 +1197,38 @@ reales de esa tanda —`Productos con existencia`, `Nombre de la sede`— sí di
 
 **Lo accionable que agrega:** un marcador tiene que ser una **cadena literal del fuente**. Antes de
 usarlo, `grep` en `src/`: si no aparece tal cual, no sirve para fechar un bundle.
+
+🔴 **LA DUODÉCIMA, Y LA PEOR UBICADA DE TODAS: LA SONDA QUE VERIFICABA EL CRITERIO SOBRE ESTE MISMO
+PATRÓN.** *2026-09-03, midiendo el alto mínimo del mostrador.*
+
+Una **sonda manual** y un **caso del spec** reprodujeron el mismo escenario —tres ítems en el
+carrito— y **dieron resultados opuestos**: la sonda decía que a 680px entraba todo, el caso decía
+que no.
+
+**Tenía razón el caso.** `Lab Coctel` abre el modal de configuración de extras, y **el caso lo
+confirma; la sonda no lo contemplaba**. Así que la sonda se quedaba en dos filas con un modal
+abierto encima y **medía un escenario que no era el que decía medir** — reportó «entra a 680» sobre
+una pantalla que nunca tuvo tres filas.
+
+⚠️ **Lo que la hace la peor ubicada de las doce:** esa sonda existía para verificar un arreglo cuyo
+criterio, escrito en el mismo commit, dice *«una aserción sobre una capacidad de N no está ejercida
+con N=1»*. **El instrumento que comprobaba el criterio incumplió el criterio.**
+
+> **Una sonda manual que reproduce el escenario de un caso existente REUSA SUS HELPERS — no lo
+> reescribe.**
+
+**Por qué es una regla y no un consejo:** reescribir el escenario **duplica el contrato**. El
+escenario del caso ya sabe cosas que costó descubrir —qué producto abre un modal, cuál está sin
+stock, cuál hay que confirmar— y el lado duplicado **nace sin ese conocimiento**. Es R1 aplicado a
+los escenarios de prueba: dos lados, nada que los sincronice, y el que se congela es el nuevo.
+
+⚠️ Y el modo de fallo es el de siempre en esta familia: **el lado duplicado no falla — mide de
+menos y reporta un verde.** Acá el verde era *«el alto mínimo de la maqueta se sostiene»*, que es
+justo la conclusión cómoda.
+
+✅ **Lo que lo destapó:** correr contra **la URL real**, donde el caso del spec y la sonda no podían
+seguir dándose la razón por separado. Séptima aparición de *«dos fuentes que coinciden no son
+evidencia»*, y primera en que las dos fuentes eran **instrumentos nuestros midiendo lo mismo**.
 
 🔴 **LOS DOS ÚLTIMOS SON EL MISMO INSTRUMENTO, Y ESO ES EL HALLAZGO.** *2026-09-03, tanda 5 de A6.*
 

@@ -12,7 +12,10 @@
 //    una sola imagen" (LEEME.md nota 7). Son un proxy con pérdida. Nodo.html es la
 //    maqueta misma, y renderizada al mismo viewport que la app da un par honesto.
 //
-// Viewport 1440×900: la maqueta declara min-width 1240 / min-height 680; 1440×900
+// Viewport 1440×900: la maqueta declara min-width 1240 / min-height 680 — pero
+// ese 680 era la declaración de un DIBUJO, no una medición: el alto mínimo real
+// del producto es 720, medido el 2026-09-03 contra la URL desplegada (ver §8.4
+// de la skill). 1440×900
 // es un escritorio corriente que deja aire a los dos lados y cabe el panel de
 // cobro (≥360) con el sidebar (214).
 import { chromium } from '@playwright/test';

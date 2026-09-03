@@ -600,6 +600,37 @@ Nada de esta lista debe leerse como resuelto. Si la implementación necesita una
    pero eso se decide, no se infiere.
 
 4. **Móvil.** **[CORREGIDO]** La entrega decía "solo la ruta del conductor está pensada en móvil" — **en Nodo no hay conductores, rutas ni despacho**, ni están planeados (el cliente carga y se lleva; es la razón por la que el producto no se llama G-Ship). Queda: las nueve pantallas de escritorio no tienen diseño responsive por debajo de ~1100px; hoy hacen scroll horizontal. Móvil entero está sin decidir.
+
+   #### 🔴 ALTO MÍNIMO DEL PRODUCTO: **720px**, no 680 — MEDIDO el 2026-09-03
+
+   **La maqueta declaraba `min-height: 680`, y eso NO era una medición: era la declaración de un
+   dibujo.** Ese dibujo no modelaba tres filas de carrito, ni el banner de jornada, ni **cinco**
+   medios de pago —dibujaba tres (§8.16)—, ni el bloque de crédito, ni los chips de monto rápido.
+   Nadie verificó nunca que el producto real entrara en 680.
+
+   **Medido contra la URL desplegada, con tres ítems en el carrito** —el escenario de una venta de
+   mostrador típica— y aseverando las tres cosas que tienen que verse a la vez: la línea del
+   carrito dentro de su contenedor, el total a cobrar, y el botón Cobrar.
+
+   | alto | Cobrar en pantalla | faltan |
+   |---|---|---|
+   | 680 | ❌ | **23px** |
+   | 700 | ❌ | 3px |
+   | **720** en adelante | ✅ | 0 |
+
+   ⛔ **Y por qué NO se recortan los 23px.** Sería **deformar el producto para que quepa en un
+   número que nadie verificó** — el mismo orden invertido que esta skill ya rechazó dos veces:
+   cuando recortar `payment_method` a tres medios para que entrara en la grilla del dibujo (§8.16:
+   *el diseño se adapta al producto*), y cuando el `autoFocus` del campo de dinero decidió que los
+   atajos de cobro fueran letras y no dígitos (§5). **El dibujo describe; el producto manda.**
+
+   ✅ **720 cubre lo que existe:** 768, 800, 900, 1080 y **1366×768 — el portátil más común**.
+   **680 no es un viewport real de escritorio.**
+
+   ⚠️ Y queda dicho para el próximo que agregue algo a la columna del mostrador: **este número es
+   una medición con fecha, no un margen.** Si la columna crece, se remide — no se asume que 720
+   sigue alcanzando. La sonda vive en `tests/cobro-en-linea.spec.ts` (*«la columna cabe en la
+   pantalla»*), que asevera las tres a 1440×900 con control a 1300.
 5. **Estados de foco por teclado.** El recorrido con Tab, el anillo de foco visible y el orden de tabulación no están especificados. Los atajos sí.
 6. **Impresión.** Remisión, factura, recibo de abono y cierre de caja no tienen diseño impreso.
 7. **Contenido y permisos exactos de cada rol.** Solo existe la partición binaria `ocultarPlata` y el estado `sin permiso`. La matriz completa rol × pantalla × acción no está definida. *(El catálogo real es de 21 claves: admin=21, cajero=8, owner=comodín — ver `src/lib/permissions.ts`.)*
