@@ -180,47 +180,77 @@ test('🔴 la venta simple queda en la base: total, pago y estado', async ({ pag
   expect(quedo.estadoDePago, 'y la venta queda pagada').toBe('paid')
 })
 
-test('🔴 E·T·C mandan CON EL FOCO en el campo de dinero — la razón de haber elegido letras', async ({ page }) => {
-  // 🔴 EL CASO MÁS IMPORTANTE DEL ARCHIVO, Y EL QUE MÁS COSTÓ RE-DERIVAR.
+test('🔴 E·T·C mandan donde HAY GRILLA, y se apagan en el paso del monto', async ({ page }) => {
+  // ==========================================================================
+  // 🔴 EL CASO MÁS IMPORTANTE DEL ARCHIVO, Y EL QUE MÁS CAMBIÓ AL VOLVER EL
+  //    MODAL. Tiene DOS MITADES y ninguna sirve sola.
   //
   //    Los medios de pago se atajan con LETRAS y no con dígitos por UNA razón:
   //    el campo «Efectivo recibido» tiene `autoFocus` y consume dígitos, así que
   //    `1/2/3` pelearían con el único control que la cajera está usando en ese
-  //    momento. Ese campo DESCARTA las letras, así que E·T·C pueden mandar con
-  //    el foco adentro. Es la propiedad entera de la decisión.
+  //    momento. Ese campo DESCARTA las letras. **Esa razón sigue entera.**
   //
-  // ⚠️ CON EL MODAL, LA GRILLA DE MEDIOS Y EL CAMPO DE DINERO NO CONVIVEN: son
-  //    dos pasos. La versión anterior de este caso los aseveraba juntos, y esa
-  //    forma murió con la columna. Lo que NO murió es la propiedad, y se mide
-  //    igual en dos mitades que se cierran DENTRO del mismo caso:
-  //      1. la letra NO se escribe en el campo  → el campo es inerte
-  //      2. y sin embargo CAMBIÓ el medio       → el atajo sí se disparó
-  //    Sin la segunda, un manejador borrado pasaría el caso: el campo se ve
-  //    igual de vacío con el atajo vivo que muerto.
+  // 🔴 LO QUE CAMBIÓ ES QUE EN EL PASO DEL MONTO NO HAY QUÉ MOSTRAR. Con el
+  //    cobro en línea la grilla estaba siempre visible y la letra daba
+  //    retroalimentación inmediata. El modal parte el cobro en dos pasos: ahí
+  //    la letra cambiaría el medio **en silencio**, con el foco adentro del
+  //    campo del dinero. Un cambio invisible sobre el estado que decide a dónde
+  //    va la plata es la peor combinación posible, así que el atajo se apaga.
+  //
+  // ⚠️ SIN LA SEGUNDA MITAD ESTE CASO NO MIDE NADA. Un manejador que responde
+  //    SIEMPRE pasaría la primera; uno borrado del todo pasaría la segunda. Las
+  //    dos juntas son las que fijan el comportamiento.
+  // ==========================================================================
   await addPosProduct(page)
   await abrirCobro(page)
-  await page.getByTestId('pay-method-efectivo').click()
+
+  // ── MITAD 1 · con la grilla en pantalla, la letra MANDA ───────────────────
+  await page.keyboard.press('t')
+  await expect(
+    page.getByTestId('pay-method-transferencia'),
+    'T elige transferencia (la que §5 nombra; tarjeta queda SIN atajo a propósito)',
+  ).toHaveAttribute('aria-pressed', 'true')
+
+  await page.keyboard.press('c')
+  await expect(page.getByTestId('pay-method-fiado')).toHaveAttribute('aria-pressed', 'true')
+
+  await page.keyboard.press('e')
+  await expect(page.getByTestId('pay-method-efectivo')).toHaveAttribute('aria-pressed', 'true')
+
+  // ── MITAD 2 · en el paso del MONTO, la misma tecla NO hace nada ───────────
   await page.getByTestId('checkout-continue').click()
 
   const dinero = page.getByTestId('checkout-received')
   await expect(dinero, 'el paso del monto enfoca el campo solo: es la razón de todo esto')
     .toBeFocused()
+  await expect(
+    dinero,
+    'y DECLARA que las letras le son inertes — la razón principal de haber elegido letras, ' +
+    'que no depende de dónde viva el cobro',
+  ).toHaveAttribute('data-letras-inertes', '')
+
   await dinero.fill('9000')
   await page.keyboard.press('t')
 
   expect(
     await dinero.inputValue(),
-    'MITAD 1 — la letra no se escribe: el campo declara `data-letras-inertes`',
+    'la letra NO se escribe en el campo de dinero: el campo descarta lo que no es dígito',
   ).toBe('9.000')
 
-  // MITAD 2 — y el atajo sí se disparó. Se comprueba volviendo al paso del
-  // método, que es donde el medio elegido se puede leer.
+  // Y el medio TAMPOCO cambió. Se comprueba volviendo al paso donde el medio se
+  // puede leer: es el único lugar donde la diferencia entre «cambió en silencio»
+  // y «no cambió» es observable — que es exactamente el argumento por el que el
+  // atajo se apagó.
   await page.getByRole('button', { name: 'Atrás' }).click()
   await expect(
-    page.getByTestId('pay-method-transferencia'),
-    'MITAD 2 — la T eligió transferencia con el foco DENTRO del campo de dinero. ' +
-    'Sin esta aserción el caso pasaría con el manejador borrado',
+    page.getByTestId('pay-method-efectivo'),
+    'el medio sigue siendo el que se eligió con la grilla a la vista',
   ).toHaveAttribute('aria-pressed', 'true')
+  await expect(
+    page.getByTestId('pay-method-transferencia'),
+    'la T apretada en el paso del monto NO cambió el medio: sin grilla en pantalla el atajo ' +
+    'no manda, porque un cambio invisible sobre el medio de pago es peor que no tener atajo',
+  ).toHaveAttribute('aria-pressed', 'false')
 })
 
 // ============================================================================

@@ -998,6 +998,20 @@ function CheckoutModal({
   //    forma más silenciosa de saltarse un permiso.
   const mediosRef = useRef<string[]>([])
   mediosRef.current = paymentMethods.map((m) => m.id)
+  // 🔴 EL ATAJO SE APAGA DONDE NO HAY GRILLA QUE MIRAR — decidido el 2026-09-03,
+  //    al volver el cobro al modal.
+  //    Con el cobro en línea la grilla estaba siempre visible, así que apretar
+  //    «T» mostraba el efecto en el acto. El modal parte el cobro en dos pasos:
+  //    en el del MONTO la grilla no está montada, y el atajo cambiaría el medio
+  //    **sin ninguna retroalimentación** — un cambio de estado invisible, sobre
+  //    el medio de pago, con el foco adentro del campo del dinero. Es la peor
+  //    combinación posible: el estado que decide a dónde va la plata, mudo, en
+  //    el control que la cajera está usando.
+  //    ⚠️ La razón PRINCIPAL de que los atajos de cobro sean letras sigue entera
+  //    —el campo descarta letras, así que no le quitan nada—. Lo que cambió no
+  //    es si la letra puede dispararse: es que en ese paso no hay qué mostrar.
+  const pasoRef = useRef(step)
+  pasoRef.current = step
   const setMethodRef = useRef(setMethod)
   setMethodRef.current = setMethod
   const splitRef = useRef(split)
@@ -1009,6 +1023,8 @@ function CheckoutModal({
       if (elFocoEstaEscribiendo()) return
       const atajo = ATAJOS.find((a) => a.ambito === 'cobro' && a.tecla === e.key.toLowerCase())
       if (!atajo?.medio) return
+      // Sin grilla en pantalla no hay retroalimentación: la tecla no manda.
+      if (pasoRef.current !== 'method') return
       if (splitRef.current) return
       if (!mediosRef.current.includes(atajo.medio)) return
       // Se corta el paso para que la letra no llegue al campo de dinero. Ahí ya

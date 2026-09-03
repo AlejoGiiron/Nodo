@@ -279,14 +279,12 @@ test.describe('Atajos de teclado (§5)', () => {
     await page.keyboard.press('e')
     await expect(page.getByTestId('pay-method-efectivo')).toHaveAttribute('aria-pressed', 'true')
 
-    // 🔴 LA RAZÓN ENTERA POR LA QUE LOS ATAJOS DE COBRO SON LETRAS, aseverada.
-    //    El campo de dinero DECLARA que las letras le son inertes, y por eso el
-    //    atajo puede mandar con el foco adentro. Vive en el PASO DEL MONTO, así
-    //    que hay que llegar hasta ahí — en la columna estaba a la vista y por eso
-    //    esta línea era una más.
-    await page.getByTestId('checkout-continue').click()
-    await expect(page.getByTestId('checkout-received'))
-      .toHaveAttribute('data-letras-inertes', '')
+    // ⚠️ ACÁ TERMINA, y el corte es a propósito. Este caso mide el EFECTO DE LA
+    //    TECLA, que es el sujeto del archivo. La propiedad del campo de dinero
+    //    —que las letras le sean inertes, y que en el paso del monto el atajo se
+    //    APAGUE— vive en `cobro-modal.spec`, en un solo caso con sus dos
+    //    mitades. Repetir acá una de las dos mitades sería tener el contrato en
+    //    dos lados sin nada que los sincronice.
   })
 
   test('🔴 con el foco en un campo de TEXTO, las letras NO eligen medio de pago', async ({ page }) => {
