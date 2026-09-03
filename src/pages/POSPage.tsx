@@ -34,7 +34,7 @@ import { formatoCOP } from '@/lib/formato'
 import { MoneyCell } from '@/components/ui/MoneyCell'
 import { Input } from '@/components/ui/Input'
 import { TenderSelector } from '@/components/ui/TenderSelector'
-import { useCobro } from '@/hooks/useCobro'
+import { useCobro, type ResultadoDeCobro } from '@/hooks/useCobro'
 import { ATAJOS, ATRIBUTO_LETRAS_INERTES, elFocoEstaEscribiendo, teclaDe } from '@/lib/atajos'
 import { CupoMeter } from '@/components/ui/CupoMeter'
 
@@ -494,6 +494,13 @@ function CartPanel({
   onShowHeld,
   productsWithExtras,
   onEditExtras,
+  method,
+  setMethod,
+  received,
+  setReceived,
+  onMasOpciones,
+  cobrando,
+  botonCobrarRef,
 }: {
   subtotal: number
   discountAmt: number
@@ -502,12 +509,21 @@ function CartPanel({
   setCanal: (c: Canal) => void
   notingIdx: number | null
   setNotingIdx: (i: number | null) => void
+  /** Cobrar. Con crédito elegido lleva al paso que falta, y el rótulo lo dice. */
   onCheckout: () => void
   onHold: () => void
   heldCount: number
   onShowHeld: () => void
   productsWithExtras: Set<string>
   onEditExtras: (item: CartItem) => void
+  method: PaymentMethodUI
+  setMethod: (m: PaymentMethodUI) => void
+  received: string
+  setReceived: (v: string) => void
+  /** Abre el cobro completo — mixto y fiado siguen ahí hasta los cortes 2 y 3. */
+  onMasOpciones: () => void
+  cobrando: boolean
+  botonCobrarRef: React.RefObject<HTMLButtonElement>
 }) {
   const items = useCartStore((s) => s.items)
   const discount = useCartStore((s) => s.discount)
@@ -517,6 +533,15 @@ function CartPanel({
   const setDiscount = useCartStore((s) => s.setDiscount)
   const setDiscountReason = useCartStore((s) => s.setDiscountReason)
   const { can } = usePermissions()
+
+  // El cobro en línea: la misma lista de medios que el modal, y los derivados
+  // del efectivo. `recibido` descarta lo que no sea dígito, igual que el campo.
+  const medios = mediosDePago(can('fiado.gestionar'))
+  const recibido = parseInt(received.replace(/\D/g, ''), 10) || 0
+  const cambio = recibido - total
+  // Misma función que el modal: los montos sugeridos no se calculan dos veces.
+  const montosRapidos = cashQuickAmounts(total)
+  const recibeRef = useRef<HTMLInputElement>(null)
 
   const canales = [
     { id: 'mostrador' as Canal, label: 'Mostrador', icon: <Store size={17} />,          bg: 'var(--warning-soft)', fg: 'var(--warning-on-soft)' },
@@ -821,26 +846,190 @@ function CartPanel({
             </span>
           </div>
 
+          {/* ── EL COBRO, EN LÍNEA (§8.15, reabierta el 2026-09-03) ──────────
+              Los medios de pago, el efectivo recibido y el cambio viven acá y no
+              detrás de un botón: el modal era un paso extra POR VENTA, para
+              siempre, y el rediseño se paga una vez.
+              ⚠️ Corte 1: la columna cobra el flujo SIMPLE. Mixto y fiado siguen
+                 en el cobro completo (cortes 2 y 3) y el modal no desaparece
+                 hasta que los tres estén acá. */}
+          {items.length > 0 && (
+            <div style={{ marginBottom: 14 }}>
+              <TenderSelector
+                tenders={medios.map((m) => ({ id: m.id, label: m.label, icon: m.icon }))}
+                seleccionado={method}
+                onSelect={(id) => setMethod(id as PaymentMethodUI)}
+                columnas={medios.length > 4 ? 3 : 2}
+                sobreTinta
+                prefijo="cobro-medio"
+              />
+
+              {/* El efectivo recibido y el cambio, sólo cuando aplican: con
+                  transferencia no hay vuelto que dar. */}
+              {method === 'efectivo' && total > 0 && (
+                <div style={{ marginTop: 12 }}>
+                  <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    gap: 10,
+                  }}>
+                    <span style={{
+                      fontSize: 11, fontWeight: 600, letterSpacing: '.04em',
+                      textTransform: 'uppercase', color: 'var(--on-dark-2)',
+                    }}>
+                      Recibe
+                    </span>
+                    <input
+                      ref={recibeRef}
+                      data-testid="cobro-recibe"
+                      // 🔴 DECLARA QUE LAS LETRAS LE SON INERTES, y no es un
+                      //    detalle: el `onChange` de abajo descarta todo lo que
+                      //    no sea dígito, así que los atajos de letra (E·T·C)
+                      //    pueden mandar con el foco acá adentro. Ésa es la
+                      //    razón entera por la que los medios de pago se atajan
+                      //    con letras y no con dígitos — y este campo es el que
+                      //    la hace cierta, porque tiene el foco al cobrar.
+                      {...{ [ATRIBUTO_LETRAS_INERTES]: '' }}
+                      type="text"
+                      inputMode="numeric"
+                      value={received ? formatoCOP(recibido) : ''}
+                      onChange={(e) => setReceived(e.target.value.replace(/\D/g, ''))}
+                      placeholder={formatoCOP(total)}
+                      style={{
+                        width: 150, height: 44, padding: '0 12px',
+                        borderRadius: 'var(--r-2)', border: '1px solid transparent',
+                        background: 'var(--on-dark-fill)', color: '#fff',
+                        fontSize: 22, fontWeight: 700, textAlign: 'right',
+                        fontVariantNumeric: 'tabular-nums', fontFamily: 'inherit',
+                        outline: 'none',
+                      }}
+                    />
+                  </div>
+                  {/* 🔴 LOS CHIPS DE MONTO RÁPIDO SON UN (d): el producto los
+                      tiene y la maqueta no los dibuja, así que migrar el cobro a
+                      la columna NO puede hacerlos desaparecer — eso sería la
+                      maqueta borrando una capacidad probada. Casi se pierden en
+                      este corte, igual que los cuatro (d) del catálogo en la
+                      tanda 4. */}
+                  <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
+                    {montosRapidos.map((chip) => {
+                      const activo = recibido === chip.amount && received !== ''
+                      return (
+                        <button
+                          key={chip.exact ? 'exact' : chip.amount}
+                          data-testid={chip.exact ? 'cobro-monto-exacto' : 'cobro-monto-chip'}
+                          onClick={() => setReceived(String(chip.amount))}
+                          style={{
+                            padding: '5px 10px',
+                            // El chip "Exacto" se destaca con el borde de ACCIÓN,
+                            // no con verde: es la opción sugerida, no una
+                            // confirmación de que algo salió bien (§1.2).
+                            border: `1px solid ${activo ? 'var(--action-500)' : chip.exact ? 'var(--action-700)' : 'transparent'}`,
+                            background: activo ? 'var(--action-700)' : 'var(--on-dark-fill)',
+                            borderRadius: 'var(--r-1)', fontSize: 11.5,
+                            fontWeight: chip.exact ? 700 : 600,
+                            color: activo || chip.exact ? '#fff' : 'var(--on-dark-3)',
+                            fontVariantNumeric: 'tabular-nums', cursor: 'pointer',
+                            fontFamily: 'inherit',
+                          }}
+                        >
+                          {chip.exact ? `Exacto · ${formatoCOP(chip.amount)}` : formatoCOP(chip.amount)}
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  <div style={{
+                    display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
+                    gap: 10, marginTop: 8,
+                  }}>
+                    <span style={{
+                      fontSize: 11, fontWeight: 600, letterSpacing: '.04em',
+                      textTransform: 'uppercase', color: 'var(--on-dark-2)',
+                    }}>
+                      Cambio
+                    </span>
+                    <span
+                      data-testid="cobro-cambio"
+                      style={{
+                        fontSize: 20, fontWeight: 700, fontVariantNumeric: 'tabular-nums',
+                        // ⚠️ Sobre tinta no hay `--success`/`--danger` (§8.3):
+                        //    los dos hexes son los mismos que ya usa el arqueo,
+                        //    marcados como lo que son —valores que la skill no
+                        //    define y que no se inventaron acá—.
+                        color: cambio < 0 ? '#f87171' : '#fff',
+                      }}
+                    >
+                      {received ? formatoCOP(cambio) : '—'}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* "Cobrar — F12" es la ÚNICA tecla impresa del producto (§5): el
               atajo que la cajera usa cientos de veces al día es el que
               justifica la excepción a "los atajos no se imprimen".
               🔴 El rótulo se DERIVA de la tabla de atajos, no se escribe. Este
                  botón imprimió «F12» durante todo el proyecto con la tecla
                  muerta: eran dos lados de un contrato sin nada que los
-                 sincronizara (R1). Derivándolo, no puede volver a mentir. */}
+                 sincronizara (R1). Derivándolo, no puede volver a mentir.
+              🔴 Y con CRÉDITO elegido el rótulo cambia a «Continuar», porque el
+                 botón hace otra cosa: lleva al paso de cliente y plazo, que
+                 todavía vive en el cobro completo. Un botón que a veces cobra y
+                 a veces abre algo tiene que decirlo — es exactamente lo que se
+                 rechazó para F12. */}
           <Button
+            ref={botonCobrarRef}
+            data-testid="cobro-confirmar"
             size="pos"
             block
             className="nodo-btn--sobre-tinta"
-            disabled={items.length === 0}
+            disabled={items.length === 0 || cobrando}
             onClick={onCheckout}
           >
-            Cobrar — {teclaDe('Cobrar')}
+            {cobrando
+              ? 'Cobrando…'
+              : `${method === 'fiado' ? 'Continuar' : 'Cobrar'} — ${teclaDe('Cobrar')}`}
           </Button>
+
+          {items.length > 0 && (
+            <button
+              data-testid="cobro-mas-opciones"
+              onClick={onMasOpciones}
+              style={{
+                width: '100%', marginTop: 8, padding: '6px 0',
+                background: 'transparent', border: 'none', cursor: 'pointer',
+                color: 'var(--on-dark-2)', fontSize: 12, fontFamily: 'inherit',
+                textDecoration: 'underline', textUnderlineOffset: 3,
+              }}
+            >
+              Más opciones de cobro
+            </button>
+          )}
         </div>
       </div>
     </div>
   )
+}
+
+/**
+ * LOS MEDIOS DE PAGO — una sola lista, para la columna y para el modal.
+ *
+ * 🔴 Vivía dentro de `CheckoutModal`. Con el cobro en línea la columna necesita
+ * la MISMA grilla, y dos listas de medios de pago sería R1 sobre `payment_method`,
+ * que ya es un contrato en 8 lados. Son CINCO y no tres: §8.16 es explícita —
+ * recortar la lista para que entre en la maqueta sería cambiar el producto para
+ * que quepa en el diseño.
+ */
+function mediosDePago(canFiado: boolean): { id: PaymentMethodUI; label: string; icon: React.ReactNode }[] {
+  return [
+    { id: 'efectivo',      label: 'Efectivo',      icon: <Banknote size={22} /> },
+    { id: 'tarjeta',       label: 'Tarjeta',       icon: <CreditCard size={22} /> },
+    { id: 'transferencia', label: 'Transferencia', icon: <Building2 size={22} /> },
+    { id: 'nequi',         label: 'Nequi / QR',    icon: <Smartphone size={22} /> },
+    ...(canFiado ? [{ id: 'fiado' as const, label: 'Fiado', icon: <HandCoins size={22} /> }] : []),
+  ]
 }
 
 // ─── Checkout modal ──────────────────────────────────────────────
@@ -855,6 +1044,11 @@ function CheckoutModal({
   canal,
   onClose,
   onComplete,
+  method,
+  setMethod,
+  received,
+  setReceived,
+  resultadoInicial,
 }: {
   items: CartItem[]
   total: number
@@ -866,20 +1060,37 @@ function CheckoutModal({
   canal: Canal
   onClose: () => void
   onComplete: () => void
+  /**
+   * 🔴 `method` y `received` viven en la PÁGINA, no acá. Con el cobro en línea
+   * la columna los muestra y el modal —mientras siga vivo— tiene que ver los
+   * mismos: dos estados para el mismo medio de pago sería R1 dentro de la misma
+   * pantalla, y el lado que se congela es el que nadie mira.
+   */
+  method: PaymentMethodUI
+  setMethod: (m: PaymentMethodUI) => void
+  received: string
+  setReceived: (v: string) => void
+  /**
+   * Cuando la venta ya se cobró EN LA COLUMNA, el modal se monta directo en el
+   * paso de éxito. §8.17: el diseño no cubre el después del cobro, y se decidió
+   * que ese momento tiene diálogo propio — `success-sin-numero` y su reintento
+   * son un ERROR sobre una venta ya cobrada y tienen que ocupar la pantalla.
+   */
+  resultadoInicial?: ResultadoDeCobro | null
 }) {
   const { profile } = useAuth()
   const { can } = usePermissions()
   const { sede, config: sedeConfig } = useSedeConfig()
   const { cobrar } = useCobro()
-  const [step, setStep] = useState<'method' | 'amount' | 'success'>('method')
-  const [method, setMethod] = useState<PaymentMethodUI>('efectivo')
-  const [received, setReceived] = useState('')
+  const [step, setStep] = useState<'method' | 'amount' | 'success'>(
+    resultadoInicial ? 'success' : 'method',
+  )
   const [submitting, setSubmitting] = useState(false)
-  const [orderId, setOrderId] = useState<string | null>(null)
-  const [orderNumber, setOrderNumber] = useState<number | null>(null)
+  const [orderId, setOrderId] = useState<string | null>(resultadoInicial?.orderId ?? null)
+  const [orderNumber, setOrderNumber] = useState<number | null>(resultadoInicial?.orderNumber ?? null)
   // Número que la secuencia entregó pero no se pudo grabar: el reintento lo
   // reusa en vez de pedir otro (ver AssignOrderNumberResult).
-  const [numeroReservado, setNumeroReservado] = useState<number | null>(null)
+  const [numeroReservado, setNumeroReservado] = useState<number | null>(resultadoInicial?.numeroReservado ?? null)
   const [reintentandoNumero, setReintentandoNumero] = useState(false)
   // Fiado: cliente seleccionado (solo aplica si method === 'fiado').
   const [customerId, setCustomerId] = useState<string | null>(null)
@@ -901,13 +1112,7 @@ function CheckoutModal({
   const receivedNum = parseInt(received.replace(/\D/g, ''), 10) || 0
   const change = receivedNum - total
 
-  const paymentMethods: { id: PaymentMethodUI; label: string; icon: React.ReactNode }[] = [
-    { id: 'efectivo',      label: 'Efectivo',     icon: <Banknote size={22} /> },
-    { id: 'tarjeta',       label: 'Tarjeta',       icon: <CreditCard size={22} /> },
-    { id: 'transferencia', label: 'Transferencia', icon: <Building2 size={22} /> },
-    { id: 'nequi',         label: 'Nequi / QR',   icon: <Smartphone size={22} /> },
-    ...(canFiado ? [{ id: 'fiado' as const, label: 'Fiado', icon: <HandCoins size={22} /> }] : []),
-  ]
+  const paymentMethods = mediosDePago(canFiado)
 
   const quickAmounts = cashQuickAmounts(total)
 
@@ -957,42 +1162,12 @@ function CheckoutModal({
     }
   }
 
-  // Atajos del COBRO: E efectivo · T transferencia · C crédito.
-  //
-  // 🔴 LAS LETRAS NO MANDAN DONDE SE ESCRIBE. `elFocoEstaEscribiendo()` decide
-  //    POR TIPO de control, no por una lista de campos: una lista se congela y
-  //    el próximo input nacería sin protección. La única excepción es el campo
-  //    de dinero, que DECLARA con `data-letras-inertes` que las letras le son
-  //    inertes — y es justo la excepción por la que se eligieron letras.
-  //
-  // ⚠️ El atajo NO puede elegir lo que el botón no ofrece: si el medio está
-  //    ausente de la grilla —fiado sin permiso, o cualquiera en modo dividir—
-  //    la tecla no hace nada. Un atajo que activa un control que no está es la
-  //    forma más silenciosa de saltarse un permiso.
-  const mediosRef = useRef<string[]>([])
-  mediosRef.current = paymentMethods.map((m) => m.id)
-  const setMethodRef = useRef(setMethod)
-  setMethodRef.current = setMethod
-  const splitRef = useRef(split)
-  splitRef.current = split
-  useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
-      // Con modificador no es nuestro: `Ctrl+E` es el omnibox, `Ctrl+C` copiar.
-      if (e.ctrlKey || e.altKey || e.metaKey) return
-      if (elFocoEstaEscribiendo()) return
-      const atajo = ATAJOS.find((a) => a.ambito === 'cobro' && a.tecla === e.key.toLowerCase())
-      if (!atajo?.medio) return
-      if (splitRef.current) return
-      if (!mediosRef.current.includes(atajo.medio)) return
-      // Se corta el paso para que la letra no llegue al campo de dinero. Ahí ya
-      // sería inerte, pero que no llegue es más barato que confiar en que se
-      // descarte bien.
-      e.preventDefault()
-      setMethodRef.current(atajo.medio as PaymentMethodUI)
-    }
-    window.addEventListener('keydown', handleKey)
-    return () => window.removeEventListener('keydown', handleKey)
-  }, [])
+  // 🔴 LOS ATAJOS DEL COBRO YA NO VIVEN ACÁ: se subieron a la PÁGINA, que es
+  //    donde vive `method`. Con el cobro en línea la columna tiene su propia
+  //    grilla de medios y este componente puede no estar montado, así que un
+  //    manejador acá dejaba el atajo muerto justo en la superficie nueva.
+  //    Y dos manejadores —uno por superficie— habrían sido R1 sobre la misma
+  //    tecla: el atajo tiene que estar donde está el estado que cambia.
 
   const methodLabel = (m: PaymentMethodUI) =>
     ({ efectivo: 'Efectivo', tarjeta: 'Tarjeta', transferencia: 'Transferencia', nequi: 'Nequi / QR', fiado: 'Fiado' })[m]
@@ -1609,11 +1784,63 @@ export function POSPage() {
   const searchRef = useRef<HTMLInputElement>(null)
   const { isOpen: isShiftOpen } = useCashShift()
   const productsWithExtras = useProductsWithExtras()
+  const { profile } = useAuth()
+  const { can } = usePermissions()
+  const { cobrar } = useCobro()
 
-  // Cobrar exige turno abierto: si no hay, abre el modal de apertura primero.
-  const handleCheckout = () => {
+  // 🔴 EL COBRO VIVE EN LA PAGINA, no en el modal (§8.15: el cobro va en linea).
+  //    `method` y `received` los muestra la columna y los lee el modal mientras
+  //    siga vivo: un solo estado, dos vistas.
+  const [method, setMethod] = useState<PaymentMethodUI>('efectivo')
+  const [received, setReceived] = useState('')
+  const [cobrando, setCobrando] = useState(false)
+  const [resultadoInline, setResultadoInline] = useState<ResultadoDeCobro | null>(null)
+  const botonCobrarRef = useRef<HTMLButtonElement>(null)
+
+  /** Abre el cobro COMPLETO: mixto y fiado siguen ahi hasta los cortes 2 y 3. */
+  const abrirCobroCompleto = () => {
     if (!isShiftOpen) { setShowOpenShift(true); return }
     setCheckout(true)
+  }
+
+  /**
+   * Cobra desde la columna — el flujo SIMPLE del corte 1.
+   *
+   * Con credito elegido NO cobra: lleva al paso que falta, y el rotulo del boton
+   * lo dice. Un boton que a veces cobra y a veces abre algo tiene que decirlo.
+   */
+  const cobrarEnLinea = async () => {
+    if (!isShiftOpen) { setShowOpenShift(true); return }
+    if (items.length === 0 || !profile) return
+    if (method === 'fiado') { setCheckout(true); return }
+    setCobrando(true)
+    const res = await cobrar({
+      perfil: { id: profile.id, sede_id: profile.sede_id },
+      canal, items, total,
+      discountAmt,
+      discountType: discountAmt > 0 ? discountType : null,
+      discountReason,
+      method, split: false, splitParts: [],
+      customerId: null, customerName: '', plazoDias: null,
+      origen: 'columna',
+    })
+    setCobrando(false)
+    if (!res) return
+    // §8.17: el DESPUES del cobro tiene dialogo propio. `success-sin-numero` y
+    // su reintento son un ERROR sobre una venta YA cobrada —la plata entro y el
+    // numero fallo— y tienen que ocupar la pantalla, no compartirla con una
+    // columna que ya esta lista para la venta siguiente.
+    setResultadoInline(res)
+  }
+
+  /** Deja la pantalla lista para la venta siguiente. */
+  const terminarVenta = () => {
+    setCheckout(false)
+    setResultadoInline(null)
+    clear()
+    setCanal(DEFAULT_CANAL)
+    setMethod('efectivo')
+    setReceived('')
   }
 
   const { data: categories = [], isLoading: catsLoading } = useCategories()
@@ -1650,9 +1877,14 @@ export function POSPage() {
       }
       if (e.key === teclaDe('Cobrar')) {
         e.preventDefault()
-        // Mismo camino que el botón: si no hay ítems no hay nada que cobrar, y
-        // sin turno abre primero la apertura de caja.
-        if (itemsRef.current.length > 0) checkoutRef.current()
+        // 🔴 F12 PONE EL FOCO, NO COBRA (§5, decidido con el cobro en línea).
+        //    Con el cobro en modal esta tecla abría un diálogo: un acto
+        //    reversible, y el modal era la confirmación. Con el panel siempre
+        //    visible la misma tecla pasaría a ejecutar una venta irreversible
+        //    **sin que la cajera tenga cómo notar el cambio**. Dos actos, y el
+        //    segundo —Enter sobre el botón enfocado— es el que quien teclea ya
+        //    asocia con confirmar.
+        botonCobrarRef.current?.focus()
       }
     }
     window.addEventListener('keydown', handleKey)
@@ -1686,12 +1918,42 @@ export function POSPage() {
   const activeCatObj = categories.find((c) => c.id === resolvedCat)
 
   const items = useCartStore((s) => s.items)
+
+  // ── ATAJOS DEL COBRO: E efectivo · T transferencia · C crédito ──────────
+  //
+  // 🔴 Viven acá y no en el panel porque acá vive `method`: el atajo tiene que
+  //    estar donde está el estado que cambia. Antes vivían dentro del modal, y
+  //    con el cobro en línea eso los habría dejado muertos en la superficie
+  //    nueva.
+  //
+  // ⚠️ Las letras NO mandan donde se escribe (`elFocoEstaEscribiendo()` decide
+  //    POR TIPO de control), con una sola excepción: el campo que DECLARA que
+  //    las letras le son inertes. Ése es el de dinero, y es la razón entera por
+  //    la que los medios de pago se atajan con letras y no con dígitos — al
+  //    cobrar, el foco vive ahí.
+  const mediosOfrecidos = mediosDePago(can('fiado.gestionar')).map((m) => m.id)
+  const estadoAtajos = useRef({ items, medios: mediosOfrecidos })
+  estadoAtajos.current = { items, medios: mediosOfrecidos }
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      // Con modificador no es nuestro: `Ctrl+E` es el omnibox, `Ctrl+C` copiar.
+      if (e.ctrlKey || e.altKey || e.metaKey) return
+      if (elFocoEstaEscribiendo()) return
+      const atajo = ATAJOS.find((a) => a.ambito === 'cobro' && a.tecla === e.key.toLowerCase())
+      if (!atajo?.medio) return
+      // Sin ítems no hay grilla de medios en pantalla: el atajo no activa un
+      // control que no está — es la forma más silenciosa de saltarse un permiso.
+      if (estadoAtajos.current.items.length === 0) return
+      if (!estadoAtajos.current.medios.includes(atajo.medio as PaymentMethodUI)) return
+      e.preventDefault()
+      setMethod(atajo.medio as PaymentMethodUI)
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
+
   // El atajo se suscribe una sola vez y lee por ref, para no re-suscribir el
   // listener en cada cambio del carrito.
-  const itemsRef = useRef(items)
-  itemsRef.current = items
-  const checkoutRef = useRef(handleCheckout)
-  checkoutRef.current = handleCheckout
   const discount = useCartStore((s) => s.discount)
   const discountType = useCartStore((s) => s.discountType)
   const discountReason = useCartStore((s) => s.discountReason)
@@ -1949,7 +2211,14 @@ export function POSPage() {
         setCanal={setCanal}
         notingIdx={notingIdx}
         setNotingIdx={setNotingIdx}
-        onCheckout={handleCheckout}
+        onCheckout={cobrarEnLinea}
+        onMasOpciones={abrirCobroCompleto}
+        method={method}
+        setMethod={setMethod}
+        received={received}
+        setReceived={setReceived}
+        cobrando={cobrando}
+        botonCobrarRef={botonCobrarRef}
         onHold={() => setShowHoldModal(true)}
         heldCount={heldOrders.length}
         onShowHeld={() => setShowHeldPanel(true)}
@@ -2009,8 +2278,13 @@ export function POSPage() {
         />
       )}
 
-      {checkout && (
+      {(checkout || resultadoInline) && (
         <CheckoutModal
+          method={method}
+          setMethod={setMethod}
+          received={received}
+          setReceived={setReceived}
+          resultadoInicial={resultadoInline}
           items={items}
           total={total}
           subtotal={subtotal}
@@ -2019,7 +2293,7 @@ export function POSPage() {
           discountType={discountType}
           discountReason={discountReason}
           canal={canal}
-          onClose={() => setCheckout(false)}
+          onClose={() => (resultadoInline ? terminarVenta() : setCheckout(false))}
           // El canal vuelve al default tras CUALQUIER venta. `canal` es estado local
           // de la página y `clear()` (del cartStore) no lo tocaba, así que quedaba
           // pegado: la siguiente venta de mostrador se grababa con el canal anterior
@@ -2029,7 +2303,7 @@ export function POSPage() {
           // ⚠️ Con TRES canales el ciclo ya no es "exactamente un clic" como cuando
           //    eran dos. Si el reset molesta en uso real, la respuesta NO es sacarlo:
           //    es que el selector deje de ser cíclico.
-          onComplete={() => { setCheckout(false); clear(); setCanal(DEFAULT_CANAL) }}
+          onComplete={terminarVenta}
         />
       )}
     </div>

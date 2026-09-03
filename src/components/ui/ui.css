@@ -105,11 +105,15 @@
   cursor: not-allowed;
 }
 
-/* ── TenderSelector — SOBRE SUPERFICIE CLARA ─────────────────────────────
-   Re-especificado el 2026-09-01 al cerrar §8.15: el cobro de Nodo es en modal,
-   sobre --surface. La variante sobre --ink (fondo --action-700, borde
-   --action-500) aplicaría solo si el cobro pasara a ser en línea; hoy no se
-   usa y por eso no se escribe: una regla sin consumidor es la deuda 37. */
+/* ── TenderSelector — DOS SUPERFICIES ────────────────────────────────────
+   La base va sobre --surface (el modal, que sigue vivo hasta el corte 4) y la
+   variante --tinta sobre --ink (la columna del mostrador).
+
+   🔴 La variante sobre tinta estaba DOCUMENTADA en §4 y sin construir: el
+   comentario que estaba acá decía que no se escribía porque no tenía
+   consumidor, y tenía razón — el cobro era en modal. §8.15 se reabrió el
+   2026-09-03 (el cobro va EN LÍNEA) y con eso apareció el consumidor. Se
+   escribe ahora, con los valores exactos que §4 ya tenía fijados. */
 .nodo-tender {
   display: flex;
   flex-direction: column;
@@ -145,6 +149,28 @@
   border-color: transparent;
   color: var(--ink-4);
   cursor: not-allowed;
+}
+
+/* Sobre tinta (§4): los únicos tokens permitidos encima de --ink. El par de
+   selección sigue siendo el de ACCIÓN —marca una elección, no un estado del
+   dominio— pero un tono más arriba, porque --action-soft sobre tinta no
+   contrasta. */
+.nodo-tender--tinta {
+  background: var(--on-dark-fill);
+  border-color: transparent;
+  color: var(--on-dark-3);
+}
+.nodo-tender--tinta:hover:not(:disabled) { background: var(--action-900); }
+.nodo-tender--tinta[aria-pressed='true'] {
+  background: var(--action-700);
+  border-color: var(--action-500);
+  color: #fff;
+}
+.nodo-tender--tinta:disabled {
+  background: transparent;
+  border-color: var(--on-dark-fill);
+  color: var(--on-dark-2);
+  opacity: 0.5;
 }
 
 /* ── Tabs / chips de filtro — §4. Estados: normal · activo ────────────

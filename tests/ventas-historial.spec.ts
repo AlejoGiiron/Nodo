@@ -2,6 +2,7 @@ import { test, expect, type Page } from '@playwright/test'
 import { loginAsOwner } from './helpers/auth'
 import { openShiftIfClosed, closeShiftIfOpen } from './helpers/shift'
 import { saveProductAndClose } from './helpers/product'
+import { abrirCobroCompleto } from './helpers/pos'
 
 // ⚠️  Suite para el LABORATORIO (opción C). NO correr contra producción.
 // En un Supabase de laboratorio recién sembrado, la primera venta de la sede
@@ -50,8 +51,8 @@ async function sellSimple(page: Page, productName: string): Promise<number> {
   await page.getByPlaceholder('Buscar producto...').fill(productName)
   await page.getByTestId('product-card').first().click()
 
-  await page.getByRole('button', { name: 'Cobrar' }).click()
-  await page.getByText('Efectivo', { exact: true }).click()
+  await abrirCobroCompleto(page)
+  await page.getByTestId('pay-method-efectivo').click()
   await page.getByRole('button', { name: /Continuar/ }).click()
   await page.getByTestId('checkout-received').fill('200000')
   await page.getByRole('button', { name: /Confirmar cobro/ }).click()
@@ -75,8 +76,8 @@ async function sellWithExtra(page: Page): Promise<number> {
     .getByTestId('extra-qty-inc').click()
   await page.getByTestId('item-config-confirm').click()
 
-  await page.getByRole('button', { name: 'Cobrar' }).click()
-  await page.getByText('Efectivo', { exact: true }).click()
+  await abrirCobroCompleto(page)
+  await page.getByTestId('pay-method-efectivo').click()
   await page.getByRole('button', { name: /Continuar/ }).click()
   await page.getByTestId('checkout-received').fill('200000')
   await page.getByRole('button', { name: /Confirmar cobro/ }).click()

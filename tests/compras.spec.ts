@@ -44,6 +44,16 @@ async function registerPurchase(
   await page.getByTestId('new-invoice-btn').click()
   await expect(page.getByTestId('new-invoice-modal')).toBeVisible()
   await page.getByTestId('invoice-supplier').selectOption({ label: supplier })
+  // ⚠️ ACOTADOS POR EL ESCENARIO, no por el locator — y queda dicho porque es
+  //    literalmente la clase de «un locator apoyado en unicidad no declarada»
+  //    (CLAUDE.md, política de testing). Estos `.first()` son correctos HOY
+  //    porque el modal de factura nueva arranca con UNA sola línea y este helper
+  //    no agrega más: la unicidad la garantiza el escenario.
+  //    🔴 DISPARADOR, concreto: el día que un spec cree DOS líneas en la misma
+  //    factura, estos `.first()` dejan de estar acotados y pasan a apostar —
+  //    van a seguir en verde eligiendo la línea equivocada, que es el modo de
+  //    fallo de esta clase. Ahí se acotan por índice explícito o por testid de
+  //    fila. No se cambian antes: hoy nombran lo único que hay.
   await page.getByTestId('invoice-item-product').first().selectOption({ label: product })
   await page.getByTestId('invoice-item-qty').first().fill(String(qty))
   await page.getByTestId('invoice-item-cost').first().fill(String(cost))

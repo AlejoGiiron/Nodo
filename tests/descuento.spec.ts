@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { loginAsOwner } from './helpers/auth'
 import { openShiftIfClosed, closeShiftIfOpen } from './helpers/shift'
+import { abrirCobroCompleto } from './helpers/pos'
 
 // Descuentos en el POS. Corre en LAB.
 //
@@ -99,7 +100,7 @@ test.describe.serial('Descuentos', () => {
     await page.getByTestId('discount-amount').fill('4000')
     await expect(page.getByTestId('cart-total')).toContainText('14.000')
 
-    await page.getByRole('button', { name: 'Cobrar' }).click()
+    await abrirCobroCompleto(page)
     const n = await payNequiAndFinish(page)
     await page.getByRole('button', { name: 'Nueva venta' }).click()
 
@@ -117,7 +118,7 @@ test.describe.serial('Descuentos', () => {
     await addProductPOS(page)
     await page.getByRole('button', { name: '10%', exact: true }).click()
 
-    await page.getByRole('button', { name: 'Cobrar' }).click()
+    await abrirCobroCompleto(page)
     const n = await payNequiAndFinish(page)
     await page.getByRole('button', { name: 'Nueva venta' }).click()
 
@@ -142,7 +143,7 @@ test.describe.serial('Descuentos', () => {
     await page.getByRole('button', { name: '$', exact: true }).click()
     await page.getByTestId('discount-amount').fill('25000')
 
-    await page.getByRole('button', { name: 'Cobrar' }).click()
+    await abrirCobroCompleto(page)
     // El re-skin sacó el símbolo de moneda de las cifras (§2 del design system:
     // sin símbolo, el rótulo ya dice qué es). La EXPECTATIVA no cambió — el total
     // a cobrar de una venta gratis es cero —, cambió el formato en que se

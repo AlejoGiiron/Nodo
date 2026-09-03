@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes } from 'react'
+import { forwardRef, type ButtonHTMLAttributes } from 'react'
 import './ui.css'
 
 /**
@@ -31,7 +31,12 @@ type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
   block?: boolean
 }
 
-export function Button({
+/**
+ * 🔴 REENVÍA LA REF, y hace falta por una decisión de §5: con el cobro en línea,
+ * **F12 pone el FOCO en Cobrar y el Enter confirma** — dos actos para una acción
+ * irreversible. Sin ref no hay a qué darle el foco.
+ */
+export const Button = forwardRef<HTMLButtonElement, Props>(function Button({
   variant = 'primary',
   size = 'md',
   block = false,
@@ -39,9 +44,10 @@ export function Button({
   className,
   type = 'button',
   ...rest
-}: Props) {
+}, ref) {
   return (
     <button
+      ref={ref}
       type={type}
       className={`nodo-btn nodo-btn--${variant}${className ? ` ${className}` : ''}`}
       style={{
@@ -55,4 +61,4 @@ export function Button({
       {...rest}
     />
   )
-}
+})

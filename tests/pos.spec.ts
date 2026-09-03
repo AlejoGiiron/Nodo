@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { loginAsOwner } from './helpers/auth'
 import { closeShiftIfOpen, openShiftIfClosed } from './helpers/shift'
-import { waitPosReady, addPosProduct } from './helpers/pos'
+import { waitPosReady, addPosProduct, abrirCobroCompleto } from './helpers/pos'
 
 // "$ 12.000" → 12000
 function parseCOP(text: string): number {
@@ -43,8 +43,17 @@ test.describe('POS — venta y carrito', () => {
     await closeShiftIfOpen(page)
     await expect(page.getByText('Sin turno')).toBeVisible()
 
-    await page.getByRole('button', { name: 'Cobrar' }).click()
-    await expect(page.getByRole('heading', { name: 'Abrir turno de caja' })).toBeVisible()
+    // 🔴 Acá el sujeto ES el botón de cobrar, así que se aprieta ÉSE y no el
+    //    camino al cobro completo: con el cobro en línea (§8.15) «Cobrar» cobra
+    //    en el acto, y lo que este caso mide es que sin turno NO llegue a
+    //    cobrar — abre primero la apertura de caja. Usar el helper acá habría
+    //    medido otra cosa: el helper espera el cobro completo, que con turno
+    //    cerrado tampoco abre.
+    await page.getByTestId('cobro-confirmar').click()
+    await expect(
+      page.getByRole('heading', { name: 'Abrir turno de caja' }),
+      'sin turno el cobro no procede: pide abrir caja primero',
+    ).toBeVisible()
   })
 
   test('checkout: 4 métodos de pago y cálculo de vuelto en efectivo', async ({ page }) => {
@@ -54,7 +63,7 @@ test.describe('POS — venta y carrito', () => {
     await addPosProduct(page)
     await openShiftIfClosed(page, 0) // cobrar requiere turno abierto
 
-    await page.getByRole('button', { name: 'Cobrar' }).click()
+    await abrirCobroCompleto(page)
 
     // Paso método: los 4 métodos visibles.
     // Se aserta el testid `checkout-total` y no el texto 'Total a cobrar': desde
@@ -63,12 +72,19 @@ test.describe('POS — venta y carrito', () => {
     // falla con dos coincidencias. El testid ya existía; la aserción no se
     // debilita, se vuelve específica: dice QUÉ total tiene que estar visible.
     await expect(page.getByTestId('checkout-total')).toBeVisible()
-    for (const m of ['Efectivo', 'Tarjeta', 'Transferencia', 'Nequi / QR']) {
-      await expect(page.getByText(m, { exact: true })).toBeVisible()
+    // 🔴 POR TESTID Y NO POR TEXTO, por la MISMA razón que el `checkout-total` de
+    //    arriba — y ésta es la parte incómoda: la nota de acá arriba explicaba
+    //    exactamente esta clase, se aplicó al total y NO a estas tres líneas de
+    //    abajo. Se arregló la instancia y no se barrió la clase (R3).
+    //    Con el cobro en línea hay DOS grillas de medios montadas —la columna
+    //    (`cobro-medio-*`) y el modal (`pay-method-*`)— así que el texto resuelve
+    //    a dos elementos. El testid dice CUÁL de las dos se está aseverando.
+    for (const id of ['efectivo', 'tarjeta', 'transferencia', 'nequi']) {
+      await expect(page.getByTestId(`pay-method-${id}`)).toBeVisible()
     }
 
     // Efectivo → continuar → ingresar recibido > total → vuelto.
-    await page.getByText('Efectivo', { exact: true }).click()
+    await page.getByTestId('pay-method-efectivo').click()
     await page.getByRole('button', { name: /Continuar/ }).click()
     await page.getByTestId('checkout-received').fill('100000')
     await expect(page.getByText('Vuelto')).toBeVisible()
@@ -83,8 +99,8 @@ test.describe('POS — venta y carrito', () => {
     await addPosProduct(page)
     await openShiftIfClosed(page, 0)
 
-    await page.getByRole('button', { name: 'Cobrar' }).click()
-    await page.getByText('Efectivo', { exact: true }).click()
+    await abrirCobroCompleto(page)
+    await page.getByTestId('pay-method-efectivo').click()
     await page.getByRole('button', { name: /Continuar/ }).click()
 
     // Pago justo: el chip "Exacto" rellena el monto = total → vuelto 0.
@@ -114,8 +130,8 @@ test.describe('POS — venta y carrito', () => {
     await addPosProduct(page)
     await openShiftIfClosed(page, 0)
 
-    await page.getByRole('button', { name: 'Cobrar' }).click()
-    await page.getByText('Efectivo', { exact: true }).click()
+    await abrirCobroCompleto(page)
+    await page.getByTestId('pay-method-efectivo').click()
     await page.getByRole('button', { name: /Continuar/ }).click()
     await page.getByTestId('quick-amount-exact').click()
     await page.getByRole('button', { name: /Confirmar cobro/ }).click()
@@ -146,8 +162,8 @@ test.describe('POS — venta y carrito', () => {
 
     const total = parseCOP(await page.getByTestId('cart-total').innerText())
 
-    await page.getByRole('button', { name: 'Cobrar' }).click()
-    await page.getByText('Efectivo', { exact: true }).click()
+    await abrirCobroCompleto(page)
+    await page.getByTestId('pay-method-efectivo').click()
     await page.getByRole('button', { name: /Continuar/ }).click()
 
     // Primer chip de round-up: monto redondo por encima del total → vuelto = monto − total.

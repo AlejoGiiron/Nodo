@@ -2,6 +2,7 @@ import { test, expect, type Page } from '@playwright/test'
 import { loginAsOwner } from './helpers/auth'
 import { openShiftIfClosed, closeShiftIfOpen } from './helpers/shift'
 import { saveProductAndClose } from './helpers/product'
+import { abrirCobroCompleto } from './helpers/pos'
 
 /**
  * ⚠️  Suite para el LABORATORIO. NO correr contra producción.
@@ -42,8 +43,8 @@ async function cobrar(page: Page) {
   await page.getByPlaceholder('Buscar producto...').fill(PROD)
   await page.getByTestId('product-card').first().click()
 
-  await page.getByRole('button', { name: 'Cobrar' }).click()
-  await page.getByText('Efectivo', { exact: true }).click()
+  await abrirCobroCompleto(page)
+  await page.getByTestId('pay-method-efectivo').click()
   await page.getByRole('button', { name: /Continuar/ }).click()
   await page.getByTestId('checkout-received').fill('200000')
   await page.getByRole('button', { name: /Confirmar cobro/ }).click()

@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { loginAsOwner } from './helpers/auth'
 import { openShiftIfClosed, closeShiftIfOpen } from './helpers/shift'
+import { abrirCobroCompleto } from './helpers/pos'
 
 // Arqueo multi-método (cierre de turno con conciliación por método). Corre en LAB.
 // Verifica el snapshot persistido (close_reconciliation), el esperado por método
@@ -73,7 +74,7 @@ async function finishSale(page: Page) {
 }
 async function sellCash(page: Page) {
   await addProductPOS(page)
-  await page.getByRole('button', { name: 'Cobrar' }).click()
+  await abrirCobroCompleto(page)
   await page.getByTestId('pay-method-efectivo').click()
   await page.getByTestId('checkout-continue').click()
   await page.getByTestId('checkout-received').fill(String(PRICE))
@@ -82,14 +83,14 @@ async function sellCash(page: Page) {
 }
 async function sellNequi(page: Page) {
   await addProductPOS(page)
-  await page.getByRole('button', { name: 'Cobrar' }).click()
+  await abrirCobroCompleto(page)
   await page.getByTestId('pay-method-nequi').click()
   await page.getByTestId('checkout-continue').click()
   await finishSale(page)
 }
 async function sellMixed(page: Page, cash: number, nequi: number) {
   await addProductPOS(page)
-  await page.getByRole('button', { name: 'Cobrar' }).click()
+  await abrirCobroCompleto(page)
   await page.getByTestId('pay-split-toggle').click()
   await page.getByTestId('pay-line-amount-0').fill(String(cash))
   await page.getByTestId('pay-add-method').click()

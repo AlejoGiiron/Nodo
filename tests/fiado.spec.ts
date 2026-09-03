@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test'
 import { loginAsOwner, loginAsCashier } from './helpers/auth'
 import { openShiftIfClosed, closeShiftIfOpen } from './helpers/shift'
+import { abrirCobroCompleto } from './helpers/pos'
 
 // Producto compuesto seeded (Lab Coctel = 18.000) que descuenta 1 "Lab Vaso"
 // (insumo con tracking) por venta. Permite verificar que el fiado SÍ baja stock.
@@ -42,7 +43,7 @@ async function sellOnFiado(page: Page, customer: string): Promise<number> {
   await expect(page.getByTestId('item-config-modal')).toBeVisible()
   await page.getByTestId('item-config-confirm').click()
 
-  await page.getByRole('button', { name: 'Cobrar' }).click()
+  await abrirCobroCompleto(page)
   await page.getByTestId('pay-method-fiado').click()
   await page.getByTestId('customer-search').fill(customer)
   await page.getByTestId('customer-option').filter({ hasText: customer }).first().click()
@@ -344,7 +345,7 @@ test.describe.serial('Fiado / Cartera', () => {
     await expect(page.getByTestId('item-config-modal')).toBeVisible()
     await page.getByTestId('item-config-confirm').click()
     await openShiftIfClosed(page, 0)
-    await page.getByRole('button', { name: 'Cobrar' }).click()
+    await abrirCobroCompleto(page)
     await expect(page.getByTestId('pay-method-fiado')).toBeVisible()
     // Nota: el gating NEGATIVO (un rol sin fiado.gestionar) no es testeable con
     // los usuarios del lab (owner y cajero ambos lo tienen).

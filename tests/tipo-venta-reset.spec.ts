@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { loginAsOwner } from './helpers/auth'
-import { waitPosReady } from './helpers/pos'
+import { waitPosReady, abrirCobroCompleto } from './helpers/pos'
 import { openShiftIfClosed } from './helpers/shift'
 
 // El CANAL del POS debe volver al default ("Mostrador") tras CUALQUIER venta.
@@ -45,7 +45,7 @@ test.describe.serial('Reset del canal de venta', () => {
     await expect(page.getByTestId('canal-label')).toHaveText('WhatsApp')
 
     await addProductPOS(page)
-    await page.getByRole('button', { name: 'Cobrar' }).click()
+    await abrirCobroCompleto(page)
     await page.getByTestId('pay-method-efectivo').click()
     await page.getByTestId('checkout-continue').click()
     await page.getByTestId('checkout-received').fill(String(PRICE))
@@ -68,7 +68,7 @@ test.describe.serial('Reset del canal de venta', () => {
 
     await setCanal(page, 'Mostrador')
     await addProductPOS(page)
-    await page.getByRole('button', { name: 'Cobrar' }).click()
+    await abrirCobroCompleto(page)
     await page.getByTestId('pay-method-efectivo').click()
     await page.getByTestId('checkout-continue').click()
     await page.getByTestId('checkout-received').fill(String(PRICE))

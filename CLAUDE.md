@@ -858,6 +858,17 @@ hubo fallos, y **la ausencia es justamente lo que un instrumento roto produce po
 falta se reporta como *"ninguna línea, o sea 0"*, no como *"0"* a secas — la diferencia es qué se
 midió.
 
+🔴 **SEGUNDO CASO, 2026-09-03, y trae una causa que la primera versión no contemplaba.** Acá no fue
+que Playwright omitiera los ceros: **fue que no llegó a imprimir nada.** La corrida abortó al
+arrancar —el puerto seguía tomado por un proceso huérfano (deuda 70)— y el archivo tenía tres
+líneas. `grep passed` vacío, `grep failed` vacío: **idéntico a una corrida perfecta vista por el
+resumen.** Lo resolvió abrir el archivo, que decía la razón en una línea.
+
+⚠️ Lo que agrega: la lista de causas de "no está la línea" tenía cuatro y ahora tiene cinco, y la
+nueva **no es un error del instrumento sino del entorno**. Corolario práctico: cuando los cinco
+números vengan todos vacíos, la hipótesis correcta **no es "no hubo fallos"** — es *"la corrida no
+existió"*, y se confirma mirando el largo del archivo antes que su contenido.
+
 ```bash
 for k in passed failed flaky skipped "did not run"; do
   echo "$k -> $(grep -E "^  *[0-9]+ $k" salida.txt || echo '(ninguna línea: 0)')"
@@ -2240,6 +2251,126 @@ grep -rln "AppLayout\|<Badge\|MoneyCell" src/ tests/       # por símbolo, si el
 
 ⚠️ Y la señal barata que lo anticipa: **si el archivo que estás editando aparece en más de una
 pantalla, el grupo es la lista de consumidores, no la carpeta.** El sidebar está en las once.
+
+**🔴 UN LOCATOR QUE NO PUEDE NOMBRAR *QUÉ* INSTANCIA QUIERE ESTÁ APOSTANDO A QUE SIEMPRE HAYA UNA.**
+*Ya es clase: tres casos, en tres instrumentos distintos, todos rotos por lo mismo.*
+
+> **La unicidad es una propiedad del PRODUCTO, no del test.** Un locator que se apoya en ella no
+> declara esa dependencia en ninguna parte — así que el día que el producto gana una segunda
+> instancia, el test falla por una razón que no tiene nada que ver con lo que estaba midiendo.
+
+| locator | de qué unicidad dependía | qué la rompió |
+|---|---|---|
+| `getByText('Efectivo', { exact: true })` | que hubiera **una sola grilla** de medios de pago | el cobro en línea montó la columna **y** el modal a la vez → *strict mode violation*, 9 casos |
+| `getByTestId('product-card').first()` en `pos.spec` | que el primer producto del POS fuera **siempre el mismo** | otro spec dejó activo un producto que ordena antes → cinco casos con total cero (deuda 67) |
+| `getByText('Historial').last()` en el script de captura de A6 | que el rótulo apareciera **una sola vez** | el panel de Clientes tenía un encabezado con el mismo texto → **capturó otra pantalla, sin error** |
+| `getByText('Efectivo', { exact: true })` en el bucle de los 4 métodos de `pos.spec` | ídem la primera fila | ídem — **y la nota que explicaba esta clase estaba TRES LÍNEAS ARRIBA, en el mismo test** |
+
+⚠️ **Los tres funcionaron durante meses**, y ésa es la parte que los hace clase y no descuidos: no
+se rompen al escribirlos, se rompen cuando el producto crece. Y los tres fallan **distinto** —uno
+grita, uno da un número raro, uno da una imagen creíble de otra cosa—, así que no hay un síntoma
+común que enseñe a buscarlos.
+
+**LO ACCIONABLE:** un locator se acota **por contenedor o por `data-testid`**, nunca por texto
+visible ni por posición (`.first()`, `.last()`, `.nth()`). Si de verdad hacen falta dos instancias
+del mismo componente, el testid lleva **prefijo** — como `pay-method-*` (el modal) y `cobro-medio-*`
+(la columna).
+
+⚠️ Y el corolario para cuando aparezca la segunda instancia: **no se arregla agregando `.first()`**.
+Eso conserva la apuesta y la esconde mejor.
+
+🔴 **EL CUARTO CASO ES EL QUE MÁS ENSEÑA, PORQUE LA LECCIÓN ESTABA ESCRITA EN EL MISMO TEST.**
+*2026-09-03.* `pos.spec` tenía, textual, esta nota sobre el rótulo `Total a cobrar`:
+
+> *"desde el re-skin ese rótulo aparece DOS veces … y `getByText` en modo estricto falla con dos
+> coincidencias. El testid ya existía; la aserción no se debilita, se vuelve específica."*
+
+**Y tres líneas más abajo, en el mismo test, el bucle de los cuatro métodos seguía usando
+`getByText`.** Se arregló la instancia que dolía y **no se barrió la clase** — que es R3 en
+miniatura, dentro de un solo archivo, escrita por quien acababa de nombrar el problema.
+
+⚠️ **Lo que agrega sobre las otras tres:** las tres primeras se justificaban con *"nadie sabía"*.
+Ésta no: alguien lo supo, lo escribió, y arregló una línea de tres. **Entender la clase no la
+barre.**
+
+🔴 **Y LA MECÁNICA DE POR QUÉ NO SE BARRE, que es lo que vuelve el corolario obligatorio en vez de
+una recomendación de atención:**
+
+> **El rojo se pone verde ANTES de que exista el motivo para seguir buscando.**
+
+En el momento en que el arreglo funciona, la señal que traía a alguien hasta acá **desaparece**. No
+hay nada que empuje a mirar tres líneas más abajo: la tarea se siente terminada porque, por el único
+criterio disponible en ese instante, lo está. Pedir *"acordate de barrer la clase"* es pedir que
+alguien actúe **sin señal**, justo cuando la señal se apagó.
+
+⚠️ **Es exactamente el argumento del hook contra el recordatorio**, medido otra vez: lo que depende
+de que alguien se acuerde **en el momento correcto** falla, y falla más cuanto mejor salió el
+arreglo. Por eso el corolario de abajo es un **comando**, no una actitud — se corre aunque uno esté
+seguro de que no hace falta, que es cuando más hace falta.
+
+**Corolario operativo:** cuando arregles un locator de esta clase, corré el grep de la forma **en el
+archivo entero antes de cerrar**, no sólo en la línea del rojo:
+
+```bash
+grep -nE "getByText\([^)]*\)\.(click|fill)|\.(first|last)\(\)|\.nth\(" <archivo>
+```
+
+**🔴 MOVER UNA PANTALLA ROMPE LOS SPECS QUE LA USABAN DE CAMINO — Y ESO ES INFORMACIÓN, NO RUIDO.**
+*Medido el 2026-09-03, en el corte 1 del cobro en línea: 14 rojos de un saque, en 11 archivos.*
+
+Al mover el cobro del modal a la columna, catorce casos se pusieron rojos. **Ninguno era un defecto
+del cambio**: eran specs cuyo SUJETO es otra cosa —descuento, mixto, fiado, arqueo, numeración,
+extras, inventario— y que usaban el cobro sólo como **camino** para dejar una venta armada.
+
+⚠️ **La tentación es leer eso como "el cambio rompió catorce tests" y dudar del cambio.** Es al
+revés: los catorce rojos son el **inventario, gratis y exacto, de quién dependía de esa pantalla**.
+Ninguna enumeración previa los habría listado tan bien — es la misma lección que la poda, donde
+*"¿quién la usa para LLEGAR a otra cosa?"* fue la línea que se leía corta.
+
+**Las dos causas, y se arreglan distinto:**
+
+| causa | qué se hace |
+|---|---|
+| el spec usaba la pantalla vieja **de camino** | se re-deriva el CAMINO y las aserciones viajan intactas |
+| el spec **elegía por TEXTO** (`getByText('Efectivo')`) | se pasa a `data-testid`: con dos superficies montadas el texto resuelve a dos elementos |
+
+🔴 **Y la segunda causa vale aparte, porque sólo aparece con las dos superficies vivas.** Nueve
+casos elegían el medio de pago por su texto visible. Mientras hubo una sola grilla eso funcionó
+años; con la columna y el modal montados a la vez, `getByText('Efectivo', { exact: true })` resuelve
+a **dos** elementos y Playwright falla por *strict mode*. **El locator no estaba mal: estaba
+apoyado en que hubiera una sola instancia**, que es una propiedad del producto, no del test.
+
+**Lo accionable, y es barato:** el camino compartido va a un **helper**, no repetido en cada spec —
+acá eran 26 repeticiones del mismo clic, y el camino va a cambiar otras tres veces antes de que el
+corte termine. Un camino repetido N veces es R1 dentro de la suite.
+
+**🔴 UNA ASERCIÓN SOBRE UNA COLECCIÓN NO ESTÁ EJERCIDA HASTA QUE EL ESCENARIO TIENE MÁS DE UN
+ELEMENTO.**
+*2026-09-03, corte 1 del cobro en línea. Tercera aparición de «un verde que no podía fallar», y la
+primera cazada al llegar al caso que sí discrimina en vez de con un mutante.*
+
+> **Con un solo elemento, comparar la LISTA y comparar el TOTAL son la misma aserción.** La forma se
+> ve más fuerte —compara filas, orden, cada campo— y mide exactamente lo mismo que un `sum`.
+
+**El caso.** La equivalencia entre la columna y el modal comparaba los `payments` **fila por fila**,
+ordenados. Escrito así desde el principio, y correcto. Pero el escenario del corte 1 es una **venta
+simple**: una sola fila de pago. Con una fila, *"las listas son iguales"* no puede distinguirse de
+*"los totales son iguales"* — y la propiedad que la comparación por filas existe para atrapar
+—**dos repartos distintos que suman lo mismo**— nunca se ejerció.
+
+⚠️ **Y por eso no la habría cazado un mutante del código.** Alterar el reparto no era posible: no
+había reparto. Lo que la destapó fue **llegar al escenario que sí discrimina** —el pago mixto del
+corte 2—, o sea el trabajo siguiente, no una técnica de verificación.
+
+**LO ACCIONABLE, y es una pregunta al escribir la aserción:** cuando compares una colección,
+preguntá **cuántos elementos tiene el escenario**. Si tiene uno, la aserción está escrita pero no
+ejercida: o se enriquece el escenario, o se anota que la forma fuerte espera su caso. Lo que no vale
+es contarla como cubierta.
+
+⚠️ Corolario para el orden del trabajo: una aserción escrita y no ejercida es **deuda de
+verificación**, y se paga en el corte que trae el escenario. Se anota ahí, no se olvida — es
+exactamente lo que pasó con *«E con el foco en el campo de dinero»*, que estuvo en dos mitades hasta
+que la columna existió.
 
 **🔴 SI DOS SUPERFICIES COMPARTEN UNA ESCRITURA, ESO SE MIDE — NO SE AFIRMA.**
 *Condición fijada el 2026-09-03, antes de partir el cobro en línea en cortes.*

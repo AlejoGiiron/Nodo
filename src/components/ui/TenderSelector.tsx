@@ -41,11 +41,24 @@ export function TenderSelector({
   seleccionado,
   onSelect,
   columnas = 4,
+  sobreTinta = false,
+  prefijo = 'pay-method',
 }: {
   tenders: Tender[]
   seleccionado: string
   onSelect: (id: string) => void
   columnas?: number
+  /** Variante sobre `--ink` (§4): la columna de cobro del mostrador. */
+  sobreTinta?: boolean
+  /**
+   * Prefijo de los `data-testid`.
+   *
+   * 🔴 Existe porque durante los cortes del cobro en línea las DOS superficies
+   * están montadas a la vez —la columna y el modal encima—, así que dos
+   * selectores con el mismo testid harían que cada locator resolviera a dos
+   * elementos. No es cosmético: sin esto los specs de las dos se pisan.
+   */
+  prefijo?: string
 }) {
   const bloqueados = tenders.filter((t) => t.bloqueado && (t.faltante != null || t.motivo))
 
@@ -56,8 +69,8 @@ export function TenderSelector({
           <button
             key={t.id}
             type="button"
-            data-testid={`pay-method-${t.id}`}
-            className="nodo-tender"
+            data-testid={`${prefijo}-${t.id}`}
+            className={sobreTinta ? 'nodo-tender nodo-tender--tinta' : 'nodo-tender'}
             aria-pressed={seleccionado === t.id}
             disabled={t.bloqueado}
             onClick={() => onSelect(t.id)}
@@ -70,7 +83,7 @@ export function TenderSelector({
       {bloqueados.map((t) => (
         <div
           key={t.id}
-          data-testid={`pay-method-bloqueado-${t.id}`}
+          data-testid={`${prefijo}-bloqueado-${t.id}`}
           style={{ marginTop: 8, fontSize: 12, color: 'var(--warning-on-soft)' }}
         >
           {t.label}: {t.faltante != null ? `faltan ${formatoCOP(t.faltante)} de cupo` : t.motivo}

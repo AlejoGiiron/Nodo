@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { createClient } from '@supabase/supabase-js'
 import { loginAsOwner } from './helpers/auth'
 import { openShiftIfClosed, closeShiftIfOpen } from './helpers/shift'
+import { abrirCobroCompleto } from './helpers/pos'
 
 // Pago mixto (dividir el cobro entre varios métodos). Corre contra el LAB.
 // - Producto compuesto seeded "Lab Coctel" (18.000) que descuenta 1 "Lab Vaso"
@@ -121,7 +122,7 @@ test.describe.serial('Pago mixto (pago dividido)', () => {
     const before = await readShiftSales(page)
 
     await addProductPOS(page)
-    await page.getByRole('button', { name: 'Cobrar' }).click()
+    await abrirCobroCompleto(page)
     const total = parseCOP(await page.getByTestId('checkout-total').innerText())
 
     // Dividir: efectivo + nequi que suman el total.
@@ -156,7 +157,7 @@ test.describe.serial('Pago mixto (pago dividido)', () => {
     await openShiftIfClosed(page, 0)
 
     await addProductPOS(page)
-    await page.getByRole('button', { name: 'Cobrar' }).click()
+    await abrirCobroCompleto(page)
     const total = parseCOP(await page.getByTestId('checkout-total').innerText())
     await page.getByTestId('pay-split-toggle').click()
     await fillSplitCashNequi(page, total)
@@ -186,7 +187,7 @@ test.describe.serial('Pago mixto (pago dividido)', () => {
     await openShiftIfClosed(page, 0)
 
     await addProductPOS(page)
-    await page.getByRole('button', { name: 'Cobrar' }).click()
+    await abrirCobroCompleto(page)
     const total = parseCOP(await page.getByTestId('checkout-total').innerText())
     await page.getByTestId('pay-split-toggle').click()
 
@@ -214,7 +215,7 @@ test.describe.serial('Pago mixto (pago dividido)', () => {
     await openShiftIfClosed(page, 0)
 
     await addProductPOS(page)
-    await page.getByRole('button', { name: 'Cobrar' }).click()
+    await abrirCobroCompleto(page)
     const total = parseCOP(await page.getByTestId('checkout-total').innerText())
 
     // Flujo de hoy: un método (nequi evita el step de vuelto), Continuar.
@@ -237,7 +238,7 @@ test.describe.serial('Pago mixto (pago dividido)', () => {
     await openShiftIfClosed(page, 0)
 
     await addProductPOS(page)
-    await page.getByRole('button', { name: 'Cobrar' }).click()
+    await abrirCobroCompleto(page)
 
     // Con efectivo (default, no fiado) el toggle "Dividir pago" está visible.
     await expect(page.getByTestId('pay-split-toggle')).toBeVisible()

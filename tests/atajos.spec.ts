@@ -32,6 +32,13 @@ import { waitPosReady, addPosProduct } from './helpers/pos'
 //    su default cortado—. Un listener registrado DESPUÉS del de la aplicación
 //    corre después y ve `defaultPrevented`. Con eso se puede medir incluso F12,
 //    cuya consecuencia no es observable de ninguna manera.
+//
+// ✅ ACTUALIZADO en el corte 1 del cobro en línea: la propiedad «E con el foco en
+//    el campo de dinero elige efectivo» —la razón entera de haber elegido letras
+//    sobre 1…5— ya NO está probada en dos mitades. Con la columna montada, la
+//    grilla de medios y el campo de dinero conviven, y el caso de punta a punta
+//    vive en `tests/cobro-en-linea.spec.ts`. Dos mitades que pasan por separado
+//    eran un verde que no podía fallar.
 // ============================================================================
 
 test.describe.configure({ mode: 'serial' })
@@ -142,18 +149,30 @@ test.describe('Atajos de teclado (§5)', () => {
     ).toBeFocused()
   })
 
-  test('🔴 F12 abre el cobro — la tecla que el botón viene prometiendo impresa', async ({ page }) => {
+  test('🔴 F12 actúa sobre el cobro: pone el FOCO en Cobrar', async ({ page }) => {
+    // 🔴 REESCRITO en el corte 1 del cobro en línea. Este caso aseveraba que F12
+    //    ABRÍA el modal de cobro, y eso era cierto mientras el cobro fuera un
+    //    modal. Con el panel en línea no hay nada que abrir, y §5 decidió que la
+    //    tecla **pone el foco en Cobrar** — cobrar de una convertiría F12 de un
+    //    acto reversible en una venta irreversible sin que la cajera tenga cómo
+    //    notarlo.
+    //    La ASERCIÓN sobrevivió al cambio de modelo —F12 sigue actuando sobre el
+    //    cobro— así que se re-derivó de la pantalla nueva en vez de borrarse.
+    // ⚠️ El flujo completo de los DOS ACTOS (foco + Enter que confirma, y que
+    //    F12 sola NO cobra) vive en `tests/cobro-en-linea.spec.ts`: acá se mide
+    //    el efecto del ATAJO, allá el flujo del cobro.
     await openShiftIfClosed(page, 0)
     await page.goto('/ventas')
     await waitPosReady(page)
     await addPosProduct(page)
 
-    await expect(page.getByTestId('checkout-total')).toHaveCount(0)
+    const boton = page.getByTestId('cobro-confirmar')
+    await expect(boton).not.toBeFocused()
     await page.keyboard.press('F12')
     await expect(
-      page.getByTestId('checkout-total'),
-      'el botón dice «Cobrar — F12» desde el primer día; la tecla tiene que cobrar',
-    ).toBeVisible({ timeout: 10_000 })
+      boton,
+      'el botón dice «Cobrar — F12» desde el primer día; la tecla tiene que actuar sobre él',
+    ).toBeFocused()
   })
 
   // ==========================================================================
@@ -167,56 +186,33 @@ test.describe('Atajos de teclado (§5)', () => {
   //    significa dos cosas. Cede lo LOCAL: la navegación es global y §5 promete
   //    que los atajos funcionan siempre.
   //
-  // 🔴 Y POR QUÉ LETRAS Y NO DÍGITOS, que es la razón principal y no la
-  //    mnemotecnia: el campo «Efectivo recibido» tiene `autoFocus`, así que en
-  //    el cobro el foco vive, por diseño, en un campo que consume dígitos. Ese
-  //    mismo campo DESCARTA las letras, así que E/T/C pueden funcionar CON EL
-  //    FOCO ADENTRO sin quitarle nada a nadie. Ninguna otra opción da esa
-  //    propiedad — y por eso el caso que la asevera es el más importante de acá.
+  // ⚠️ Estos casos corren contra LA COLUMNA y ya no abren el modal: desde el
+  //    corte 1 la grilla de medios está montada con sólo tener ítems en el
+  //    carrito, así que el escenario es más corto y —lo que importa— es el que
+  //    la cajera usa de verdad.
   // ==========================================================================
-  test('🔴 E/T/C eligen medio de pago, y el campo de dinero declara las letras inertes', async ({ page }) => {
+  test('🔴 E/T/C eligen medio de pago en la columna', async ({ page }) => {
     await openShiftIfClosed(page, 0)
     await page.goto('/ventas')
     await waitPosReady(page)
     await addPosProduct(page)
-    await page.keyboard.press('F12')
-    await expect(page.getByTestId('checkout-total')).toBeVisible({ timeout: 10_000 })
 
     await page.keyboard.press('t')
     await expect(
-      page.getByTestId('pay-method-transferencia'),
+      page.getByTestId('cobro-medio-transferencia'),
       'T elige transferencia (la que §5 nombra; tarjeta queda SIN atajo a propósito)',
     ).toHaveAttribute('aria-pressed', 'true')
 
     await page.keyboard.press('c')
-    await expect(page.getByTestId('pay-method-fiado')).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.getByTestId('cobro-medio-fiado')).toHaveAttribute('aria-pressed', 'true')
 
     await page.keyboard.press('e')
-    await expect(page.getByTestId('pay-method-efectivo')).toHaveAttribute('aria-pressed', 'true')
-
-    // 🔴 EL CASO POR EL QUE SE ELIGIÓ ESTA OPCIÓN —«E con el foco en el campo de
-    //    dinero SÍ elige efectivo»— NO SE PUEDE ASEVERAR DE PUNTA A PUNTA HOY, y
-    //    esto dice por qué en vez de dejar un hueco mudo.
-    //
-    //    El modal parte el cobro en DOS PASOS: la grilla de medios vive en
-    //    `method` y el campo «Efectivo recibido» en `amount`. **Nunca conviven**,
-    //    así que no existe el escenario donde el foco esté en el dinero y haya
-    //    una grilla que elegir. Con el cobro EN LÍNEA sí conviven — es la razón
-    //    de ser de esa columna.
-    //
-    //    Lo que SÍ se asevera hoy, y compone la propiedad en dos mitades:
-    //      · la REGLA —un campo que declara las letras inertes deja pasar el
-    //        atajo, y el default protege— en `src/lib/atajos.test.ts`;
-    //      · y que el campo de dinero real LLEVA esa declaración, acá abajo.
-    //    Falta la integración de las dos, y es CONDICIÓN DEL COBRO EN LÍNEA.
-    await page.getByTestId('checkout-continue').click()
-    await expect(page.getByTestId('checkout-received')).toBeVisible({ timeout: 10_000 })
-    await expect(
-      page.getByTestId('checkout-received'),
-      'el campo de dinero tiene que DECLARAR que las letras le son inertes: sin eso, ' +
-      'el atajo de letra no puede mandar con el foco adentro — que es la razón por la ' +
-      'que los atajos de cobro son letras y no dígitos',
-    ).toHaveAttribute('data-letras-inertes', '')
+    await expect(page.getByTestId('cobro-medio-efectivo')).toHaveAttribute('aria-pressed', 'true')
+    // El campo de dinero DECLARA que las letras le son inertes: es lo que
+    // permite que el atajo mande con el foco adentro, y la razón entera por la
+    // que los atajos de cobro son letras y no dígitos.
+    await expect(page.getByTestId('cobro-recibe'))
+      .toHaveAttribute('data-letras-inertes', '')
   })
 
   test('🔴 con el foco en un campo de TEXTO, las letras NO eligen medio de pago', async ({ page }) => {
@@ -226,27 +222,21 @@ test.describe('Atajos de teclado (§5)', () => {
     await page.goto('/ventas')
     await waitPosReady(page)
     await addPosProduct(page)
-    await page.keyboard.press('F12')
-    await expect(page.getByTestId('checkout-total')).toBeVisible({ timeout: 10_000 })
     await page.keyboard.press('t')
-    await expect(page.getByTestId('pay-method-transferencia')).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.getByTestId('cobro-medio-transferencia')).toHaveAttribute('aria-pressed', 'true')
 
     // El motivo del descuento es un campo de texto de verdad: ahí la letra se
     // escribe, no manda.
-    // ⚠️ `focus()` y no `click()`: el campo vive en el panel del carrito, detrás
-    //    del velo del modal, así que no es CLICKEABLE — pero sí enfocable, y el
-    //    foco es lo único que la regla mira. Con el cobro en línea deja de estar
-    //    detrás de nada.
     const motivo = page.getByTestId('discount-reason')
-    await motivo.focus()
-    await expect(motivo).toBeFocused()
+    await motivo.click()
+    await motivo.fill('')
     await page.keyboard.press('e')
     await expect(
       motivo,
       'la letra tiene que ESCRIBIRSE en un campo de texto, no ejecutar un atajo',
     ).toHaveValue('e')
     await expect(
-      page.getByTestId('pay-method-transferencia'),
+      page.getByTestId('cobro-medio-transferencia'),
       'y el medio elegido NO cambia: escribir «efectivo» en un motivo no es elegir efectivo',
     ).toHaveAttribute('aria-pressed', 'true')
   })
@@ -258,14 +248,12 @@ test.describe('Atajos de teclado (§5)', () => {
     await page.goto('/ventas')
     await waitPosReady(page)
     await addPosProduct(page)
-    await page.keyboard.press('F12')
-    await expect(page.getByTestId('checkout-total')).toBeVisible({ timeout: 10_000 })
     await page.keyboard.press('t')
-    await expect(page.getByTestId('pay-method-transferencia')).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.getByTestId('cobro-medio-transferencia')).toHaveAttribute('aria-pressed', 'true')
 
     await page.keyboard.press('z')
     await expect(
-      page.getByTestId('pay-method-transferencia'),
+      page.getByTestId('cobro-medio-transferencia'),
       'Z no es atajo de nada: el medio elegido tiene que quedarse donde estaba',
     ).toHaveAttribute('aria-pressed', 'true')
     await expect(page, 'y tampoco navega').toHaveURL(/\/ventas/)
@@ -279,8 +267,7 @@ test.describe('Atajos de teclado (§5)', () => {
     await page.goto('/ventas')
     await waitPosReady(page)
     await addPosProduct(page)
-    await page.keyboard.press('F12')
-    await expect(page.getByTestId('checkout-total')).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByTestId('cobro-medio-efectivo'), 'el cobro está en pantalla').toBeVisible()
 
     await page.keyboard.press('F10')
     await expect(

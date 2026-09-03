@@ -81,6 +81,44 @@ grupo, y fue la única que cambió. Las diez restantes ya eran correctas.
 | **(c) NO EXISTE** | la maqueta muestra algo que el producto no tiene | es alcance, no re-skin |
 | **(d) NO DIBUJADO** | el producto tiene algo que la maqueta no previó **y nadie decidió** | 🔴 **NO SE TOCA en el re-skin.** Se anota y se decide aparte |
 
+> 🔴 **SEGUNDA APARICIÓN, y confirma que la categoría no era un tecnicismo.** *2026-09-03, corte 1
+> del cobro en línea.* La maqueta del panel de cobro dibuja **RECIBE y CAMBIO**, y nada más. El
+> producto tiene además los **chips de monto rápido** —`Exacto` y los redondeos de
+> `cashQuickAmounts`—, que es lo que evita que la cajera teclee el vuelto a mano cien veces al día.
+> Migrar el cobro a la columna **se los estaba llevando puestos**.
+>
+> | # | dónde | qué borraba la maqueta por omisión |
+> |---|---|---|
+> | 1 | Catálogo, tanda 4 | miniatura · existencia · confirmación de desactivar · alerta de sobreventa |
+> | 2 | Cobro en línea, corte 1 | chips de monto rápido (`Exacto` y redondeos) |
+>
+> ⚠️ **La forma es idéntica las dos veces: la maqueta no dice «saquen esto», simplemente no lo
+> dibuja** — y quien implementa mirando el dibujo lo interpreta como que no va. Sin la categoría
+> (d), el re-skin le habría quitado **dos** capacidades probadas al producto **sin que nadie lo
+> decidiera**, que es la peor forma de perder una función: nadie la extraña porque nadie supo que se
+> fue.
+>
+> 🔴 **Y LA SEGUNDA APARICIÓN CAMBIA EL ESTATUS DE LA ENUMERACIÓN: DEJA DE SER BUENA PRÁCTICA Y
+> PASA A SER EL ÚNICO MECANISMO.**
+>
+> En el catálogo los cuatro (d) los cazó **la suite**, así que enumerarlos era el camino corto de
+> algo que igual iba a aparecer. **Acá no.** Los casos de los chips de monto rápido vivían en el
+> modal, el modal seguía intacto, y sus specs seguían **verdes** — la columna podía nacer sin chips
+> y no había una sola aserción en todo el repo que lo notara.
+>
+> > **Enumerar los (d) antes de tocar una pantalla no es una precaución: es el único verificador que
+> > existe para esta clase.** Una capacidad que se pierde al migrarla no rompe nada — los tests de
+> > la superficie vieja siguen pasando **porque la superficie vieja sigue ahí**.
+>
+> ⚠️ Y por eso la trampa es peor **durante una migración por cortes** que en un re-skin de una
+> pantalla: mientras las dos superficies conviven, la vieja sostiene toda la cobertura y la nueva
+> puede nacer incompleta en silencio. **El verde de la superficie vieja no dice nada sobre la
+> nueva** — y es el verde que uno mira, porque es el que ya estaba.
+>
+> **Obligatorio, entonces, y con ese peso:** antes de tocar un flujo se enumeran sus (d) —lo que el
+> producto hace y la maqueta no dibuja— y esa lista se escribe **antes** de escribir código. Los
+> cortes 2 (mixto), 3 (fiado) y 4 (el después del cobro) llevan la suya.
+
 🔴 **La regla de (d), y es la que protege lo que ya funciona:** un (d) **no puede desaparecer porque
 la maqueta no lo tenía**. Eso sería la maqueta borrando funcionalidad probada. Se decide aparte si se
 dibuja o se quita.
@@ -437,3 +475,112 @@ A6 usó uno solo. No es que faltara el criterio: **estaba, y no se aplicó al in
 **Lo que cambia si A6 se repite:** la lista de estados a capturar incluye **los modales de cada
 pantalla**. Si no, la próxima pasada va a volver a dar por cerrado lo que no miró — que es
 exactamente lo que hizo ésta, con un verde encima.
+
+---
+
+## 12 · Los (d) del COBRO, enumerados antes de tocar cada flujo
+
+*Obligatorio desde el 2026-09-03 (ver §11 y la nota de la clase (d)): durante una migración por
+cortes, la superficie vieja sostiene toda la cobertura, así que **una capacidad que se pierda al
+migrarla no rompe nada**. Enumerar es el único verificador que existe para esta clase.*
+
+### Corte 1 · venta simple — ✅ hecho
+
+| (d) | qué pasó |
+|---|---|
+| **chips de monto rápido** (`Exacto` y los redondeos de `cashQuickAmounts`) | 🔴 **se estaban perdiendo.** Restaurados en la columna con su caso propio |
+| 5 medios de pago donde la maqueta dibuja 3 | conservados — §8.16 es explícita |
+
+### Corte 2 · pago mixto — enumerado ANTES de tocarlo
+
+🔴 **La maqueta NO DIBUJA el pago dividido en absoluto.** No es que lo dibuje distinto: el panel de
+cobro tiene tres celdas, un `RECIBE` y un `CAMBIO`, y nada más. **El flujo entero es (d)**, así que
+la enumeración es de sus capacidades una por una:
+
+| # | capacidad | dónde vive hoy | qué se pierde si no viaja |
+|---|---|---|---|
+| 1 | **repartir el cobro entre métodos** | `pay-split-toggle` → `PaymentSplitEditor` | la venta mixta deja de existir |
+| 2 | **agregar una línea de método** | `pay-add-method` | el reparto queda fijo en dos |
+| 3 | **quitar una línea**, deshabilitado con una sola | `removeLine`, `lines.length <= 1` | se puede vaciar el reparto |
+| 4 | **cuánto falta repartir** | `pay-remaining` | el cajero no sabe si cierra hasta que la RPC lo rechaza |
+| 5 | **recibido y vuelto DENTRO del reparto** | `pay-received` · `pay-change` | el vuelto del efectivo mixto se calcula a mano |
+| 6 | **un método por línea**, y el alta elige el primero libre | `usedMethods` · `firstFreeMethod()` · `canAdd` | dos líneas del mismo método: un reparto que la RPC acepta y el reporte no explica |
+| 7 | **semilla y re-sembrado**: arranca con el total en efectivo y deja de re-sembrar cuando el cajero tocó las líneas | `dirty` | el reparto se pisa solo mientras se escribe |
+| 8 | **mixto y fiado son excluyentes** | `{!isFiado && …}` en el toggle **y un guard en la RPC** | el cajero ve un control que la base va a rechazar |
+
+⚠️ **El 6 y el 7 son los que un rediseño mirando la maqueta borra sin notarlo**, porque no tienen
+control visible: son reglas de comportamiento.
+
+🔴 **CORRECCIÓN DEL 8, el mismo día (2026-09-03).** La primera versión de esta fila decía que la
+exclusión mixto/fiado *"sólo existe como una condición de render"*, y sobre eso se estuvo por abrir
+una deuda de invariante sin guard. **Era falso.** `register_sale_payment` lo guarda en la base, con
+el mensaje escrito:
+
+```sql
+-- Solo ventas de CONTADO. La venta a credito se salda con abonos
+-- (register_debt_payment): no debe crear payments por esta via.
+if v_pay_status <> 'paid' then
+  raise exception 'La venta no es de contado (estado de pago: %). El credito se salda con abonos.', v_pay_status;
+end if;
+```
+
+Una orden a fiado nace `payment_status = 'pending'`, así que la RPC la rechaza. El `{!isFiado && …}`
+es comodidad encima del guard, no la única defensa.
+
+⚠️ **Cómo se produjo el error, porque es reproducible:** el primer `grep -A 40` sobre
+`register_sale_payment` **cruzó el límite de la función** y devolvió el `v_pay_status` de
+`register_sale_void`, que vive en otro archivo del mismo módulo. **Un grep con ventana fija no
+respeta límites de función**, así que puede atribuirle a una función guards que son de su vecina —
+en la dirección que más engaña: hace parecer que hay guard donde no lo hay, o al revés. La lectura
+que sirvió fue acotar con `awk '/function <nombre>/,/^\$\$/'`.
+
+Es el corolario de *clasificar sin abrir el archivo*, aplicado a SQL: **el alcance de un guard se lee
+dentro de su función, no en una ventana de líneas.**
+
+🔴 **Y EL ERROR FUE COMPARTIDO, que es la mitad que cambia lo accionable.** La deuda no se escribió
+sola: se **aprobó**, con alcance y clase asignados —*"es la misma forma que la deuda 24 antes de las
+policies"*— sobre la descripción que yo había dado, **sin pedir la definición de la RPC**.
+
+> **Quien APRUEBA una deuda sobre un invariante tiene que exigir la definición, no la descripción.**
+
+⚠️ Es el corolario de R4 leído sobre la jerarquía: **una afirmación que confirma lo que el otro ya
+esperaba se revisa menos.** El enunciado *"un invariante de negocio sostenido por una condición de
+render"* encajaba perfecto con dos casos ya conocidos del proyecto —la deuda 24 y `orders.total`
+antes de la 80—, y ese encaje **funcionó como evidencia sin serlo**: es la coincidencia entre dos
+declaraciones otra vez, sólo que ahora una la dice quien implementa y la otra quien decide.
+
+**Lo accionable, entonces, es de las dos puntas:**
+- **quien lee** acota el grep a la función y cita el guard, no lo resume;
+- **quien aprueba** pide el `raise` textual antes de asignarle clase a la deuda. Un invariante sin
+  guard se demuestra mostrando **dónde NO está**, y eso es una lista de funciones revisadas, no una
+  frase.
+
+⚠️ Y el costo evitado no era chico: la deuda habría entrado al registro con la autoridad de una
+clase conocida, y el corte 2 habría escrito su spec creyendo ser **la única defensa** de algo que la
+base ya rechaza.
+
+### Corte 3 · fiado — enumerado ANTES de tocarlo
+
+| # | capacidad | dónde vive hoy |
+|---|---|---|
+| 1 | **elegir cliente**, obligatorio para fiado | `CustomerPicker` dentro del modal |
+| 2 | **plazo pactado por venta**, precargado del cliente y **editable** | `pos-plazo` (deuda 46) |
+| 3 | el plazo **se congela en la orden**, no se lee del cliente después | `plazo_dias` en `createOrder` |
+| 4 | fiado **no registra pago** y **no toca caja**, pero **sí descuenta stock** | `useCobro`, rama `esFiado` |
+| 5 | `Cambiar cliente` / **F4** | ⛔ **no existe**: es la mitad que falta, y entra con este corte |
+
+⚠️ La maqueta **sí** dibuja cliente y cupo en la columna, así que acá el riesgo no es la omisión
+sino el revés: **el `CupoMeter` que la maqueta dibuja no tiene datos** — el cupo no existe en el
+esquema (deuda 40) y nace en `sin dato`.
+
+### Corte 4 · el después del cobro
+
+| # | capacidad | dónde vive hoy |
+|---|---|---|
+| 1 | **número de la venta** | `success-order-number` |
+| 2 | **la venta quedó sin número** y el aviso | `success-sin-numero` |
+| 3 | **reintentar la numeración** sobre una venta ya cobrada | `retry-order-number` |
+| 4 | **imprimir el comprobante** | `buildSaleTicketHtml` |
+
+🔴 Los cuatro son (d): **la maqueta no dibuja nada de lo que pasa después de apretar Cobrar.** Es lo
+que decidió §8.17 — ese momento tiene diálogo propio.
