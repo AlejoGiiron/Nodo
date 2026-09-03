@@ -124,7 +124,7 @@ async function abrirEdicion(page: Page, nombre: string) {
   // Se filtra por el buscador y se entra por el botón "Editar" de la tarjeta,
   // que es el flujo real (la tarjeta entera no abre el modal).
   await page.getByPlaceholder('Buscar producto...').fill(nombre)
-  const card = page.getByTestId('product-grid-card').filter({ hasText: nombre }).first()
+  const card = page.getByTestId('catalogo-row').filter({ hasText: nombre }).first()
   await expect(card).toBeVisible({ timeout: 15_000 })
   await card.getByTitle('Editar', { exact: true }).click()
   await expect(page.getByTestId('product-modal')).toBeVisible({ timeout: 10_000 })

@@ -3,30 +3,12 @@ import { Search, X, Plus, Package } from 'lucide-react'
 import { useProducts } from '@/hooks/useProducts'
 import { useCategories } from '@/hooks/useCategories'
 import { useProductMutations } from '@/hooks/useProductMutations'
-import { ProductCard } from '@/components/products/ProductCard'
+import { ProductRow } from '@/components/products/ProductRow'
 import { ProductModal } from '@/components/products/ProductModal'
 import { CategoryTabs } from '@/components/products/CategoryTabs'
 import { CategoryModal } from '@/components/products/CategoryModal'
 import type { ProductWithCategory } from '@/stores/cartStore'
 import type { Tables } from '@/types/database.types'
-
-// ─── Skeleton ────────────────────────────────────────────────────
-function SkeletonCard() {
-  return (
-    <div style={{
-      background: 'var(--surface)', border: '1px solid var(--border)',
-      borderRadius: 14, overflow: 'hidden',
-    }}>
-      <div style={{ height: 148, background: 'linear-gradient(90deg, var(--border-2) 25%, var(--border) 50%, var(--border-2) 75%)', backgroundSize: '200% 100%', animation: 'gv-shimmer 1.4s infinite' }} />
-      <div style={{ padding: '12px 14px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <div style={{ height: 10, width: '40%', background: 'var(--border-2)', borderRadius: 6 }} />
-        <div style={{ height: 14, width: '80%', background: 'var(--border-2)', borderRadius: 6 }} />
-        <div style={{ height: 11, width: '60%', background: 'var(--border-2)', borderRadius: 6 }} />
-        <div style={{ height: 16, width: '35%', background: 'var(--border-2)', borderRadius: 6, marginTop: 4 }} />
-      </div>
-    </div>
-  )
-}
 
 // ─── Empty state ─────────────────────────────────────────────────
 function EmptyState({ query, onNew }: { query: string; onNew: () => void }) {
@@ -199,27 +181,49 @@ export function ProductsPage() {
         </div>
       </div>
 
-      {/* ── Product grid ── */}
-      <div style={{ padding: '24px 28px' }}>
-        {isLoading ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
-            {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
+      {/* ── Catálogo: FILAS, no tarjetas (§7.3) ── */}
+      <div style={{ padding: '16px 28px 28px' }}>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-3)', overflow: 'hidden' }}>
+          {/* El encabezado de columnas es lo que permite que el precio vaya sin
+              símbolo de peso (§4 MoneyCell). Una tarjeta no lo tiene, y por eso
+              la tarjeta necesitaba el "$". */}
+          <div
+            data-testid="catalogo-encabezado"
+            style={{
+              display: 'grid', gridTemplateColumns: '34px 1fr 130px 190px 110px 150px', gap: 12,
+              padding: '9px 16px', background: 'var(--surface-2)',
+              borderBottom: '1px solid var(--border)',
+              fontSize: 11, fontWeight: 600, color: 'var(--ink-3)',
+              textTransform: 'uppercase', letterSpacing: '.04em',
+            }}
+          >
+            <span />
+            <span>Producto</span>
+            <span>Categoría</span>
+            <span style={{ textAlign: 'right' }}>Existencia</span>
+            <span style={{ textAlign: 'right' }}>Precio</span>
+            <span />
           </div>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
-            {filtered.length === 0
-              ? <EmptyState query={query} onNew={() => setModalProduct('new')} />
-              : filtered.map(product => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  onEdit={() => setModalProduct(product)}
-                  onDeactivate={() => deactivateProduct.mutate(product.id)}
-                />
-              ))
-            }
-          </div>
-        )}
+
+          {isLoading ? (
+            <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="nodo-skeleton" style={{ width: `${80 - i * 7}%` }} />
+              ))}
+            </div>
+          ) : filtered.length === 0 ? (
+            <EmptyState query={query} onNew={() => setModalProduct('new')} />
+          ) : (
+            filtered.map(product => (
+              <ProductRow
+                key={product.id}
+                product={product}
+                onEdit={() => setModalProduct(product)}
+                onDeactivate={() => deactivateProduct.mutate(product.id)}
+              />
+            ))
+          )}
+        </div>
       </div>
 
       {/* ── Product modal ── */}

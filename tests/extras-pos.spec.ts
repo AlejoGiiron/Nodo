@@ -125,7 +125,7 @@ test.describe.serial('Extras en POS', () => {
     await page.getByTestId('product-extra-option').filter({ hasText: E_FREE }).click()
     await page.getByTestId('product-extra-option').filter({ hasText: E_LINKED }).click()
     await saveProductAndClose(page)
-    await expect(page.getByTestId('product-grid-card').filter({ hasText: P_BASE })).toBeVisible()
+    await expect(page.getByTestId('catalogo-row').filter({ hasText: P_BASE })).toBeVisible()
   })
 
   test('agregar producto con extra → el total incluye el extra', async ({ page }) => {
@@ -201,7 +201,7 @@ test.describe.serial('Extras en POS', () => {
     // edición, así que sin scope el locator es ambiguo (strict mode).
     await page.goto('/productos')
     await page.getByPlaceholder('Buscar producto...').fill(P_STOCK)
-    const card = page.getByTestId('product-grid-card').filter({ hasText: P_STOCK })
+    const card = page.getByTestId('catalogo-row').filter({ hasText: P_STOCK })
     await expect(card.getByTestId('oversold-alert')).toBeVisible()
     await expect(card.getByTestId('oversold-alert')).toContainText('Sobreventa: reponer')
     await expect(card.getByTestId('stock-badge')).toContainText('-2')

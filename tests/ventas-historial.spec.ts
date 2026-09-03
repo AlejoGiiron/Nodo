@@ -113,7 +113,7 @@ test.describe.serial('Numeración e historial de ventas', () => {
     await page.getByTitle('Editar', { exact: true }).first().click()
     await page.getByTestId('product-extra-option').filter({ hasText: E_LIBRE }).click()
     await saveProductAndClose(page)
-    await expect(page.getByTestId('product-grid-card').filter({ hasText: P_BASE })).toBeVisible()
+    await expect(page.getByTestId('catalogo-row').filter({ hasText: P_BASE })).toBeVisible()
   })
 
   test('la venta recibe número y la siguiente es consecutiva (#N, #N+1)', async ({ page }) => {
