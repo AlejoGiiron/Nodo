@@ -585,13 +585,32 @@ Los tres primeros se repararon: la columna ya existía mezclada y hubo que separ
 cazó **enumerando** para la deuda 49, al ver que `type='return'` ya tenía dueño. Reusarlo era lo
 cómodo —el valor existía, el CHECK lo aceptaba, y en castellano las dos cosas se llaman
 "devolución"— y habría dejado el mismo valor describiendo **dos direcciones opuestas**,
-distinguibles solo por el signo. La señal fue el idioma: **cuando dos hechos comparten nombre en
-castellano pero van en direcciones contrarias, no comparten valor.**
+distinguibles solo por el signo. **Lo que lo cazó fue el idioma**, y por eso la pregunta quedó
+abajo, en lo accionable: no hizo falta razonar sobre el modelo, bastó notar que se estaba por reusar
+un valor porque *"al final las dos cosas son una devolución"*.
 
-**Lo accionable, y es una pregunta sola:** antes de agregar un valor a un allowlist o una columna,
-preguntá **cuántas preguntas contesta**. Si son dos, son dos columnas — aunque hoy parezca que una
-alcanza, y **sobre todo** si el valor nuevo se lee natural al lado de los otros. `preventa` se leía
-perfecto al lado de `whatsapp`; eso es justamente lo que hace peligrosa a la mezcla.
+**LO ACCIONABLE — son DOS preguntas, y la segunda es la que caza los casos que la primera no ve:**
+
+1. **¿Cuántas preguntas contesta este valor?** Si son dos, son dos columnas — aunque hoy parezca que
+   una alcanza, y **sobre todo** si el valor nuevo se lee natural al lado de los otros. `preventa` se
+   leía perfecto al lado de `whatsapp`; eso es justamente lo que hace peligrosa a la mezcla.
+
+2. 🔴 **¿El valor que voy a reusar se llama igual en castellano que el hecho que quiero guardar, pero
+   va en la dirección contraria?** Entonces **no comparten valor.**
+
+   > **Cuando dos hechos comparten nombre en castellano y van en direcciones contrarias, no
+   > comparten valor.**
+
+   **El idioma es la señal, y es gratis.** No hace falta razonar sobre el modelo: basta notar que
+   estás por reusar un valor porque *"al final las dos cosas son una devolución"*. Esa frase —"al
+   final las dos son X"— es el aviso. `return` era el reverso de una VENTA (entra stock) y se iba a
+   reusar para una devolución al PROVEEDOR (sale stock); en castellano las dos son *devolución*, y en
+   el negocio son opuestas. **La comodidad de reusar viene disfrazada de sinonimia.**
+
+   ⚠️ Ojo con la variante que engaña más: cuando el signo alcanza para distinguirlas
+   (`qty` positivo vs negativo), reusar el valor **parece** correcto y hasta elegante. No lo es: todo
+   consumidor —un filtro, un reporte, una pantalla— tiene que acordarse del signo, y el primero que
+   no se acuerde mezcla los dos hechos sin error visible.
 
 ⚠️ Es primo del corolario de R4 —**la coincidencia entre dos declaraciones no es evidencia**— por el
 otro lado: allá dos fuentes distintas dicen lo mismo y parece confirmación; acá una sola fuente dice
@@ -1017,6 +1036,52 @@ código del input mientras se podaba otra cosa.
 **Lo accionable:** un test migrado entre pantallas es **código nuevo y no verificado**. Se marca
 como tal —en el propio test— hasta que la suite corra de verdad. Y es una razón concreta más para
 que la suite E2E pueda correr: es el único verificador que mira esta clase.
+
+---
+
+### 🔴 CRITERIO SIN NÚMERO · LA DEUDA ES UNA HIPÓTESIS FECHADA; EL CÓDIGO ES EL DATO
+
+*Dos casos medidos el 2026-09-02, en el mismo día y con la misma causa.*
+
+`docs/DEUDAS.md` se lee al planificar, y por eso cada entrada trae su **alcance**. Ese alcance se
+escribió en algún momento, mirando algo — y **a veces ese algo no fue el código.**
+
+> **Una deuda dice lo que alguien creyó, el día que lo escribió. Es una hipótesis con fecha, no una
+> medición.** El alcance escrito puede venir de una fuente **que nunca se ejecutó**: una maqueta, un
+> diseño, una conversación.
+
+**Los dos casos, y los dos venían de la maqueta:**
+
+| Lo que la deuda afirmaba | Lo que el código decía | Qué costó |
+|---|---|---|
+| el catálogo del cliente son **~4.212 productos** (deuda 50) | el archivo real de Muscle Pro tiene **37** | el import masivo estuvo declarado *bloqueante del alta* durante días, ordenando el trabajo |
+| Compras y Gastos **ya dejan elegir la fecha**, sólo falta la columna (deuda 44) | `grep 'type="date"' src/` → **diez apariciones, las diez filtros de historiales**. Ningún formulario de alta tenía campo de fecha | la deuda parecía "dos columnas" y eran dos columnas, dos guards, dos formularios y cuatro consultas |
+
+**Por qué pasa, y por qué no se arregla escribiendo mejor.** Una maqueta y una app se describen con
+las mismas palabras. Cuando una descripción de la maqueta entra a una tabla de decisiones, **pierde
+su origen y gana la autoridad de la tabla**: nadie que la lea después puede distinguir *"medido en el
+código"* de *"así se veía en el dibujo"*.
+
+⚠️ Y el efecto es siempre en la misma dirección: la deuda **subestima o distorsiona el trabajo**, y
+sobre ese número se decide el orden. El primer caso hizo urgente algo que no lo era; el segundo hizo
+chico algo que no lo era.
+
+**LO ACCIONABLE, y es una sola frase:**
+
+> **La enumeración previa se hace igual, aunque la deuda ya diga el alcance.**
+
+No es desconfianza del que escribió: es que el alcance escrito y el código son **dos fuentes
+distintas**, y sólo una ejecuta. Si al enumerar coinciden, costó dos minutos. Si no coinciden —dos de
+dos veces, hasta ahora—, lo que se encontró es justamente lo que habría hecho fallar el plan.
+
+⚠️ **Y al corregir, se REEMPLAZA la afirmación vieja**, no se agrega la nueva al lado: ver la
+convención de notas al final de este archivo. Una deuda con dos alcances contradictorios es peor que
+una con el alcance equivocado.
+
+Es el mismo principio que el corolario de R4 —*la coincidencia entre dos declaraciones no es
+evidencia*— y el hermano directo de *"clasificar leyendo el nombre o el plan NO es clasificar"*: allá
+el proxy es un plan de clasificación, acá es una deuda. **Los dos son buenos proxies, y por eso
+engañan.**
 
 ---
 
