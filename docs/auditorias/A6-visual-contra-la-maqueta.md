@@ -689,8 +689,8 @@ revirtió el mismo día**. La divergencia se fue con la superficie que la trajo.
 
 ⚠️ **Y por eso vale conservar la entrada en vez de borrarla**, con la forma que generaliza:
 
-> **Una duda tiene un sujeto. Si el sujeto desaparece, la duda no se resuelve — se disuelve, y eso
-> NO es lo mismo que haberla contestado.**
+Es el criterio *«una duda tiene un sujeto — si el sujeto desaparece, se disuelve»* de `CLAUDE.md`,
+y éste es su caso medido. **El criterio no se repite acá**: acá va la evidencia.
 
 Nadie decidió qué palabra lee el cajero. Si el cobro volviera a la columna, o si alguien copiara ese
 panel a otra pantalla, **la duda vuelve exactamente igual** — y sin esta nota, volvería como

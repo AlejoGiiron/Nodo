@@ -1478,18 +1478,31 @@ dos frases son idénticas.
 1. **La convención se cumple en dos tiempos.** Escribir el comando al lado del dato es la mitad;
    la otra es que el comando **siga corriendo**. Un dato con un comando muerto no está mejor que un
    dato solo — está **peor**, porque el comando lo hace parecer verificado.
-2. 🔴 **Cuando se reponga el acceso, esos tres se corren ANTES de citar cualquier dato que dependan.**
-   No es una tarea de mantenimiento: es la condición para que las afirmaciones que los citan
-   vuelvan a ser afirmaciones. Los tres son
-   `pnpm exec supabase migration list --linked` · `pnpm db:types` (y su `git diff --exit-code`) ·
-   `select proname, proacl from pg_proc … where prosecdef`, y lo que sostienen es, en orden: el
-   conteo de migraciones, el contrato de `database.types.ts` (R1 punto 5) y que ninguna función
-   `SECURITY DEFINER` tenga `anon=X`.
+2. 🔴 **Cuando se reponga el acceso, esos tres se corren ANTES de citar cualquier dato que
+   dependa de ellos.** No es una tarea de mantenimiento: es la condición para que las afirmaciones
+   que los citan vuelvan a ser afirmaciones.
 
-⚠️ **Y el tercero es el que más pesa**, porque su afirmación no es un número sino una garantía de
-seguridad: *"de las quince funciones DEFINER, ninguna deja entrar a `anon`"*. Esa frase, sin poder
-correr el `select`, es exactamente lo que la regla llama **una garantía falsa donde se decide** —
-no porque sea falsa, sino porque **nadie puede saber si sigue siendo cierta**.
+🔴 **Y EL ORDEN NO ES ARBITRARIO — decidido el 2026-09-03, y la razón es la clase de lo que
+sostiene cada uno, no su costo:**
+
+| orden | comando | qué sostiene | de qué clase es |
+|---|---|---|---|
+| **1º** | `select proname, proacl from pg_proc … where prosecdef` | *"ninguna función `SECURITY DEFINER` deja entrar a `anon`"* | 🔴 una **GARANTÍA DE SEGURIDAD** |
+| 2º | `pnpm exec supabase migration list --linked` | *"17 migraciones aplicadas"* | un número |
+| 3º | `pnpm db:types` + `git diff --exit-code` | el contrato de `database.types.ts` (R1 punto 5) | un número (líneas que difieren) |
+
+> **Un número que no se puede verificar es un dato en duda. Una GARANTÍA que no se puede verificar
+> es el caso #13.**
+
+**No sabemos que sea falsa; sabemos que nadie puede saber que sigue siendo cierta** — y ésa es
+exactamente la forma que la regla describe: una garantía **donde se decide** le gana a tres
+advertencias donde se codea. Alguien va a leer *"las quince están bien"*, no va a escribir el revoke,
+y no habrá nada que lo contradiga.
+
+⚠️ **Y el precedente lo hace peor, no mejor:** la única función con el hueco `anon=X` que este
+proyecto encontró fue **la escrita siguiendo la regla al pie de la letra**. O sea que la clase de
+defecto que este `select` vigila **ya se materializó una vez**, y se vio verificando el ACL contra la
+base — el archivo se veía correcto. Es el comando que menos se puede sustituir por una lectura.
 
 ⚠️ **Y hay un peligro de LECTURA que este archivo se creó solo:** contiene **dos clases de comando
 mezcladas** — los canónicos (para usar) y los de la tabla de fallas de instrumento, que están ahí
@@ -1694,6 +1707,46 @@ código del input mientras se podaba otra cosa.
 **Lo accionable:** un test migrado entre pantallas es **código nuevo y no verificado**. Se marca
 como tal —en el propio test— hasta que la suite corra de verdad. Y es una razón concreta más para
 que la suite E2E pueda correr: es el único verificador que mira esta clase.
+
+---
+
+### 🔴 CRITERIO SIN NÚMERO · UNA DUDA TIENE UN SUJETO — SI EL SUJETO DESAPARECE, LA DUDA SE DISUELVE, Y ESO NO ES HABERLA CONTESTADO
+
+*2026-09-03. Hermana directa del criterio de abajo: las dos son sobre **no perder el porqué cuando
+cambia el qué**.*
+
+> **Resolver una duda es elegir. Disolverla es que deje de aplicar.** Las dos la sacan de la lista
+> de pendientes, y **sólo una deja una decisión atrás.**
+
+**El caso.** *«Cambio» vs «Vuelto»* — dos palabras para lo mismo en el mismo flujo. Se anotó como
+duda de vocabulario con su argumento: *vuelto* es la palabra corriente en Colombia, *cambio* es la
+que eligió la maqueta, y renombrar a medias crea un tercer vocabulario (precedente: *turno* vs
+*jornada*). Al día siguiente el producto decía **Vuelto** en los tres sitios y la duda había
+desaparecido — **no porque alguien eligiera**, sino porque «Cambio» vivía en una sola pantalla y esa
+pantalla se revirtió.
+
+⚠️ **Por qué la distinción no es semántica.** Una duda **resuelta** deja una decisión que el próximo
+hereda. Una duda **disuelta** no deja nada: si el sujeto vuelve —y vuelve, porque alguien copia el
+panel, revierte una decisión o construye la pantalla que faltaba— **la duda vuelve entera**. Sin la
+nota, vuelve **como hallazgo nuevo**, se debate desde cero, y se paga el diagnóstico completo otra
+vez.
+
+🔴 **LO ACCIONABLE: una duda disuelta SE ANOTA COMO DISUELTA, con su argumento intacto.** No se
+borra y no se marca como resuelta.
+
+| qué se escribe | por qué |
+|---|---|
+| que se disolvió, y **qué sujeto desapareció** | es lo que permite reconocer que volvió |
+| el **argumento de fondo, entero** | es lo que no hay que reconstruir la próxima vez |
+| que **nadie decidió** | para que no se cite como precedente de una decisión que no existió |
+
+⚠️ **Y el corolario que la hace barata:** anotar la disolución cuesta un párrafo **en el momento en
+que todavía se entiende el argumento**. Reconstruirlo meses después cuesta el diagnóstico entero —
+y peor, lo reconstruye alguien que no sabe que ya se había pensado.
+
+⚠️ Es el mismo mecanismo que el criterio de abajo, aplicado a una **pregunta** en vez de a un
+**dato**: allá lo retirado se sigue mostrando para que el total cuadre con sus filas; acá lo
+disuelto se sigue anotando para que la próxima aparición no se lea como la primera.
 
 ---
 
