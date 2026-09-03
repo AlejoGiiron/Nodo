@@ -2850,3 +2850,34 @@ que no representa el uso real. **Es el primer arreglo del proyecto que se acepta
 la alternativa era peor**: un rojo inventado que habría quedado en la suite pareciendo cobertura.
 Vale escribirlo como precedente — *cuando un defecto no se puede reproducir de forma honesta, el
 arreglo se hace igual y la ausencia de rojo se anota; lo que no se hace es fabricar el rojo.*
+
+
+## 2026-09-02 · La 56, segunda vuelta — mi arreglo introdujo un rojo, y la suite lo cazó
+
+*No estaba planeado y por eso vale escribirlo: es el primer caso del proyecto en que **la suite
+entera cazó una regresión mía el mismo día que la introduje**.*
+
+El arreglo de la 56 cambió la condición del efecto de sincronización: de `assignedIds.size > 0` a
+`!cargandoExtras`. Correcto en su motivo —con `size > 0`, un producto SIN extras nunca marcaba el
+flag—, y con un efecto que no había previsto: **si el usuario marcaba un extra ANTES de que la
+consulta respondiera, el efecto le pisaba el clic al llegar.** Lo cazó `extras.spec` en la corrida
+completa, con un rojo de color de fondo: `Expected rgb(236,253,245), Received rgb(255,255,255)`.
+
+### La salida fácil era la equivocada
+
+La tentación es no sincronizar si el usuario ya tocó algo. **Eso habría reintroducido el defecto
+original**: la selección del usuario estaría hecha sobre una base vacía que no es la real, y guardar
+borraría los extras que no vio. El bug se habría mudado de lugar, que es exactamente lo que la regla
+de la poda advierte para otro contexto.
+
+> **Si no se puede mostrar el estado verdadero, no se puede ofrecer cambiarlo.**
+
+La respuesta correcta es la misma que para el botón, un paso antes: mientras los datos no cargaron,
+**la lista de extras y el editor de receta tampoco se renderizan**. No hay clic posible sobre una
+base falsa. El criterio de CLAUDE.md —*una escritura que persiste un cálculo no existe hasta que
+todos sus insumos hayan cargado*— vale también para los controles que **componen** ese cálculo, no
+sólo para el botón que lo dispara.
+
+⚠️ Y lo que esto dice del método: **el gate del botón era necesario y no suficiente.** La enumeración
+de insumos identificó bien QUÉ faltaba cargar; lo que no preguntó es **qué puede tocar el usuario
+mientras tanto**. Es una pregunta nueva para la próxima de esta clase.

@@ -483,20 +483,53 @@ export function ProductModal({ product, categories, onClose }: ProductModalProps
               </div>
             )}
 
-            {/* Receta (solo producto compuesto) */}
+            {/* Receta (solo producto compuesto) — mismo criterio que los extras:
+                editar una receta que todavía no cargó es editar sobre `[]`. */}
             {kind === 'composite' && (
-              <RecipeEditor
-                selfId={product?.id ?? null}
-                products={allProducts}
-                rows={recipeRows}
-                onChange={setRecipeRows}
-              />
+              cargandoReceta ? (
+                <div
+                  data-testid="product-receta-cargando"
+                  style={{
+                    fontSize: 12.5, color: 'var(--ink-3)', lineHeight: 1.5,
+                    border: '1px solid var(--border)', borderRadius: 9, padding: '12px 14px',
+                    background: 'var(--surface-2)',
+                  }}
+                >
+                  Cargando la receta…
+                </div>
+              ) : (
+                <RecipeEditor
+                  selfId={product?.id ?? null}
+                  products={allProducts}
+                  rows={recipeRows}
+                  onChange={setRecipeRows}
+                />
+              )
             )}
 
             {/* Extras disponibles */}
             <div>
               <label style={fieldLabel}>Extras disponibles</label>
-              {activeExtras.length === 0 ? (
+              {/* 🔴 DEUDA 56, segunda vuelta. No alcanza con no ofrecer Guardar:
+                  mientras no se sepa QUÉ hay asignado, tampoco se puede EDITAR.
+                  Al sincronizar la selección cuando termina la carga (y no sólo
+                  cuando llegan filas), un clic hecho ANTES quedaba pisado — lo
+                  cazó `extras.spec`. Y dejar que ese clic sobreviva sería peor:
+                  se estaría editando sobre una base vacía que no es la real, que
+                  es exactamente el defecto original. Si no se puede mostrar el
+                  estado verdadero, no se puede ofrecer cambiarlo. */}
+              {cargandoExtras ? (
+                <div
+                  data-testid="product-extras-cargando"
+                  style={{
+                    fontSize: 12.5, color: 'var(--ink-3)', lineHeight: 1.5,
+                    border: '1px solid var(--border)', borderRadius: 9, padding: '12px 14px',
+                    background: 'var(--surface-2)',
+                  }}
+                >
+                  Cargando los extras asignados…
+                </div>
+              ) : activeExtras.length === 0 ? (
                 <div style={{
                   fontSize: 12.5, color: '#94a3b8', lineHeight: 1.5,
                   border: '1px dashed #e2e8f0', borderRadius: 9, padding: '12px 14px',
