@@ -647,8 +647,26 @@ function CartPanel({
         </div>
       </div>
 
-      {/* Items */}
-      <div style={{ flex: 1, overflow: 'auto' }}>
+      {/* Items.
+          🔴 `minHeight` NO ES COSMETICO — es el defecto que encontro el par del
+          desplegado. Al bajar el cobro a la columna, el panel de tinta paso a
+          485px y en TODO viewport de hasta ~1050px de alto esta lista colapsaba
+          a **cero**: la cajera no veia que estaba vendiendo. La venta salia bien
+          y la base quedaba perfecta.
+          ⚠️ Ningun test lo cazaba, y no por falta de cobertura: el item sigue en
+          el DOM con bounding box, asi que **para Playwright es `visible`** aunque
+          este clipeado por un contenedor de altura 0. Lo que lo mide es una
+          asercion GEOMETRICA —que el item caiga dentro del rectangulo de su
+          contenedor de scroll— y vive en `cobro-en-linea.spec`. */}
+      {/* 🔴 EL AREA QUE CEDE: la lista, el descuento y «En espera».
+          Los tres bajan acá porque §7.7 dice que se comprime lo que NO es el
+          cuello de botella, y un control secundario que ocupa alto FIJO
+          permanente es exactamente eso. Medido: a 1440×900 faltaban 30px para
+          que el botón Cobrar entrara — no 180. Bajar la lista a dos filas habría
+          gastado 117 para resolver 30, sacrificando justo lo que motivó el
+          arreglo. */}
+      <div style={{ flex: 1, overflowY: 'auto', minHeight: ALTO_MINIMO_LISTA }}>
+      <div>
         {items.length === 0 ? (
           <div style={{ padding: 50, textAlign: 'center', color: 'var(--ink-4)', fontSize: 13.5 }}>
             <div style={{
@@ -829,14 +847,26 @@ function CartPanel({
           <Pause size={15} /> En espera
         </Button>
       </div>
+      </div>{/* fin del area que cede */}
 
       {/* ── Panel de cobro ────────────────────────────────────────────────
           Sobre --ink, con los tokens --on-dark-*. El total a cobrar es el
           ÚNICO número grande del producto (regla 7.4, --fs-total 44/700):
           todo lo demás es información de trabajo, no un tablero. */}
-      <div style={{ padding: '12px 22px 20px' }}>
+      {/* 🔴 EL PANEL DE COBRO CEDE, LA LISTA NO — y dentro del panel cede el
+          MEDIO, no el pie. §7.7 dice que «lo que se comprime es la lista de
+          productos», y con el cobro en linea eso se comprimia a CERO, que no es
+          comprimir sino desaparecer. Manda el cuello de botella real: el cobro
+          se lee de un vistazo, la lista se compara item por item.
+          ⚠️ Y el primer arreglo —scrollear el panel entero— dejaba el boton
+          Cobrar DEBAJO DEL PLIEGUE en todo viewport de hasta 1080px: un defecto
+          cambiado por uno peor. Por eso el total y el boton quedan anclados y lo
+          que hace scroll es lo del medio. Es §7.4 leido en vertical: el total es
+          el unico numero grande, y el acto que cierra la venta no se busca. */}
+      <div style={{ padding: '12px 22px 20px', flexShrink: 1, minHeight: 0, display: 'flex' }}>
         <div style={{
           background: 'var(--ink)', borderRadius: 'var(--r-3)', padding: 16,
+          flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0,
         }}>
           <TotalRow label="Subtotal" value={subtotal} />
           {discountAmt > 0 && (
@@ -849,6 +879,7 @@ function CartPanel({
           <div style={{
             display: 'flex', justifyContent: 'space-between',
             alignItems: 'baseline', gap: 10, margin: '10px 0 14px',
+            flexShrink: 0,
           }}>
             <span style={{
               fontSize: 11, fontWeight: 600, letterSpacing: '.04em',
@@ -867,6 +898,9 @@ function CartPanel({
               {formatoCOP(total)}
             </span>
           </div>
+
+          {/* EL MEDIO — es lo unico que cede alto y hace scroll. */}
+          <div style={{ flex: '1 1 auto', minHeight: 0, overflowY: 'auto' }}>
 
           {/* ── EL COBRO, EN LÍNEA (§8.15, reabierta el 2026-09-03) ──────────
               Los medios de pago, el efectivo recibido y el cambio viven acá y no
@@ -1173,6 +1207,8 @@ function CartPanel({
             </button>
           )}
 
+          </div>{/* fin del MEDIO */}
+
           {/* "Cobrar — F12" es la ÚNICA tecla impresa del producto (§5): el
               atajo que la cajera usa cientos de veces al día es el que
               justifica la excepción a "los atajos no se imprimen".
@@ -1190,6 +1226,7 @@ function CartPanel({
             data-testid="cobro-confirmar"
             size="pos"
             block
+            style={{ flexShrink: 0 }}
             className="nodo-btn--sobre-tinta"
             disabled={
               items.length === 0 || cobrando || (split && !splitValid)
@@ -1211,6 +1248,19 @@ function CartPanel({
     </div>
   )
 }
+
+/**
+ * Alto minimo de la lista del carrito, en pixeles.
+ *
+ * Medido, no elegido: la fila del carrito mide **117px** —nombre y precio,
+ * precio editable y stepper— asi que tres filas son 351. Tres y no una porque
+ * una venta de mostrador tipica lleva tres o cuatro items; con una sola visible
+ * el defecto seguiria estando, solo que menos obvio.
+ *
+ * ⚠️ Si la fila cambia de alto, este numero deja de significar «tres filas». Se
+ * remide contando el paso entre dos `cart-item-price` consecutivos.
+ */
+const ALTO_MINIMO_LISTA = 351
 
 /**
  * LOS MEDIOS DE PAGO — una sola lista, para la columna y para el modal.

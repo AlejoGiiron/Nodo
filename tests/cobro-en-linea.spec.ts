@@ -299,6 +299,100 @@ test('🔴 con crédito el botón COBRA — ya no deriva a otra pantalla', async
     .toBeVisible({ timeout: 20_000 })
 })
 
+test.describe('la columna cabe en la pantalla', () => {
+  // ==========================================================================
+  // 🔴 ASERCIONES GEOMÉTRICAS, Y NO DE VISIBILIDAD — ÉSE ES EL HALLAZGO.
+  //
+  // Al bajar el cobro a la columna, el panel de tinta pasó a 485px y la lista
+  // del carrito **colapsó a cero** en todo viewport de hasta ~1050px de alto:
+  // la cajera no veía qué estaba vendiendo. La venta salía bien, la base
+  // quedaba perfecta, y la suite entera estaba VERDE.
+  //
+  // ⚠️ `toBeVisible()` NO lo caza, y no por falta de cobertura: el ítem sigue
+  //    en el DOM y tiene bounding box, así que **para Playwright un elemento
+  //    clipeado por un contenedor de altura 0 es visible**. Si lo que importa
+  //    es que SE VEA, la aserción tiene que ser geométrica: que el rectángulo
+  //    del elemento caiga DENTRO del rectángulo que lo contiene.
+  //
+  // 🔴 Y cubre las TRES cosas a propósito. El primer arreglo —scrollear el
+  //    panel entero— devolvió la lista y dejó el botón Cobrar debajo del
+  //    pliegue: un defecto cambiado por otro, con la suite igual de verde. Sin
+  //    las tres juntas, el próximo arreglo de alto vuelve a hacer lo mismo sin
+  //    que nada avise.
+  // ==========================================================================
+  const CASOS: [number, string][] = [
+    [900, 'el viewport donde el defecto aparecía'],
+    [1300, 'el control: si acá tampoco pasara, la aserción no mide'],
+  ]
+
+  for (const [alto, porque] of CASOS) {
+    test(`🔴 a 1440×${alto} se ven las tres: ítem, total y Cobrar — ${porque}`, async ({ page }) => {
+      await page.setViewportSize({ width: 1440, height: alto })
+      await page.goto('/ventas')
+      await waitPosReady(page)
+      // 🔴 TRES ÍTEMS DISTINTOS, y no uno. Con uno solo el caso NO DISTINGUE
+      //    «entran tres filas» de «entra una» — y se comprobó: con un ítem, el
+      //    mutante que pone el mínimo en cero SOBREVIVE. Es la misma forma que
+      //    la comparación de `payments` con una sola fila, en otro eje: una
+      //    aserción sobre una capacidad de N no está ejercida con N=1.
+      //    Tres porque una venta de mostrador típica lleva tres o cuatro, que
+      //    es de dónde salió el mínimo.
+      //    ⚠️ El lab tiene TRES productos y dos con fricción: `Lab Coctel` abre
+      //    el modal de extras y hay que confirmarlo; `Lab Vaso` está en cero y
+      //    entra igual (la sobreventa se avisa, no se bloquea).
+      for (const nombre of ['Lab Cerveza', 'Lab Vaso', 'Lab Coctel']) {
+        await page.getByTestId('product-card').filter({ hasText: nombre }).first().click()
+        const config = page.getByTestId('item-config-modal')
+        if (await config.isVisible().catch(() => false)) {
+          await page.getByTestId('item-config-confirm').click()
+        }
+      }
+      await expect(
+        page.getByTestId('cart-item-price'),
+        'sin tres filas el caso no ejerce el mínimo: con una, el mutante que lo pone en cero sobrevive',
+      ).toHaveCount(3)
+
+      const medido = await page.evaluate(() => {
+        const filas = [...document.querySelectorAll('[data-testid=cart-item-price]')]
+        // La ÚLTIMA: es la que cae afuera cuando el contenedor no da el alto.
+        const item = filas[filas.length - 1]
+        let caja = item?.parentElement
+        while (caja && getComputedStyle(caja).overflowY !== 'auto') caja = caja.parentElement
+        const r = item?.getBoundingClientRect()
+        const c = caja?.getBoundingClientRect()
+        const enViewport = (sel: string) => {
+          const b = document.querySelector(sel)?.getBoundingClientRect()
+          return b ? b.top >= 0 && b.bottom <= window.innerHeight + 1 : false
+        }
+        return {
+          hayItem: !!item,
+          filas: filas.length,
+          altoCaja: c ? Math.round(c.height) : 0,
+          itemDentro: !!(r && c) && r.top >= c.top - 1 && r.bottom <= c.bottom + 1,
+          totalEnViewport: enViewport('[data-testid=cart-total]'),
+          cobrarEnViewport: enViewport('[data-testid=cobro-confirmar]'),
+        }
+      })
+
+      expect(medido.hayItem, 'control de la propia sonda: sin ítem no mide nada').toBe(true)
+      expect(medido.filas, 'y con menos de tres filas el caso no ejerce el mínimo').toBe(3)
+      expect(
+        medido.itemDentro,
+        `la TERCERA línea del carrito quedó FUERA de su contenedor (alto ${medido.altoCaja}px): ` +
+        'la cajera no ve qué está vendiendo. `toBeVisible()` pasa igual',
+      ).toBe(true)
+      expect(
+        medido.totalEnViewport,
+        'el total a cobrar quedó fuera de la pantalla',
+      ).toBe(true)
+      expect(
+        medido.cobrarEnViewport,
+        'el botón Cobrar quedó debajo del pliegue: se puede ver la venta y no cerrarla',
+      ).toBe(true)
+    })
+  }
+})
+
 test('🔴 el producto del lab sigue siendo el que arma el carrito', async ({ page }) => {
   // Control del propio spec: si el catálogo cambia y `Lab Cerveza` deja de estar,
   // los casos de arriba fallarían por una razón que no es el cobro (deuda 67).

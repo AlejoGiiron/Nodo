@@ -882,6 +882,35 @@ Si no cierra, una de las dos cuentas está mal — y averiguar cuál es el traba
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · INFERIR LA CAUSA ANTES DE MIRARLA — TRES VECES EN UN DÍA
+
+*2026-09-03. El patrón es de quien escribe esto, y se repite dentro de la misma sesión.*
+
+| # | lo que inferí | lo que era |
+|---|---|---|
+| 1 | *«el guard de mixto/fiado sólo vive en una condición de render»* | estaba en la RPC, con su `raise` y su comentario |
+| 2 | *«el marcador dice que la tanda 4 llegó»* | el marcador no fechaba: el commit lo conservó |
+| 3 | *«el deploy debe apuntar a otra rama»* | faltaba un `git push` — 18 commits locales |
+
+**Las tres tienen la misma forma:** una hipótesis **plausible y estructurada** —tiene clase, tiene
+precedente en el proyecto, se explica bien— construida **antes** de correr el comando que la
+contesta. Y el comando siempre existía y costaba segundos: `awk` sobre la función, `git log -S`,
+`git rev-list origin/develop..develop`.
+
+⚠️ **Lo que las hace peligrosas no es equivocarse: es que la hipótesis buena SUENA A DIAGNÓSTICO.**
+*"Es un invariante sin guard"*, *"el deploy apunta a main"* — las dos encajan con casos reales del
+repo, así que se transmiten con la autoridad de algo verificado y **el que las recibe no tiene señal
+de que no lo estén**.
+
+**Lo accionable, y es de las dos puntas:** quien infiere **dice que está infiriendo** —«sospecho»,
+no «es»— y corre el comando antes de escribirlo en un registro. Quien recibe una causa **pide la
+salida del comando, no el razonamiento**.
+
+⚠️ Es el corolario de R4 aplicado al diagnóstico en vez de a la verificación: **una explicación que
+encaja no es evidencia de que sea la explicación.**
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · UNA CORRIDA EN SEGUNDO PLANO Y UNA EDICIÓN SON EXCLUYENTES
 
 *2026-09-03, corte 4. Defecto propio, y con el agravante de que la advertencia estaba escrita por mí
@@ -1106,6 +1135,55 @@ nota.
    práctico: al escribir una consulta de diagnóstico, **incluí una columna que ya sepas cuánto
    debe dar** — un conteo, un total del día — aunque no la necesites para la pregunta. Es el
    control negativo de los números.
+
+🔴 **LA UNDÉCIMA ES DE OTRO EJE: NO MIDIÓ MAL, MIDIÓ OTRA COSA — UN INSTRUMENTO DE FECHADO.**
+*2026-09-03, comparando el bundle desplegado contra el local.*
+
+Las diez anteriores median **el estado presente** y lo median mal. Ésta contesta *«¿de cuándo es
+este artefacto?»* y **contesta bien una pregunta distinta de la que se le hizo**.
+
+**El caso.** Para fechar un bundle desplegado se buscan **marcadores**: testids que un commit
+concreto introdujo. Si el marcador está, el bundle es posterior a ese commit. Usé `oversold-alert`
+como marcador de la tanda 4 del re-skin; apareció en el bundle viejo, y **no porque el bundle fuera
+posterior**: la alerta de sobreventa **ya existía** en `ProductCard`, y la tanda 4 **la conservó** al
+migrar a filas — era un (d), y los (d) no se tocan.
+
+> **Un marcador fecha sólo si el commit lo INTRODUJO. Si lo CONSERVÓ, aparece en los dos lados y no
+> discrimina.**
+
+⚠️ **Es «clasificar por síntoma en vez de por causa» movido al eje del tiempo.** El síntoma —el
+testid está presente— es idéntico en los dos casos; la causa —lo creó ese commit vs ya estaba— es
+lo que decide si el marcador sirve. Y como el resto de los marcadores sí discriminaban, el falso
+**se leyó como confirmación de los otros** en vez de destacarse.
+
+**LO ACCIONABLE, y cuesta un comando por marcador:** antes de usar un testid para fechar, verificar
+que ese commit lo **creó** y no lo movió:
+
+```bash
+git log --oneline -S'<el-marcador>' -- src/ | tail -1   # el commit que lo introdujo, no el que lo tocó
+```
+
+✅ Y el control barato: **usar varios marcadores y desconfiar del que no coincide con los demás.**
+Acá cinco marcadores decían «anterior a la tanda 1» y uno decía «posterior a la tanda 4»; el que
+disentía era el defectuoso, no los cinco.
+
+🔴 **SEGUNDA VARIANTE, EL MISMO DÍA: UN TESTID COMPUESTO EN RUNTIME NO EXISTE COMO LITERAL EN NINGÚN
+BUNDLE.** Verificando que el deploy nuevo trajera todo, `kpi-vencido` dio **cero en el viejo y cero
+en el nuevo**. No era un deploy incompleto: el testid se arma con
+`` data-testid={`kpi-${testid}`} `` sobre `key: 'vencido'`, así que **la cadena `kpi-vencido` no
+existe en el fuente ni en el compilado** — sólo en el DOM, en tiempo de ejecución.
+
+| variante | por qué no discrimina |
+|---|---|
+| el commit lo **conservó** | aparece en los dos lados |
+| el testid se **compone en runtime** | no aparece en ninguno |
+
+⚠️ **Mismo síntoma —da lo mismo en los dos bundles— y causa opuesta.** Por eso el control es el
+mismo y sirve para las dos: **varios marcadores, y desconfiar del que no coincide.** Los marcadores
+reales de esa tanda —`Productos con existencia`, `Nombre de la sede`— sí discriminaron.
+
+**Lo accionable que agrega:** un marcador tiene que ser una **cadena literal del fuente**. Antes de
+usarlo, `grep` en `src/`: si no aparece tal cual, no sirve para fechar un bundle.
 
 🔴 **LOS DOS ÚLTIMOS SON EL MISMO INSTRUMENTO, Y ESO ES EL HALLAZGO.** *2026-09-03, tanda 5 de A6.*
 
@@ -2565,6 +2643,45 @@ recibe, y no hay aserción que lo exprese sin volverse un test de píxeles.
 
 **La regla práctica:** al terminar una pantalla, **mirarla** — en sus estados, no solo en el feliz.
 Una captura cuesta segundos y cubre una clase que la suite no cubre por construcción.
+
+🔴 **TERCERA VEZ, Y AHORA CON LO ACCIONABLE QUE FALTABA: UN ELEMENTO CLIPEADO POR UN CONTENEDOR DE
+ALTURA 0 ES «VISIBLE» PARA PLAYWRIGHT.**
+*2026-09-03, al desplegar el cobro en línea.*
+
+**El caso.** Con el cobro en la columna, el panel de tinta pasó a 485px fijos y **la lista del
+carrito colapsó a CERO** en todo viewport de hasta ~1050px de alto. La cajera no veía qué estaba
+vendiendo. La venta salía bien, la base quedaba perfecta y **la suite entera estaba verde**.
+
+⚠️ **Y no era falta de cobertura.** El ítem sigue en el DOM y tiene bounding box: `toBeVisible()`
+sólo descarta `display:none`, `visibility:hidden` y caja vacía. **Un elemento correctamente
+maquetado dentro de un contenedor con `overflow:auto` y altura 0 pasa todos los chequeos de
+presencia.**
+
+> **Si lo que importa es que SE VEA, la aserción es GEOMÉTRICA, no de presencia:** que el rectángulo
+> del elemento caiga **dentro** del rectángulo que lo contiene, y que lo que tiene que estar a mano
+> caiga dentro del viewport.
+
+```js
+const r = item.getBoundingClientRect(), c = contenedor.getBoundingClientRect()
+r.top >= c.top && r.bottom <= c.bottom          // ¿está dentro de su caja?
+b.top >= 0 && b.bottom <= window.innerHeight    // ¿está sobre el pliegue?
+```
+
+🔴 **Y la aserción cubre TODAS las piezas del compromiso, no una.** El primer arreglo —scrollear el
+panel entero— devolvió la lista y dejó **el botón Cobrar debajo del pliegue**: un defecto cambiado
+por otro, con la suite igual de verde. El caso final asevera las tres —ítem dentro de su caja, total
+en viewport, Cobrar en viewport— porque **un arreglo de alto siempre le saca espacio a algo**, y sin
+las tres el próximo vuelve a hacer lo mismo sin que nada avise.
+
+⚠️ **Y el escenario tiene que ejercer la capacidad:** con UN ítem el caso pasó incluso con el mínimo
+en cero — no distingue «entran tres filas» de «entra una». Con tres, el mutante muere nombrando el
+número (`alto 254px`). Es la misma forma que la comparación de `payments` con una sola fila, en otro
+eje: **una aserción sobre una capacidad de N no está ejercida con N=1.**
+
+✅ **Lo cazó el par del DESPLEGADO**, no la suite ni el par de A6 —que se capturó en la tanda 1,
+antes de que el cobro bajara a la columna—. Es la tercera vez que un defecto aparece **mirando** y
+no ejecutando, y la primera en que mirar *lo que ve el cliente* encuentra algo que mirar *lo que
+construimos* no podía encontrar.
 
 ⚠️ **Y el corolario sobre el material de referencia:** las capturas de `docs/reskin-referencia/`
 (1,1 MB) se justificaron acá. No sirven para verificar el código; sirven para **saber cómo debería
