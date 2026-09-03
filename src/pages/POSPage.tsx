@@ -38,7 +38,7 @@ import { formatoCOP } from '@/lib/formato'
 import { MoneyCell } from '@/components/ui/MoneyCell'
 import { Input } from '@/components/ui/Input'
 import { TenderSelector } from '@/components/ui/TenderSelector'
-import { ATAJOS, ATRIBUTO_COBRO, hayCobroAbierto, teclaDe } from '@/lib/atajos'
+import { ATAJOS, ATRIBUTO_LETRAS_INERTES, elFocoEstaEscribiendo, teclaDe } from '@/lib/atajos'
 import { CupoMeter } from '@/components/ui/CupoMeter'
 
 // Canal: por donde ENTRO el pedido. Espeja el CHECK de orders.canal — si acá
@@ -718,6 +718,11 @@ function CartPanel({
               type="text"
               inputMode="numeric"
               data-testid="discount-amount"
+              // Igual que el campo de dinero: el `onChange` de abajo descarta
+              // todo lo que no sea dígito, así que una letra acá ya es inerte.
+              // Declararlo deja que los atajos de letra manden con el foco
+              // adentro — que es la razón por la que los atajos son letras.
+              {...{ [ATRIBUTO_LETRAS_INERTES]: '' }}
               value={discount ? String(discount) : ''}
               onChange={(e) => {
                 const digits = e.target.value.replace(/\D/g, '')
@@ -1028,7 +1033,13 @@ function CheckoutModal({
     }
   }
 
-  // Atajos del COBRO (§5): F9 efectivo · F10 transferencia · F11 crédito.
+  // Atajos del COBRO: E efectivo · T transferencia · C crédito.
+  //
+  // 🔴 LAS LETRAS NO MANDAN DONDE SE ESCRIBE. `elFocoEstaEscribiendo()` decide
+  //    POR TIPO de control, no por una lista de campos: una lista se congela y
+  //    el próximo input nacería sin protección. La única excepción es el campo
+  //    de dinero, que DECLARA con `data-letras-inertes` que las letras le son
+  //    inertes — y es justo la excepción por la que se eligieron letras.
   //
   // ⚠️ El atajo NO puede elegir lo que el botón no ofrece: si el medio está
   //    ausente de la grilla —fiado sin permiso, o cualquiera en modo dividir—
@@ -1042,13 +1053,17 @@ function CheckoutModal({
   splitRef.current = split
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      const atajo = ATAJOS.find((a) => a.ambito === 'cobro' && a.tecla === e.key)
+      // Con modificador no es nuestro: `Ctrl+E` es el omnibox, `Ctrl+C` copiar.
+      if (e.ctrlKey || e.altKey || e.metaKey) return
+      if (elFocoEstaEscribiendo()) return
+      const atajo = ATAJOS.find((a) => a.ambito === 'cobro' && a.tecla === e.key.toLowerCase())
       if (!atajo?.medio) return
-      // Se corta el paso al navegador SIEMPRE que la tecla es del cobro: si no,
-      // F11 pone el navegador en pantalla completa en medio de una venta.
-      e.preventDefault()
       if (splitRef.current) return
       if (!mediosRef.current.includes(atajo.medio)) return
+      // Se corta el paso para que la letra no llegue al campo de dinero. Ahí ya
+      // sería inerte, pero que no llegue es más barato que confiar en que se
+      // descarte bien.
+      e.preventDefault()
       setMethodRef.current(atajo.medio as PaymentMethodUI)
     }
     window.addEventListener('keydown', handleKey)
@@ -1060,12 +1075,6 @@ function CheckoutModal({
 
   return (
     <div
-      // 🔴 El marcador que declara «hay un cobro abierto». Lo leen los atajos:
-      //    F9 y F10 tienen dos significados en §5 —«Gastos / efectivo»,
-      //    «Inventario / transferencia»— y acá manda el cobro. Va en el DOM y
-      //    no en un orden de listeners porque el orden de montaje cambia solo;
-      //    el DOM dice qué hay en pantalla, que es la pregunta real.
-      {...{ [ATRIBUTO_COBRO]: '' }}
       style={{
         position: 'absolute', inset: 0,
         background: 'var(--overlay)',
@@ -1264,6 +1273,11 @@ function CheckoutModal({
                 autoFocus
                 inputSize="pos"
                 data-testid="checkout-received"
+                // Declara que las letras le son inertes: sólo cuenta lo que
+                // `parseInt(replace(/\D/g,''))` deja, y lo que se pinta es el
+                // número formateado. Por eso los atajos de letra pueden mandar
+                // con el foco acá — que es la razón por la que son letras.
+                {...{ [ATRIBUTO_LETRAS_INERTES]: '' }}
                 value={received ? formatoCOP(receivedNum) : ''}
                 onChange={(e) => setReceived(e.target.value)}
                 placeholder={formatoCOP(total)}
@@ -1705,8 +1719,6 @@ export function POSPage() {
         searchRef.current?.focus()
         return
       }
-      // Con el cobro abierto manda el cobro (F9/F10/F11 eligen medio de pago).
-      if (hayCobroAbierto()) return
       if (e.key === teclaDe('Buscar producto')) {
         e.preventDefault()
         searchRef.current?.focus()

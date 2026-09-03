@@ -450,7 +450,68 @@ Mostrador va suelto arriba, sin título de grupo: es la pantalla del día y no p
 - **Los atajos funcionan siempre pero no se imprimen.** La interfaz no lleva rótulos de tecla en reposo.
 - **Los atajos se revelan con Alt o con `?`**, y también con el control "Atajos" del encabezado. Al revelarse aparecen junto a cada destino de navegación, en el campo de búsqueda y en los medios de pago.
 - **Única excepción permanente: "Cobrar — F12"**, impreso en el botón. Es el atajo que la cajera usa cientos de veces al día y el que justifica la excepción.
-- Teclas asignadas: F1 Mostrador · F2 buscar producto · F3 Compras · F4 cambiar cliente · F5 Catálogo · F6 Clientes · F7 Cartera · F8 Pedidos · F9 Gastos / efectivo · F10 Inventario / transferencia · F11 Utilidades / crédito · F12 cobrar.
+- Teclas asignadas: F1 Mostrador · F2 buscar producto · F3 Compras · F4 cambiar cliente · F5 Catálogo · F6 Clientes · F7 Cartera · F8 Pedidos · F9 Gastos · F10 Inventario · F11 Utilidades · F12 cobrar.
+
+#### 🔴 CORRECCIÓN 2026-09-03 — las teclas de función NO tienen doble significado
+
+*La entrega asignaba `F9 Gastos / efectivo`, `F10 Inventario / transferencia` y
+`F11 Utilidades / crédito`. **Se retira el segundo significado de las tres.***
+
+**Por qué la entrega pudo asignarlo, y por qué deja de poder.** El doble significado sólo se
+sostenía porque el cobro era un **modal**: un modal crea un MODO —está o no está— y el modo
+desambigua. **§8.15 reabierta: el cobro va EN LÍNEA**, con el panel siempre visible. Sin modal no
+hay modo, y lo que queda es un valor que significa dos cosas — el criterio sin número de
+`CLAUDE.md`, en su quinta aparición y la primera sobre una tecla en vez de sobre una columna.
+
+**La decisión, y su razón:** **la navegación se queda con F9/F10/F11; los medios de pago se van a
+otras teclas.** La navegación es **global** y esta misma sección promete que *los atajos funcionan
+siempre*; los medios de pago son **locales de una pantalla**. Cuando algo tiene que ceder, cede lo
+local — y así ninguna tecla depende del foco ni del estado del carrito.
+
+**Las teclas de los medios de pago: `E` efectivo · `T` transferencia · `C` crédito.** Letras
+sueltas, sin modificador.
+
+🔴 **La razón principal no es la mnemotecnia: es el campo de dinero.** El campo *«Efectivo
+recibido»* tiene `autoFocus`, así que al cobrar el foco vive **por diseño** dentro de un control que
+consume dígitos — `1/2/3` pelearían con el único campo que la cajera está usando en ese momento. Ese
+mismo campo **descarta las letras**, así que `E`/`T`/`C` pueden mandar **con el foco adentro** sin
+quitarle nada a nadie. **Ninguna otra opción da esa propiedad.**
+
+Lo demás estaba tomado, y se enumeró antes de elegir: las doce de función por esta misma sección
+—`F4`, `F8` y `F11` incluidas, que están **asignadas** aunque hoy no lleven a ningún lado—;
+`Ctrl+1…9` y `Alt+1…9` por el cambio de pestaña del navegador; `Alt` además es el modificador con que
+se **revelan** los atajos; `Ctrl+E`/`Ctrl+T`/`Ctrl+C` por omnibox, pestaña nueva y copiar.
+
+⚠️ **`T` es ambigua entre transferencia y tarjeta**, y las dos están en la grilla. Se asigna a
+**transferencia** porque es la que esta sección nombra. **Tarjeta y Nequi quedan SIN atajo** hasta
+que esta sección les asigne uno, que **no podrá ser `T`**.
+
+**Dónde NO manda una letra.** En un campo donde se escribe: buscador de producto, motivo del
+descuento, nombre de cliente. La decisión es **por tipo de control y el default protege** — no por
+una lista de campos, porque una lista se congela y el próximo input nacería desprotegido. Un campo
+donde las letras son inertes **lo declara** (`data-letras-inertes`), y ésa es la única excepción.
+
+⛔ **Pendiente, y es CONDICIÓN DEL COBRO EN LÍNEA:** *«E con el foco en el campo de dinero elige
+efectivo»* está aseverada **en dos mitades** —la regla, en `src/lib/atajos.test.ts`; y que el campo
+real lleve la declaración, en `tests/atajos.spec.ts`— pero **no de punta a punta**, porque el modal
+parte el cobro en dos pasos y la grilla de medios nunca convive con el campo de dinero. Con el panel
+en línea conviven, y ahí se cierra.
+
+#### 🔴 F12 = poner el FOCO en Cobrar. El Enter confirma.
+
+*Decidido el 2026-09-03, con el cobro en línea.*
+
+Con el cobro en un modal, F12 **abría un diálogo**: un acto reversible, y el modal era la
+confirmación. Con el panel en línea no hay nada que abrir, así que la misma tecla pasaría a
+**cobrar de una** — de abrir un diálogo a ejecutar una venta irreversible, **sin que la cajera tenga
+cómo notar el cambio**. La tecla se ve igual, el rótulo se ve igual, el riesgo no.
+
+> **F12 mueve el foco al botón Cobrar. Enter confirma.** Dos actos para una acción irreversible, y
+> el segundo es el que quien teclea ya asocia con *confirmar*.
+
+⛔ **Descartada la variante "F12 confirma si el panel está completo":** haría que la misma tecla a
+veces cobre y a veces no, según un estado que no se ve. Es la misma familia que el valor con dos
+significados, movida al tiempo en vez de al espacio.
 
 ### Alcance de la navegación
 

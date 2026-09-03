@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ATAJOS, hayCobroAbierto } from '@/lib/atajos'
+import { ATAJOS } from '@/lib/atajos'
 
 /**
  * Cablea los atajos GLOBALES de §5. Se monta una sola vez, en `AppLayout`.
@@ -21,9 +21,11 @@ export function useAtajos(): void {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      // Con el cobro abierto manda el cobro: F9 y F10 tienen doble significado
-      // (§5) y navegar en medio de una venta la pierde.
-      if (hayCobroAbierto()) return
+      // 🔴 SIN EXCEPCIONES POR MODO. Antes esto salía temprano cuando había un
+      //    cobro abierto, porque F9/F10 tenían doble significado. Ya no lo
+      //    tienen: navegar es lo único que hacen, en cualquier pantalla y con
+      //    cualquier cosa en la mano. El carrito vive en el store, así que
+      //    navegar en medio de una venta no la pierde.
       const atajo = ATAJOS.find((a) => a.ambito === 'global' && a.tecla === e.key)
       if (!atajo?.ruta) return
       e.preventDefault()
