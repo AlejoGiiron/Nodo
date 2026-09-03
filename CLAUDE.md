@@ -891,6 +891,7 @@ Si no cierra, una de las dos cuentas está mal — y averiguar cuál es el traba
 | 1 | *«el guard de mixto/fiado sólo vive en una condición de render»* | estaba en la RPC, con su `raise` y su comentario |
 | 2 | *«el marcador dice que la tanda 4 llegó»* | el marcador no fechaba: el commit lo conservó |
 | 3 | *«el deploy debe apuntar a otra rama»* | faltaba un `git push` — 18 commits locales |
+| 4 | *«el picker está vacío por los 151 clientes inactivos»* | había **cero activos**; los 168 inactivos son invisibles en la UI y no tenían nada que ver |
 
 🔴 **Y LA ATRIBUCIÓN COMPLETA, porque la mitad se pierde si sólo se anota la primera:** en los tres
 casos la hipótesis se **inventó** de un lado y se **aceptó** del otro **sin pedir el comando**. El
@@ -904,7 +905,13 @@ hipótesis que confirma lo que el otro ya esperaba **se revisa menos** — es el
 sobre la jerarquía, y por eso el criterio tiene que nombrar las dos puntas y no sólo a quien
 escribe.
 
-**Las tres tienen la misma forma:** una hipótesis **plausible y estructurada** —tiene clase, tiene
+⚠️ **La cuarta agrega algo:** no fue una causa inventada sino **un síntoma atribuido al objeto más
+visible que estaba cerca**. Había 168 clientes inactivos y un picker vacío, y la vecindad se leyó
+como causalidad. Medir tardó un `select`: **activos = 0**. Y el plan que salía de la hipótesis —
+*«limpiar los inactivos»*— habría sido un `delete` sobre **162 filas referenciadas por ventas
+reales**, o sea destructivo **y** inútil.
+
+**Las cuatro tienen la misma forma:** una hipótesis **plausible y estructurada** —tiene clase, tiene
 precedente en el proyecto, se explica bien— construida **antes** de correr el comando que la
 contesta. Y el comando siempre existía y costaba segundos: `awk` sobre la función, `git log -S`,
 `git rev-list origin/develop..develop`.
@@ -2624,6 +2631,42 @@ prueba la otra mitad"*.
 
 **Lo accionable:** la distinción **se escribe en el propio caso**, no en un documento aparte — es
 donde la va a leer quien interprete su verde. Y el tripwire dice **contra qué cambio** protege.
+
+**🔴 SI UN CÁLCULO TIENE RAMAS DE CAÍDA, EL ESCENARIO TIENE QUE EVITARLAS EXPLÍCITAMENTE — O EL CASO
+PRUEBA LA CAÍDA Y NO EL CÁLCULO.**
+*2026-09-03, escribiendo el spec del costeo promedio. Séptima vez que el escenario de un caso
+resulta no medir lo que dice medir, y **la primera cazada LEYENDO LA FÓRMULA antes de escribirlo**,
+no después con un mutante.*
+
+**El caso.** `register_purchase` calcula el promedio ponderado móvil… **en una de cuatro ramas**:
+
+```sql
+cost_price = case
+  when not v_tracking                   then v_unit_cost   -- caída 1
+  when v_costo_actual is null           then v_unit_cost   -- caída 2
+  when coalesce(v_stock_actual,0) <= 0  then v_unit_cost   -- caída 3
+  else round((v_stock_actual*v_costo_actual + v_qty*v_unit_cost)/(v_stock_actual+v_qty), 2)
+end
+```
+
+**Tres de las cuatro devuelven el último costo.** Un producto recién creado cae en la 2 y la 3 a la
+vez, así que un caso que *"compra dos veces a costos distintos"* sobre un producto nuevo **nunca
+ejecuta el promedio** — y da un número perfectamente plausible.
+
+⚠️ **Y hubo una CUARTA condición que tampoco estaba en el enunciado:** `register_purchase` **exige
+jornada abierta** (deuda 26), así que el spec moría en el montaje sin llegar al cálculo. Esa la
+encontró el rojo; las tres caídas las encontró **leer la función**.
+
+**LO ACCIONABLE, y es un paso antes de escribir el caso:** abrí el cálculo y **enumerá sus ramas**.
+Por cada rama que devuelve algo distinto del sujeto, el escenario tiene que **evitarla
+explícitamente**, y el caso tiene que **decir que la evita** — si no, el próximo que lo lea no sabe
+que el montaje es parte del sujeto.
+
+✅ En este spec eso se ve: la **primera** compra es montaje declarado —cae a último costo, y está
+bien— porque es lo único que deja el producto con costo **y** con stock, que es la única forma de
+llegar al `else`. Y la **venta en el medio** no es decorado: sin ella el stock sería 10 y no 9, y el
+promedio daría 1.500 — un número que también se distingue de 2.000, pero que no ejercita que la
+ponderación use el stock **real**.
 
 **🔴 UNA ASERCIÓN SOBRE UNA COLECCIÓN NO ESTÁ EJERCIDA HASTA QUE EL ESCENARIO TIENE MÁS DE UN
 ELEMENTO.**

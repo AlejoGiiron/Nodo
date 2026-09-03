@@ -296,3 +296,47 @@ role — es decir, por Centro. Sin Centro conectado, el estado nunca cambia: el 
 siempre en `active`, que es fail-closed en la direccion correcta (nadie se degrada solo) pero
 tambien significa que **hoy no hay quien suspenda a nadie**. Sigue siendo trabajo de su propio
 hilo; lo que cambia es que dejo de ser opcional para el modelo de negocio.
+
+---
+
+## 🔴 EL LAB — cómo crece y cuándo se archiva
+
+*Abierto el 2026-09-03, al sembrarlo con la forma de la operación de Muscle Pro.*
+
+**Las 162 órdenes a crédito del lab SE QUEDAN.** Son el único historial que existe ahí, y son lo
+que ejercita **cartera, antigüedad, abonos y vencimiento**. Borrarlas para que la pantalla se vea
+limpia sería **cambiar evidencia por estética** — y es el mismo principio que el resto del proyecto
+aplica en la base: la historia no se reescribe.
+
+⚠️ **Crecen solas: cada corrida de `fiado.spec` agrega más.** Hoy son 168 clientes —todos
+inactivos, así que invisibles en el picker— y 162 con órdenes.
+
+🔴 **MEDIDO EL 2026-09-03, Y EL NÚMERO ADELANTA EL DISPARADOR:**
+
+| | activos | desactivados | residuo |
+|---|---|---|---|
+| categorías | **1** | **557** | 99,8% |
+| productos | **3** | **926** | 99,7% |
+
+**Ya no es que «crece»: es 99% residuo.** Cada corrida de la suite deja categorías y productos que
+la limpieza no siempre alcanza —está documentado en `numeracion-fallo.spec`: *«cada corrida dejaba
+una categoría E2E NumFail viva»*—.
+
+⚠️ **Y el residuo DESACTIVADO igual afecta la UI, con precedente medido:** el 2026-08-19, con cinco
+categorías acumuladas, el strip del POS empujó el carrito fuera de pantalla y **tumbó tres tests
+ajenos** por residuo que no era de ellos.
+
+> **Por eso el disparador deja de ser una condición y pasa a ser trabajo con fecha.** No hay que
+> esperar a que la Cartera no se pueda mirar: el archivado por prefijo `E2E` entra a la lista.
+
+✅ Y cómo se archiva sigue igual: **por prefijo `E2E`, nunca por antigüedad** — archivar por fecha
+borraría también el catálogo de Muscle Pro que se sembró el 2026-09-03, que es lo que hay que
+conservar.
+
+✅ **Y cómo se archiva cuando llegue ese día: POR PREFIJO `E2E`, nunca por antigüedad.** Archivar
+por fecha borraría también **lo que sembramos ahora** con la forma de Muscle Pro, que es
+exactamente lo que hay que conservar. El prefijo distingue *residuo de test* de *dato de
+laboratorio*; la fecha no distingue nada.
+
+⛔ **Y los 6 clientes inactivos sin órdenes no se tocan.** Borrarlos es trivial y **no arregla
+nada**: el picker estaba vacío porque había cero ACTIVOS, no por ellos.
