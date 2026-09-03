@@ -380,6 +380,30 @@ Etiqueta `--fs-label` en `--ink-3`, cifra `--fs-kpi` en `tabular-nums`, nota opc
 
 Barra lateral de 214px sobre `--surface`, borde derecho `--border`. Bloque de identidad arriba, bloque de sistema y usuario abajo.
 
+> **[DECISIÓN 2026-09-03 — QUÉ DICE EL BLOQUE DE IDENTIDAD, y sale de A6.]**
+> **Dos líneas: la ORGANIZACIÓN arriba, la SEDE debajo**, con el tile de `--brand` a la izquierda.
+>
+> | | |
+> |---|---|
+> | tile | inicial de la **organización**, sobre `--brand` (§1.1) |
+> | línea 1 | **organización** — el tenant |
+> | línea 2 | **sede** — dónde estás parado |
+>
+> **Por qué la organización y no la sede:** `--brand` la define el **tenant**, y el tenant es la
+> organización. Un tile de marca al lado del nombre de una sede pinta la identidad del cliente sobre
+> un dato que no es su identidad.
+> **Y por qué la sede no se pierde:** el producto es multi-sede y saber en cuál estás parado importa
+> para todo lo que se escribe — jornada, stock, precios.
+>
+> 🔴 **Eso deja al NOMBRE DEL PRODUCTO sin lugar en el sidebar, y se decide acá en vez de inventarlo
+> en el código: el producto SALE del sidebar.** No se agrega una tercera línea.
+> **La razón es de identidad, no de espacio:** ese bloque es del **tenant**, y meter nuestro nombre
+> adentro mezcla dos identidades en el mismo lugar. La cajera abre la app cien veces al día y no
+> necesita que le recuerden qué app es; lo que necesita saber es **para quién** y **dónde**.
+> **"Nodo, de Giiron" sigue existiendo donde corresponde:** en **Login** —una de las cuatro
+> superficies de `--brand` (§1.1)— y en **Configuración**. La maqueta lo pone en el sidebar porque
+> dibujó la marca antes de que existiera la multi-sede; gana el criterio, no el dibujo.
+
 ### Estructura de grupos
 
 ```
@@ -387,10 +411,24 @@ Barra lateral de 214px sobre `--surface`, borde derecho `--border`. Bloque de id
 Movimientos      Pedidos · Compras · Gastos · Historial
 Existencias      Catálogo · Inventario
 Cartera          Clientes · Cartera
-Resultados       Turnos · Utilidades
+Resultados       Turnos · Reportes · Utilidades
 ─────────────────────────────────────
 (pie)            usuario y rol · Configuración
 ```
+
+> **[ADICIÓN 2026-09-03 — REPORTES entra a §5, y NO es Utilidades.]** Salió de A6, y son dos
+> pantallas distintas que la entrega no distinguía:
+>
+> | | qué contesta | estado |
+> |---|---|---|
+> | **Reportes** | *¿cuánto se vendió y cuánto se cobró?* — vendido, cobrado, órdenes, ticket, y los dos Excel | **existe**; la maqueta no lo dibuja |
+> | **Utilidades** | *¿cuánto se ganó?* — la cascada ventas − costo de lo vendido = bruta − gastos = neta | **no existe**; la maqueta sí lo dibuja |
+>
+> **Van los dos en `Resultados`, y en este orden: `Turnos · Reportes · Utilidades`** — de menor a
+> mayor alcance: el cierre del **día**, el movimiento del **período**, y el **margen**. Utilidades
+> queda al final porque es la que agrega sobre las otras dos.
+> ⚠️ **No se deja hueco para Utilidades mientras no exista** (§5 *Alcance*): entra el día que la
+> pantalla entre.
 
 Mostrador va suelto arriba, sin título de grupo: es la pantalla del día y no pertenece a una categoría. *(Los ítems Tokens y Componentes del pie son andamiaje del archivo de diseño — NO van a la aplicación.)*
 
@@ -514,7 +552,37 @@ Nada de esta lista debe leerse como resuelto. Si la implementación necesita una
 12. **Marca madre Giiron.** El endoso es texto plano; el lockup definitivo se diseña aparte. El símbolo será la doble i, pero no está construido.
 13. **Pantallas futuras.** Vienen más cuando el esquema de datos esté definido. No anticiparlas ni dejarles hueco.
 
-15. **✅ CERRADA el 2026-09-01 — EL COBRO SE QUEDA EN MODAL. La skill se adapta al producto.**
+15. **🔴 REABIERTA Y REVERTIDA el 2026-09-03 — EL COBRO VA EN LÍNEA, COMO LA MAQUETA.**
+
+    *La decisión de abajo se tomó el 2026-09-01 y se revierte hoy **con evidencia nueva**, no por
+    cambio de opinión. Se conserva entera —tachada, no borrada— porque sus razones siguen siendo
+    ciertas y explican qué cambió.*
+
+    **Lo que cambió, y es lo único que hacía falta:**
+    1. **El cliente va a PROBAR, y tiene que ver lo que aprobó.** El argumento del 2026-09-01 era
+       *"es una hipótesis de diseño sin validar contra un cajero real"*. Ahora hay un cajero real
+       que va a usarlo esta semana, y la maqueta es lo que él aprobó.
+    2. **El modal es un paso extra POR VENTA, para siempre; el rediseño es una vez.** Ese cálculo no
+       estaba hecho: el 2026-09-01 se comparó "modal probado" contra "rediseño costoso" sin poner el
+       costo recurrente del lado del modal.
+
+    **Consecuencias — invierten las de abajo:**
+    - **`TenderSelector` vuelve a fondo `--ink`**, en la columna derecha. Los `--on-dark-*` vuelven a
+      ser suyos. ⚠️ Y son **cinco** medios, no tres (§8.16 sigue en pie: el diseño se adapta al
+      producto).
+    - **`CupoMeter` y el bloque de cliente vuelven a la columna derecha.** La regla 7.1 se cumple
+      igual: cambia dónde, no cuándo. ⚠️ El cupo **sigue sin existir en el esquema** (deuda 40).
+    - **La columna derecha lleva:** cliente, cupo, líneas, descuento, medios, recibe/cambio y total.
+    - El "Confirmar cobro" verde **sigue siendo violación de §1.2** y sigue pasando a `--action`.
+
+    ⚠️ **Lo que NO cambió y hay que decirlo:** los 51 specs del modal siguen verdes y siguen siendo
+    la definición de "cobrar funciona". El cambio de flujo **no puede salir hasta que esos casos
+    pasen contra el flujo nuevo** — y va en su propio turno, después de la lista (a) del Mostrador,
+    porque son dos cambios sobre la misma pantalla y un rojo no se atribuiría.
+
+    ---
+
+    <s>**✅ CERRADA el 2026-09-01 — EL COBRO SE QUEDA EN MODAL. La skill se adapta al producto.**</s>
 
     *Era la divergencia más grande entre esta skill y el producto, y por eso el cierre lleva sus
     razones: la entrega dibujaba el cobro **en línea** —cliente, cupo, medios y "recibe" en la

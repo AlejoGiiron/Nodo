@@ -18,3 +18,30 @@ Para trabajar, la skill.
 
 *(`LEEME.md` es el índice del paquete tal como se entregó; esta jerarquía es lo que se agregó al
 meterlo al repo.)*
+
+
+---
+
+## 🔴 2026-09-03 · Estas capturas DEJAN DE SER FUENTE para la auditoría A6
+
+*Medido al empezar A6, y es R4 aplicada a la referencia misma.*
+
+Los archivos `*.png` de esta carpeta **son JPEG con extensión `.png`**, de ~30 KB, y su propio
+`LEEME.md` (nota 7) lo dice: *"las capturas están escaladas para entrar en una sola imagen; las
+medidas de verdad son las de §3, no las del PNG"*.
+
+> **La captura de la maqueta no es la maqueta.** Es un proxy con pérdida — escalado, recomprimido y
+> sin las medidas reales. Comparar la app contra ella mide el proxy, no la cosa.
+
+**Lo que A6 usa en su lugar:** `Nodo.html` —la maqueta misma— renderizada por Playwright **al mismo
+viewport que la app** (1440×900), con el mismo nombre de archivo, para que el par sea honesto:
+
+```
+node docs/auditorias/A6/capturar.mjs <baseURL> <pantalla ...>
+  → docs/auditorias/A6/app/<pantalla>-normal.png
+  → docs/auditorias/A6/maqueta/<pantalla>-normal.png
+```
+
+⚠️ **Para qué SIGUEN sirviendo estos `.png`:** para mirar rápido cómo debería verse algo sin abrir el
+HTML — que es para lo que se justificaron al entrar al repo. **No** para medir, **no** para comparar,
+y **no** para resolver una discusión sobre un valor: para eso manda la skill, después la maqueta.

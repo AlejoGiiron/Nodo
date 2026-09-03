@@ -48,10 +48,19 @@ const MAPA = {
   gastos:     { ruta: '/historial-gastos',  mock: 'Gastos' },
   catalogo:   { ruta: '/productos',         mock: 'Catálogo' },
   inventario: { ruta: '/inventario',        mock: 'Inventario' },
-  clientes:   { ruta: '/fiado?tab=customers', mock: 'Clientes' },
+  // ⚠️ La pestaña Clientes NO es direccionable por URL (`?tab=` se ignora): hay
+  //    que hacer clic. Eso mismo es evidencia del hallazgo S5 — Clientes no
+  //    tiene entrada propia ni dirección propia.
+  clientes:   { ruta: '/fiado', tab: 'fiado-tab-customers', mock: 'Clientes' },
   cartera:    { ruta: '/fiado',             mock: 'Cartera' },
-  utilidades: { ruta: '/reportes',          mock: 'Utilidades' },
+  // 🔴 Reportes y Utilidades NO son la misma pantalla (decidido 2026-09-03).
+  //    Utilidades es la cascada (ventas − costo = bruta − gastos = neta) y NO
+  //    existe en la app: se captura solo la maqueta. Reportes existe y la
+  //    maqueta no lo dibuja: se captura solo la app.
+  utilidades: { ruta: null,                 mock: 'Utilidades' },
+  reportes:   { ruta: '/reportes',          mock: null },
   historial:  { ruta: '/historial',         mock: 'Historial' },
+  login:      { ruta: '__login__',          mock: null },
   turnos:     { ruta: '/historial-turnos',  mock: 'Turnos' },
   configuracion: { ruta: '/configuracion',  mock: 'Configuración' },
 };
@@ -64,6 +73,12 @@ const browser = await chromium.launch();
   const page = await ctx.newPage();
   page.on('pageerror', (e) => console.log('[app pageerror]', String(e).slice(0, 200)));
 
+  if (LISTA.includes('login')) {
+    await page.goto(baseURL + '/login');
+    await page.waitForTimeout(900);
+    await page.screenshot({ path: path.join(OUT_APP, 'login-normal.png') });
+    console.log('app     → docs/auditorias/A6/app/login-normal.png');
+  }
   await page.goto(baseURL + '/login');
   await page.locator('input[autocomplete="email"]').fill(process.env.E2E_OWNER_EMAIL);
   await page.locator('input[autocomplete="current-password"]').fill(process.env.E2E_OWNER_PASSWORD);
@@ -73,6 +88,7 @@ const browser = await chromium.launch();
   for (const nombre of LISTA) {
     const def = MAPA[nombre];
     if (!def) { console.log('?? pantalla desconocida:', nombre); continue; }
+    if (def.ruta === '__login__') continue;   // ya capturada antes de autenticar
     if (!def.ruta) { console.log('--', nombre, ': sin ruta en la app (NO EXISTE) — se captura solo la maqueta'); continue; }
     await page.goto(baseURL + def.ruta);
     await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {});
@@ -82,6 +98,7 @@ const browser = await chromium.launch();
       const card = page.getByTestId('product-card').filter({ hasText: 'Lab Cerveza' }).first();
       if (await card.count()) { await card.click(); await page.waitForTimeout(400); }
     }
+    if (def.tab) { await page.getByTestId(def.tab).click(); await page.waitForTimeout(600); }
     await page.waitForTimeout(800);
     const f = path.join(OUT_APP, `${nombre}-normal.png`);
     await page.screenshot({ path: f, fullPage: false });
@@ -99,11 +116,26 @@ const browser = await chromium.launch();
   for (const nombre of LISTA) {
     const def = MAPA[nombre];
     if (!def) continue;
-    // El sidebar de la maqueta navega por texto; "Cartera" aparece dos veces
-    // (título de grupo y entrada), así que se toma el último.
-    const item = page.getByText(def.mock, { exact: true }).last();
-    if (await item.count()) { await item.click(); await page.waitForTimeout(600); }
-    else console.log('?? la maqueta no tiene la entrada', def.mock);
+    if (!def.mock) { console.log('--', nombre, ': la maqueta no lo dibuja (NO DIBUJADO) — solo app'); continue; }
+    // 🔴 EL SELECTOR SE ACOTA AL SIDEBAR POR POSICIÓN, y no es cosmético: con
+    //    `getByText(...).last()` la captura de "Historial" tomó el encabezado
+    //    "Historial · últimos 6 movimientos" del panel de Clientes y NUNCA
+    //    navegó — la pantalla capturada era otra. El sidebar mide 214px, así que
+    //    el ítem correcto es el que cae dentro de esa franja.
+    const cands = page.getByText(def.mock, { exact: true });
+    const n = await cands.count();
+    let item = null;
+    for (let i = 0; i < n; i++) {
+      const c = cands.nth(i);
+      const box = await c.boundingBox().catch(() => null);
+      if (box && box.x < 214) { item = c; break; }
+    }
+    if (!item) { console.log('?? la maqueta no tiene la entrada', def.mock, '— NO se captura'); continue; }
+    await item.click();
+    await page.waitForTimeout(600);
+    // Control: el título de la pantalla tiene que decir lo que se pidió.
+    const h = (await page.locator('body').innerText()).slice(0, 200);
+    if (!h.includes(def.mock)) console.log('?? el título no confirma', def.mock);
     const f = path.join(OUT_MOCK, `${nombre}-normal.png`);
     await page.screenshot({ path: f, fullPage: false });
     console.log('maqueta →', f);
