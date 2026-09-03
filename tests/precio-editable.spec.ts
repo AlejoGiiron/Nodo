@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { loginAsOwner, ownerCreds } from './helpers/auth'
-import { waitPosReady, addPosProduct, POS_PRODUCTO } from './helpers/pos'
+import { waitPosReady, addPosProduct, cobrarCon, POS_PRODUCTO } from './helpers/pos'
 import { openShiftIfClosed } from './helpers/shift'
 
 // ============================================================================
@@ -106,8 +106,7 @@ test('🔴 el precio de la línea se edita, manda el total, y es el que se persi
   // Nequi es el camino de cobro más corto (no pide monto recibido); el sujeto
   // de este caso es el precio, no el método.
   await expect(page.getByTestId('cart-total')).toBeVisible()
-  await page.getByTestId('cobro-medio-nequi').click()
-  await page.getByTestId('cobro-confirmar').click()
+  await cobrarCon(page, 'nequi')
   await expect(page.getByText(/Venta #\d+ registrada/)).toBeVisible({ timeout: 15_000 })
 
   const orden = await ultimaOrden()

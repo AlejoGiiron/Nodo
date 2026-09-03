@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { loginAsOwner } from './helpers/auth'
+import { cobrarEnEfectivo } from './helpers/pos'
 import { openShiftIfClosed, closeShiftIfOpen } from './helpers/shift'
 import { saveProductAndClose } from './helpers/product'
 
@@ -71,9 +72,9 @@ async function sellCash(page: Page, name: string) {
   await openShiftIfClosed(page, 0)
   await page.getByPlaceholder('Buscar producto...').fill(name)
   await page.getByTestId('product-card').filter({ hasText: name }).first().click()
-  await page.getByTestId('cobro-medio-efectivo').click()
-  await page.getByTestId('cobro-recibe').fill('200000')
-  await page.getByTestId('cobro-confirmar').click()
+  // Camino, no sujeto: este spec mide otra cosa. Los dos botones del efectivo
+  // viven en `cobrarEnEfectivo`.
+  await cobrarEnEfectivo(page, 200_000)
   await expect(
     page.getByText('¡Cobro exitoso!').or(page.getByText(/¡Venta #\d+ registrada!/)),
   ).toBeVisible({ timeout: 15_000 })

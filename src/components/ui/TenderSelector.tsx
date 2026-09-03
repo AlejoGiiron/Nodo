@@ -49,6 +49,27 @@ export function TenderSelector({
   onSelect: (id: string) => void
   columnas?: number
   /** Variante sobre `--ink` (§4): la columna de cobro del mostrador. */
+    /**
+   * ⚠️ SU CONSUMIDOR MURIÓ, Y SE CONSERVA A PROPÓSITO (2026-09-03).
+   *
+   * `sobreTinta` nació con el cobro EN LÍNEA: ahí el selector iba sobre el panel
+   * de `--ink` y necesitaba su propia paleta. El cobro volvió al modal, que es
+   * superficie clara, así que hoy **nadie pasa esta prop en true**.
+   *
+   * No se poda por tres razones, en orden de peso:
+   *   1. §4 del design system **documenta las dos variantes** y dice cuál aplica
+   *      a cada superficie. Borrar el código dejaría a la skill describiendo algo
+   *      que no existe — una nota que dirige mal, que es peor que una ausente.
+   *   2. Es un default `false`: lo que no se declara no lo usa. No hay forma de
+   *      que se encienda por accidente.
+   *   3. Ya viajó dos veces en tres días. La decisión de dónde vive el cobro
+   *      resultó ser reversible; el código que la sirve no debería costar cada
+   *      vuelta.
+   *
+   * 🔴 Lo que SÍ hace falta es que esta nota exista: sin ella, el próximo que
+   *    grepee `sobreTinta` va a encontrar una prop sin consumidores y a leerla
+   *    como olvido. Un residuo con su razón escrita no es residuo.
+   */
   sobreTinta?: boolean
   /**
    * Prefijo de los `data-testid`.

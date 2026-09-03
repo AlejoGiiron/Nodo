@@ -142,13 +142,45 @@ test('el strip de categorías scrollea de verdad y avisa que hay más', async ({
   await expect(page.getByTestId('pos-category-tabs-fade')).toHaveCount(0)
 })
 
-test('con POCAS categorías el layout no cambia (el fix no altera el caso común)', async ({ page }) => {
-  // El 60/40 debe ser idéntico al de antes del fix cuando todo entra: sin esta
-  // comprobación, "arreglar" el caso extremo podría estar moviendo el común.
+test('el 60/40 no depende de cuántas categorías haya, y la máscara sale SI Y SÓLO SI desborda', async ({ page }) => {
+  // ==========================================================================
+  // 🔴 RE-DERIVADO EL 2026-09-03, Y EL HALLAZGO VALE MÁS QUE EL ARREGLO.
+  //
+  //    Este caso se llamaba «con POCAS categorías el layout no cambia» y
+  //    terminaba en `expect(pos-category-tabs-fade).toHaveCount(0)`. Se puso
+  //    ROJO al sembrar el lab con la forma real de la operación —nueve
+  //    categorías— y la primera lectura fue «el strip se rompió».
+  //
+  //    No se rompió. Lo que pasó es que **la aserción nunca midió lo que su
+  //    nombre decía**: su línea de base de «pocas» era UNA categoría, porque el
+  //    lab estaba vacío. Con una sola categoría el strip no desborda a ningún
+  //    ancho, así que «no hay máscara» era cierto por construcción — el verde
+  //    no venía del layout, venía de la fixture.
+  //
+  //    🔴 La forma general, que es lo caro: **una fixture vacía no es un caso
+  //    común: es el caso degenerado**, y una aserción escrita contra ella mide
+  //    el vacío mientras afirma medir lo normal. Es primo del control negativo
+  //    —allá el instrumento no discrimina; acá la ENTRADA no discrimina— y es
+  //    peor de detectar, porque el test se ve impecable y el rojo llega meses
+  //    después, disfrazado de regresión, el día que aparecen datos de verdad.
+  //
+  //    Nueve categorías a 1024px SÍ desbordan, y eso es correcto: es lo que el
+  //    strip existe para manejar. Lo que se re-deriva es la aserción.
+  //
+  // ⚠️ SE RE-DERIVA EL TEST, NO SE REDISEÑA EL PRODUCTO. El sujeto sigue siendo
+  //    el mismo —que arreglar el caso extremo no movió el 60/40— y ése no
+  //    cambió: las dos aserciones de ancho pasan igual que antes. Lo único que
+  //    se reemplaza es el pasajero: en vez de afirmar una CONSTANTE («no hay
+  //    máscara»), se afirma la RELACIÓN que el strip tiene que cumplir con
+  //    cualquier catálogo — hay máscara exactamente cuando hay desborde.
+  //    Esa relación sí tiene mutantes vivos por los dos lados: una máscara
+  //    permanente es decoración, y una ausente esconde que hay más.
+  // ==========================================================================
   if (creadas.length) await db.from('categories').delete().in('id', creadas)
   creadas = []
 
   await loginAsOwner(page)
+  const vistos: string[] = []
   for (const W of [1024, 1280]) {
     await page.setViewportSize({ width: W, height: 720 })
     await page.goto('/ventas')
@@ -157,14 +189,33 @@ test('con POCAS categorías el layout no cambia (el fix no altera el caso común
     const m = await page.evaluate(() => {
       const root = document.querySelector('main .flex.h-full.overflow-hidden')
       const b = (e?: Element | null) => e ? e.getBoundingClientRect() : null
+      const strip = document.querySelector('[data-testid=pos-category-tabs]')
       return {
         catW: Math.round(b(root?.children[0])?.width ?? -1),
         cartW: Math.round(b(root?.children[1])?.width ?? -1),
+        desborde: strip ? strip.scrollWidth - strip.clientWidth : -1,
       }
     })
-    expect(m.catW).toBe(Math.round(util * 0.6))
-    expect(m.cartW).toBe(util - Math.round(util * 0.6))
-    // Y sin desborde no hay máscara (no es decoración permanente).
-    await expect(page.getByTestId('pos-category-tabs-fade')).toHaveCount(0)
+    // EL SUJETO, intacto: el catálogo se queda en su 60% con el catálogo que
+    // haya. Estas dos son las que miden que el fix del extremo no movió el común.
+    expect(m.catW, `a ${W}px el catálogo tiene que quedarse en su 60%`).toBe(Math.round(util * 0.6))
+    expect(m.cartW, `y el carrito en su 40%`).toBe(util - Math.round(util * 0.6))
+
+    // LA RELACIÓN. `> 4` y no `> 0` por el redondeo subpíxel del layout.
+    const deberiaHaberMascara = m.desborde > 4
+    await expect(
+      page.getByTestId('pos-category-tabs-fade'),
+      deberiaHaberMascara
+        ? `a ${W}px el strip desborda ${m.desborde}px y NO avisa que hay más categorías`
+        : `a ${W}px el strip entra entero (desborde ${m.desborde}px) y la máscara igual está: ` +
+          'un degradado permanente es decoración, y deja de significar algo',
+    ).toHaveCount(deberiaHaberMascara ? 1 : 0)
+    vistos.push(`${W}px→${m.desborde}px`)
   }
+
+  // 🔴 CONTROL DE LA PROPIA ENTRADA, que es lo que le faltaba a la versión
+  //    anterior: la relación de arriba se cumple sola si el strip nunca
+  //    desborda. Se deja registrado qué desborde se midió, para que el rojo del
+  //    día que el catálogo cambie diga con qué números se decidió.
+  expect(vistos.length, `desbordes medidos: ${vistos.join(' · ')}`).toBe(2)
 })

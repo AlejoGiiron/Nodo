@@ -1,10 +1,10 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import {
   Search, X, Plus, Trash, Minus, ShoppingCart, Percent,
-  Store, MessageCircle,
+  ChevronRight, Store, MessageCircle,
   Phone, StickyNote,
   Banknote, CreditCard, Smartphone, Check, Building2, Printer,
-  Pause, Play, Clock, AlertTriangle, HandCoins,
+  Pause, Play, Clock, AlertTriangle, HandCoins, SplitSquareHorizontal,
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { useScrollOverflow } from '@/hooks/useScrollOverflow'
@@ -32,8 +32,9 @@ import type { ProductWithCategory, CartItem, DiscountType, HeldOrder } from '@/s
 import { Button } from '@/components/ui/Button'
 import { formatoCOP } from '@/lib/formato'
 import { MoneyCell } from '@/components/ui/MoneyCell'
+import { Input } from '@/components/ui/Input'
 import { TenderSelector } from '@/components/ui/TenderSelector'
-import { useCobro, type ResultadoDeCobro } from '@/hooks/useCobro'
+import { useCobro } from '@/hooks/useCobro'
 import { ATAJOS, ATRIBUTO_LETRAS_INERTES, elFocoEstaEscribiendo, teclaDe } from '@/lib/atajos'
 import { CupoMeter } from '@/components/ui/CupoMeter'
 
@@ -479,6 +480,28 @@ function TotalRow({ label, value, tono = 'normal' }: {
 }
 
 // ─── Cart panel ──────────────────────────────────────────────────
+/**
+ * Alto minimo de la lista del carrito, en pixeles.
+ *
+ * Medido, no elegido: la fila del carrito mide **117px** —nombre y precio,
+ * precio editable y stepper— asi que tres filas son 351. Tres y no una porque
+ * una venta de mostrador tipica lleva tres o cuatro items.
+ *
+ * 🔴 SOBREVIVE A LA VUELTA AL MODAL (2026-09-03) AUNQUE SU DEFECTO YA NO PUEDA
+ *    OCURRIR, y esa es exactamente su categoria: **el tripwire que no se puede
+ *    matar**. El colapso a cero lo causaba el panel de cobro en linea comiendose
+ *    485px fijos; con el cobro en modal el panel volvio a ~180px y la lista
+ *    entra con holgura en los seis viewports. O sea que hoy el minimo **no esta
+ *    conteniendo nada**: es una red bajo un piso que ya no se cae.
+ *    Se queda igual, y la razon es que el defecto no era del cobro en linea
+ *    sino de la CLASE «un panel de alto fijo en una columna flex deja a su
+ *    hermano en cero» — que vuelve con cualquier bloque que crezca ahi.
+ *
+ * ⚠️ Si la fila cambia de alto, este numero deja de significar «tres filas». Se
+ *    remide contando el paso entre dos `cart-item-price` consecutivos.
+ */
+const ALTO_MINIMO_LISTA = 351
+
 function CartPanel({
   subtotal,
   discountAmt,
@@ -493,23 +516,6 @@ function CartPanel({
   onShowHeld,
   productsWithExtras,
   onEditExtras,
-  method,
-  setMethod,
-  received,
-  setReceived,
-  cobrando,
-  botonCobrarRef,
-  split,
-  setSplit,
-  splitValid,
-  onSplitChange,
-  customerId,
-  customerName,
-  plazoDias,
-  setPlazoDias,
-  cambiandoCliente,
-  setCambiandoCliente,
-  onCustomerChange,
 }: {
   subtotal: number
   discountAmt: number
@@ -518,30 +524,12 @@ function CartPanel({
   setCanal: (c: Canal) => void
   notingIdx: number | null
   setNotingIdx: (i: number | null) => void
-  /** Cobrar. Con crédito elegido lleva al paso que falta, y el rótulo lo dice. */
   onCheckout: () => void
   onHold: () => void
   heldCount: number
   onShowHeld: () => void
   productsWithExtras: Set<string>
   onEditExtras: (item: CartItem) => void
-  method: PaymentMethodUI
-  setMethod: (m: PaymentMethodUI) => void
-  received: string
-  setReceived: (v: string) => void
-  cobrando: boolean
-  botonCobrarRef: React.RefObject<HTMLButtonElement>
-  split: boolean
-  setSplit: (v: boolean) => void
-  splitValid: boolean
-  onSplitChange: (parts: SalePaymentPart[], valid: boolean) => void
-  customerId: string | null
-  customerName: string
-  plazoDias: number | null
-  setPlazoDias: (d: number | null) => void
-  cambiandoCliente: boolean
-  setCambiandoCliente: (v: boolean) => void
-  onCustomerChange: (id: string, name: string, plazo: number | null) => void
 }) {
   const items = useCartStore((s) => s.items)
   const discount = useCartStore((s) => s.discount)
@@ -551,19 +539,6 @@ function CartPanel({
   const setDiscount = useCartStore((s) => s.setDiscount)
   const setDiscountReason = useCartStore((s) => s.setDiscountReason)
   const { can } = usePermissions()
-
-  // El cobro en línea: la misma lista de medios que el modal, y los derivados
-  // del efectivo. `recibido` descarta lo que no sea dígito, igual que el campo.
-  const medios = mediosDePago(can('fiado.gestionar'))
-  const { customers } = useCustomers()
-  const { config: sedeConfigPanel } = useSedeConfig()
-  const plazosSede = sedeConfigPanel.plazos_credito ?? DEFAULT_PLAZOS_CREDITO
-  const plazoDefaultSede = sedeConfigPanel.plazo_credito_default ?? DEFAULT_PLAZO_CREDITO
-  const recibido = parseInt(received.replace(/\D/g, ''), 10) || 0
-  const cambio = recibido - total
-  // Misma función que el modal: los montos sugeridos no se calculan dos veces.
-  const montosRapidos = cashQuickAmounts(total)
-  const recibeRef = useRef<HTMLInputElement>(null)
 
   const canales = [
     { id: 'mostrador' as Canal, label: 'Mostrador', icon: <Store size={17} />,          bg: 'var(--warning-soft)', fg: 'var(--warning-on-soft)' },
@@ -648,25 +623,11 @@ function CartPanel({
       </div>
 
       {/* Items.
-          🔴 `minHeight` NO ES COSMETICO — es el defecto que encontro el par del
-          desplegado. Al bajar el cobro a la columna, el panel de tinta paso a
-          485px y en TODO viewport de hasta ~1050px de alto esta lista colapsaba
-          a **cero**: la cajera no veia que estaba vendiendo. La venta salia bien
-          y la base quedaba perfecta.
-          ⚠️ Ningun test lo cazaba, y no por falta de cobertura: el item sigue en
-          el DOM con bounding box, asi que **para Playwright es `visible`** aunque
-          este clipeado por un contenedor de altura 0. Lo que lo mide es una
-          asercion GEOMETRICA —que el item caiga dentro del rectangulo de su
-          contenedor de scroll— y vive en `cobro-en-linea.spec`. */}
-      {/* 🔴 EL AREA QUE CEDE: la lista, el descuento y «En espera».
-          Los tres bajan acá porque §7.7 dice que se comprime lo que NO es el
-          cuello de botella, y un control secundario que ocupa alto FIJO
-          permanente es exactamente eso. Medido: a 1440×900 faltaban 30px para
-          que el botón Cobrar entrara — no 180. Bajar la lista a dos filas habría
-          gastado 117 para resolver 30, sacrificando justo lo que motivó el
-          arreglo. */}
-      <div style={{ flex: 1, overflowY: 'auto', minHeight: ALTO_MINIMO_LISTA }}>
-      <div>
+          `minHeight` es el piso de la lista. Ver `ALTO_MINIMO_LISTA`: hoy no
+          esta conteniendo nada —con el cobro en modal la lista entra sobrada—
+          y se conserva igual porque la clase de defecto que ataja no depende
+          de donde vive el cobro. */}
+      <div style={{ flex: 1, overflow: 'auto', minHeight: ALTO_MINIMO_LISTA }}>
         {items.length === 0 ? (
           <div style={{ padding: 50, textAlign: 'center', color: 'var(--ink-4)', fontSize: 13.5 }}>
             <div style={{
@@ -847,26 +808,14 @@ function CartPanel({
           <Pause size={15} /> En espera
         </Button>
       </div>
-      </div>{/* fin del area que cede */}
 
       {/* ── Panel de cobro ────────────────────────────────────────────────
           Sobre --ink, con los tokens --on-dark-*. El total a cobrar es el
           ÚNICO número grande del producto (regla 7.4, --fs-total 44/700):
           todo lo demás es información de trabajo, no un tablero. */}
-      {/* 🔴 EL PANEL DE COBRO CEDE, LA LISTA NO — y dentro del panel cede el
-          MEDIO, no el pie. §7.7 dice que «lo que se comprime es la lista de
-          productos», y con el cobro en linea eso se comprimia a CERO, que no es
-          comprimir sino desaparecer. Manda el cuello de botella real: el cobro
-          se lee de un vistazo, la lista se compara item por item.
-          ⚠️ Y el primer arreglo —scrollear el panel entero— dejaba el boton
-          Cobrar DEBAJO DEL PLIEGUE en todo viewport de hasta 1080px: un defecto
-          cambiado por uno peor. Por eso el total y el boton quedan anclados y lo
-          que hace scroll es lo del medio. Es §7.4 leido en vertical: el total es
-          el unico numero grande, y el acto que cierra la venta no se busca. */}
-      <div style={{ padding: '12px 22px 20px', flexShrink: 1, minHeight: 0, display: 'flex' }}>
+      <div style={{ padding: '12px 22px 20px' }}>
         <div style={{
           background: 'var(--ink)', borderRadius: 'var(--r-3)', padding: 16,
-          flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0,
         }}>
           <TotalRow label="Subtotal" value={subtotal} />
           {discountAmt > 0 && (
@@ -879,7 +828,6 @@ function CartPanel({
           <div style={{
             display: 'flex', justifyContent: 'space-between',
             alignItems: 'baseline', gap: 10, margin: '10px 0 14px',
-            flexShrink: 0,
           }}>
             <span style={{
               fontSize: 11, fontWeight: 600, letterSpacing: '.04em',
@@ -899,420 +847,41 @@ function CartPanel({
             </span>
           </div>
 
-          {/* EL MEDIO — es lo unico que cede alto y hace scroll. */}
-          <div style={{ flex: '1 1 auto', minHeight: 0, overflowY: 'auto' }}>
-
-          {/* ── EL COBRO, EN LÍNEA (§8.15, reabierta el 2026-09-03) ──────────
-              Los medios de pago, el efectivo recibido y el cambio viven acá y no
-              detrás de un botón: el modal era un paso extra POR VENTA, para
-              siempre, y el rediseño se paga una vez.
-              ⚠️ Corte 1: la columna cobra el flujo SIMPLE. Mixto y fiado siguen
-                 en el cobro completo (cortes 2 y 3) y el modal no desaparece
-                 hasta que los tres estén acá. */}
-          {items.length > 0 && split && (
-            <div style={{ marginBottom: 14 }}>
-              <div style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                marginBottom: 8,
-              }}>
-                <span style={{
-                  fontSize: 11, fontWeight: 600, letterSpacing: '.04em',
-                  textTransform: 'uppercase', color: 'var(--on-dark-2)',
-                }}>
-                  Dividir entre métodos
-                </span>
-                <button
-                  data-testid="cobro-dividir-cancelar"
-                  onClick={() => setSplit(false)}
-                  style={{
-                    background: 'transparent', border: 'none', cursor: 'pointer',
-                    color: 'var(--on-dark-2)', fontSize: 12, fontFamily: 'inherit',
-                    textDecoration: 'underline', textUnderlineOffset: 3,
-                  }}
-                >
-                  Un solo método
-                </button>
-              </div>
-              <PaymentSplitEditor
-                total={total}
-                onChange={onSplitChange}
-                prefijo="cobro"
-                sobreTinta
-              />
-            </div>
-          )}
-
-          {items.length > 0 && !split && (
-            <div style={{ marginBottom: 14 }}>
-              <TenderSelector
-                tenders={medios.map((m) => ({ id: m.id, label: m.label, icon: m.icon }))}
-                seleccionado={method}
-                onSelect={(id) => setMethod(id as PaymentMethodUI)}
-                columnas={medios.length > 4 ? 3 : 2}
-                sobreTinta
-                prefijo="cobro-medio"
-              />
-
-              {/* El efectivo recibido y el cambio, sólo cuando aplican: con
-                  transferencia no hay vuelto que dar. */}
-              {method === 'efectivo' && total > 0 && (
-                <div style={{ marginTop: 12 }}>
-                  <div style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    gap: 10,
-                  }}>
-                    <span style={{
-                      fontSize: 11, fontWeight: 600, letterSpacing: '.04em',
-                      textTransform: 'uppercase', color: 'var(--on-dark-2)',
-                    }}>
-                      Recibe
-                    </span>
-                    <input
-                      ref={recibeRef}
-                      data-testid="cobro-recibe"
-                      // 🔴 DECLARA QUE LAS LETRAS LE SON INERTES, y no es un
-                      //    detalle: el `onChange` de abajo descarta todo lo que
-                      //    no sea dígito, así que los atajos de letra (E·T·C)
-                      //    pueden mandar con el foco acá adentro. Ésa es la
-                      //    razón entera por la que los medios de pago se atajan
-                      //    con letras y no con dígitos — y este campo es el que
-                      //    la hace cierta, porque tiene el foco al cobrar.
-                      {...{ [ATRIBUTO_LETRAS_INERTES]: '' }}
-                      type="text"
-                      inputMode="numeric"
-                      value={received ? formatoCOP(recibido) : ''}
-                      onChange={(e) => setReceived(e.target.value.replace(/\D/g, ''))}
-                      placeholder={formatoCOP(total)}
-                      style={{
-                        width: 150, height: 44, padding: '0 12px',
-                        borderRadius: 'var(--r-2)', border: '1px solid transparent',
-                        background: 'var(--on-dark-fill)', color: '#fff',
-                        fontSize: 22, fontWeight: 700, textAlign: 'right',
-                        fontVariantNumeric: 'tabular-nums', fontFamily: 'inherit',
-                        outline: 'none',
-                      }}
-                    />
-                  </div>
-                  {/* 🔴 LOS CHIPS DE MONTO RÁPIDO SON UN (d): el producto los
-                      tiene y la maqueta no los dibuja, así que migrar el cobro a
-                      la columna NO puede hacerlos desaparecer — eso sería la
-                      maqueta borrando una capacidad probada. Casi se pierden en
-                      este corte, igual que los cuatro (d) del catálogo en la
-                      tanda 4. */}
-                  <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
-                    {montosRapidos.map((chip) => {
-                      const activo = recibido === chip.amount && received !== ''
-                      return (
-                        <button
-                          key={chip.exact ? 'exact' : chip.amount}
-                          data-testid={chip.exact ? 'cobro-monto-exacto' : 'cobro-monto-chip'}
-                          onClick={() => setReceived(String(chip.amount))}
-                          style={{
-                            padding: '5px 10px',
-                            // El chip "Exacto" se destaca con el borde de ACCIÓN,
-                            // no con verde: es la opción sugerida, no una
-                            // confirmación de que algo salió bien (§1.2).
-                            border: `1px solid ${activo ? 'var(--action-500)' : chip.exact ? 'var(--action-700)' : 'transparent'}`,
-                            background: activo ? 'var(--action-700)' : 'var(--on-dark-fill)',
-                            borderRadius: 'var(--r-1)', fontSize: 11.5,
-                            fontWeight: chip.exact ? 700 : 600,
-                            color: activo || chip.exact ? '#fff' : 'var(--on-dark-3)',
-                            fontVariantNumeric: 'tabular-nums', cursor: 'pointer',
-                            fontFamily: 'inherit',
-                          }}
-                        >
-                          {chip.exact ? `Exacto · ${formatoCOP(chip.amount)}` : formatoCOP(chip.amount)}
-                        </button>
-                      )
-                    })}
-                  </div>
-
-                  <div style={{
-                    display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
-                    gap: 10, marginTop: 8,
-                  }}>
-                    <span style={{
-                      fontSize: 11, fontWeight: 600, letterSpacing: '.04em',
-                      textTransform: 'uppercase', color: 'var(--on-dark-2)',
-                    }}>
-                      Cambio
-                    </span>
-                    <span
-                      data-testid="cobro-cambio"
-                      style={{
-                        fontSize: 20, fontWeight: 700, fontVariantNumeric: 'tabular-nums',
-                        // ⚠️ Sobre tinta no hay `--success`/`--danger` (§8.3):
-                        //    los dos hexes son los mismos que ya usa el arqueo,
-                        //    marcados como lo que son —valores que la skill no
-                        //    define y que no se inventaron acá—.
-                        color: cambio < 0 ? '#f87171' : '#fff',
-                      }}
-                    >
-                      {received ? formatoCOP(cambio) : '—'}
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ── CRÉDITO (corte 3) ────────────────────────────────────────────
-              Los ocho (d) del flujo, enumerados en A6 §12 antes de tocarlo. La
-              maqueta dibuja el nombre del cliente, `Cambiar cliente` y el cupo;
-              todo lo demás lo tiene el producto y no está dibujado. */}
-          {items.length > 0 && !split && method === 'fiado' && (
-            <div style={{ marginBottom: 14 }}>
-              {!customerId || cambiandoCliente ? (
-                <div style={{
-                  background: 'var(--surface)', borderRadius: 'var(--r-2)', padding: 10,
-                }}>
-                  {/* (d) 1 y 2: buscar por nombre/teléfono/documento, y dar de
-                      alta sin salir del cobro. La maqueta dibuja un botón
-                      «Cambiar cliente», no un buscador con alta. */}
-                  <CustomerPicker
-                    value={customerId}
-                    prefijo="cobro-cliente"
-                    onChange={(id, name) => {
-                      // (d) 4: el plazo se PRECARGA del cliente; si no tiene, el
-                      // default de la sede. Queda editable — se pacta por venta.
-                      const c = customers.find((x) => x.id === id)
-                      onCustomerChange(id, name, c?.plazo_dias ?? plazoDefaultSede)
-                    }}
-                  />
-                </div>
-              ) : (
-                <div style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  gap: 8, padding: '8px 10px', borderRadius: 'var(--r-2)',
-                  background: 'var(--on-dark-fill)',
-                }}>
-                  <span
-                    data-testid="cobro-cliente-nombre"
-                    style={{
-                      fontSize: 13, fontWeight: 600, color: '#fff',
-                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {customerName}
-                  </span>
-                  <button
-                    data-testid="cobro-cambiar-cliente"
-                    onClick={() => setCambiandoCliente(true)}
-                    style={{
-                      background: 'transparent', border: 'none', cursor: 'pointer',
-                      color: 'var(--on-dark-3)', fontSize: 12, fontFamily: 'inherit',
-                      textDecoration: 'underline', textUnderlineOffset: 3, flexShrink: 0,
-                    }}
-                  >
-                    Cambiar cliente
-                  </button>
-                </div>
-              )}
-
-              {customerId && !cambiandoCliente && (
-                <div style={{ marginTop: 10 }}>
-                  <div style={{
-                    fontSize: 11, fontWeight: 600, letterSpacing: '.04em',
-                    textTransform: 'uppercase', color: 'var(--on-dark-2)', marginBottom: 6,
-                  }}>
-                    Plazo de pago
-                  </div>
-                  {/* 🔴 (d) 3 — DESPLEGABLE, no número libre (deuda 46). La razón
-                      está escrita y no es de estilo: el typo de 3 por 30 no lo
-                      detecta nada, y una venta a 3 días se lee como vencida a
-                      los cuatro. Un input se ve más flexible y empeora la
-                      cartera meses después. */}
-                  <select
-                    data-testid="cobro-plazo"
-                    value={plazoDias == null ? '' : String(plazoDias)}
-                    onChange={(e) => setPlazoDias(e.target.value === '' ? null : Number(e.target.value))}
-                    style={{
-                      width: '100%', padding: '9px 12px', borderRadius: 'var(--r-2)',
-                      border: '1px solid transparent', background: 'var(--on-dark-fill)',
-                      color: '#fff', fontSize: 13, cursor: 'pointer', appearance: 'auto',
-                      fontFamily: 'inherit',
-                    }}
-                  >
-                    {/* (d) 5: «Sin plazo» es una opción explícita. */}
-                    <option value="">Sin plazo</option>
-                    {plazosSede.map((d) => (
-                      <option key={d} value={String(d)}>{d} días</option>
-                    ))}
-                  </select>
-                  {/* 🔴 (d) 6 — LA FRASE. No es un control: es la ÚNICA
-                      explicación en pantalla de que el plazo se CONGELA en la
-                      venta. Lleva testid no para aseverar el copy —que puede
-                      cambiar— sino para que su desaparición se note: sin ella,
-                      alguien va a "arreglar" que cambiarle el plazo al cliente
-                      no mueva sus ventas viejas. */}
-                  <div
-                    data-testid="cobro-plazo-nota"
-                    style={{ marginTop: 6, fontSize: 11.5, color: 'var(--on-dark-2)', lineHeight: 1.45 }}
-                  >
-                    Queda guardado en esta venta: cambiarle el plazo al cliente
-                    después no mueve el vencimiento de ésta.
-                  </div>
-
-                  {/* CupoMeter (§4). Vuelve a la columna con §8.15 reabierta; la
-                      regla 7.1 se cumple igual —el cupo se proyecta con la venta
-                      en curso ANTES de comprometerla—: cambia dónde, no cuándo.
-                      ⚠️ Hoy siempre en `sin dato`: el cupo no existe en el
-                      esquema (deuda 40). Dice qué falta en vez de inventar un
-                      número (§7.5). */}
-                  <div style={{
-                    marginTop: 10, padding: 10, borderRadius: 'var(--r-2)',
-                    background: 'var(--surface)',
-                  }}>
-                    <CupoMeter asignado={null} consumido={0} ventaEnCurso={total} prefijo="cobro-cupo" />
-                  </div>
-                </div>
-              )}
-
-              {/* (d) 7 — el aviso de que NO entra dinero a la caja, y dónde se
-                  registran los abonos. Sin él, el cajero busca la plata del
-                  fiado en el arqueo. */}
-              <div
-                data-testid="cobro-fiado-aviso"
-                style={{
-                  marginTop: 10, fontSize: 11.5, lineHeight: 1.45,
-                  color: 'var(--on-dark-warn)',
-                }}
-              >
-                La venta a fiado queda pendiente de pago. No entra dinero a la caja;
-                los abonos se registran en Cartera.
-              </div>
-            </div>
-          )}
-
-          {/* Dividir pago. 🔴 NO se ofrece con crédito, y no es sólo cosmético:
-              `register_sale_payment` guarda la regla en la base —«Solo ventas de
-              CONTADO. La venta a credito se salda con abonos»— y una orden a
-              fiado nace `payment_status='pending'`, así que la RPC la rechaza.
-              Esto es la mitad de UI: que el cajero no vea un control que la base
-              va a negar. El guard es el que sostiene la regla; esto evita el
-              viaje en falso. */}
-          {items.length > 0 && !split && method !== 'fiado' && (
-            <button
-              data-testid="cobro-dividir"
-              onClick={() => setSplit(true)}
-              style={{
-                width: '100%', marginBottom: 12, padding: '8px 0',
-                borderRadius: 'var(--r-2)', border: '1px dashed var(--on-dark-2)',
-                background: 'transparent', cursor: 'pointer',
-                color: 'var(--on-dark-3)', fontSize: 12.5, fontWeight: 600,
-                fontFamily: 'inherit',
-              }}
-            >
-              Dividir pago
-            </button>
-          )}
-
-          </div>{/* fin del MEDIO */}
-
           {/* "Cobrar — F12" es la ÚNICA tecla impresa del producto (§5): el
               atajo que la cajera usa cientos de veces al día es el que
               justifica la excepción a "los atajos no se imprimen".
               🔴 El rótulo se DERIVA de la tabla de atajos, no se escribe. Este
                  botón imprimió «F12» durante todo el proyecto con la tecla
                  muerta: eran dos lados de un contrato sin nada que los
-                 sincronizara (R1). Derivándolo, no puede volver a mentir.
-              🔴 Y con CRÉDITO elegido el rótulo cambia a «Continuar», porque el
-                 botón hace otra cosa: lleva al paso de cliente y plazo, que
-                 todavía vive en el cobro completo. Un botón que a veces cobra y
-                 a veces abre algo tiene que decirlo — es exactamente lo que se
-                 rechazó para F12. */}
+                 sincronizara (R1). Derivándolo, no puede volver a mentir. */}
           <Button
-            ref={botonCobrarRef}
-            data-testid="cobro-confirmar"
+            data-testid="cobro-abrir"
             size="pos"
             block
-            style={{ flexShrink: 0 }}
             className="nodo-btn--sobre-tinta"
-            disabled={
-              items.length === 0 || cobrando || (split && !splitValid)
-              // (d) 8: una venta a crédito sin deudor no es una venta a crédito.
-              || (!split && method === 'fiado' && !customerId)
-            }
+            disabled={items.length === 0}
             onClick={onCheckout}
           >
-            {/* Ya no dice «Continuar» con crédito: desde el corte 3 el fiado
-                se cobra ACÁ, así que el botón vuelve a hacer una sola cosa. */}
-            {cobrando ? 'Cobrando…' : `Cobrar — ${teclaDe('Cobrar')}`}
+            Cobrar — {teclaDe('Cobrar')}
           </Button>
-
-          {/* 🔴 ACÁ ESTABA «Más opciones de cobro», y se fue con el corte 4:
-              era el puente al modal mientras el mixto y el fiado vivían allá.
-              Ya no hay a dónde ir — todo el cobro está en esta columna. */}
         </div>
       </div>
     </div>
   )
 }
 
-/**
- * Alto minimo de la lista del carrito, en pixeles.
- *
- * Medido, no elegido: la fila del carrito mide **117px** —nombre y precio,
- * precio editable y stepper— asi que tres filas son 351. Tres y no una porque
- * una venta de mostrador tipica lleva tres o cuatro items; con una sola visible
- * el defecto seguiria estando, solo que menos obvio.
- *
- * ⚠️ Si la fila cambia de alto, este numero deja de significar «tres filas». Se
- * remide contando el paso entre dos `cart-item-price` consecutivos.
- */
-const ALTO_MINIMO_LISTA = 351
-
-/**
- * LOS MEDIOS DE PAGO — una sola lista, para la columna y para el modal.
- *
- * 🔴 Vivía dentro de `CheckoutModal`. Con el cobro en línea la columna necesita
- * la MISMA grilla, y dos listas de medios de pago sería R1 sobre `payment_method`,
- * que ya es un contrato en 8 lados. Son CINCO y no tres: §8.16 es explícita —
- * recortar la lista para que entre en la maqueta sería cambiar el producto para
- * que quepa en el diseño.
- */
-function mediosDePago(canFiado: boolean): { id: PaymentMethodUI; label: string; icon: React.ReactNode }[] {
-  return [
-    { id: 'efectivo',      label: 'Efectivo',      icon: <Banknote size={22} /> },
-    { id: 'tarjeta',       label: 'Tarjeta',       icon: <CreditCard size={22} /> },
-    { id: 'transferencia', label: 'Transferencia', icon: <Building2 size={22} /> },
-    { id: 'nequi',         label: 'Nequi / QR',    icon: <Smartphone size={22} /> },
-    ...(canFiado ? [{ id: 'fiado' as const, label: 'Fiado', icon: <HandCoins size={22} /> }] : []),
-  ]
-}
-
-// ─── Diálogo del DESPUÉS de la venta ─────────────────────────────────
-/**
- * Lo que queda del viejo `CheckoutModal` después del corte 4 del cobro en línea.
- *
- * 🔴 EL MODAL NO MURIÓ DEL TODO, y el nombre lo dice ahora: ya no cobra. Los
- * pasos «método» y «monto» se fueron a la columna del mostrador (§8.15
- * reabierta); acá quedó el **después** — el número de la venta, el estado de
- * «sin número» con su reintento, y la impresión del comprobante.
- *
- * §8.17 decidió que ese momento tiene diálogo propio, y la razón es de riesgo:
- * `success-sin-numero` y `retry-order-number` son un **error sobre una venta YA
- * cobrada** —la plata entró y el número falló— así que tienen que ocupar la
- * pantalla y exigir una decisión, no compartir espacio con una columna que ya
- * está lista para la venta siguiente. La maqueta no dibuja nada de esto porque
- * **no modeló que la numeración pueda fallar**.
- *
- * ⚠️ Se renombró de `CheckoutModal` a `DialogoDeVenta` en la misma pasada: un
- * componente que se llama «checkout» y no cobra es un nombre falso, y un nombre
- * falso dirige mal — el próximo que lo lea va a buscar acá el cobro.
- */
-function DialogoDeVenta({
+// ─── Checkout modal ──────────────────────────────────────────────
+function CheckoutModal({
   items,
   total,
   subtotal,
   discountAmt,
   discount,
   discountType,
+  discountReason,
   canal,
+  onClose,
   onComplete,
-  method,
-  received,
-  resultado,
 }: {
   items: CartItem[]
   total: number
@@ -1320,26 +889,84 @@ function DialogoDeVenta({
   discountAmt: number
   discount: number
   discountType: DiscountType
+  discountReason: string
   canal: Canal
+  onClose: () => void
   onComplete: () => void
-  /** Para el comprobante y la línea de resumen: qué se cobró y cómo. */
-  method: PaymentMethodUI
-  received: string
-  /** Lo que devolvió el cobro. Sin esto no hay nada que mostrar. */
-  resultado: ResultadoDeCobro
 }) {
   const { profile } = useAuth()
-  const { sede } = useSedeConfig()
-  const orderId = resultado.orderId
-  const [orderNumber, setOrderNumber] = useState<number | null>(resultado.orderNumber)
+  const { can } = usePermissions()
+  const { sede, config: sedeConfig } = useSedeConfig()
+  const { cobrar } = useCobro()
+  const [step, setStep] = useState<'method' | 'amount' | 'success'>('method')
+  const [method, setMethod] = useState<PaymentMethodUI>('efectivo')
+  const [received, setReceived] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [orderId, setOrderId] = useState<string | null>(null)
+  const [orderNumber, setOrderNumber] = useState<number | null>(null)
   // Número que la secuencia entregó pero no se pudo grabar: el reintento lo
   // reusa en vez de pedir otro (ver AssignOrderNumberResult).
-  const [numeroReservado, setNumeroReservado] = useState<number | null>(resultado.numeroReservado)
+  const [numeroReservado, setNumeroReservado] = useState<number | null>(null)
   const [reintentandoNumero, setReintentandoNumero] = useState(false)
-  // 🔴 ACÁ ESTABA `handleConfirm` Y TODO EL ESTADO DEL COBRO. Se fueron con el
-  //    corte 4: este componente ya no cobra, sólo muestra el después. La
-  //    escritura vive en `useCobro` desde el corte 1 y la llama la página.
+  // Fiado: cliente seleccionado (solo aplica si method === 'fiado').
+  const [customerId, setCustomerId] = useState<string | null>(null)
+  // 🔴 Deuda 46. El plazo se PRECARGA del cliente y queda editable: se pacta por
+  //    venta. Lo que se manda a `orders` es este valor, no el del cliente — si
+  //    la venta leyera el plazo del cliente al mostrarse en cartera,
+  //    renegociarlo movería el vencimiento de todas sus ventas viejas.
+  const [plazoDias, setPlazoDias] = useState<number | null>(null)
+  const { customers } = useCustomers()
+  const plazosSede = sedeConfig.plazos_credito ?? DEFAULT_PLAZOS_CREDITO
+  const plazoDefaultSede = sedeConfig.plazo_credito_default ?? DEFAULT_PLAZO_CREDITO
+  const [customerName, setCustomerName] = useState<string>('')
+  // Pago dividido (mixto): activo bajo demanda vía "Dividir pago".
+  const [split, setSplit] = useState(false)
+  const [splitParts, setSplitParts] = useState<SalePaymentPart[]>([])
+  const [splitValid, setSplitValid] = useState(false)
+
+  const canFiado = can('fiado.gestionar')
   const receivedNum = parseInt(received.replace(/\D/g, ''), 10) || 0
+  const change = receivedNum - total
+
+  const paymentMethods: { id: PaymentMethodUI; label: string; icon: React.ReactNode }[] = [
+    { id: 'efectivo',      label: 'Efectivo',     icon: <Banknote size={22} /> },
+    { id: 'tarjeta',       label: 'Tarjeta',       icon: <CreditCard size={22} /> },
+    { id: 'transferencia', label: 'Transferencia', icon: <Building2 size={22} /> },
+    { id: 'nequi',         label: 'Nequi / QR',   icon: <Smartphone size={22} /> },
+    ...(canFiado ? [{ id: 'fiado' as const, label: 'Fiado', icon: <HandCoins size={22} /> }] : []),
+  ]
+
+  const quickAmounts = cashQuickAmounts(total)
+
+
+  // En modo dividir el fiado no aplica (mixto = solo métodos reales).
+  const isFiado = !split && method === 'fiado'
+
+  const handleConfirm = async () => {
+    if (!profile) return
+    setSubmitting(true)
+    // 🔴 LA ESCRITURA VIVE EN `useCobro`, NO ACÁ. El cobro pasa de modal a
+    //    columna por cortes, y durante la transición las dos superficies cobran.
+    //    Dos superficies que escriben lo mismo es R1 en el flujo más caro del
+    //    producto; una sola escritura con dos vistas, no. Mismo patrón que
+    //    Gastos con `addMovement`.
+    const res = await cobrar({
+      perfil: { id: profile.id, sede_id: profile.sede_id },
+      canal, items, total,
+      discountAmt,
+      discountType: discountAmt > 0 ? discountType : null,
+      discountReason,
+      method, split, splitParts,
+      customerId, customerName, plazoDias,
+      origen: 'modal',
+    })
+    setSubmitting(false)
+    if (!res) return
+    setOrderNumber(res.orderNumber)
+    setNumeroReservado(res.numeroReservado)
+    setOrderId(res.orderId)
+    setStep('success')
+  }
 
   // Reintento a pedido del cajero cuando la venta quedó sin número. La venta YA
   // está cobrada y registrada: esto solo completa el correlativo.
@@ -1357,12 +984,101 @@ function DialogoDeVenta({
     }
   }
 
-  // 🔴 LOS ATAJOS DEL COBRO YA NO VIVEN ACÁ: se subieron a la PÁGINA, que es
-  //    donde vive `method`. Con el cobro en línea la columna tiene su propia
-  //    grilla de medios y este componente puede no estar montado, así que un
-  //    manejador acá dejaba el atajo muerto justo en la superficie nueva.
-  //    Y dos manejadores —uno por superficie— habrían sido R1 sobre la misma
-  //    tecla: el atajo tiene que estar donde está el estado que cambia.
+  // Atajos del COBRO: E efectivo · T transferencia · C crédito.
+  //
+  // 🔴 LAS LETRAS NO MANDAN DONDE SE ESCRIBE. `elFocoEstaEscribiendo()` decide
+  //    POR TIPO de control, no por una lista de campos: una lista se congela y
+  //    el próximo input nacería sin protección. La única excepción es el campo
+  //    de dinero, que DECLARA con `data-letras-inertes` que las letras le son
+  //    inertes — y es justo la excepción por la que se eligieron letras.
+  //
+  // ⚠️ El atajo NO puede elegir lo que el botón no ofrece: si el medio está
+  //    ausente de la grilla —fiado sin permiso, o cualquiera en modo dividir—
+  //    la tecla no hace nada. Un atajo que activa un control que no está es la
+  //    forma más silenciosa de saltarse un permiso.
+  const mediosRef = useRef<string[]>([])
+  mediosRef.current = paymentMethods.map((m) => m.id)
+  const setMethodRef = useRef(setMethod)
+  setMethodRef.current = setMethod
+  const splitRef = useRef(split)
+  splitRef.current = split
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      // Con modificador no es nuestro: `Ctrl+E` es el omnibox, `Ctrl+C` copiar.
+      if (e.ctrlKey || e.altKey || e.metaKey) return
+      if (elFocoEstaEscribiendo()) return
+      const atajo = ATAJOS.find((a) => a.ambito === 'cobro' && a.tecla === e.key.toLowerCase())
+      if (!atajo?.medio) return
+      if (splitRef.current) return
+      if (!mediosRef.current.includes(atajo.medio)) return
+      // Se corta el paso para que la letra no llegue al campo de dinero. Ahí ya
+      // sería inerte, pero que no llegue es más barato que confiar en que se
+      // descarte bien.
+      e.preventDefault()
+      setMethodRef.current(atajo.medio as PaymentMethodUI)
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [])
+
+  // ── LOS TRES PRIMARIOS DEL MODAL, DEFINIDOS UNA SOLA VEZ ─────────────────
+  //
+  // 🔴 Existen porque Enter tiene que hacer EXACTAMENTE lo que hace el boton, y
+  //    escribir la condicion dos veces es R1 en el flujo mas caro del producto:
+  //    dos lados sin nada que los sincronice, y el dia que uno cambie —agregar
+  //    un guard, cambiar el umbral— el otro se congela y Enter cobra donde el
+  //    boton ya no deja. Se declaran aca y los consumen los dos.
+  const primarioMetodo = () =>
+    (method === 'efectivo' && total > 0 ? setStep('amount') : handleConfirm())
+  const bloqueadoMetodo = submitting || (isFiado && !customerId)
+  const bloqueadoMixto = submitting || !splitValid
+  const bloqueadoEfectivo = change < 0 || submitting
+
+  // ── ENTER CONFIRMA, Y F4 LLEVA AL CLIENTE ────────────────────────────────
+  //
+  // El primario vigente vive en un ref que se refresca en cada render: el
+  // listener se suscribe una vez y siempre ejecuta la accion del paso actual.
+  const primarioRef = useRef<() => void>(() => {})
+  primarioRef.current = () => {
+    if (step === 'amount') { if (!bloqueadoEfectivo) handleConfirm(); return }
+    if (step !== 'method') return
+    if (split) { if (!bloqueadoMixto) handleConfirm(); return }
+    if (!bloqueadoMetodo) primarioMetodo()
+  }
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.altKey || e.metaKey) return
+
+      // F4 · «Cambiar cliente» (§5). Apunta al BUSCADOR del picker y no a un
+      // boton propio: el picker del modal muestra la lista completa con el
+      // elegido marcado, asi que ya se puede cambiar de cliente sin un control
+      // aparte. Agregar un boton para darle destino a la tecla habria sido
+      // inventar el control en vez de encontrarlo.
+      //
+      // ⚠️ Solo actua en el camino de CREDITO, que es el unico donde existe un
+      //    cliente. Es el mismo alcance que F2, que tampoco hace nada fuera del
+      //    mostrador. Y el `preventDefault` va DESPUES del guard: si no hay a
+      //    quien enfocar, la tecla no se come el evento.
+      if (e.key === teclaDe('Cambiar cliente')) {
+        const campo = document.querySelector<HTMLInputElement>('[data-testid="customer-search"]')
+        if (!campo) return
+        e.preventDefault()
+        campo.focus()
+        campo.select()
+        return
+      }
+
+      // Enter = el primario del paso. Si el foco esta en un boton, el navegador
+      // ya lo va a accionar: correrlo ademas seria cobrar dos veces.
+      if (e.key === 'Enter') {
+        if ((document.activeElement as HTMLElement)?.tagName === 'BUTTON') return
+        e.preventDefault()
+        primarioRef.current()
+      }
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [])
 
   const methodLabel = (m: PaymentMethodUI) =>
     ({ efectivo: 'Efectivo', tarjeta: 'Tarjeta', transferencia: 'Transferencia', nequi: 'Nequi / QR', fiado: 'Fiado' })[m]
@@ -1381,26 +1097,274 @@ function DialogoDeVenta({
           separa con borde de 1px. */}
       <div style={{
         background: 'var(--surface)', borderRadius: 'var(--r-3)',
-        width: 440,
+        width: step === 'method' ? 540 : 440,
         maxWidth: '92%',
         boxShadow: 'var(--shadow-1)',
         overflow: 'hidden',
       }}>
         {/* ── Step: method ── */}
-        {/* 🔴 ACÁ VIVÍAN LOS PASOS «MÉTODO» Y «MONTO», Y SE FUERON EN EL CORTE 4.
-            §8.15 se reabrió el 2026-09-03: el cobro va EN LÍNEA. Elegir medio de
-            pago, repartirlo, poner el cliente y su plazo, y teclear el efectivo
-            recibido son ahora la columna del mostrador — no un diálogo que se
-            abre por venta.
+        {step === 'method' && (
+          <>
+            <div style={{
+              padding: '18px 22px', borderBottom: '1px solid var(--border-2)',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+                  Total a cobrar
+                </div>
+                <div data-testid="checkout-total" style={{ fontSize: 28, fontWeight: 700, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em' }}>
+                  {formatoCOP(total)}
+                </div>
+              </div>
+              <button
+                onClick={onClose}
+                style={{ background: 'var(--border-2)', border: 'none', width: 32, height: 32, borderRadius: 'var(--r-2)', cursor: 'pointer', color: 'var(--ink-3)', display: 'grid', placeItems: 'center' }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+            {!split && (
+            <div style={{ padding: 22 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)', marginBottom: 12 }}>
+                Método de pago
+              </div>
+              {/* TenderSelector (§4). Sobre superficie CLARA: el cobro de Nodo
+                  es en modal, decidido al cerrar §8.15. Los testids
+                  `pay-method-${id}` los conserva el componente. */}
+              <TenderSelector
+                tenders={paymentMethods.map((m) => ({ id: m.id, label: m.label, icon: m.icon }))}
+                seleccionado={method}
+                onSelect={(id) => setMethod(id as PaymentMethodUI)}
+                columnas={4}
+              />
 
-            ⚠️ **EL MODAL NO MURIÓ DEL TODO, y se dice así a propósito**: quedó
-            reducido al DESPUÉS del cobro. §8.17 lo decidió con su razón —
-            `success-sin-numero` y su reintento son un ERROR sobre una venta YA
-            cobrada, así que tienen que ocupar la pantalla y exigir una decisión,
-            no compartir espacio con una columna que ya está lista para la venta
-            siguiente. La maqueta no dibuja nada de esto porque no modeló que la
-            numeración pueda fallar. */}
-        {orderId && (
+              {/* Dividir pago: revela el editor de pago mixto bajo demanda.
+                  El caso común (un método al 100%) queda intacto arriba. */}
+              {!isFiado && (
+                <button
+                  type="button"
+                  data-testid="pay-split-toggle"
+                  onClick={() => setSplit(true)}
+                  style={{
+                    marginTop: 14, display: 'inline-flex', alignItems: 'center', gap: 6,
+                    padding: '8px 12px', borderRadius: 'var(--r-2)', border: '1px dashed var(--ink-4)',
+                    background: 'var(--surface)', color: 'var(--ink-2)', fontSize: 12.5, fontWeight: 600, cursor: 'pointer',
+                  }}
+                >
+                  <SplitSquareHorizontal size={14} /> Dividir pago
+                </button>
+              )}
+
+              {/* Fiado: selección de cliente obligatoria */}
+              {isFiado && (
+                <div style={{ marginTop: 16 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink-2)', marginBottom: 6 }}>
+                    Cliente <span style={{ color: 'var(--danger)' }}>*</span>
+                  </div>
+                  <CustomerPicker
+                    value={customerId}
+                    onChange={(id, name) => {
+                      setCustomerId(id)
+                      setCustomerName(name)
+                      // Precarga del plazo pactado con ese cliente; si no tiene,
+                      // el default de la sede. Queda editable.
+                      const c = customers.find((x) => x.id === id)
+                      setPlazoDias(c?.plazo_dias ?? plazoDefaultSede)
+                    }}
+                  />
+
+                  {/* 🔴 PLAZO DE LA VENTA — deuda 46. Desplegable y no número
+                      libre: el typo de 3 por 30 no lo detecta nada, y una venta
+                      a 3 días se lee como vencida a los cuatro. */}
+                  {customerId && (
+                    <div style={{ marginTop: 12 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink-2)', marginBottom: 6 }}>
+                        Plazo de pago
+                      </div>
+                      <select
+                        data-testid="pos-plazo"
+                        value={plazoDias == null ? '' : String(plazoDias)}
+                        onChange={(e) => setPlazoDias(e.target.value === '' ? null : Number(e.target.value))}
+                        style={{
+                          width: '100%', padding: '9px 12px', borderRadius: 'var(--r-2)',
+                          border: '1px solid var(--border)', background: 'var(--surface)',
+                          color: 'var(--ink)', fontSize: 13, cursor: 'pointer', appearance: 'auto',
+                        }}
+                      >
+                        <option value="">Sin plazo</option>
+                        {plazosSede.map((d) => (
+                          <option key={d} value={String(d)}>{d} días</option>
+                        ))}
+                      </select>
+                      <div data-testid="pos-plazo-nota" style={{ marginTop: 6, fontSize: 11.5, color: 'var(--ink-3)' }}>
+                        Queda guardado en esta venta: cambiarle el plazo al cliente
+                        después no mueve el vencimiento de ésta.
+                      </div>
+                    </div>
+                  )}
+                  {/* CupoMeter (§4). Vive ACÁ —dentro del modal, en el paso del
+                      crédito— por la ubicación fijada al cerrar §8.15. La regla
+                      7.1 se cumple igual: el cupo se proyecta con la venta en
+                      curso ANTES de comprometerla; cambia dónde, no cuándo.
+                      ⚠️ Hoy siempre en `sin dato`: el cupo no existe en el
+                      esquema (deuda 40). El componente ya dice qué falta y
+                      dónde asignarlo, en vez de inventar un número. */}
+                  {customerId && (
+                    <div style={{ marginTop: 12, padding: 12, border: '1px solid var(--border)', borderRadius: 'var(--r-2)', background: 'var(--surface-2)' }}>
+                      <CupoMeter asignado={null} consumido={0} ventaEnCurso={total} />
+                    </div>
+                  )}
+                  <div data-testid="pos-fiado-aviso" style={{ marginTop: 8, fontSize: 11.5, color: 'var(--warning-on-soft)', background: 'var(--warning-soft)', borderRadius: 'var(--r-2)', padding: '8px 11px' }}>
+                    La venta a fiado queda pendiente de pago. No entra dinero a la caja; los abonos se registran en Fiado → Cuentas por cobrar.
+                  </div>
+                </div>
+              )}
+
+              <div style={{ marginTop: 18, display: 'flex', gap: 10 }}>
+                <Button variant="secondary" onClick={onClose} style={{ flex: 1 }}>
+                  Cancelar
+                </Button>
+                <Button
+                  data-testid="checkout-continue"
+                  disabled={bloqueadoMetodo}
+                  onClick={primarioMetodo}
+                  style={{ flex: 2 }}
+                >
+                  {submitting
+                    ? 'Procesando...'
+                    : isFiado
+                      ? <><HandCoins size={15} /><span>Registrar fiado</span></>
+                      : <><span>Continuar</span><ChevronRight size={15} /></>}
+                </Button>
+              </div>
+            </div>
+            )}
+
+            {/* ── Modo dividir (pago mixto) ── */}
+            {split && (
+            <div style={{ padding: 22 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)', marginBottom: 12 }}>
+                Dividir pago entre métodos
+              </div>
+              <PaymentSplitEditor
+                total={total}
+                onChange={(parts, ok) => { setSplitParts(parts); setSplitValid(ok) }}
+              />
+              <div style={{ marginTop: 18, display: 'flex', gap: 10 }}>
+                <Button variant="secondary" onClick={() => setSplit(false)} style={{ flex: 1 }}>
+                  Un solo método
+                </Button>
+                <Button
+                  data-testid="checkout-confirm-mixto"
+                  disabled={bloqueadoMixto}
+                  onClick={handleConfirm}
+                  style={{ flex: 2 }}
+                >
+                  {submitting ? 'Procesando...' : <><Check size={15} /><span>Cobrar {formatoCOP(total)}</span></>}
+                </Button>
+              </div>
+            </div>
+            )}
+          </>
+        )}
+
+        {/* ── Step: amount (efectivo) ── */}
+        {step === 'amount' && (
+          <>
+            <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--border-2)' }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                Efectivo recibido
+              </div>
+              {/* El estado "POS grande" del Input (§4): 52px, alineado a la
+                  derecha, tabular. La plata se escribe grande porque se cuenta
+                  en voz alta. */}
+              <Input
+                autoFocus
+                inputSize="pos"
+                data-testid="checkout-received"
+                // Declara que las letras le son inertes: sólo cuenta lo que
+                // `parseInt(replace(/\D/g,''))` deja, y lo que se pinta es el
+                // número formateado. Por eso los atajos de letra pueden mandar
+                // con el foco acá — que es la razón por la que son letras.
+                {...{ [ATRIBUTO_LETRAS_INERTES]: '' }}
+                value={received ? formatoCOP(receivedNum) : ''}
+                onChange={(e) => setReceived(e.target.value)}
+                placeholder={formatoCOP(total)}
+                style={{ marginTop: 6 }}
+              />
+              <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
+                {quickAmounts.map((chip) => {
+                  const active = receivedNum === chip.amount && received !== ''
+                  return (
+                    <button
+                      key={chip.exact ? 'exact' : chip.amount}
+                      data-testid={chip.exact ? 'quick-amount-exact' : 'quick-amount-chip'}
+                      onClick={() => setReceived(String(chip.amount))}
+                      style={{
+                        padding: '6px 12px',
+                        // El chip "Exacto" se destaca con el borde de ACCIÓN, no
+                        // con verde: es la opción sugerida, no una confirmación
+                        // de que algo salió bien (§1.2).
+                        border: `1px solid ${active ? 'var(--action)' : chip.exact ? 'var(--action-border)' : 'var(--border)'}`,
+                        background: active ? 'var(--action-soft)' : 'var(--surface-2)',
+                        borderRadius: 'var(--r-1)', fontSize: 11.5, fontWeight: chip.exact ? 700 : 600,
+                        color: active || chip.exact ? 'var(--action-on-soft)' : 'var(--ink-2)',
+                        fontVariantNumeric: 'tabular-nums', cursor: 'pointer',
+                        transition: 'all .12s',
+                      }}
+                    >
+                      {chip.exact ? `Exacto · ${formatoCOP(chip.amount)}` : formatoCOP(chip.amount)}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+            <div style={{ padding: 22 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--ink-3)', marginBottom: 6 }}>
+                <span>Total</span>
+                <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatoCOP(total)}</span>
+              </div>
+              {/* El vuelto SÍ es verde: es confirmación de que la cuenta cierra
+                  (§1.2). Lo que no puede ser verde es la ACCIÓN — el botón de
+                  abajo—. Y "Falta" usa --danger, no --debt: es un error de la
+                  operación en curso, no una deuda del cliente. */}
+              <div style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
+                padding: '12px 14px',
+                background: change >= 0 ? 'var(--success-soft)' : 'var(--danger-soft)',
+                borderRadius: 'var(--r-2)', marginBottom: 18,
+              }}>
+                <span style={{ fontSize: 12.5, fontWeight: 600, color: change >= 0 ? 'var(--success-on-soft)' : 'var(--danger-on-soft)' }}>
+                  {change >= 0 ? 'Vuelto' : 'Falta'}
+                </span>
+                <span data-testid="checkout-change" style={{ fontSize: 22, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: change >= 0 ? 'var(--success-on-soft)' : 'var(--danger-on-soft)' }}>
+                  {formatoCOP(Math.abs(change))}
+                </span>
+              </div>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <Button variant="secondary" onClick={() => setStep('method')} style={{ flex: 1 }}>
+                  Atrás
+                </Button>
+                {/* 🔴 Este botón era #10b981. Violación directa de §1.2: verde
+                    es SOLO confirmación y ninguna acción lo usa. Con un botón
+                    verde el usuario deja de poder distinguir "esto está bien"
+                    de "hacé clic acá" — y acá el clic COBRA. */}
+                <Button
+                  data-testid="checkout-confirm-efectivo"
+                  disabled={bloqueadoEfectivo}
+                  onClick={handleConfirm}
+                  style={{ flex: 2 }}
+                >
+                  {submitting ? 'Procesando...' : <><Check size={15} /><span>Confirmar cobro</span></>}
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ── Step: success ── */}
+        {step === 'success' && orderId && (
           <div style={{ padding: '36px 28px', textAlign: 'center' }}>
             {/* El disco de éxito SÍ es verde, y es el uso legítimo: confirma
                 que algo salió bien. No es una acción. */}
@@ -1719,6 +1683,7 @@ export function POSPage() {
   const [activeCat, setActiveCat] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [canal, setCanal] = useState<Canal>(DEFAULT_CANAL)
+  const [checkout, setCheckout] = useState(false)
   const [showOpenShift, setShowOpenShift] = useState(false)
   const [notingIdx, setNotingIdx] = useState<number | null>(null)
   const [buscadorEnfocado, setBuscadorEnfocado] = useState(false)
@@ -1731,82 +1696,11 @@ export function POSPage() {
   const searchRef = useRef<HTMLInputElement>(null)
   const { isOpen: isShiftOpen } = useCashShift()
   const productsWithExtras = useProductsWithExtras()
-  const { profile } = useAuth()
-  const { can } = usePermissions()
-  const { cobrar } = useCobro()
 
-  // 🔴 EL COBRO VIVE EN LA PAGINA, no en el modal (§8.15: el cobro va en linea).
-  //    `method` y `received` los muestra la columna y los lee el modal mientras
-  //    siga vivo: un solo estado, dos vistas.
-  const [method, setMethod] = useState<PaymentMethodUI>('efectivo')
-  const [received, setReceived] = useState('')
-  // Corte 2: el reparto también vive en la página. Mismo motivo que `method` —
-  // la columna lo muestra y el modal, mientras siga vivo, tiene que ver el mismo.
-  const [split, setSplit] = useState(false)
-  const [splitParts, setSplitParts] = useState<SalePaymentPart[]>([])
-  const [splitValid, setSplitValid] = useState(false)
-  const [cobrando, setCobrando] = useState(false)
-  const [resultadoInline, setResultadoInline] = useState<ResultadoDeCobro | null>(null)
-  // Corte 3: el crédito también. `customerId`/`plazoDias` viven acá por el mismo
-  // motivo que `method` — la columna los muestra y el modal, mientras siga vivo,
-  // tiene que ver los mismos.
-  const [customerId, setCustomerId] = useState<string | null>(null)
-  const [customerName, setCustomerName] = useState('')
-  const [plazoDias, setPlazoDias] = useState<number | null>(null)
-  /** F4 (§5): vuelve a mostrar el buscador con un cliente ya elegido. */
-  const [cambiandoCliente, setCambiandoCliente] = useState(false)
-
-  const botonCobrarRef = useRef<HTMLButtonElement>(null)
-
-  /**
-   * Cobra desde la columna — el flujo SIMPLE del corte 1.
-   *
-   * Con credito elegido NO cobra: lleva al paso que falta, y el rotulo del boton
-   * lo dice. Un boton que a veces cobra y a veces abre algo tiene que decirlo.
-   */
-  const cobrarEnLinea = async () => {
+  // Cobrar exige turno abierto: si no hay, abre el modal de apertura primero.
+  const handleCheckout = () => {
     if (!isShiftOpen) { setShowOpenShift(true); return }
-    if (items.length === 0 || !profile) return
-    // 🔴 El crédito ya NO deriva al modal (corte 3): se cobra acá. Sin cliente
-    //    no se cobra, y el botón está deshabilitado — esto es la red de atrás.
-    if (!split && method === 'fiado' && !customerId) return
-    // Con el reparto abierto, cobrar exige que la suma cuadre. La RPC lo valida
-    // igual y de forma atómica; esto es que el cajero no llegue hasta ahí.
-    if (split && !splitValid) return
-    setCobrando(true)
-    const res = await cobrar({
-      perfil: { id: profile.id, sede_id: profile.sede_id },
-      canal, items, total,
-      discountAmt,
-      discountType: discountAmt > 0 ? discountType : null,
-      discountReason,
-      method, split, splitParts,
-      customerId, customerName, plazoDias,
-      origen: 'columna',
-    })
-    setCobrando(false)
-    if (!res) return
-    // §8.17: el DESPUES del cobro tiene dialogo propio. `success-sin-numero` y
-    // su reintento son un ERROR sobre una venta YA cobrada —la plata entro y el
-    // numero fallo— y tienen que ocupar la pantalla, no compartirla con una
-    // columna que ya esta lista para la venta siguiente.
-    setResultadoInline(res)
-  }
-
-  /** Deja la pantalla lista para la venta siguiente. */
-  const terminarVenta = () => {
-    setResultadoInline(null)
-    clear()
-    setCanal(DEFAULT_CANAL)
-    setMethod('efectivo')
-    setReceived('')
-    setSplit(false)
-    setSplitParts([])
-    setSplitValid(false)
-    setCustomerId(null)
-    setCustomerName('')
-    setPlazoDias(null)
-    setCambiandoCliente(false)
+    setCheckout(true)
   }
 
   const { data: categories = [], isLoading: catsLoading } = useCategories()
@@ -1841,27 +1735,11 @@ export function POSPage() {
         searchRef.current?.focus()
         return
       }
-      // F4 — «cambiar cliente» (§5). 🔴 Se cablea AHORA y no antes porque
-      //    recién ahora existe el control: hasta el corte 3 el mostrador no
-      //    tenía cliente. Un atajo que lleva a nada es lo que se acaba de
-      //    arreglar con F12; las dos mitades van juntas.
-      if (e.key === teclaDe('Cambiar cliente')) {
-        e.preventDefault()
-        if (itemsDelAtajo.current.length > 0 && metodoRef.current === 'fiado') {
-          setCambiandoCliente(true)
-        }
-        return
-      }
       if (e.key === teclaDe('Cobrar')) {
         e.preventDefault()
-        // 🔴 F12 PONE EL FOCO, NO COBRA (§5, decidido con el cobro en línea).
-        //    Con el cobro en modal esta tecla abría un diálogo: un acto
-        //    reversible, y el modal era la confirmación. Con el panel siempre
-        //    visible la misma tecla pasaría a ejecutar una venta irreversible
-        //    **sin que la cajera tenga cómo notar el cambio**. Dos actos, y el
-        //    segundo —Enter sobre el botón enfocado— es el que quien teclea ya
-        //    asocia con confirmar.
-        botonCobrarRef.current?.focus()
+        // Mismo camino que el botón: si no hay ítems no hay nada que cobrar, y
+        // sin turno abre primero la apertura de caja.
+        if (itemsRef.current.length > 0) checkoutRef.current()
       }
     }
     window.addEventListener('keydown', handleKey)
@@ -1895,47 +1773,12 @@ export function POSPage() {
   const activeCatObj = categories.find((c) => c.id === resolvedCat)
 
   const items = useCartStore((s) => s.items)
-
-  // ── ATAJOS DEL COBRO: E efectivo · T transferencia · C crédito ──────────
-  //
-  // 🔴 Viven acá y no en el panel porque acá vive `method`: el atajo tiene que
-  //    estar donde está el estado que cambia. Antes vivían dentro del modal, y
-  //    con el cobro en línea eso los habría dejado muertos en la superficie
-  //    nueva.
-  //
-  // ⚠️ Las letras NO mandan donde se escribe (`elFocoEstaEscribiendo()` decide
-  //    POR TIPO de control), con una sola excepción: el campo que DECLARA que
-  //    las letras le son inertes. Ése es el de dinero, y es la razón entera por
-  //    la que los medios de pago se atajan con letras y no con dígitos — al
-  //    cobrar, el foco vive ahí.
-  const mediosOfrecidos = mediosDePago(can('fiado.gestionar')).map((m) => m.id)
-  // Refs para que los atajos se suscriban una sola vez y lean lo de ahora.
-  const itemsDelAtajo = useRef(items)
-  itemsDelAtajo.current = items
-  const metodoRef = useRef(method)
-  metodoRef.current = method
-  const estadoAtajos = useRef({ items, medios: mediosOfrecidos })
-  estadoAtajos.current = { items, medios: mediosOfrecidos }
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      // Con modificador no es nuestro: `Ctrl+E` es el omnibox, `Ctrl+C` copiar.
-      if (e.ctrlKey || e.altKey || e.metaKey) return
-      if (elFocoEstaEscribiendo()) return
-      const atajo = ATAJOS.find((a) => a.ambito === 'cobro' && a.tecla === e.key.toLowerCase())
-      if (!atajo?.medio) return
-      // Sin ítems no hay grilla de medios en pantalla: el atajo no activa un
-      // control que no está — es la forma más silenciosa de saltarse un permiso.
-      if (estadoAtajos.current.items.length === 0) return
-      if (!estadoAtajos.current.medios.includes(atajo.medio as PaymentMethodUI)) return
-      e.preventDefault()
-      setMethod(atajo.medio as PaymentMethodUI)
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [])
-
   // El atajo se suscribe una sola vez y lee por ref, para no re-suscribir el
   // listener en cada cambio del carrito.
+  const itemsRef = useRef(items)
+  itemsRef.current = items
+  const checkoutRef = useRef(handleCheckout)
+  checkoutRef.current = handleCheckout
   const discount = useCartStore((s) => s.discount)
   const discountType = useCartStore((s) => s.discountType)
   const discountReason = useCartStore((s) => s.discountReason)
@@ -2193,27 +2036,7 @@ export function POSPage() {
         setCanal={setCanal}
         notingIdx={notingIdx}
         setNotingIdx={setNotingIdx}
-        onCheckout={cobrarEnLinea}
-        method={method}
-        setMethod={setMethod}
-        received={received}
-        setReceived={setReceived}
-        cobrando={cobrando}
-        botonCobrarRef={botonCobrarRef}
-        split={split}
-        setSplit={setSplit}
-        splitValid={splitValid}
-        onSplitChange={(parts, valid) => { setSplitParts(parts); setSplitValid(valid) }}
-        customerId={customerId}
-        customerName={customerName}
-        plazoDias={plazoDias}
-        setPlazoDias={setPlazoDias}
-        cambiandoCliente={cambiandoCliente}
-        setCambiandoCliente={setCambiandoCliente}
-        onCustomerChange={(id, name, plazo) => {
-          setCustomerId(id); setCustomerName(name); setPlazoDias(plazo)
-          setCambiandoCliente(false)
-        }}
+        onCheckout={handleCheckout}
         onHold={() => setShowHoldModal(true)}
         heldCount={heldOrders.length}
         onShowHeld={() => setShowHeldPanel(true)}
@@ -2269,24 +2092,21 @@ export function POSPage() {
       {showOpenShift && (
         <OpenShiftModal
           onClose={() => setShowOpenShift(false)}
-          onOpened={() => setShowOpenShift(false)}
+          onOpened={() => { setShowOpenShift(false); setCheckout(true) }}
         />
       )}
 
-      {/* El diálogo del DESPUÉS. Sólo existe cuando hay un resultado que mostrar:
-          ya no se «abre el cobro», porque el cobro está en la columna. */}
-      {resultadoInline && (
-        <DialogoDeVenta
-          resultado={resultadoInline}
+      {checkout && (
+        <CheckoutModal
           items={items}
           total={total}
           subtotal={subtotal}
           discountAmt={discountAmt}
           discount={discount}
           discountType={discountType}
+          discountReason={discountReason}
           canal={canal}
-          method={method}
-          received={received}
+          onClose={() => setCheckout(false)}
           // El canal vuelve al default tras CUALQUIER venta. `canal` es estado local
           // de la página y `clear()` (del cartStore) no lo tocaba, así que quedaba
           // pegado: la siguiente venta de mostrador se grababa con el canal anterior
@@ -2296,7 +2116,7 @@ export function POSPage() {
           // ⚠️ Con TRES canales el ciclo ya no es "exactamente un clic" como cuando
           //    eran dos. Si el reset molesta en uso real, la respuesta NO es sacarlo:
           //    es que el selector deje de ser cíclico.
-          onComplete={terminarVenta}
+          onComplete={() => { setCheckout(false); clear(); setCanal(DEFAULT_CANAL) }}
         />
       )}
     </div>

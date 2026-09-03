@@ -39,11 +39,12 @@ export const ATAJOS: Atajo[] = [
   { tecla: 'F1',  ambito: 'global',    que: 'Mostrador',      ruta: '/ventas' },
   { tecla: 'F2',  ambito: 'mostrador', que: 'Buscar producto' },
   { tecla: 'F3',  ambito: 'global',    que: 'Compras',        ruta: '/compras' },
-  // F4 entra acá el 2026-09-03, con el corte 3 del cobro en línea: recién ahora
-  // existe el control de cliente en el mostrador. Es 'mostrador' y no 'global'
-  // porque cambiar de cliente sólo significa algo con una venta a crédito en
-  // curso.
-  { tecla: 'F4',  ambito: 'mostrador', que: 'Cambiar cliente' },
+  // F4 entró el 2026-09-03 con el cobro en línea, y **se quedó cuando el cobro
+  // volvió al modal** — cambió a qué apunta, no si apunta. Hoy pone el foco en
+  // el BUSCADOR DE CLIENTES del modal: el picker muestra la lista completa con
+  // el elegido marcado, así que cambiar de cliente no necesita un botón propio.
+  // Ámbito 'cobro' y no 'mostrador' porque el control vive adentro del modal.
+  { tecla: 'F4',  ambito: 'cobro', que: 'Cambiar cliente' },
   { tecla: 'F5',  ambito: 'global',    que: 'Catálogo',       ruta: '/productos' },
   { tecla: 'F6',  ambito: 'global',    que: 'Clientes',       ruta: '/clientes' },
   { tecla: 'F7',  ambito: 'global',    que: 'Cartera',        ruta: '/fiado' },
@@ -52,12 +53,19 @@ export const ATAJOS: Atajo[] = [
   { tecla: 'F12', ambito: 'mostrador', que: 'Cobrar' },
   // 🔴 LOS MEDIOS DE PAGO NO SON TECLAS DE FUNCIÓN — corrección de §5, 2026-09-03.
   //    La entrega asignaba «F9 Gastos / efectivo», «F10 Inventario /
-  //    transferencia» y «F11 Utilidades / crédito». Ese doble significado sólo
-  //    se sostenía porque el cobro era un MODAL: un modal crea un MODO, y el
-  //    modo desambigua. Con el cobro EN LÍNEA el panel está siempre visible, no
-  //    hay modo, y queda un valor que significa dos cosas.
-  //    Cede lo LOCAL: navegar es global y §5 promete que los atajos funcionan
-  //    siempre; elegir medio de pago es de una sola pantalla.
+  //    transferencia» y «F11 Utilidades / crédito», o sea un valor con dos
+  //    significados. Se separó: navegar se queda con las F, elegir medio se fue
+  //    a E/T/C.
+  //
+  // ⚠️ UNA DE LAS DOS RAZONES SE MURIÓ AL VOLVER EL COBRO AL MODAL (2026-09-03),
+  //    y se deja escrito en vez de dejar el argumento entero en pie. La razón
+  //    secundaria era «con el cobro en línea no hay modo, y sin modo el doble
+  //    significado no se puede desambiguar»: con el modal de vuelta, **hay modo
+  //    otra vez**, así que ese argumento ya no sostiene nada.
+  //    La razón PRINCIPAL —la única que se pidió poner en la skill— no depende
+  //    de dónde vive el cobro y sigue entera: el campo de dinero tiene
+  //    `autoFocus` y consume dígitos, así que `1/2/3` pelearían con el único
+  //    control que la cajera está usando; las letras le son inertes. Ver abajo.
   { tecla: 'e', ambito: 'cobro', que: 'Efectivo',      medio: 'efectivo' },
   { tecla: 't', ambito: 'cobro', que: 'Transferencia', medio: 'transferencia' },
   { tecla: 'c', ambito: 'cobro', que: 'Crédito',       medio: 'fiado' },
@@ -139,9 +147,10 @@ export function elFocoEstaEscribiendo(): boolean {
  * porque el que lo aprieta cree que llegó.
  */
 export const ATAJOS_SIN_DESTINO: { tecla: string; que: string; porque: string }[] = [
-  // ✅ F4 salió de esta lista el 2026-09-03: el corte 3 le dio su control
-  //    (`Cambiar cliente` en la columna) y las dos mitades entraron juntas. Un
-  //    atajo que lleva a nada es lo que se acababa de arreglar con F12.
+  // ✅ F4 salió de esta lista el 2026-09-03 y NO volvió cuando el cobro volvió
+  //    al modal: su control existe en las dos superficies. Un atajo que lleva a
+  //    nada es lo que se acababa de arreglar con F12; devolverlo acá habría sido
+  //    pagar el mismo defecto dos veces.
   {
     tecla: 'F8', que: 'Pedidos',
     porque: 'la pantalla de Pedidos NO EXISTE (A6, clase (c)). Es alcance, no re-skin.',

@@ -155,6 +155,10 @@
    selección sigue siendo el de ACCIÓN —marca una elección, no un estado del
    dominio— pero un tono más arriba, porque --action-soft sobre tinta no
    contrasta. */
+/* ⚠️ SIN CONSUMIDOR desde el 2026-09-03: el cobro volvio al modal y el selector
+   de medios va sobre superficie clara. Se conserva porque §4 documenta esta
+   variante y dice a que superficie aplica; borrarla dejaria a la skill
+   describiendo algo que no existe. Ver la nota larga en TenderSelector.tsx. */
 .nodo-tender--tinta {
   background: var(--on-dark-fill);
   border-color: transparent;

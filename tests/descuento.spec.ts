@@ -2,6 +2,7 @@ import { test, expect, type Page } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { loginAsOwner } from './helpers/auth'
+import { cobrarCon } from './helpers/pos'
 import { openShiftIfClosed, closeShiftIfOpen } from './helpers/shift'
 
 // Descuentos en el POS. Corre en LAB.
@@ -78,8 +79,7 @@ function orderNumberFromBanner(text: string): number {
   return Number(text.match(/#(\d+)/)![1])
 }
 async function payNequiAndFinish(page: Page): Promise<number> {
-  await page.getByTestId('cobro-medio-nequi').click()
-  await page.getByTestId('cobro-confirmar').click()
+  await cobrarCon(page, 'nequi')
   const banner = page.getByText(/Venta #\d+ registrada/)
   await expect(banner).toBeVisible({ timeout: 15_000 })
   const n = orderNumberFromBanner(await banner.innerText())

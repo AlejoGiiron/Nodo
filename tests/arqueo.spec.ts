@@ -2,6 +2,7 @@ import { test, expect, type Page } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { loginAsOwner } from './helpers/auth'
+import { abrirCobro, cobrarEnEfectivo, cobrarCon } from './helpers/pos'
 import { openShiftIfClosed, closeShiftIfOpen } from './helpers/shift'
 
 // Arqueo multi-método (cierre de turno con conciliación por método). Corre en LAB.
@@ -73,26 +74,27 @@ async function finishSale(page: Page) {
 }
 async function sellCash(page: Page) {
   await addProductPOS(page)
-  await page.getByTestId('cobro-medio-efectivo').click()
-  // (el paso «Continuar» del modal no existe: el monto se teclea en la columna)
-  await page.getByTestId('cobro-recibe').fill(String(PRICE))
-  await page.getByTestId('cobro-confirmar').click()
+  await cobrarEnEfectivo(page, PRICE)
   await finishSale(page)
 }
 async function sellNequi(page: Page) {
   await addProductPOS(page)
-  await page.getByTestId('cobro-medio-nequi').click()
-  await page.getByTestId('cobro-confirmar').click()
+  await cobrarCon(page, 'nequi')
   await finishSale(page)
 }
 async function sellMixed(page: Page, cash: number, nequi: number) {
   await addProductPOS(page)
-  await page.getByTestId('cobro-dividir').click()
-  await page.getByTestId('cobro-line-amount-0').fill(String(cash))
-  await page.getByTestId('cobro-add-method').click()
-  await page.getByTestId('cobro-line-method-1').selectOption('nequi')
-  await page.getByTestId('cobro-line-amount-1').fill(String(nequi))
-  await page.getByTestId('cobro-confirmar').click()
+  // 🔴 El mixto NO pasa por `checkout-continue`: «Dividir pago» cambia el
+  //    cuerpo del paso de método por el editor de reparto, y ahí el primario es
+  //    otro botón. Es el tercero de los tres primarios del modal, y por eso el
+  //    retiro de `cobro-confirmar` no pudo ser un renombre.
+  await abrirCobro(page)
+  await page.getByTestId('pay-split-toggle').click()
+  await page.getByTestId('pay-line-amount-0').fill(String(cash))
+  await page.getByTestId('pay-add-method').click()
+  await page.getByTestId('pay-line-method-1').selectOption('nequi')
+  await page.getByTestId('pay-line-amount-1').fill(String(nequi))
+  await page.getByTestId('checkout-confirm-mixto').click()
   await finishSale(page)
 }
 async function addMovement(page: Page, kind: 'in' | 'out', amount: number) {

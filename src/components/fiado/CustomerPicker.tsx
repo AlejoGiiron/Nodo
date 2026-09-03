@@ -74,6 +74,13 @@ export function CustomerPicker({ value, onChange, prefijo = 'customer' }: Custom
               <button
                 key={c.id}
                 data-testid={`${prefijo}-option`}
+                // 🔴 El «elegido» vivía SÓLO en el color de fondo y en el ícono,
+                //    o sea en un lugar donde ningún verificador mira. Es la misma
+                //    forma que el botón que imprimía «F12» con la tecla muerta:
+                //    verdadero para el ojo, invisible para todo lo demás.
+                //    `aria-pressed` lo hace aseverable Y lo anuncia el lector de
+                //    pantalla — es el mismo par que usa TenderSelector.
+                aria-pressed={selected}
                 onClick={() => onChange(c.id, c.name)}
                 style={{
                   width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 10,

@@ -2,6 +2,7 @@ import { test, expect, type Page } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { createClient } from '@supabase/supabase-js'
 import { loginAsOwner } from './helpers/auth'
+import { abrirCobro } from './helpers/pos'
 import { openShiftIfClosed, closeShiftIfOpen } from './helpers/shift'
 
 // Pago mixto (dividir el cobro entre varios métodos). Corre contra el LAB.
@@ -80,11 +81,11 @@ async function fillSplitCashNequi(page: Page, total: number): Promise<{ cash: nu
   const cash = Math.floor(total / 2)
   const nequi = total - cash
   // Línea 0 = efectivo (semilla). Ajustar su monto.
-  await page.getByTestId('cobro-line-amount-0').fill(String(cash))
+  await page.getByTestId('pay-line-amount-0').fill(String(cash))
   // Agregar una segunda línea y ponerla en nequi.
-  await page.getByTestId('cobro-add-method').click()
-  await page.getByTestId('cobro-line-method-1').selectOption('nequi')
-  await page.getByTestId('cobro-line-amount-1').fill(String(nequi))
+  await page.getByTestId('pay-add-method').click()
+  await page.getByTestId('pay-line-method-1').selectOption('nequi')
+  await page.getByTestId('pay-line-amount-1').fill(String(nequi))
   return { cash, nequi }
 }
 
@@ -121,13 +122,14 @@ test.describe.serial('Pago mixto (pago dividido)', () => {
     const before = await readShiftSales(page)
 
     await addProductPOS(page)
-      const total = parseCOP(await page.getByTestId('cart-total').innerText())
+    const total = parseCOP(await page.getByTestId('cart-total').innerText())
+    await abrirCobro(page)
 
     // Dividir: efectivo + nequi que suman el total.
-    await page.getByTestId('cobro-dividir').click()
+    await page.getByTestId('pay-split-toggle').click()
     const { cash, nequi } = await fillSplitCashNequi(page, total)
-    await expect(page.getByTestId('cobro-confirmar')).toBeEnabled()
-    await page.getByTestId('cobro-confirmar').click()
+    await expect(page.getByTestId('checkout-confirm-mixto')).toBeEnabled()
+    await page.getByTestId('checkout-confirm-mixto').click()
 
     const banner = page.getByText(/Venta #\d+ registrada/)
     await expect(banner).toBeVisible({ timeout: 15_000 })
@@ -155,10 +157,11 @@ test.describe.serial('Pago mixto (pago dividido)', () => {
     await openShiftIfClosed(page, 0)
 
     await addProductPOS(page)
-      const total = parseCOP(await page.getByTestId('cart-total').innerText())
-    await page.getByTestId('cobro-dividir').click()
+    const total = parseCOP(await page.getByTestId('cart-total').innerText())
+    await abrirCobro(page)
+    await page.getByTestId('pay-split-toggle').click()
     await fillSplitCashNequi(page, total)
-    await page.getByTestId('cobro-confirmar').click()
+    await page.getByTestId('checkout-confirm-mixto').click()
     const banner = page.getByText(/Venta #\d+ registrada/)
     await expect(banner).toBeVisible({ timeout: 15_000 })
     const n = orderNumberFromBanner(await banner.innerText())
@@ -184,24 +187,25 @@ test.describe.serial('Pago mixto (pago dividido)', () => {
     await openShiftIfClosed(page, 0)
 
     await addProductPOS(page)
-      const total = parseCOP(await page.getByTestId('cart-total').innerText())
-    await page.getByTestId('cobro-dividir').click()
+    const total = parseCOP(await page.getByTestId('cart-total').innerText())
+    await abrirCobro(page)
+    await page.getByTestId('pay-split-toggle').click()
 
-    const confirm = page.getByTestId('cobro-confirmar')
+    const confirm = page.getByTestId('checkout-confirm-mixto')
     // Semilla [efectivo: total] → válido (Σ = total exacto).
     await expect(confirm).toBeEnabled()
 
     // Falta: Σ < total.
-    await page.getByTestId('cobro-line-amount-0').fill(String(total - 5000))
-    await expect(page.getByTestId('cobro-remaining')).toBeVisible()
+    await page.getByTestId('pay-line-amount-0').fill(String(total - 5000))
+    await expect(page.getByTestId('pay-remaining')).toBeVisible()
     await expect(confirm).toBeDisabled()
 
     // Excedido: Σ > total.
-    await page.getByTestId('cobro-line-amount-0').fill(String(total + 5000))
+    await page.getByTestId('pay-line-amount-0').fill(String(total + 5000))
     await expect(confirm).toBeDisabled()
 
     // Exacto de nuevo → habilitado (bloqueo es solo por Σ≠total).
-    await page.getByTestId('cobro-line-amount-0').fill(String(total))
+    await page.getByTestId('pay-line-amount-0').fill(String(total))
     await expect(confirm).toBeEnabled()
   })
 
@@ -211,11 +215,16 @@ test.describe.serial('Pago mixto (pago dividido)', () => {
     await openShiftIfClosed(page, 0)
 
     await addProductPOS(page)
-      const total = parseCOP(await page.getByTestId('cart-total').innerText())
+    const total = parseCOP(await page.getByTestId('cart-total').innerText())
+    await abrirCobro(page)
 
     // Flujo de hoy: un método (nequi evita el step de vuelto), Continuar.
-    await page.getByTestId('cobro-medio-nequi').click()
-    await page.getByTestId('cobro-confirmar').click()
+    // 🔴 Sitio decidido aparte de los otros cuatro de este archivo: acá NO hay
+    //    reparto, así que el botón que cobra es el primario del paso de método
+    //    —`checkout-continue`—, no el confirmador del split. En la columna los
+    //    dos eran `cobro-confirmar` y esta diferencia no se veía.
+    await page.getByTestId('pay-method-nequi').click()
+    await page.getByTestId('checkout-continue').click()
     const banner = page.getByText(/Venta #\d+ registrada/)
     await expect(banner).toBeVisible({ timeout: 15_000 })
     const n = orderNumberFromBanner(await banner.innerText())
@@ -233,19 +242,20 @@ test.describe.serial('Pago mixto (pago dividido)', () => {
     await openShiftIfClosed(page, 0)
 
     await addProductPOS(page)
-  
+    await abrirCobro(page)
+
     // Con efectivo (default, no fiado) el toggle "Dividir pago" está visible.
-    await expect(page.getByTestId('cobro-dividir')).toBeVisible()
+    await expect(page.getByTestId('pay-split-toggle')).toBeVisible()
 
     // Al seleccionar fiado, el toggle desaparece: fiado no se puede dividir.
-    await page.getByTestId('cobro-medio-fiado').click()
-    await expect(page.getByTestId('cobro-dividir')).toHaveCount(0)
+    await page.getByTestId('pay-method-fiado').click()
+    await expect(page.getByTestId('pay-split-toggle')).toHaveCount(0)
 
     // Volver a no-fiado y entrar a modo dividir: el método fiado NO existe ahí.
-    await page.getByTestId('cobro-medio-efectivo').click()
-    await expect(page.getByTestId('cobro-dividir')).toBeVisible()
-    await page.getByTestId('cobro-dividir').click()
-    await expect(page.getByTestId('cobro-medio-fiado')).toHaveCount(0)
+    await page.getByTestId('pay-method-efectivo').click()
+    await expect(page.getByTestId('pay-split-toggle')).toBeVisible()
+    await page.getByTestId('pay-split-toggle').click()
+    await expect(page.getByTestId('pay-method-fiado')).toHaveCount(0)
   })
 
   test('limpieza: cerrar turno', async ({ page }) => {

@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { loginAsOwner, loginAsCashier } from './helpers/auth'
+import { abrirCobro } from './helpers/pos'
 import { openShiftIfClosed, closeShiftIfOpen } from './helpers/shift'
 
 // Producto compuesto seeded (Lab Coctel = 18.000) que descuenta 1 "Lab Vaso"
@@ -42,10 +43,14 @@ async function sellOnFiado(page: Page, customer: string): Promise<number> {
   await expect(page.getByTestId('item-config-modal')).toBeVisible()
   await page.getByTestId('item-config-confirm').click()
 
-  await page.getByTestId('cobro-medio-fiado').click()
-  await page.getByTestId('cobro-cliente-search').fill(customer)
-  await page.getByTestId('cobro-cliente-option').filter({ hasText: customer }).first().click()
-  await page.getByTestId('cobro-confirmar').click()
+  // A crédito el primario del paso de método NO lleva a un segundo paso: cobra
+  // ahí mismo, rotulado «Registrar fiado». Por eso este sitio termina en
+  // `checkout-continue` y no en un confirmador.
+  await abrirCobro(page)
+  await page.getByTestId('pay-method-fiado').click()
+  await page.getByTestId('customer-search').fill(customer)
+  await page.getByTestId('customer-option').filter({ hasText: customer }).first().click()
+  await page.getByTestId('checkout-continue').click()
 
   const banner = page.getByText(/Venta #\d+ registrada/)
   await expect(banner).toBeVisible({ timeout: 15_000 })
@@ -343,7 +348,10 @@ test.describe.serial('Fiado / Cartera', () => {
     await expect(page.getByTestId('item-config-modal')).toBeVisible()
     await page.getByTestId('item-config-confirm').click()
     await openShiftIfClosed(page, 0)
-      await expect(page.getByTestId('cobro-medio-fiado')).toBeVisible()
+    // El medio vive DENTRO del modal, así que hay que abrirlo para verlo. La
+    // aserción no cambia: lo que se mide es que el cajero tenga la opción.
+    await abrirCobro(page)
+    await expect(page.getByTestId('pay-method-fiado')).toBeVisible()
     // Nota: el gating NEGATIVO (un rol sin fiado.gestionar) no es testeable con
     // los usuarios del lab (owner y cajero ambos lo tienen).
   })

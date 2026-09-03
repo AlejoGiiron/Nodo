@@ -97,8 +97,23 @@ describe('la tabla de atajos', () => {
 
   it('los medios de pago NO usan teclas de función', () => {
     // La decisión del 2026-09-03, aseverada: las de función navegan y nada más.
-    const deCobro = ATAJOS.filter((a) => a.ambito === 'cobro').map((a) => a.tecla)
-    expect(deCobro.filter((t) => /^F\d+$/.test(t)).join(', ') || 'ninguna').toBe('ninguna')
-    expect(deCobro.sort()).toEqual(['c', 'e', 't'])
+    //
+    // 🔴 SE FILTRA POR `medio`, NO POR ÁMBITO — corregido el 2026-09-03 cuando
+    //    este caso se puso rojo con F4. **El producto no se rompió: el filtro
+    //    era un PROXY.** «Ámbito cobro» y «es un medio de pago» coincidían
+    //    exactamente hasta que F4 —«cambiar cliente»— se mudó adentro del modal
+    //    y pasó a ser del ámbito del cobro sin ser un medio.
+    //    El sujeto del caso siempre fue el MEDIO; el ámbito era la forma cómoda
+    //    de nombrarlo. Es la misma clase que clasificar leyendo el nombre en vez
+    //    de abrir el archivo: un buen proxy, y por eso engaña.
+    const medios = ATAJOS.filter((a) => a.medio != null).map((a) => a.tecla)
+    expect(medios.filter((t) => /^F\d+$/.test(t)).join(', ') || 'ninguna').toBe('ninguna')
+    expect(medios.sort()).toEqual(['c', 'e', 't'])
+
+    // Y el control de que el filtro nuevo no se aflojó: el ámbito del cobro
+    // tiene los tres medios MÁS F4, que es lo que acaba de cambiar.
+    const deCobro = ATAJOS.filter((a) => a.ambito === 'cobro').map((a) => a.tecla).sort()
+    expect(deCobro, 'F4 vive en el ámbito del cobro y NO es un medio de pago')
+      .toEqual(['F4', 'c', 'e', 't'])
   })
 })

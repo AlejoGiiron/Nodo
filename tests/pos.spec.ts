@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { loginAsOwner } from './helpers/auth'
 import { closeShiftIfOpen, openShiftIfClosed } from './helpers/shift'
-import { waitPosReady, addPosProduct } from './helpers/pos'
+import { waitPosReady, addPosProduct, abrirCobro } from './helpers/pos'
 
 // "$ 12.000" → 12000
 function parseCOP(text: string): number {
@@ -43,13 +43,16 @@ test.describe('POS — venta y carrito', () => {
     await closeShiftIfOpen(page)
     await expect(page.getByText('Sin turno')).toBeVisible()
 
-    // 🔴 Acá el sujeto ES el botón de cobrar, así que se aprieta ÉSE y no el
-    //    camino al cobro completo: con el cobro en línea (§8.15) «Cobrar» cobra
-    //    en el acto, y lo que este caso mide es que sin turno NO llegue a
-    //    cobrar — abre primero la apertura de caja. Usar el helper acá habría
-    //    medido otra cosa: el helper espera el cobro completo, que con turno
-    //    cerrado tampoco abre.
-    await page.getByTestId('cobro-confirmar').click()
+    // 🔴 Acá el sujeto ES el botón de cobrar, así que se aprieta ÉSE crudo y no
+    //    el helper: `abrirCobro` espera a que el modal aparezca, y lo que este
+    //    caso mide es justamente que NO aparezca — sin turno, «Cobrar» abre
+    //    primero la apertura de caja. Con el helper el caso se caería en su
+    //    propia espera y el rojo diría «no abrió el modal» en vez de nombrar el
+    //    turno.
+    //    De los 33 sitios de `cobro-confirmar`, éste es el ÚNICO que no era un
+    //    confirmador: era la puerta. Un renombre en masa lo habría mandado a un
+    //    botón que en este escenario ni siquiera existe.
+    await page.getByTestId('cobro-abrir').click()
     await expect(
       page.getByRole('heading', { name: 'Abrir turno de caja' }),
       'sin turno el cobro no procede: pide abrir caja primero',
@@ -64,34 +67,39 @@ test.describe('POS — venta y carrito', () => {
     await openShiftIfClosed(page, 0) // cobrar requiere turno abierto
 
   
-    // Paso método: los 4 métodos visibles.
-    // Se aserta el testid `checkout-total` y no el texto 'Total a cobrar': desde
-    // el re-skin ese rótulo aparece DOS veces — en el panel de cobro (que sigue
-    // en el DOM detrás del modal) y en el modal —, y getByText en modo estricto
-    // falla con dos coincidencias. El testid ya existía; la aserción no se
-    // debilita, se vuelve específica: dice QUÉ total tiene que estar visible.
     await expect(page.getByTestId('cart-total')).toBeVisible()
-    // 🔴 POR TESTID Y NO POR TEXTO, por la MISMA razón que el `checkout-total` de
-    //    arriba — y ésta es la parte incómoda: la nota de acá arriba explicaba
-    //    exactamente esta clase, se aplicó al total y NO a estas tres líneas de
-    //    abajo. Se arregló la instancia y no se barrió la clase (R3).
-    //    Con el cobro en línea hay DOS grillas de medios montadas —la columna
-    //    (`cobro-medio-*`) y el modal (`pay-method-*`)— así que el texto resuelve
-    //    a dos elementos. El testid dice CUÁL de las dos se está aseverando.
-    for (const id of ['efectivo', 'tarjeta', 'transferencia', 'nequi']) {
-      await expect(page.getByTestId(`cobro-medio-${id}`)).toBeVisible()
+    await abrirCobro(page)
+    // 🔴 POR TESTID Y NO POR TEXTO. «Total a cobrar» aparece dos veces —en el
+    //    panel de tinta, que sigue en el DOM detrás del velo, y en el modal—, y
+    //    `getByText` en modo estricto falla con dos coincidencias. El testid
+    //    dice CUÁL de los dos se asevera.
+    //
+    // 🔴 Y LOS CINCO MEDIOS, NO CUATRO. Acá vivía la aserción de que los cuatro
+    //    primeros estuvieran visibles, y en la columna hacía falta además un
+    //    `cobro-mas-opciones` para llegar al quinto: la grilla estrecha no los
+    //    mostraba todos. Ese control MURIÓ con la columna y su expectativa NO:
+    //    el modal tiene 540px y ofrece los cinco de una. Se re-deriva en vez de
+    //    borrarse — es la misma pregunta («¿están todos los medios al
+    //    alcance?») contestada contra la pantalla nueva. Fiado entra porque el
+    //    owner tiene `fiado.gestionar`; el gating vive en `fiado.spec`.
+    for (const id of ['efectivo', 'tarjeta', 'transferencia', 'nequi', 'fiado']) {
+      await expect(
+        page.getByTestId(`pay-method-${id}`),
+        `el modal ofrece los cinco medios sin desplegar nada: falta ${id}`,
+      ).toBeVisible()
     }
 
     // Efectivo → continuar → ingresar recibido > total → vuelto.
-    await page.getByTestId('cobro-medio-efectivo').click()
-      await page.getByTestId('cobro-recibe').fill('100000')
+    await page.getByTestId('pay-method-efectivo').click()
+    await page.getByTestId('checkout-continue').click()
+    await page.getByTestId('checkout-received').fill('100000')
     // 🔴 POR TESTID Y NO POR LA PALABRA. El re-mapeo del corte 4 cambió los
     //    testids y NO el copy, y acá se ve por qué importa: la columna rotula
     //    «Cambio» (la palabra de la maqueta) y el diálogo del éxito y el ticket
     //    siguen diciendo «Vuelto». Son DOS PALABRAS PARA LA MISMA COSA en el
     //    mismo flujo, introducidas al migrar. Queda anotado como divergencia de
     //    vocabulario; el testid mide el número, que es lo que este caso quiere.
-    await expect(page.getByTestId('cobro-cambio')).toBeVisible()
+    await expect(page.getByTestId('checkout-change')).toBeVisible()
 
     // No se confirma el cobro (no crea orden). Se cierra el turno abierto para el setup.
     await page.goto('/ventas')
@@ -103,14 +111,19 @@ test.describe('POS — venta y carrito', () => {
     await addPosProduct(page)
     await openShiftIfClosed(page, 0)
 
-      await page.getByTestId('cobro-medio-efectivo').click()
-  
-    // Pago justo: el chip "Exacto" rellena el monto = total → vuelto 0.
-    await page.getByTestId('cobro-monto-exacto').click()
-    await expect(page.getByTestId('cobro-cambio')).toBeVisible()
-    expect(parseCOP(await page.getByTestId('cobro-cambio').innerText())).toBe(0)
+    // Los chips viven en el PASO DEL MONTO, no al lado del medio: con el modal
+    // hay que llegar hasta ahí. El sujeto —que «Exacto» deje el vuelto en 0— no
+    // cambia.
+    await abrirCobro(page)
+    await page.getByTestId('pay-method-efectivo').click()
+    await page.getByTestId('checkout-continue').click()
 
-    await page.getByTestId('cobro-confirmar').click()
+    // Pago justo: el chip "Exacto" rellena el monto = total → vuelto 0.
+    await page.getByTestId('quick-amount-exact').click()
+    await expect(page.getByTestId('checkout-change')).toBeVisible()
+    expect(parseCOP(await page.getByTestId('checkout-change').innerText())).toBe(0)
+
+    await page.getByTestId('checkout-confirm-efectivo').click()
     await expect(page.getByText(/registrada|Cobro exitoso/)).toBeVisible()
 
     // Limpieza: cerrar el turno abierto para el setup.
@@ -132,9 +145,11 @@ test.describe('POS — venta y carrito', () => {
     await addPosProduct(page)
     await openShiftIfClosed(page, 0)
 
-      await page.getByTestId('cobro-medio-efectivo').click()
-      await page.getByTestId('cobro-monto-exacto').click()
-    await page.getByTestId('cobro-confirmar').click()
+    await abrirCobro(page)
+    await page.getByTestId('pay-method-efectivo').click()
+    await page.getByTestId('checkout-continue').click()
+    await page.getByTestId('quick-amount-exact').click()
+    await page.getByTestId('checkout-confirm-efectivo').click()
     await expect(page.getByText(/registrada|Cobro exitoso/)).toBeVisible()
 
     const ticket = page.locator('.ticket-print')
@@ -162,17 +177,19 @@ test.describe('POS — venta y carrito', () => {
 
     const total = parseCOP(await page.getByTestId('cart-total').innerText())
 
-      await page.getByTestId('cobro-medio-efectivo').click()
-  
+    await abrirCobro(page)
+    await page.getByTestId('pay-method-efectivo').click()
+    await page.getByTestId('checkout-continue').click()
+
     // Primer chip de round-up: monto redondo por encima del total → vuelto = monto − total.
-    const chip = page.getByTestId('cobro-monto-chip').first()
+    const chip = page.getByTestId('quick-amount-chip').first()
     const chipAmount = parseCOP(await chip.innerText())
     expect(chipAmount).toBeGreaterThan(total)
     await chip.click()
 
-    expect(parseCOP(await page.getByTestId('cobro-cambio').innerText())).toBe(chipAmount - total)
+    expect(parseCOP(await page.getByTestId('checkout-change').innerText())).toBe(chipAmount - total)
 
-    await page.getByTestId('cobro-confirmar').click()
+    await page.getByTestId('checkout-confirm-efectivo').click()
     await expect(page.getByText(/registrada|Cobro exitoso/)).toBeVisible()
 
     await page.goto('/ventas')

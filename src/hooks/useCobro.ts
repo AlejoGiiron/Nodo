@@ -64,7 +64,16 @@ export interface DatosDeCobro {
   customerId: string | null
   customerName: string
   plazoDias: number | null
-  /** Sólo para el reporte de errores: desde qué superficie se cobró. */
+  /**
+   * Sólo para el reporte de errores: desde qué superficie se cobró.
+   *
+   * ⚠️ Desde el 2026-09-03 **nadie emite `'columna'`**: el cobro volvió al modal
+   * y quedó una sola superficie. El valor se conserva por la misma razón que
+   * `sobreTinta` —el cobro ya se mudó dos veces en tres días— y sobre todo
+   * porque es lo que hace legibles los errores YA CAPTURADOS en Sentry: los del
+   * 2026-09-03 dicen `columna`, y sacar el valor del tipo no los borra, sólo
+   * deja de explicarlos. Es la historia, y la historia no se reescribe.
+   */
   origen: 'columna' | 'modal'
 }
 
