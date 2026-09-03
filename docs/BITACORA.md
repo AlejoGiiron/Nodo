@@ -3150,3 +3150,61 @@ tres del archivo real del cliente (2026-09-02)— sin que ninguna reemplazara a 
 del mismo criterio, y edición por append otra vez**: la causa mecánica que A5 identificó para los tres
 pares contradictorios de `CLAUDE.md`, con regla escrita desde entonces. Se colapsó en una sola
 afirmación vigente, con lo superado marcado como superado al pie.
+
+
+## 2026-09-02 · La 45 — dos ejes más en el gasto, y una lista que no vive en el esquema
+
+### La decisión que costó pensar no fue el esquema: fue dónde vive la lista
+
+Las dos columnas eran obvias desde que se dibujó la pantalla. Lo que no era obvio es si las
+subcategorías van en un `CHECK` como `categoria` o en la configuración de la sede como
+`cash_out_reasons`. **Los dos precedentes existían en el repo y apuntaban a lados opuestos.**
+
+Lo que los separa no es el tamaño ni la estabilidad de la lista: es **quién lee el reporte**.
+`categoria` es estructural y **cruza sedes** —si el cliente la inventara, los reportes entre sedes y
+entre meses dejarían de ser comparables, y por eso se le sacó al cliente la capacidad de editarla—.
+Una subcategoría de gasto **vive adentro de una sede** y es del negocio: las de una ferretería no son
+las de una distribuidora. Clavar el vocabulario de Muscle Pro en un CHECK habría chocado de frente
+con que **el producto es horizontal**, que es la primera línea de su descripción.
+
+### 🔴 La misma pregunta dando el resultado contrario, y por qué eso NO es una incoherencia
+
+Por analogía con `purchase_unit` correspondía **texto libre**: una etiqueta del negocio, sin lista
+universal, que cerrada en un CHECK bloquea al cliente. Se decidió lo opuesto — **desplegable, nunca
+tecleado**.
+
+Lo que cambió no es la regla sino **el disparador**. Allá quedó escrito *para el futuro*: "el día que
+haya un reporte por presentación, `bulto` y `Bulto` son dos filas". Acá **el reporte por subcategoría
+es el propósito entero de la columna**: nace existiendo, así que el disparador está cumplido **antes
+de que la columna exista** y el lado permisivo nunca tiene su ventana de ser gratis.
+
+⚠️ Quedó escrito en el criterio, no sólo en el commit, por una razón concreta: **dos columnas casi
+idénticas con decisiones opuestas se leen como un descuido**, y el próximo que las vea va a
+"corregir" una de las dos.
+
+### Un principio que ya tenía cuatro casos y ninguna línea propia
+
+Al escribir qué pasa cuando el dueño saca una subcategoría que ya usó, la respuesta salió sola — y
+resultó ser la cuarta vez que este proyecto decide lo mismo:
+
+| | Lo cómodo | Lo que se hizo |
+|---|---|---|
+| costo al vender | leer el `cost_price` actual | se congela en la línea |
+| fecha del documento | usar `created_at` para todo | dos columnas, dos preguntas |
+| devolución de compra | revertir y recalcular | un hecho nuevo, sin tocar el costo |
+| **subcategoría retirada** | borrar o migrar las filas viejas | **la fila la conserva; lo que desaparece es poder elegirla** |
+
+**En los cuatro, la alternativa cómoda hace que una pregunta sobre el pasado cambie de respuesta
+según cuándo se la haga.** Se escribió una vez, con los cuatro casos, en vez de cuatro decisiones que
+se parecen.
+
+⚠️ Y la mitad que casi se pierde: **lo retirado se sigue mostrando**, marcado. Si la fila vieja
+desapareciera del historial, el total del período dejaría de cuadrar con sus propias filas — y un
+total que no cuadra con lo que se ve es peor que un valor viejo con una etiqueta.
+
+### El activo fijo, dicho donde se elige
+
+El cliente pidió que el activo fijo entre como subcategoría de gasto y no como un tercer eje. Es
+razonable hoy y va a dejar de serlo: **cuando compare meses, el mes en que compró muebles va a
+parecer malo sin serlo**. El aviso va **en el formulario, al elegir la subcategoría** —no en un
+instructivo ni en la documentación— porque ahí es donde alguien puede hacer algo con él.

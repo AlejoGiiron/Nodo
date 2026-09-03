@@ -5,6 +5,8 @@ import {
   useExpensesHistory, EXPENSES_PAGE_SIZE, type CashOutRow,
 } from '@/hooks/useExpensesHistory'
 import type { HistoryScope } from '@/hooks/useShiftHistory'
+import { useSedeConfig } from '@/hooks/useSedeConfig'
+import { DEFAULT_EXPENSE_SUBCATEGORIES } from '@/lib/sedeConfig'
 
 // ─── Helpers ──────────────────────────────────────────────────────
 
@@ -54,6 +56,16 @@ export function ExpensesHistoryPage() {
 
   const { rows, count, periodTotal, pageCount, isLoading, isFetching } =
     useExpensesHistory({ from, to, scope, page })
+
+  // 🔴 La lista VIGENTE de la sede, para poder marcar las subcategorías
+  //    RETIRADAS. `cargandoConfig` importa: con la config todavía sin llegar,
+  //    la lista sería el default y marcaríamos como retiradas subcategorías que
+  //    están perfectamente vigentes — una confirmación falsa, que es la más
+  //    silenciosa de las tres.
+  const { config, isLoading: cargandoConfig } = useSedeConfig()
+  const vigentes = config.expense_subcategories ?? DEFAULT_EXPENSE_SUBCATEGORIES
+  const estaRetirada = (sc: string | null) =>
+    !cargandoConfig && !!sc && !vigentes.includes(sc)
 
   const resetPage = () => setPage(0)
   const rangeFrom = count === 0 ? 0 : page * EXPENSES_PAGE_SIZE + 1
@@ -176,11 +188,42 @@ export function ExpensesHistoryPage() {
               >
                 {/* `otro` visible como tal: el CHECK le exige detalle, así que
                     siempre viene explicado, pero no es un gasto clasificado. */}
-                <span data-testid="expense-categoria" style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--ink-3)', textTransform: 'capitalize' }}>
-                  {row.categoria}
+                <span style={{ minWidth: 0 }}>
+                  <span data-testid="expense-categoria" style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: 'var(--ink-3)', textTransform: 'capitalize' }}>
+                    {row.categoria}
+                  </span>
+                  {/* 🔴 La subcategoría es el eje del NEGOCIO, un nivel debajo del
+                      estructural. Si el dueño la sacó de su lista, la fila vieja
+                      la conserva y acá se dice que está retirada: borrarla de la
+                      lista es dejar de ofrecerla, no reescribir el pasado. Si
+                      desapareciera de la pantalla, el total del período dejaría
+                      de cuadrar con sus propias filas. */}
+                  {row.subcategoria && (
+                    <span
+                      data-testid="expense-subcategoria"
+                      title={estaRetirada(row.subcategoria)
+                        ? 'Esta subcategoría ya no está en la lista de la sede. El gasto la conserva.'
+                        : undefined}
+                      style={{
+                        display: 'block', fontSize: 11, marginTop: 2,
+                        color: estaRetirada(row.subcategoria) ? 'var(--ink-4)' : 'var(--ink-3)',
+                        fontStyle: estaRetirada(row.subcategoria) ? 'italic' : 'normal',
+                      }}
+                    >
+                      {row.subcategoria}
+                      {estaRetirada(row.subcategoria) && ' · retirada'}
+                    </span>
+                  )}
                 </span>
-                <span data-testid="expense-reason" style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {row.reason}
+                <span style={{ minWidth: 0 }}>
+                  <span data-testid="expense-reason" style={{ display: 'block', fontSize: 13.5, fontWeight: 600, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {row.reason}
+                  </span>
+                  {row.pagado_a && (
+                    <span data-testid="expense-pagado-a" style={{ display: 'block', fontSize: 12, color: 'var(--ink-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      Pagado a {row.pagado_a}
+                    </span>
+                  )}
                 </span>
                 <span style={{ minWidth: 0 }}>
                   <span style={{ display: 'block', fontSize: 12.5, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

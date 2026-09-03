@@ -25,6 +25,7 @@ import {
 } from 'lucide-react'
 import { useSedeConfig } from '@/hooks/useSedeConfig'
 import type { SedeConfig } from '@/lib/sedeConfig'
+import { DEFAULT_EXPENSE_SUBCATEGORIES } from '@/lib/sedeConfig'
 import { useUsers } from '@/hooks/useUsers'
 import { useAuth } from '@/hooks/useAuth'
 import { usePermissions } from '@/hooks/usePermissions'
@@ -747,6 +748,10 @@ function SectionCajaForm({ config }: { config: SedeConfig }) {
   ]
 
   const [localReasons, setLocalReasons] = useState<string[]>(reasons)
+  // 🔴 Deuda 45: la lista de subcategorías de gasto, por sede.
+  const [localSubcats, setLocalSubcats] = useState<string[]>(
+    config.expense_subcategories ?? DEFAULT_EXPENSE_SUBCATEGORIES,
+  )
   const [localMethods, setLocalMethods] = useState<PaymentMethod[]>(methods)
 
   const toggleMethod = (m: PaymentMethod) =>
@@ -776,6 +781,30 @@ function SectionCajaForm({ config }: { config: SedeConfig }) {
           categoría del movimiento, que es fija en el esquema.
         </p>
         <EditableList items={localReasons} onChange={setLocalReasons} placeholder="Nuevo motivo..." />
+      </div>
+
+      {/* 🔴 SUBCATEGORÍAS DE GASTO — deuda 45 */}
+      <div style={{ marginBottom: 28 }}>
+        <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)', marginBottom: 4 }}>
+          Subcategorías de gasto
+        </h3>
+        <p style={{ fontSize: 12, color: 'var(--ink-3)', marginBottom: 16, lineHeight: 1.5 }}>
+          Con qué se clasifican los gastos en tu negocio. Se eligen de una lista y
+          no se escriben a mano, para que el reporte no se parta entre
+          <em> publicidad</em> y <em> Publicidad</em>.
+          <br />
+          ⛔ <strong>Las compras a proveedor no van acá</strong>: se registran en
+          Compras y no son un gasto.
+          <br />
+          ⚠️ Si sacás una de la lista, <strong>los gastos ya cargados la
+          conservan</strong> y se siguen viendo en el historial: sacarla es dejar
+          de ofrecerla, no reescribir lo que ya pasó.
+        </p>
+        <EditableList
+          items={localSubcats}
+          onChange={setLocalSubcats}
+          placeholder="Nueva subcategoría..."
+        />
       </div>
 
       {/* Métodos de pago */}
@@ -849,7 +878,11 @@ function SectionCajaForm({ config }: { config: SedeConfig }) {
       </div>
 
       <SaveButton
-        onClick={() => updateConfig({ cash_out_reasons: localReasons, payment_methods: localMethods })}
+        onClick={() => updateConfig({
+          cash_out_reasons: localReasons,
+          payment_methods: localMethods,
+          expense_subcategories: localSubcats,
+        })}
         loading={isSaving}
       />
     </div>

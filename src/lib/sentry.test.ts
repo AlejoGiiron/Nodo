@@ -158,6 +158,16 @@ const COLUMNAS_DEL_ESQUEMA: ColumnaEsquema[] = [
   { tabla: 'purchase_invoices', columna: 'document_date', ejemplo: '2019-03-14' },
   { tabla: 'cash_movements', columna: 'document_date', ejemplo: '2019-07-22' },
 
+  // Migración `subcategoria_de_gasto_y_pagado_a` (2026-09-02, deuda 45).
+  // 🔴 `pagado_a` es EL caso: texto libre donde se escribe el nombre de una
+  //    persona o de un negocio. Misma clase que `customers.document`, que es la
+  //    columna que motivó todo este filtro.
+  { tabla: 'cash_movements', columna: 'pagado_a', ejemplo: 'Litografia Maria Gomez' },
+  // La subcategoría no es PII, pero sale de una lista EDITABLE por el cliente:
+  // no hay forma de garantizar que no escriba algo identificable ahí. Se
+  // verifica que no salga, como el resto.
+  { tabla: 'cash_movements', columna: 'subcategoria', ejemplo: 'mantenimiento-de-vitrinas' },
+
   // ── stock_movements / store_sequences
   { tabla: 'stock_movements', columna: 'notes', ejemplo: 'Ajuste hecho por Ana' },
   { tabla: 'stock_movements', columna: 'reference_id', ejemplo: '3f2b1c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d', permitida: true },

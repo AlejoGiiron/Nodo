@@ -48,8 +48,10 @@ export type Database = {
           document_date: string
           id: string
           jornada_id: string
+          pagado_a: string | null
           reason: string | null
           sede_id: string
+          subcategoria: string | null
           type: Database["public"]["Enums"]["movement_type"]
         }
         Insert: {
@@ -60,8 +62,10 @@ export type Database = {
           document_date?: string
           id?: string
           jornada_id: string
+          pagado_a?: string | null
           reason?: string | null
           sede_id: string
+          subcategoria?: string | null
           type: Database["public"]["Enums"]["movement_type"]
         }
         Update: {
@@ -72,8 +76,10 @@ export type Database = {
           document_date?: string
           id?: string
           jornada_id?: string
+          pagado_a?: string | null
           reason?: string | null
           sede_id?: string
+          subcategoria?: string | null
           type?: Database["public"]["Enums"]["movement_type"]
         }
         Relationships: [

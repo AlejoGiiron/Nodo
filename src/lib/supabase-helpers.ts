@@ -792,6 +792,10 @@ export type CashOutRow = {
    * preguntas distintas sobre la misma fila.
    */
   document_date: string
+  /** Qué clase de gasto (deuda 45). Null = sin clasificar, que es un dato. */
+  subcategoria: string | null
+  /** A quién se le pagó. Texto libre; PII, por eso está en el censo de Sentry. */
+  pagado_a: string | null
   /** `gasto` u `otro` (ver CATEGORIAS_DE_GASTO): se muestra por fila para que
    *  `otro` sea visible como tal y no se confunda con un gasto clasificado. */
   categoria: string
@@ -835,7 +839,8 @@ export const getCashOutMovements = ({
   let q = supabase
     .from('cash_movements')
     .select(
-      'id, amount, reason, categoria, created_at, document_date, created_by, jornada_id, ' +
+      'id, amount, reason, categoria, subcategoria, pagado_a, ' +
+      'created_at, document_date, created_by, jornada_id, ' +
       'autor:profiles!cash_movements_created_by_fkey(full_name)',
       { count: 'exact' },
     )

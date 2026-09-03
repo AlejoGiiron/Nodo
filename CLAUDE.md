@@ -770,6 +770,44 @@ cuando alguien pregunta por qué dos archivos no cierran, cuesta el diagnóstico
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · EN EL RESUMEN DE UNA SUITE, LOS CEROS SON **AUSENCIA DE LÍNEA**
+
+*Medido el 2026-09-02, al cerrar el Bloque 3. Es "indistinguible de" aplicada al resumen de la suite.*
+
+> **Un `grep failed` que vuelve vacío es indistinguible de un `grep` mal escrito.**
+
+Playwright imprime `failed`, `flaky` y `did not run` **sólo cuando son distintos de cero**. Así que
+el resumen de una corrida perfecta dice exactamente dos líneas:
+
+```
+  17 skipped
+  202 passed (15.2m)
+```
+
+Los otros tres números **no están**. Y "no está la línea" es el mismo resultado que produce un patrón
+equivocado, un archivo truncado, una corrida que murió antes de escribir el resumen, o un `grep`
+sobre el archivo que no era. **Cuatro causas distintas, una sola observación.**
+
+⚠️ Es el modo de fallo que más tranquiliza: el que busca `failed` y no lo encuentra concluye que no
+hubo fallos, y **la ausencia es justamente lo que un instrumento roto produce por defecto**.
+
+**LO ACCIONABLE:** los cinco números se verifican **uno por uno**, no se leen del resumen. Y el que
+falta se reporta como *"ninguna línea, o sea 0"*, no como *"0"* a secas — la diferencia es qué se
+midió.
+
+```bash
+for k in passed failed flaky skipped "did not run"; do
+  echo "$k -> $(grep -E "^  *[0-9]+ $k" salida.txt || echo '(ninguna línea: 0)')"
+done
+grep -n "suite_exit=" salida.txt      # R9: el exit va escrito ADENTRO del archivo
+```
+
+⚠️ Y el complemento, que es lo que convierte el conteo en evidencia: **cruzarlo con un número que ya
+conocías**. `202 passed + 17 skipped = 219`, que tiene que ser **el último número de test emitido**.
+Si no cierra, una de las dos cuentas está mal — y averiguar cuál es el trabajo.
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · CÓMO SE APLICA Y SE REVIERTE UN MUTANTE (arnés, no test)
 
 *Tres fallas encadenadas el 2026-09-02, todas mías, en una sola verificación de cuatro minutos.*
@@ -919,6 +957,7 @@ estábamos contando.*
 | una consulta SQL de diagnóstico | vendido vs cobrado por día | el `left join` a `payments` **multiplicaba `o.total`** por cada pago: una venta mixta contaba doble | **un número no cerró con otro ya conocido**: 165 órdenes donde la app decía 158 |
 | grepear el FUENTE por un `@keyframes` | si la animación existía | el fuente no ve lo que **Tailwind emite en el build** | **compilando** y grepeando `dist/assets/*.css` |
 | `grep '\?\? new Set\('` en A1 | los `new Set()` como default | no veía `new Set<string>()` — el parámetro de tipo | **el control escrito de antemano**: la 54 TENÍA que aparecer, y dio cero |
+| `grep -cE '^  ok  [0-9]+'` sobre la salida de la suite | cuántos tests pasaron | asumía **dos espacios fijos**; el reporter **alinea el número por ancho**, así que `ok 1`, `ok  99` y `ok 219` no coinciden con el patrón. Contó **89 de 202** | **cruzando**: 89 no cerraba con las 202 del resumen. Con `^  ok +[0-9]+`: 202 + 17 skipped = **219**, el último número de test emitido |
 
 **Los tres daban un número creíble.** Ninguno daba error, ninguno se veía roto, y los tres
 sostenían una afirmación que se escribió en un commit como si fuera un hecho medido.
@@ -941,8 +980,16 @@ nota.
    contó; una lista lo muestra. Los dos greps se cazaron así, y ninguno se habría cazado mirando
    el total.
 3. 🔴 **Cruzar contra un número que ya conocías** — la más barata de las tres, y la que cazó la
-   quinta. La consulta dijo **165 órdenes** donde la app venía diciendo **158**. No hacía falta
-   entender el `left join`: **bastó que dos cifras del mismo hecho no cerraran.**
+   quinta **y la octava**. La consulta dijo **165 órdenes** donde la app venía diciendo **158**. No
+   hacía falta entender el `left join`: **bastó que dos cifras del mismo hecho no cerraran.**
+
+   ⚠️ **Las técnicas 1 y 3 no son la misma, y conviene tener las dos escritas** porque atrapan cosas
+   distintas: el **control negativo** corre el instrumento contra algo que sabés que **no existe** y
+   caza al que **no discrimina** (contesta lo mismo con y sin el recurso); el **control cruzado**
+   cuenta **lo mismo por dos caminos** y caza al que **discrimina mal** (mide, pero mide de menos).
+   Un grep con el patrón demasiado estricto pasaría el control negativo sin problema —da cero donde
+   tiene que dar cero— y sólo cae cuando su total no cierra con otro que ya conocías. La octava falla
+   fue exactamente ésa: contó 89 de 202 y ningún control negativo lo habría visto.
 
    > **Un número que no cierra con otro que ya conocías es la señal más barata que tenemos.**
 
@@ -1005,6 +1052,31 @@ concreto que lo vuelve insuficiente:
 
 Está escrito en el `comment on column`, que es donde lo va a leer quien escriba ese reporte.
 
+🔴 **Y EL CASO QUE HACE DEFENDIBLE LA REGLA: LA MISMA PREGUNTA, EL RESULTADO CONTRARIO.**
+*2026-09-02, deuda 45 — la subcategoría de gasto.*
+
+Se parece punto por punto a `purchase_unit`: una etiqueta del negocio, sin lista universal posible,
+que si se cierra en un CHECK bloquea al cliente. Por analogía correspondía texto libre. **Y se
+decidió lo opuesto: desplegable, nunca tecleado.**
+
+**Lo que cambió no es la regla: es el DISPARADOR.** Allá el disparador quedaba escrito *para el
+futuro* —"el día que haya un reporte por presentación"— y mientras tanto lo que se colaba era un typo
+cosmético. Acá **el reporte por subcategoría es el propósito entero de la columna**: nace existiendo.
+El disparador está cumplido **antes de que la columna exista**, así que el lado permisivo nunca tiene
+su ventana de ser gratis.
+
+| | `purchase_unit` | `subcategoria` |
+|---|---|---|
+| ¿Hay reporte por ese eje? | todavía no | **es la razón de la columna** |
+| Qué se cuela por el lado abierto | un typo en una etiqueta | **el reporte partido en dos filas**: `publicidad` y `Publicidad` |
+| Decisión | texto libre + disparador escrito | **desplegable**, y la lista es editable **por sede** |
+
+⚠️ **Por qué importa que quede escrito y no sólo decidido:** dos columnas casi idénticas con
+decisiones opuestas se leen como una incoherencia, y el próximo que las vea va a "corregir" una de
+las dos. No es incoherencia — **es la misma pregunta contestada contra dos disparadores distintos**.
+La regla práctica: al elegir el lado permisivo, escribí el disparador **y fijate si ya está
+cumplido**. Si lo está, el lado permisivo nunca fue una opción.
+
 ---
 
 ### ⚠️ CRITERIO SIN NÚMERO · MIGRAR UN TEST ENTRE DOS UI CONSERVA EL SUJETO, NO LAS ASERCIONES
@@ -1039,9 +1111,40 @@ que la suite E2E pueda correr: es el único verificador que mira esta clase.
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · LA HISTORIA NO SE REESCRIBE, SE LE AGREGA — Y BORRAR DE UNA LISTA ES DEJAR DE OFRECERLA
+
+*Cuatro decisiones tomadas por separado entre el 2026-08-31 y el 2026-09-02 que resultaron ser la
+misma. Se escribe una vez, con los cuatro casos, en vez de cuatro decisiones que se parecen.*
+
+> **Un hecho ocurrido no se corrige cambiándolo: se corrige agregando otro hecho.** Y una lista de
+> opciones no es la historia: **sacar un valor de la lista es dejar de OFRECERLO, nunca reescribir
+> las filas que ya lo usaron.**
+
+| Caso | Lo cómodo habría sido | Lo que se hizo |
+|---|---|---|
+| **Costo unitario al vender** (R1 punto 8) | calcular la utilidad leyendo el `cost_price` actual | se **congela** en `order_items.unit_cost`. Si se leyera después, cada compra nueva cambiaría las utilidades de meses pasados y el reporte daría distinto cada vez que se abre |
+| **Fecha del documento** (deuda 44) | usar `created_at` para todo | dos columnas. `created_at` dice cuándo se tecleó y cuadra la caja; `document_date` dice de cuándo es el papel y ordena los reportes |
+| **Devolución de compra** (deuda 49) | revertir la compra y recalcular el promedio ponderado | la devolución es un **hecho nuevo con su propia fecha**, y **no toca `cost_price`**: ese costo ya se propagó a las ventas del medio |
+| **Subcategoría retirada** (deuda 45) | borrar o migrar las filas que usaban la subcategoría que el dueño sacó de su lista | la fila **conserva** su valor y la pantalla la muestra **marcada como retirada**; lo que desaparece es poder volver a elegirla |
+
+**Por qué es el mismo principio y no cuatro parecidos:** en los cuatro, la alternativa cómoda hace
+que **una pregunta sobre el pasado cambie de respuesta según cuándo se la haga**. Ese es el defecto,
+y es el perfil de R7: no revienta, no avisa, y el número sigue siendo plausible.
+
+⚠️ **El corolario que decide los casos nuevos, y es una pregunta sola:** ¿este cambio hace que un
+reporte ya impreso deje de reproducirse? Si la respuesta es sí, **no es una corrección: es una
+reescritura**, y lo que corresponde es agregar un hecho.
+
+⚠️ Y el corolario de pantalla, que es la mitad que casi se pierde: **lo retirado se sigue
+mostrando.** Si la fila vieja desapareciera de la lista, el total del período dejaría de cuadrar con
+sus propias filas — y un total que no cuadra con lo que se ve es peor que un valor viejo con una
+etiqueta.
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · LA DEUDA ES UNA HIPÓTESIS FECHADA; EL CÓDIGO ES EL DATO
 
-*Dos casos medidos el 2026-09-02, en el mismo día y con la misma causa.*
+*TRES casos medidos el 2026-09-02, el mismo día y con la misma causa.*
 
 `docs/DEUDAS.md` se lee al planificar, y por eso cada entrada trae su **alcance**. Ese alcance se
 escribió en algún momento, mirando algo — y **a veces ese algo no fue el código.**
@@ -1056,6 +1159,7 @@ escribió en algún momento, mirando algo — y **a veces ese algo no fue el có
 |---|---|---|
 | el catálogo del cliente son **~4.212 productos** (deuda 50) | el archivo real de Muscle Pro tiene **37** | el import masivo estuvo declarado *bloqueante del alta* durante días, ordenando el trabajo |
 | Compras y Gastos **ya dejan elegir la fecha**, sólo falta la columna (deuda 44) | `grep 'type="date"' src/` → **diez apariciones, las diez filtros de historiales**. Ningún formulario de alta tenía campo de fecha | la deuda parecía "dos columnas" y eran dos columnas, dos guards, dos formularios y cuatro consultas |
+| las subcategorías de gasto son **las seis del diseño** — Arriendo, Servicios, Transporte, Sueldos, Impuestos, Otros (deuda 45) | el archivo real del cliente usa **tres**: publicidad, adecuación, activo. La propia entrada las llamaba *"las seis del dibujo"* | se habría sembrado la lista del producto con el vocabulario de una maqueta en vez del de un negocio |
 
 **Por qué pasa, y por qué no se arregla escribiendo mejor.** Una maqueta y una app se describen con
 las mismas palabras. Cuando una descripción de la maqueta entra a una tabla de decisiones, **pierde
@@ -1071,8 +1175,14 @@ chico algo que no lo era.
 > **La enumeración previa se hace igual, aunque la deuda ya diga el alcance.**
 
 No es desconfianza del que escribió: es que el alcance escrito y el código son **dos fuentes
-distintas**, y sólo una ejecuta. Si al enumerar coinciden, costó dos minutos. Si no coinciden —dos de
-dos veces, hasta ahora—, lo que se encontró es justamente lo que habría hecho fallar el plan.
+distintas**, y sólo una ejecuta. Si al enumerar coinciden, costó dos minutos. Si no coinciden —**tres
+de tres veces, hasta ahora**—, lo que se encontró es justamente lo que habría hecho fallar el plan.
+
+⚠️ **Y el tercer caso agrega una forma que los dos primeros no tenían: las DOS versiones convivían.**
+La deuda 45 tenía la lista de la maqueta (2026-09-01) y la del archivo real (2026-09-02) **apiladas**,
+sin que ninguna reemplazara a la otra. Ahí el problema ya no es sólo de origen sino de **edición por
+append** —la causa que A5 identificó para los tres pares contradictorios de este archivo—, y se
+corrige igual: **una sola afirmación vigente, y lo superado marcado como superado.**
 
 ⚠️ **Y al corregir, se REEMPLAZA la afirmación vieja**, no se agrega la nueva al lado: ver la
 convención de notas al final de este archivo. Una deuda con dos alcances contradictorios es peor que

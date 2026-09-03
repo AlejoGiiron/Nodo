@@ -163,6 +163,7 @@ export function useCashShift() {
       movement: Pick<
         TablesInsert<'cash_movements'>,
         'type' | 'amount' | 'reason' | 'categoria' | 'document_date'
+        | 'subcategoria' | 'pagado_a'
       >,
     ) => {
       const { data, error } = await createCashMovement({

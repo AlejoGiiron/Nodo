@@ -2,6 +2,9 @@ import { useState } from 'react'
 import { X, ArrowDownLeft, ArrowUpRight, DollarSign, AlertTriangle } from 'lucide-react'
 import { useCashShift } from '@/hooks/useCashShift'
 import { useSedeConfig } from '@/hooks/useSedeConfig'
+import {
+  DEFAULT_EXPENSE_SUBCATEGORIES, NOTA_ACTIVO, esSubcategoriaDeActivo,
+} from '@/lib/sedeConfig'
 import { availableCash } from '@/lib/shiftCalc'
 
 // ── Categorías de movimiento ────────────────────────────────────────────────
@@ -72,6 +75,9 @@ export function MovementsModal({ onClose }: MovementsModalProps) {
   // 🔴 Deuda 44. Arranca en HOY porque el caso normal es cargar el gasto del
   //    día; lo que faltaba era poder decir otra cosa cuando el papel es viejo.
   const [documentDate, setDocumentDate] = useState(hoyBogota())
+  // 🔴 Deuda 45. Dos ejes mas: QUE clase de gasto, y A QUIEN se le pago.
+  const [subcategoria, setSubcategoria] = useState('')
+  const [pagadoA, setPagadoA] = useState('')
   const [categoria, setCategoria] = useState<string>('')
   const [rawAmount, setRawAmount] = useState('')
   const [reason, setReason] = useState('')   // DETALLE libre, ya no la clasificación
@@ -82,6 +88,11 @@ export function MovementsModal({ onClose }: MovementsModalProps) {
   // no la edita el cliente — si pudiera inventarla, los reportes entre sedes y
   // entre meses dejarían de ser comparables.
   const sugerencias = config.cash_out_reasons ?? []
+
+  // La lista de subcategorías sale de la sede (deuda 45). El `??` es de LECTURA
+  // —poblar un desplegable— y no alimenta ninguna escritura de un cálculo, así
+  // que acá el default es la respuesta correcta y no un relleno.
+  const subcategorias = config.expense_subcategories ?? DEFAULT_EXPENSE_SUBCATEGORIES
 
   const categorias = CATEGORIAS[type]
   const amount = parseInt(rawAmount.replace(/\D/g, ''), 10) || 0
@@ -111,6 +122,8 @@ export function MovementsModal({ onClose }: MovementsModalProps) {
     setReason('')
     setCategoria('')
     setDocumentDate(hoyBogota())
+    setSubcategoria('')
+    setPagadoA('')
     setOverdraftPending(false)
   }
 
@@ -138,6 +151,12 @@ export function MovementsModal({ onClose }: MovementsModalProps) {
         categoria,
         reason: detalle || null,   // null explícito: la columna es nullable
         document_date: documentDate,
+        // 🔴 El CHECK exige que la subcategoría exista SOLO en un gasto y que
+        //    "pagado a" exista SOLO en un egreso. Se manda null en vez de ''
+        //    porque una cadena vacía es un valor que no dice nada — la misma
+        //    mitad que `chk_otro_exige_detalle` ya cuidaba en `reason`.
+        subcategoria: categoria === 'gasto' && subcategoria ? subcategoria : null,
+        pagado_a: type === 'out' && pagadoA.trim() ? pagadoA.trim() : null,
       })
       resetForm()
     } catch {
@@ -286,6 +305,56 @@ export function MovementsModal({ onClose }: MovementsModalProps) {
                 ))}
               </select>
             </div>
+
+            {/* 🔴 SUBCATEGORÍA — deuda 45. Sólo para un gasto: un retiro del
+                dueño y una compra a proveedor no tienen "clase de gasto", y el
+                CHECK de la base lo rechaza. */}
+            {categoria === 'gasto' && (
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--ink-2)', marginBottom: 6 }}>
+                  Subcategoría <span style={{ color: 'var(--ink-4)', fontWeight: 500 }}>(opcional)</span>
+                </label>
+                {/* 🔴 ES UN DESPLEGABLE Y NO UN INPUT, a propósito: "publicidad" y
+                    "Publicidad" serían dos filas del reporte, y evitarlo acá
+                    cuesta menos que normalizar después. La lista sale de la
+                    SEDE, no del esquema. */}
+                <select
+                  data-testid="movement-subcategoria"
+                  value={subcategoria}
+                  onChange={(e) => setSubcategoria(e.target.value)}
+                  style={{ ...inputStyle, cursor: 'pointer', appearance: 'auto' }}
+                >
+                  <option value="">Sin clasificar</option>
+                  {subcategorias.map((sc) => (
+                    <option key={sc} value={sc}>{sc}</option>
+                  ))}
+                </select>
+                {esSubcategoriaDeActivo(subcategoria) && (
+                  <p data-testid="movement-nota-activo" style={{ margin: '6px 0 0', fontSize: 11.5, color: 'var(--warning-on-soft)', lineHeight: 1.45 }}>
+                    {NOTA_ACTIVO}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* 🔴 PAGADO A — deuda 45. Sólo en un egreso: en un ingreso la plata
+                viene DE alguien, no va A alguien, y ese valor diría lo contrario
+                de lo que pasó. */}
+            {type === 'out' && (
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--ink-2)', marginBottom: 6 }}>
+                  Pagado a <span style={{ color: 'var(--ink-4)', fontWeight: 500 }}>(opcional)</span>
+                </label>
+                <input
+                  type="text"
+                  data-testid="movement-pagado-a"
+                  value={pagadoA}
+                  onChange={(e) => setPagadoA(e.target.value)}
+                  placeholder="Nombre de la persona o del negocio"
+                  style={inputStyle}
+                />
+              </div>
+            )}
 
             {/* 🔴 FECHA DEL DOCUMENTO — deuda 44. No es cuándo se teclea: un
                 gasto del 24 cargado el 31 pertenece al 24, y el historial lo
