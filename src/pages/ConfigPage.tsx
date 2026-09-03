@@ -319,7 +319,7 @@ function SectionSede() {
 
       <div style={{ display: 'grid', gap: 16, gridTemplateColumns: '1fr 1fr', maxWidth: 560 }}>
         <div style={{ gridColumn: '1 / -1' }}>
-          <FieldLabel>Nombre del sede</FieldLabel>
+          <FieldLabel>Nombre de la sede</FieldLabel>
           <TextInput value={name} onChange={setName} placeholder="Nodo Resto" testId="config-sede-name" />
         </div>
         <div style={{ gridColumn: '1 / -1' }}>

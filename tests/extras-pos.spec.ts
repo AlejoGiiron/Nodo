@@ -49,7 +49,7 @@ async function createExtra(page: Page, name: string, price: string, linkedProduc
 async function readStock(page: Page, productName: string): Promise<number> {
   await page.goto('/inventario')
   await page.getByTestId('inventory-tab-levels').click()
-  await page.getByPlaceholder('Buscar insumo...').fill(productName)
+  await page.getByPlaceholder('Buscar producto...').fill(productName)
   const row = page.getByTestId('stock-level-row').filter({ hasText: productName })
   await expect(row).toBeVisible()
   return Number(await row.getByTestId('stock-level-qty').innerText())

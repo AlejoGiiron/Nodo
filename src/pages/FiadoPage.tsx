@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button'
 import { KpiCard } from '@/components/ui/KpiCard'
 import { MoneyCell } from '@/components/ui/MoneyCell'
 import { AgingBar, AgingBarLeyenda } from '@/components/ui/AgingBar'
-import { diasVencidosMax } from '@/lib/cartera'
+import { diasVencidosMax, diasVencidos } from '@/lib/cartera'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { formatoCOP } from '@/lib/formato'
 
@@ -131,9 +131,30 @@ function DebtsTab({ onAbono }: { onAbono: (d: Debt) => void }) {
   // 🔴 "Por cobrar" es DEUDA (--debt), no error (--danger): que un cliente deba
   //    no es que alguien haya hecho algo mal. Los otros dos son conteos: tono
   //    normal. Antes los tres compartían el mismo rojo var(--debt).
+  // 🔴 VENCIDO como KPI propio — A6 · tanda 5. La maqueta muestra plata en los
+  //    tres (POR COBRAR · VENCIDO · RECAUDADO HOY) y la app mostraba dos
+  //    CONTEOS. "Vencido" es la cifra que dispara la acción y ya es calculable
+  //    desde la deuda 46; se suma el saldo de los fiados con días vencidos > 0.
+  //
+  // ⚠️ El tercero de la maqueta —RECAUDADO HOY— NO se pinta: exige sumar los
+  //    abonos del día, que es una consulta que hoy no existe. Inventar el
+  //    número sería peor que no mostrarlo; queda anotado como pendiente.
+  const totalVencido = groups.reduce(
+    (s, g) => s + g.fiados.reduce(
+      (t, d) => t + ((diasVencidos(d.created_at, d.plazo_dias) ?? 0) > 0 ? d.saldo : 0), 0,
+    ),
+    0,
+  )
+
   const kpis = [
     { key: 'por-cobrar', label: 'Total por cobrar', value: formatoCOP(totalPorCobrar), tone: 'debt' as const },
+    { key: 'vencido', label: 'Vencido', value: formatoCOP(totalVencido), tone: 'debt' as const },
     { key: 'clientes-deuda', label: 'Clientes con deuda', value: String(clientesConDeuda), tone: 'normal' as const },
+    // ⚠️ "Fiados abiertos" NO está en la maqueta: es un (d) NO DIBUJADO. Por eso
+    //    SE QUEDA — un (d) no se toca en el re-skin, y quitarlo porque el dibujo
+    //    no lo tenía sería la maqueta borrando información que el producto da.
+    //    Resultado: cuatro KPI donde la maqueta muestra tres. La divergencia es
+    //    deliberada y queda anotada.
     { key: 'fiados-abiertos', label: 'Fiados abiertos', value: String(fiadosAbiertos), tone: 'normal' as const },
   ]
 
@@ -193,7 +214,7 @@ function DebtsTab({ onAbono }: { onAbono: (d: Debt) => void }) {
                   // Fila SELECCIONADA (§4 DataRow): fondo --action-soft +
                   // `inset 3px 0 0 var(--action)`. Es una elección del usuario,
                   // no un estado del dato — mismo par que el NavItem activo.
-                  style={{ width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', border: 'none', borderTop: idx > 0 ? '1px solid var(--border-2)' : 'none', boxShadow: active ? 'inset 3px 0 0 var(--action)' : 'none', background: active ? 'var(--action-soft)' : 'var(--surface)', cursor: 'pointer', fontFamily: 'inherit' }}
+                  style={{ width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', border: 'none', borderTop: idx > 0 ? '1px solid var(--border-2)' : 'none', boxShadow: active ? 'inset 3px 0 0 var(--action)' : (g.diasVencidos ?? 0) > 0 ? 'inset 3px 0 0 var(--debt)' : 'none', background: active ? 'var(--action-soft)' : (g.diasVencidos ?? 0) > 0 ? 'var(--d1)' : 'var(--surface)', cursor: 'pointer', fontFamily: 'inherit' }}
                 >
                   <div style={{ width: 32, height: 32, borderRadius: '50%', background: active ? 'var(--action)' : 'var(--border)', color: active ? '#fff' : 'var(--ink-2)', display: 'grid', placeItems: 'center', fontSize: 12, fontWeight: 600, flexShrink: 0 }}>
                     {initials(g.customerName)}
@@ -209,12 +230,18 @@ function DebtsTab({ onAbono }: { onAbono: (d: Debt) => void }) {
                     {/* Vencido: es el número por el que se ordena, así que se ve.
                         `—` cuando no hay plazo pactado: no se puede afirmar que
                         esté al día, y un 0 lo afirmaría. */}
-                    <div data-testid="customer-row-vencido" style={{ marginTop: 2, fontSize: 11.5, color: (g.diasVencidos ?? 0) > 0 ? 'var(--debt-on-soft)' : 'var(--ink-4)' }}>
-                      {g.diasVencidos == null
-                        ? '— sin plazo pactado'
-                        : g.diasVencidos > 0
-                          ? `${g.diasVencidos} ${g.diasVencidos === 1 ? 'día' : 'días'} vencido`
-                          : 'En plazo'}
+                    {/* 🔴 §4 DataRow: «En mora: fondo --d1 + inset 3px 0 0
+                        var(--debt)». La fila en mora se pinta como fila, no
+                        sólo con un texto debajo del nombre. El badge lleva los
+                        días, que es el dato por el que está ordenada. */}
+                    <div data-testid="customer-row-vencido" style={{ marginTop: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {g.diasVencidos == null ? (
+                        <span style={{ fontSize: 11.5, color: 'var(--ink-4)' }}>— sin plazo pactado</span>
+                      ) : g.diasVencidos > 0 ? (
+                        <Badge tone="debt">Mora {g.diasVencidos} {g.diasVencidos === 1 ? 'día' : 'días'}</Badge>
+                      ) : (
+                        <span style={{ fontSize: 11.5, color: 'var(--ink-4)' }}>En plazo</span>
+                      )}
                     </div>
                   </div>
                   <MoneyCell

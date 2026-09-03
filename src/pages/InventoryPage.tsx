@@ -101,7 +101,11 @@ function LevelsTab({ products, onAdjust }: { products: ProductWithCategory[]; on
             un RE-SKIN: misma información, con el design system. Información
             nueva es su propia decisión. Anotado como hueco de FUNCIONALIDAD, no
             de datos, en docs/reskin-esquema.md. */}
-        <KpiCard etiqueta="Insumos con inventario" valor={summary.total} />
+        {/* 🔴 Decía "Insumos": vocabulario heredado de VENTO, donde un insumo
+            era el ingrediente de una receta. §7.15 fija el vocabulario neutro
+            del producto — «Productos, clientes, pedidos» — y acá lo que se
+            cuenta son productos. */}
+        <KpiCard etiqueta="Productos con existencia" valor={summary.total} />
         <KpiCard etiqueta="Sin stock (0)" valor={summary.out} />
         <KpiCard etiqueta="Stock bajo" valor={summary.low} tono={summary.low > 0 ? 'warning' : 'normal'} />
         <KpiCard etiqueta="En negativo" valor={summary.negative} tono={summary.negative > 0 ? 'debt' : 'normal'} />
@@ -114,7 +118,7 @@ function LevelsTab({ products, onAdjust }: { products: ProductWithCategory[]; on
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar insumo..."
+            placeholder="Buscar producto..."
             style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 13, color: 'var(--ink)' }}
           />
           {query && <button onClick={() => setQuery('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink-4)', padding: 0, display: 'grid', placeItems: 'center' }}><X size={13} /></button>}
@@ -142,7 +146,7 @@ function LevelsTab({ products, onAdjust }: { products: ProductWithCategory[]; on
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr style={{ background: 'var(--surface-2)', textAlign: 'left', color: 'var(--ink-3)', fontSize: 11.5 }}>
-              <th style={{ padding: '10px 16px', fontWeight: 600 }}>Insumo</th>
+              <th style={{ padding: '10px 16px', fontWeight: 600 }}>Producto</th>
               <th style={{ padding: '10px 16px', fontWeight: 600 }}>Categoría</th>
               <th style={{ padding: '10px 16px', fontWeight: 600, textAlign: 'right' }}>Stock</th>
               <th style={{ padding: '10px 16px', fontWeight: 600, textAlign: 'right' }}>Mínimo</th>
@@ -152,7 +156,7 @@ function LevelsTab({ products, onAdjust }: { products: ProductWithCategory[]; on
           </thead>
           <tbody>
             {filtered.length === 0 ? (
-              <tr><td colSpan={6} style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--ink-4)' }}>Sin insumos que coincidan</td></tr>
+              <tr><td colSpan={6} style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--ink-4)' }}>Sin productos que coincidan</td></tr>
             ) : filtered.map(p => {
               const st = stockStatus(p)
               const stock = p.stock_qty ?? 0

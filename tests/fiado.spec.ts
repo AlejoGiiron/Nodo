@@ -57,7 +57,7 @@ async function sellOnFiado(page: Page, customer: string): Promise<number> {
 async function readStock(page: Page, name: string): Promise<number> {
   await page.goto('/inventario')
   await page.getByTestId('inventory-tab-levels').click()
-  await page.getByPlaceholder('Buscar insumo...').fill(name)
+  await page.getByPlaceholder('Buscar producto...').fill(name)
   const row = page.getByTestId('stock-level-row').filter({ hasText: name })
   await expect(row).toBeVisible()
   return Number(await row.getByTestId('stock-level-qty').innerText())

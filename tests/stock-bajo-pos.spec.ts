@@ -104,7 +104,7 @@ test.describe.serial('Stock bajo en el POS', () => {
 
     await page.goto('/inventario')
     await page.getByTestId('inventory-tab-levels').click()
-    await page.getByPlaceholder('Buscar insumo...').fill(PROD)
+    await page.getByPlaceholder('Buscar producto...').fill(PROD)
     const row = page.getByTestId('stock-level-row').filter({ hasText: PROD })
     await expect(row.getByTestId('stock-status-badge')).toHaveText('Stock bajo')
 
