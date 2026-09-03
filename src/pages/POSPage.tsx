@@ -881,7 +881,9 @@ function CheckoutModal({
       const { data: order, error: orderErr } = await createOrder({
         canal,
         status: 'pending',
-        total,
+        // 🔴 SIN `total` — deuda 80. Lo deriva el servidor de las líneas; el
+        //    `total` de acá abajo sigue usándose para MOSTRAR y para el cobro,
+        //    donde ahora funciona como cruce contra el derivado.
         sede_id: profile.sede_id,
         created_by: profile.id,
         // Descuento REAL persistido (monto en COP ya reflejado en total).

@@ -285,27 +285,36 @@ export const deleteProductImage = async (imageUrl: string): Promise<void> => {
 
 // --- Orders ---
 
-export const createOrder = (order: TablesInsert<'orders'>) =>
+/**
+ * 🔴 NO ACEPTA `total` — deuda 80. Lo DERIVA el servidor de las líneas de la
+ * orden (`recalcular_total_de_orden`, disparado por un trigger diferido sobre
+ * `order_items` y `order_item_extras`).
+ *
+ * El `Omit` es la parte que importa: mientras el parámetro existiera y el
+ * trigger lo pisara, **un valor que el sistema recibe y descarta es
+ * indistinguible de uno que respeta**. Quien lo mandara creería estar
+ * decidiendo el total.
+ *
+ * ⚠️ El cliente sigue calculando el total para MOSTRARLO y para pasarlo a
+ * `registerSalePayment` — y eso ahora es un cruce real: esa RPC compara la
+ * suma de pagos contra el total DERIVADO, así que si los dos cálculos se
+ * separaran, el cobro falla en vez de guardar plata mal contada.
+ */
+export const createOrder = (order: Omit<TablesInsert<'orders'>, 'total'>) =>
   supabase.from('orders').insert(order).select().single()
 
 export const updateOrderStatus = (orderId: string, status: Tables<'orders'>['status']) =>
   supabase.from('orders').update({ status }).eq('id', orderId).select().single()
 
-export const updateOrderTotal = (orderId: string, total: number) =>
-  supabase.from('orders').update({ total }).eq('id', orderId)
-
-// Aplica un descuento a una orden. IDEMPOTENTE: el caller pasa `total` ya
-// recalculado desde el SUBTOTAL INVARIANTE (order.total + order.discount_amount),
-// no desde el total crudo → reintentar no doble-descuenta. Persiste el descuento
-// REAL (monto + tipo + kind + razón). Escribir ANTES de registerSalePayment para
-// que la RPC valide Σ pagos contra el total ya descontado.
-export const applyOrderDiscount = (
-  orderId: string,
-  data: Pick<
-    TablesUpdate<'orders'>,
-    'total' | 'discount_amount' | 'discount_type' | 'discount_reason'
-  >,
-) => supabase.from('orders').update(data).eq('id', orderId).select().single()
+// 🔴 ACÁ VIVÍAN `updateOrderTotal` y `applyOrderDiscount`, borrados con la
+// deuda 80 (2026-09-02). Los dos escribían `orders.total` desde el cliente y
+// los dos tenían CERO consumidores — verificado con
+// `grep -rn '<nombre>' src/ --include='*.ts*' | grep -v supabase-helpers`.
+//
+// No se borraron por higiene: se borraron porque el total ahora lo DERIVA un
+// trigger, y **un escritor muerto del dato más sensible es una puerta abierta
+// al lado del guard que se acaba de poner**. Sin consumidores, nadie los
+// extraña; con consumidores futuros, habrían pisado el invariante en silencio.
 
 // --- Numeración secuencial de ventas (por sede) ---
 

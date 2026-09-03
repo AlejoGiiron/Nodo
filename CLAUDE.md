@@ -1162,6 +1162,37 @@ mostrando.** Si la fila vieja desapareciera de la lista, el total del período d
 sus propias filas — y un total que no cuadra con lo que se ve es peor que un valor viejo con una
 etiqueta.
 
+⚠️ **Y EL HERMANO QUE MIRA HACIA ATRÁS: UN INVARIANTE NUEVO SE APLICA DE ACÁ EN ADELANTE. EL PASADO
+SE MIDE Y SE EXPLICA — NO SE AJUSTA.** *2026-09-02, deuda 80.*
+
+El principio de arriba dice qué hacer con **un hecho nuevo**. Éste dice qué hacer con **uno viejo
+cuando cambian las reglas**, que es el momento en que aparece la tentación contraria:
+
+> **Reescribir datos existentes para que cumplan un invariante recién inventado es la misma forma que
+> editar la lista de un tripwire para que pase.** En los dos casos se cambia la evidencia para que
+> coincida con la expectativa.
+
+**Lo que corresponde es al revés: se MIDE la divergencia antes de escribir el guard, y el número
+entra al registro.** Esa medición hace dos cosas que un backfill destruye: dice **si el invariante
+era cierto antes** —o sea, si el problema existía— y deja el dato para el que venga.
+
+**El caso.** Antes de derivar `orders.total` se comparó el total guardado contra la fórmula en las
+**1.424 órdenes** existentes: **18 diferían**, con 416.000 de diferencia absoluta. Y al
+caracterizarlas, las 18 tenían `order_number is null`:
+
+| Grupo | Qué eran |
+|---|---|
+| 14 con líneas y total 0 | órdenes que los E2E insertan sin total |
+| 4 sin líneas y total > 0 | fixtures de cartera y de plazo |
+
+🔴 **Entre las órdenes NUMERADAS —las ventas reales— cero divergencias.** Ése es el dato que convierte
+la decisión en medición en vez de en preferencia: la coincidencia por construcción **se sostuvo donde
+importaba**, y lo que diverge es residuo de nuestros propios specs.
+
+⚠️ Y el corolario que lo hace accionable: **si al medir aparecen divergencias en datos REALES, eso no
+es motivo para backfillear — es un hallazgo**, y probablemente una deuda propia. Un invariante que el
+pasado no cumple está diciendo algo sobre el pasado, y borrarlo es borrar el hallazgo.
+
 ---
 
 ### 🔴 CRITERIO SIN NÚMERO · ¿DE DÓNDE SALE ESTE DATO CUANDO ALGUIEN LO MIRA?

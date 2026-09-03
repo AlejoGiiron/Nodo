@@ -3313,3 +3313,56 @@ caza un test o un check de árbol. Una frase que dice "cuatro" al lado de cinco 
 nadie** — y el número es lo primero que se lee y lo último que se revisa.
 
 ✅ Ya se aplicó en las dos frases que lo provocaron, en el mismo commit que escribió el criterio.
+
+
+## 2026-09-02 · La 80 — el total derivado, y una forma que ninguna de las dos familias tenía
+
+### La propuesta era correcta y la forma se decidió escribiendo
+
+Analizamos dos familias —derivar en el servidor o validar contra las líneas— y elegimos derivar. El
+análisis estaba bien: la tercera pregunta (¿qué pasa con una orden a la que se le agregan ítems
+después?) se contesta sola al derivar, y al validar obliga a elegir un momento. Nada de eso cambió.
+
+**Pero la forma del trigger no salió del análisis: salió de escribir el caso de prueba.**
+
+🔴 **Un trigger INMEDIATO tumba una venta VÁLIDA.** El descuento es de la ORDEN y las líneas entran de
+a una. Dos líneas de 3.000 con 5.000 de descuento dan un total final de **1.000**, perfectamente
+válido — pero al insertar la **primera** el recálculo daría `3.000 − 5.000 = −2.000`, y `orders.total`
+tiene `check (total >= 0)`. **La venta entera se cae, y no por un dato malo: por el orden en que
+llegan las líneas.**
+
+La solución es `constraint trigger ... deferrable initially deferred`: el recálculo ocurre al cerrar
+la transacción, con todas las líneas puestas, y el estado intermedio no existe para nadie. Está en el
+spec como caso propio, no sólo como comentario, porque es el que justifica la decisión.
+
+### Segunda aparición de un límite ya medido
+
+Es exactamente lo del **2026-08-31** con el plan de consolidación del esquema —*"un plan no ve sus
+propios huecos hasta que se escribe"*—, donde un inventario completo de 48 archivos clasificados uno
+por uno igual dejó pasar el hueco de extras y el bloqueo por transitividad del archivo 09.
+
+| | 2026-08-31 | 2026-09-02 |
+|---|---|---|
+| El proxy | un plan de consolidación | un análisis de dos familias de solución |
+| Qué razonaba bien | **pertenencia**: a qué archivo va cada cosa | **estructura**: qué invariante conviene y quién lo sostiene |
+| Qué no podía ver | el **orden de dependencias** | el **orden de las escrituras dentro de la transacción** |
+| Qué lo destapó | escribir el primer archivo que dependía de otros tres | escribir el caso con descuento y dos líneas |
+
+**Las dos veces el hueco es de ORDEN, y el orden no se manifiesta leyendo.** Es la misma distancia que
+R4 marca entre el proxy y la cosa: el análisis era un proxy excelente de la solución, y seguía sin ser
+la solución.
+
+⚠️ Lo accionable no es analizar más. Es **escribir primero el caso que combina dos cosas** —acá,
+descuento *y* varias líneas— porque los huecos de orden viven en las combinaciones, no en los casos
+simples.
+
+### Lo que se cerró de rebote
+
+`register_sale_payment` valida `Σ pagos = orders.total` desde el primer día. Hasta hoy comparaba
+contra un total **que nadie validaba** — el mismo perfil que la deuda 60, un guard apoyado en un dato
+sin verificar. Con el total derivado, ese `raise` pasa a comparar contra la verdad, y **el cálculo del
+cliente se vuelve un cruce real**: si los dos se separaran, el cobro falla en vez de guardar plata mal
+contada.
+
+Queda escrito porque **se cerró de rebote y no por diseño**, y un arreglo que nadie buscó es
+justamente el que nadie va a saber que existe.
