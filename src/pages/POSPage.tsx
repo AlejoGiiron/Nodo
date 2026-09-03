@@ -38,6 +38,7 @@ import { formatoCOP } from '@/lib/formato'
 import { MoneyCell } from '@/components/ui/MoneyCell'
 import { Input } from '@/components/ui/Input'
 import { TenderSelector } from '@/components/ui/TenderSelector'
+import { ATAJOS, ATRIBUTO_COBRO, hayCobroAbierto, teclaDe } from '@/lib/atajos'
 import { CupoMeter } from '@/components/ui/CupoMeter'
 
 // Canal: por donde ENTRO el pedido. Espeja el CHECK de orders.canal — si acá
@@ -820,7 +821,11 @@ function CartPanel({
 
           {/* "Cobrar — F12" es la ÚNICA tecla impresa del producto (§5): el
               atajo que la cajera usa cientos de veces al día es el que
-              justifica la excepción a "los atajos no se imprimen". */}
+              justifica la excepción a "los atajos no se imprimen".
+              🔴 El rótulo se DERIVA de la tabla de atajos, no se escribe. Este
+                 botón imprimió «F12» durante todo el proyecto con la tecla
+                 muerta: eran dos lados de un contrato sin nada que los
+                 sincronizara (R1). Derivándolo, no puede volver a mentir. */}
           <Button
             size="pos"
             block
@@ -828,7 +833,7 @@ function CartPanel({
             disabled={items.length === 0}
             onClick={onCheckout}
           >
-            Cobrar — F12
+            Cobrar — {teclaDe('Cobrar')}
           </Button>
         </div>
       </div>
@@ -1023,16 +1028,51 @@ function CheckoutModal({
     }
   }
 
+  // Atajos del COBRO (§5): F9 efectivo · F10 transferencia · F11 crédito.
+  //
+  // ⚠️ El atajo NO puede elegir lo que el botón no ofrece: si el medio está
+  //    ausente de la grilla —fiado sin permiso, o cualquiera en modo dividir—
+  //    la tecla no hace nada. Un atajo que activa un control que no está es la
+  //    forma más silenciosa de saltarse un permiso.
+  const mediosRef = useRef<string[]>([])
+  mediosRef.current = paymentMethods.map((m) => m.id)
+  const setMethodRef = useRef(setMethod)
+  setMethodRef.current = setMethod
+  const splitRef = useRef(split)
+  splitRef.current = split
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      const atajo = ATAJOS.find((a) => a.ambito === 'cobro' && a.tecla === e.key)
+      if (!atajo?.medio) return
+      // Se corta el paso al navegador SIEMPRE que la tecla es del cobro: si no,
+      // F11 pone el navegador en pantalla completa en medio de una venta.
+      e.preventDefault()
+      if (splitRef.current) return
+      if (!mediosRef.current.includes(atajo.medio)) return
+      setMethodRef.current(atajo.medio as PaymentMethodUI)
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [])
+
   const methodLabel = (m: PaymentMethodUI) =>
     ({ efectivo: 'Efectivo', tarjeta: 'Tarjeta', transferencia: 'Transferencia', nequi: 'Nequi / QR', fiado: 'Fiado' })[m]
 
   return (
-    <div style={{
-      position: 'absolute', inset: 0,
-      background: 'var(--overlay)',
-      display: 'grid', placeItems: 'center',
-      zIndex: 50,
-    }}>
+    <div
+      // 🔴 El marcador que declara «hay un cobro abierto». Lo leen los atajos:
+      //    F9 y F10 tienen dos significados en §5 —«Gastos / efectivo»,
+      //    «Inventario / transferencia»— y acá manda el cobro. Va en el DOM y
+      //    no en un orden de listeners porque el orden de montaje cambia solo;
+      //    el DOM dice qué hay en pantalla, que es la pregunta real.
+      {...{ [ATRIBUTO_COBRO]: '' }}
+      style={{
+        position: 'absolute', inset: 0,
+        background: 'var(--overlay)',
+        display: 'grid', placeItems: 'center',
+        zIndex: 50,
+      }}
+    >
       {/* Dialog (§4): radio --r-3 y --shadow-1, que es el ÚNICO nivel de
           elevación del producto y está reservado a diálogos. Todo lo demás se
           separa con borde de 1px. */}
@@ -1650,13 +1690,33 @@ export function POSPage() {
     if (!activeCat && categories.length > 0) setActiveCat(categories[0].id)
   }, [activeCat, categories])
 
-  // Keyboard shortcut: / to focus search
+  // Atajos del MOSTRADOR (§5): F2 buscar producto, F12 cobrar. El `/` ya
+  // estaba y se conserva — es el único atajo impreso además de F12.
+  //
+  // 🔴 F12 es la razón de todo esto: el botón decía «Cobrar — F12» desde el
+  //    primer día y la tecla no existía, así que apretarla abría las
+  //    herramientas del navegador. §5 la llama «la única excepción permanente»
+  //    a no imprimir atajos; imprimir uno muerto es peor que no imprimirlo.
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       const tag = (document.activeElement as HTMLElement)?.tagName
       if (e.key === '/' && tag !== 'INPUT' && tag !== 'TEXTAREA') {
         e.preventDefault()
         searchRef.current?.focus()
+        return
+      }
+      // Con el cobro abierto manda el cobro (F9/F10/F11 eligen medio de pago).
+      if (hayCobroAbierto()) return
+      if (e.key === teclaDe('Buscar producto')) {
+        e.preventDefault()
+        searchRef.current?.focus()
+        return
+      }
+      if (e.key === teclaDe('Cobrar')) {
+        e.preventDefault()
+        // Mismo camino que el botón: si no hay ítems no hay nada que cobrar, y
+        // sin turno abre primero la apertura de caja.
+        if (itemsRef.current.length > 0) checkoutRef.current()
       }
     }
     window.addEventListener('keydown', handleKey)
@@ -1690,6 +1750,12 @@ export function POSPage() {
   const activeCatObj = categories.find((c) => c.id === resolvedCat)
 
   const items = useCartStore((s) => s.items)
+  // El atajo se suscribe una sola vez y lee por ref, para no re-suscribir el
+  // listener en cada cambio del carrito.
+  const itemsRef = useRef(items)
+  itemsRef.current = items
+  const checkoutRef = useRef(handleCheckout)
+  checkoutRef.current = handleCheckout
   const discount = useCartStore((s) => s.discount)
   const discountType = useCartStore((s) => s.discountType)
   const discountReason = useCartStore((s) => s.discountReason)
@@ -1809,6 +1875,7 @@ export function POSPage() {
               <Search size={17} color="var(--ink-3)" />
               <input
                 ref={searchRef}
+                data-testid="pos-search"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={(e) => {

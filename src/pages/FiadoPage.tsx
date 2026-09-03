@@ -147,7 +147,15 @@ function DebtsTab({ onAbono }: { onAbono: (d: Debt) => void }) {
   )
 
   const kpis = [
-    { key: 'por-cobrar', label: 'Total por cobrar', value: formatoCOP(totalPorCobrar), tone: 'debt' as const },
+    // 🔴 NEUTRO, NO `debt`, y no es una preferencia estetica. `--debt-soft` con
+    //    su borde es la variante de ALERTA del §4, y el color AFIRMA: pintar de
+    //    rojo TODO lo que hay por cobrar dice que tener cartera es un problema.
+    //    No lo es —es el negocio—; el problema es la parte VENCIDA, que tiene su
+    //    propia tarjeta al lado y se queda con el rojo. Con las dos en rojo la
+    //    unica que debe alarmar deja de distinguirse de la que no.
+    //    Misma clase que el sobrante en verde: el color no se elige por como
+    //    combina sino por lo que afirma.
+    { key: 'por-cobrar', label: 'Total por cobrar', value: formatoCOP(totalPorCobrar), tone: 'normal' as const },
     { key: 'vencido', label: 'Vencido', value: formatoCOP(totalVencido), tone: 'debt' as const },
     { key: 'clientes-deuda', label: 'Clientes con deuda', value: String(clientesConDeuda), tone: 'normal' as const },
     // ⚠️ "Fiados abiertos" NO está en la maqueta: es un (d) NO DIBUJADO. Por eso

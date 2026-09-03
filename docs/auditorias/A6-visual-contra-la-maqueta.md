@@ -417,3 +417,23 @@ de la sede", 42 donde esperaba < 16*.
     casos el de más es un **(d)**, y un (d) no se toca.
 11. **52 ocurrencias del emerald de Vento en 20 archivos**, casi todas en modales — **invisibles para
     A6 por construcción**, porque una captura en estado normal no abre modales.
+
+---
+
+## 11 · 🔴 El límite del método, y qué cambia si A6 se repite
+
+*Escrito el 2026-09-03, al abrir la deuda 88.*
+
+> **A6 capturó UN estado —`normal`— y sacó conclusiones sobre once pantallas.**
+
+Las **52 ocurrencias del emerald de Vento en 20 archivos** no se le escaparon a la auditoría por
+descuido: **quedaron fuera por construcción.** Casi todas viven dentro de modales, y un modal no
+está en pantalla en el estado normal. La auditoría no podía verlas ni mirando con más cuidado.
+
+⚠️ **Y el §6 de la skill ya tenía la respuesta escrita**: lista los estados obligatorios de cada
+pantalla —`vacío`, `cargando`, `sin permiso`, `dato insuficiente`, más los propios de cada una— y
+A6 usó uno solo. No es que faltara el criterio: **estaba, y no se aplicó al instrumento**.
+
+**Lo que cambia si A6 se repite:** la lista de estados a capturar incluye **los modales de cada
+pantalla**. Si no, la próxima pasada va a volver a dar por cerrado lo que no miró — que es
+exactamente lo que hizo ésta, con un verde encima.

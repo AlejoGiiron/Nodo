@@ -1049,6 +1049,39 @@ cambiar el título — **el control ELIGE en vez de confirmar**, así que no pue
 Y si se puede, hacé que el control **decida** en vez de confirmar: un control que elige no se puede
 ignorar.
 
+🔴 **Y LA DÉCIMA, EL MISMO DÍA Y UN TURNO DESPUÉS DE ESCRIBIR ESTO.** *2026-09-03, cableando F12.*
+
+El spec de los atajos tenía que probar que el `preventDefault` le gana al navegador. El caso escrito
+ponía una marca en `window`, apretaba **F5** y aseveraba que la marca sobrevivía —o sea, que la
+página no se había recargado—. Se veía como el instrumento correcto: la recarga es observable, a
+diferencia de las herramientas que abre F12.
+
+**El mutante lo sobrevivió.** Quitado el `preventDefault`, el caso seguía verde: **Chromium bajo
+automatización no ejecuta la acción de navegador de las teclas de función**, así que la página no se
+recargaba de ninguna manera. El caso no medía nada — y el comentario que yo mismo había escrito en
+el spec afirmaba, con todas las letras, que ésa era *"la tecla que SÍ discrimina"*.
+
+⚠️ **Es la advertencia de arriba, incumplida por quien la acababa de escribir.** Pregunté cómo se
+vería el rojo y me contesté con una historia plausible en vez de con una corrida.
+
+✅ **El instrumento que sí mide no observa la CONSECUENCIA: observa el HECHO.** No *"el navegador no
+hizo lo suyo"* —invisible acá— sino *"el evento salió con su default cortado"*:
+
+```js
+window.addEventListener('keydown', (e) => { espia[e.key] = e })   // se guarda el EVENTO
+// …y `defaultPrevented` se lee DESPUÉS del despacho, no adentro del listener
+```
+
+Con eso se puede aseverar incluso **F12**, cuya consecuencia no es observable de ninguna forma. Y
+lleva su **control negativo**: `F4` es la tecla de §5 que a propósito no se cableó, así que tiene
+que salir con el default **intacto** — sin ese caso, un espía que devolviera `true` siempre pasaría
+igual.
+
+⚠️ **Y una tercera trampa en el mismo instrumento, que costó un rojo:** leer `defaultPrevented`
+**adentro** del listener lo ata al orden de suscripción, y `useAtajos` se re-suscribe al navegar —
+así que el espía terminaba corriendo **antes** que la aplicación y veía `false` sobre una tecla que
+sí estaba cortada. Guardar el evento y leer el valor al final saca el orden de la ecuación.
+
 🔴 **EL CUARTO ES DE OTRA ESPECIE, y por eso vale aparte: el instrumento era UN SCRIPT NUESTRO.**
 Los tres primeros median mal; éste **rompía el archivo**. Y lo relevante es que **había funcionado
 las cuatro veces anteriores** — en las cuatro, el último import del archivo era de una sola línea.
@@ -2057,6 +2090,34 @@ tests: **la cobertura obsoleta puede estar cubriendo algo que sigue vigente.** E
 el mismo de la poda: antes de borrar, separar el test en sujeto y expectativas, y preguntarle a cada
 expectativa si sobrevive al modelo nuevo. Las que sobreviven se re-alojan; lo que se borra es solo
 el sujeto muerto.
+
+**🔴 EL "GRUPO AFECTADO" POR UN COMPONENTE COMPARTIDO ES CUALQUIER SPEC QUE LO MIRE — NO LOS DE LA
+PANTALLA QUE SE TOCÓ.** *Medido el 2026-09-03, cerrando la tanda 1 del re-skin.*
+
+La cadencia de trabajo es *tsc + lint + **el grupo afectado***, y correr la suite entera por cada
+cambio no es viable. Entonces el recorte del grupo es una decisión que se toma en cada paso, y hay
+una forma de recortarlo mal que se siente correcta:
+
+> **Elegir el grupo por la PANTALLA que se editó, cuando lo que se editó es un componente que vive
+> en todas.**
+
+**El caso.** La tanda 1 reescribió el bloque de identidad del **sidebar** y eliminó el testid
+`sidebar-brand-name`. El grupo elegido fue el de las pantallas del sidebar; `reportes.spec` no
+estaba adentro, **y era el único spec del repo que aseveraba ese testid**. La tanda cerró en verde,
+se commiteó, y el rojo apareció recién en la suite entera del final — atribuible a cualquiera de las
+cinco tandas, que es justo lo que la cadencia existe para evitar.
+
+**Lo accionable, y es un grep, no un juicio:** al tocar un componente compartido —layout, sidebar,
+una primitiva de `src/components/ui/`— el grupo no se elige por pantalla: se **enumera por
+consumidor**.
+
+```bash
+grep -rln "sidebar-brand-name\|sidebar-org-name" tests/    # por testid tocado
+grep -rln "AppLayout\|<Badge\|MoneyCell" src/ tests/       # por símbolo, si el cambio es de forma
+```
+
+⚠️ Y la señal barata que lo anticipa: **si el archivo que estás editando aparece en más de una
+pantalla, el grupo es la lista de consumidores, no la carpeta.** El sidebar está en las once.
 
 **🔴 HAY UNA CLASE DE DEFECTO QUE NINGÚN TEST CAZA: EL QUE ESTÁ EN LO QUE SE VE, NO EN LO QUE PASA.**
 *Primera vez en el proyecto que un defecto aparece MIRANDO y no EJECUTANDO — 2026-09-01.*

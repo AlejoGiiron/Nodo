@@ -109,6 +109,43 @@ async function readKpis(page: Page) {
 // ── Suite ─────────────────────────────────────────────────────────
 
 test.describe.serial('Fiado / Cartera', () => {
+  // ==========================================================================
+  // 🔴 EL COLOR DE LOS KPI AFIRMA — A6, duda 7 (2026-09-03)
+  //
+  // "Total por cobrar" se pintaba con la variante de ALERTA del §4
+  // (`--debt-soft` + borde), la misma que "Vencido". Traducido a lo que el color
+  // dice: *tener cartera es un problema*. No lo es —es el negocio—; el problema
+  // es la parte VENCIDA. Y con las dos en rojo, la unica que debe alarmar deja
+  // de distinguirse de la que no.
+  //
+  // La asercion es por CONTRASTE y no contra un hexadecimal: se compara contra
+  // otra tarjeta neutra de la misma pantalla y contra la de alerta. Asi no
+  // depende del valor del token, solo del ROL — que es lo que se decidio.
+  // ==========================================================================
+  test('el KPI de por cobrar NO alarma; el de vencido si', async ({ page }) => {
+    await loginAsOwner(page)
+    await page.goto('/fiado')
+    const fondo = (id: string) =>
+      page.getByTestId(`kpi-${id}`).evaluate((el) => getComputedStyle(el).backgroundColor)
+
+    const porCobrar = await fondo('por-cobrar')
+    const vencido = await fondo('vencido')
+    const neutro = await fondo('clientes-deuda')
+
+    expect(
+      porCobrar,
+      'por cobrar se pinta como una cifra de trabajo, igual que cualquier KPI neutro',
+    ).toBe(neutro)
+    expect(
+      porCobrar,
+      'y NO como el vencido: si los dos alarman, ninguno alarma',
+    ).not.toBe(vencido)
+    // El control negativo de la propia comparacion: si `vencido` fuera neutro
+    // tambien, las dos aserciones de arriba pasarian sin medir nada.
+    expect(vencido, 'el vencido SI tiene que alarmar: es la cifra que dispara la accion')
+      .not.toBe(neutro)
+  })
+
   test('setup: crear cliente', async ({ page }) => {
     await loginAsOwner(page)
     await createCustomer(page, CLIENTE)

@@ -29,6 +29,7 @@ import { OpenShiftModal } from '@/components/shift/OpenShiftModal'
 import { StoreSelector } from '@/components/layout/StoreSelector'
 import { SubscriptionBanner } from '@/components/layout/SubscriptionBanner'
 import type { Enums } from '@/types/database.types'
+import { useAtajos } from '@/hooks/useAtajos'
 
 type UserRole = Enums<'user_role'>
 
@@ -120,6 +121,10 @@ export function AppLayout() {
   const { can } = usePermissions()
   const { sede } = useSedeConfig()
   const { isOpen, isLoadingShift } = useCashShift()
+
+  // Atajos globales de §5 (F1 · F3 · F5 · F6 · F7 · F9 · F10). Se montan acá y
+  // no en cada pantalla: el layout es el único sitio que existe en las once.
+  useAtajos()
 
   // 🔴 §5 (decisión 2026-09-03): ORGANIZACIÓN arriba, SEDE debajo, y el nombre
   //    del PRODUCTO fuera del sidebar — ese bloque es del tenant, y meter
