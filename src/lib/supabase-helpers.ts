@@ -206,7 +206,12 @@ export const adjustStock = (productId: string, qty: number, reason: string) =>
 
 // --- Inventario: movimientos de stock (auditoría append-only, paginada) ---
 
-export type StockMovementType = 'sale' | 'adjustment' | 'return' | 'purchase'
+// ⚠️ `return` y `purchase_return` NO son lo mismo, y por eso son dos valores.
+//    `return` es el reverso de una VENTA —lo escribe register_sale_void y el
+//    stock ENTRA—; `purchase_return` es una devolución AL PROVEEDOR y el stock
+//    SALE. Van en direcciones opuestas del negocio y los mira gente distinta.
+export type StockMovementType =
+  | 'sale' | 'adjustment' | 'return' | 'purchase' | 'purchase_return'
 
 export interface StockMovementsFilters {
   sedeId: string
@@ -1005,11 +1010,19 @@ export interface PurchaseInvoicesFilters {
   pageSize: number
 }
 
+/** Compra o devolución: `kind` es lo único que las distingue. */
+export type PurchaseInvoiceKind = 'purchase' | 'return'
+
 export interface PurchaseInvoiceListRow {
   id: string
   created_at: string
   invoice_number: string | null
   total: number
+  // 🔴 `kind` SE PIDE SIEMPRE. `purchase_invoices` guarda las devoluciones en la
+  // misma tabla y con `total` POSITIVO —el signo lo lleva la cabecera, no las
+  // cantidades—, así que una lista que no lo mire muestra una devolución como si
+  // fuera una compra y suma al revés. Misma clase que la deuda 63.
+  kind: PurchaseInvoiceKind
   // ⚠️ SIN `payment_method`: la columna no existe (deuda 26) y el select no la
   // pide. Estaba declarada igual, así que TS habría dejado leerla y en runtime
   // era `undefined` — misma clase que el retorno de arriba, y del lado que
@@ -1029,7 +1042,7 @@ export const getPurchaseInvoices = ({
       // ⚠️ SIN payment_method: la columna no existe (deuda 26 — la compra sale
       //    de caja, siempre). Pedirla hacia fallar la consulta ENTERA y la lista
       //    de compras se veia vacia. Nadie la leia: era solo el select.
-      'id, created_at, invoice_number, total, ' +
+      'id, created_at, invoice_number, total, kind, ' +
         'suppliers(name), profiles!purchase_invoices_created_by_fkey(full_name)',
       { count: 'exact' },
     )
@@ -1044,6 +1057,9 @@ export interface PurchaseInvoiceDetailRow {
   created_at: string
   invoice_number: string | null
   total: number
+  kind: PurchaseInvoiceKind
+  /** Solo en `kind: 'return'`: la compra que esta devolución revierte. */
+  returns_invoice_id: string | null
   // ⚠️ Tercera aparición del mismo campo muerto en este archivo: declarado y
   // nunca pedido. El select de abajo ya decía "sin payment_method: no existe" y
   // la interfaz lo declaraba igual — las dos mitades del contrato en el mismo
@@ -1067,7 +1083,7 @@ export const getPurchaseInvoiceDetail = (invoiceId: string) =>
   supabase
     .from('purchase_invoices')
     .select(
-      'id, created_at, invoice_number, total, notes, ' +   // sin payment_method: no existe
+      'id, created_at, invoice_number, total, notes, kind, returns_invoice_id, ' +
         'suppliers(name, contact, phone), ' +
         'profiles!purchase_invoices_created_by_fkey(full_name), ' +
         'purchase_invoice_items(id, qty, unit_cost, subtotal, ' +

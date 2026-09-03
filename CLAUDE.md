@@ -578,6 +578,15 @@ plausible y una pregunta que **ya no tiene respuesta posible**, ni siquiera repr
 | `cash_movements.reason` | **clasificación** del movimiento **+ detalle** libre | Se agregó `categoria` con allowlist; `reason` quedó **solo** como detalle |
 | `debt_payments.cash_movement_id` nulo | "el abono **no tocó caja**" **+** "la jornada estaba cerrada" | Se agregó `requiere_conciliacion`, `not null default false` |
 | `orders.canal` (propuesto) | **por dónde entró** el pedido **+ quién lo originó** (`preventa`) | `preventa` queda afuera; el originador ya vive en `created_by` |
+| `stock_movements.type = 'return'` | el **reverso de una VENTA** (entra stock, lo escribe `register_sale_void`) **+** la **devolución a un PROVEEDOR** (sale stock) | Se agregó `purchase_return`; el filtro de Inventario pasó de un rótulo a dos |
+
+🔴 **El cuarto caso es el primero que se ataja ANTES de escribir el valor, y por eso vale aparte.**
+Los tres primeros se repararon: la columna ya existía mezclada y hubo que separarla. El cuarto se
+cazó **enumerando** para la deuda 49, al ver que `type='return'` ya tenía dueño. Reusarlo era lo
+cómodo —el valor existía, el CHECK lo aceptaba, y en castellano las dos cosas se llaman
+"devolución"— y habría dejado el mismo valor describiendo **dos direcciones opuestas**,
+distinguibles solo por el signo. La señal fue el idioma: **cuando dos hechos comparten nombre en
+castellano pero van en direcciones contrarias, no comparten valor.**
 
 **Lo accionable, y es una pregunta sola:** antes de agregar un valor a un allowlist o una columna,
 preguntá **cuántas preguntas contesta**. Si son dos, son dos columnas — aunque hoy parezca que una

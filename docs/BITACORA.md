@@ -2974,3 +2974,59 @@ violan.** Hubo que borrar la fila con privilegios de administrador para restaura
 caja es un asiento, se compensa, no se borra—, así que el `afterAll` del spec fallaba **en silencio**.
 Queda anotado como deuda 76, y el spec quedó escrito para **tolerar el residuo** en vez de fingir que
 lo limpia: fija el rango en hoy y calcula el esperado contra la base.
+
+
+## 2026-09-02 · Fase B, bloque 3 · La 49 — devolver una compra sin reescribir el pasado
+
+*El §4 del design system reservaba su color más fuerte a una acción que el backend no tenía. Ya la
+tiene, y la forma que tomó dice más que el hueco.*
+
+### La decisión, y no es una limitación técnica
+
+El promedio ponderado móvil **no es reversible**, y no porque falte información: el costo que dejó la
+compra **ya se propagó** a las ventas que ocurrieron en el medio, congelado en cada línea. Deshacer
+la compra no puede deshacer eso, **y no debería**: esas ventas se cobraron con ese costo y su
+utilidad es un hecho ocurrido.
+
+Por eso una devolución no es la negación de un hecho viejo: es **un hecho nuevo con su propia
+fecha**. Mismo criterio que impide editar una compra aplicada y que congela el costo al vender. La
+historia no se reescribe, se le agrega. Y por eso son **dos funciones y no una**: la devolución
+mueve stock y caja; corregir el costo es un acto aparte, explícito y con motivo obligatorio.
+
+### El signo vive en la cabecera
+
+`kind` distingue compra de devolución, y `qty > 0` y `total >= 0` quedaron **intactos**. Relajarlos
+era lo obvio —una línea negativa "es" una devolución— y habría costado dos veces: una línea negativa
+es indistinguible de un error de carga, y todo consumidor de las líneas tendría que acordarse de un
+signo escondido. Con `kind`, el que quiere saber pregunta una vez, arriba.
+
+### 🔴 Lo que la enumeración cazó, y es el cuarto caso del mismo criterio
+
+`stock_movements.type` ya tenía `'return'`, el CHECK lo aceptaba, y en castellano las dos cosas se
+llaman *devolución*. Reusarlo era gratis. **Y era el error:** `return` es el reverso de una VENTA
+—lo escribe la anulación, y el stock **entra**—; una devolución al proveedor hace que el stock
+**salga**. El mismo valor habría descrito las dos direcciones, distinguibles solo por el signo, y el
+filtro de Inventario habría mezclado la devolución de un cliente con la de un proveedor.
+
+Es la cuarta vez de *"un valor que significa dos cosas no es un dato"*, y **la primera que se ataja
+antes de escribir el valor** en vez de repararlo después. La señal fue el idioma: dos hechos que
+comparten nombre en castellano y van en direcciones contrarias no comparten valor.
+
+### Un hallazgo del censo de columnas
+
+Agregar las columnas nuevas a la tabla de `sentry.test.ts` (R1 punto 6) puso **dos tests rojos**:
+`kind` **ya viajaba** a Sentry, permitido como enum desde que se puso por `products.kind`. No cambió
+el filtro — **destapó que la decisión ya estaba tomada para una columna que todavía no existía**. Es
+exactamente para qué sirve esa tabla, y es la primera vez que el censo enseña algo en lugar de
+limitarse a registrar.
+
+### El permiso, decidido por la dirección del fallo
+
+`adjust_cost` pide **`compras.gestionar`**, no `inventario.ajustar`. Hoy lo único que mueve
+`cost_price` es `register_purchase`, gateada por ese permiso: usar el de inventario le **daría** a
+un rol que no toca dinero la capacidad de tocarlo. El costo es plata; el stock es físico.
+
+⚠️ Y queda dicho lo que **no** cierra: con `productos.editar` se puede seguir haciendo `update` de
+`cost_price` por la tabla, sin motivo y sin rastro — lo hace nuestro propio `costo-congelado.spec`.
+Es la deuda 78, y la nota de diseño que trae es concreta: apoyar el trigger en que `current_user`
+sea `postgres` dentro de un `SECURITY DEFINER` funciona pero es frágil.

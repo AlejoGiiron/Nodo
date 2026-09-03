@@ -9,6 +9,7 @@ import { NewInvoiceModal } from '@/components/purchases/NewInvoiceModal'
 import { PurchaseDetailModal } from '@/components/purchases/PurchaseDetailModal'
 import { Button } from '@/components/ui/Button'
 import { MoneyCell } from '@/components/ui/MoneyCell'
+import { Badge } from '@/components/ui/Badge'
 import { PageHeader } from '@/components/ui/PageHeader'
 
 type Tab = 'invoices' | 'suppliers'
@@ -63,9 +64,29 @@ function InvoicesTab({ onNew, onOpen }: { onNew: () => void; onOpen: (id: string
               >
                 <td style={{ padding: '10px 16px', color: 'var(--ink-3)', fontVariantNumeric: 'tabular-nums', fontSize: 12 }}>{fmtDate(inv.created_at)}</td>
                 <td style={{ padding: '10px 16px', color: 'var(--ink)' }}>{inv.suppliers?.name ?? '—'}</td>
-                <td style={{ padding: '10px 16px', color: 'var(--ink-3)' }}>{inv.invoice_number ?? '—'}</td>
+                <td style={{ padding: '10px 16px', color: 'var(--ink-3)' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                    {inv.invoice_number ?? '—'}
+                    {/* 🔴 Una devolución vive en la misma tabla y con `total`
+                        POSITIVO: sin este rótulo se lee como una compra más, y
+                        la columna de la derecha parecería sumar cuando resta. */}
+                    {inv.kind === 'return' && (
+                      <Badge tone="success" data-testid="purchase-kind-return"
+                             title="Devolución al proveedor: la mercancía salió y la plata volvió a la caja">
+                        Devolución
+                      </Badge>
+                    )}
+                  </span>
+                </td>
                 <td style={{ padding: '10px 16px', textAlign: 'right' }}>
-                  <MoneyCell value={inv.total} style={{ fontWeight: 600 }} />
+                  {/* El signo se pinta acá, donde se lee: MoneyCell manda los
+                      negativos a --success-700, que es el token de "plata que
+                      entra" (§4). En la base el total es positivo y el signo lo
+                      lleva `kind` — un solo lugar decide, y es éste. */}
+                  <MoneyCell
+                    value={inv.kind === 'return' ? -inv.total : inv.total}
+                    style={{ fontWeight: 600 }}
+                  />
                 </td>
               </tr>
             ))}

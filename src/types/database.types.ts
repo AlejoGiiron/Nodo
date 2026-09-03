@@ -689,6 +689,61 @@ export type Database = {
           },
         ]
       }
+      product_cost_adjustments: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          new_cost: number
+          old_cost: number | null
+          product_id: string
+          reason: string
+          sede_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          new_cost: number
+          old_cost?: number | null
+          product_id: string
+          reason: string
+          sede_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          new_cost?: number
+          old_cost?: number | null
+          product_id?: string
+          reason?: string
+          sede_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_cost_adjustments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_cost_adjustments_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_cost_adjustments_sede_id_fkey"
+            columns: ["sede_id"]
+            isOneToOne: false
+            referencedRelation: "sedes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_extras: {
         Row: {
           created_at: string
@@ -919,7 +974,9 @@ export type Database = {
           created_by: string | null
           id: string
           invoice_number: string | null
+          kind: string
           notes: string | null
+          returns_invoice_id: string | null
           sede_id: string
           supplier_id: string
           total: number
@@ -929,7 +986,9 @@ export type Database = {
           created_by?: string | null
           id?: string
           invoice_number?: string | null
+          kind?: string
           notes?: string | null
+          returns_invoice_id?: string | null
           sede_id: string
           supplier_id: string
           total?: number
@@ -939,7 +998,9 @@ export type Database = {
           created_by?: string | null
           id?: string
           invoice_number?: string | null
+          kind?: string
           notes?: string | null
+          returns_invoice_id?: string | null
           sede_id?: string
           supplier_id?: string
           total?: number
@@ -950,6 +1011,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_invoices_returns_invoice_id_fkey"
+            columns: ["returns_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_invoices"
             referencedColumns: ["id"]
           },
           {
@@ -1317,6 +1385,10 @@ export type Database = {
         Args: { p_items: Json; p_order_id: string }
         Returns: undefined
       }
+      adjust_cost: {
+        Args: { p_new_cost: number; p_product_id: string; p_reason: string }
+        Returns: undefined
+      }
       adjust_stock: {
         Args: { p_product_id: string; p_qty: number; p_reason: string }
         Returns: undefined
@@ -1335,6 +1407,10 @@ export type Database = {
       }
       register_purchase: {
         Args: { p_invoice: Json; p_items: Json }
+        Returns: Json
+      }
+      register_purchase_return: {
+        Args: { p_invoice_id: string; p_items: Json; p_notes?: string }
         Returns: Json
       }
       register_sale_payment: {

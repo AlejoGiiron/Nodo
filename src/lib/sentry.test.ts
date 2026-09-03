@@ -137,6 +137,21 @@ const COLUMNAS_DEL_ESQUEMA: ColumnaEsquema[] = [
   { tabla: 'purchase_invoice_items', columna: 'purchase_unit', ejemplo: 'bulto' },
   { tabla: 'purchase_invoice_items', columna: 'units_per_purchase_unit', ejemplo: 50 },
 
+  // Migración `devolucion_de_compra_y_ajuste_de_costo` (2026-09-02, deuda 49).
+  // R1 punto 6: se agregan en la MISMA sesión que la migración.
+  // ⚠️ `kind` YA VIAJABA: está en el allowlist como 'codigo' desde que se puso
+  //    por `products.kind`. Agregarlo al censo no cambió el filtro — DESTAPÓ
+  //    que la decisión ya estaba tomada para una columna que todavía no
+  //    existía. Es exactamente para qué sirve esta tabla: dejar escrito qué se
+  //    consideró. Un enum de dos valores sin PII: viaja a propósito.
+  { tabla: 'purchase_invoices', columna: 'kind', ejemplo: 'return', permitida: true },
+  { tabla: 'purchase_invoices', columna: 'returns_invoice_id', ejemplo: '7c1e9a2b-4d5f-4e6a-9b8c-1d2e3f4a5b6c' },
+  // `reason` es texto libre donde un dueño escribe por qué cambió un costo — y
+  // ahí aparecen nombres de personas, igual que en stock_movements.notes.
+  { tabla: 'product_cost_adjustments', columna: 'reason', ejemplo: 'Conteo fisico con Maria Gomez' },
+  { tabla: 'product_cost_adjustments', columna: 'old_cost', ejemplo: 7350 },
+  { tabla: 'product_cost_adjustments', columna: 'new_cost', ejemplo: 9420 },
+
   // ── stock_movements / store_sequences
   { tabla: 'stock_movements', columna: 'notes', ejemplo: 'Ajuste hecho por Ana' },
   { tabla: 'stock_movements', columna: 'reference_id', ejemplo: '3f2b1c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d', permitida: true },

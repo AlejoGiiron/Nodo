@@ -224,7 +224,11 @@ function MovementsTab() {
     { value: 'sale', label: 'Ventas' },
     { value: 'purchase', label: 'Compras' },
     { value: 'adjustment', label: 'Ajustes' },
-    { value: 'return', label: 'Devoluciones' },
+    // Dos devoluciones OPUESTAS, y por eso dos filtros: una entra stock (venta
+    // anulada) y la otra lo saca (se le devolvió al proveedor). El rótulo viejo
+    // decía "Devoluciones" a secas y habría mezclado las dos.
+    { value: 'return', label: 'Devoluciones de venta' },
+    { value: 'purchase_return', label: 'Devoluciones a proveedor' },
   ]
 
   const inputStyle: React.CSSProperties = {
