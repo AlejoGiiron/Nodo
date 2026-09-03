@@ -178,6 +178,13 @@ export function useCashShift() {
     onSuccess: (_, vars) => {
       invalidateMovements()
       invalidateSales()
+      // 🔴 El HISTORIAL DE GASTOS deriva de `cash_movements`, así que cualquier
+      //    movimiento lo desactualiza. Faltaba, y no se notaba porque el alta
+      //    vivía en otra pantalla: con el formulario lateral de §7.8 el gasto se
+      //    guardaba y la lista de al lado seguía mostrando lo de antes.
+      //    Se invalida acá —donde ocurre la escritura— y no en el formulario:
+      //    así también sirve para el alta desde el banner de turno.
+      queryClient.invalidateQueries({ queryKey: ['expenses_history'] })
       toast.success(vars.type === 'in' ? 'Ingreso registrado' : 'Egreso registrado')
     },
     onError: () => toast.error('Error al registrar movimiento'),

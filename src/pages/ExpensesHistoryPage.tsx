@@ -7,6 +7,7 @@ import {
 import type { HistoryScope } from '@/hooks/useShiftHistory'
 import { useSedeConfig } from '@/hooks/useSedeConfig'
 import { DEFAULT_EXPENSE_SUBCATEGORIES } from '@/lib/sedeConfig'
+import { RegistrarGastoForm } from '@/components/gastos/RegistrarGastoForm'
 
 // ─── Helpers ──────────────────────────────────────────────────────
 
@@ -155,8 +156,10 @@ export function ExpensesHistoryPage() {
         </div>
       </div>
 
-      {/* List */}
-      <div style={{ flex: 1, overflow: 'auto', padding: '12px 24px 24px' }}>
+      {/* 🔴 §7.8: «formulario LATERAL». La lista y el alta conviven en la misma
+          pantalla — antes había que ir a Mostrador para registrar un gasto. */}
+      <div style={{ flex: 1, overflow: 'auto', padding: '12px 24px 24px', display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
         {isLoading ? (
           <div style={{ padding: 50, textAlign: 'center', color: 'var(--ink-4)', fontSize: 13.5 }}>
             Cargando egresos...
@@ -255,6 +258,13 @@ export function ExpensesHistoryPage() {
             ))}
           </div>
         )}
+        </div>
+
+        {/* El formulario lateral (§7.8). Ancho fijo: lo que se comprime es la
+            lista, igual que en el mostrador se comprime el catálogo. */}
+        <aside style={{ width: 320, flexShrink: 0 }}>
+          <RegistrarGastoForm />
+        </aside>
       </div>
 
       {/* Pagination */}
