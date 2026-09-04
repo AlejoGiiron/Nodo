@@ -340,3 +340,57 @@ laboratorio*; la fecha no distingue nada.
 
 ⛔ **Y los 6 clientes inactivos sin órdenes no se tocan.** Borrarlos es trivial y **no arregla
 nada**: el picker estaba vacío porque había cero ACTIVOS, no por ellos.
+
+---
+
+## 🔴 REGISTRO AUTOSERVICIO — abierta el 2026-09-03
+
+*Se abre al cerrar la 36 para que quede claro **qué NO cierra** el alta de organización. La 36 da la
+herramienta; esto es el producto, y no es «hacer una pantalla».*
+
+**Alcance real, y el orden es de menor a mayor:**
+
+| # | qué falta | por qué no es opcional |
+|---|---|---|
+| 1 | **Verificación de correo** | el lab usa **Auto Confirm**. Sin verificar, cualquiera registra **el correo de otra persona** y se queda con la cuenta |
+| 2 | **Límites** | nada impide crear **diez mil organizaciones**. No hay rate limiting, no hay captcha, y el alta es una escritura en varias tablas |
+| 3 | 🔴 **Qué significa una organización recién registrada** respecto de `subscription_status` | ⬇️ es lo que lo bloquea de verdad |
+
+🔴 **EL PUNTO 3 NO ES UNA TAREA: ES LA RAZÓN POR LA QUE ESTO NO SE PUEDE CONSTRUIR TODAVÍA.**
+
+`organizations.subscription_status` es `not null default 'active'`, con
+`revoke update on organizations from authenticated` y `grant update (name, logo_url, config)`. O sea
+que **sólo Centro lo escribe**, por Edge Function con service role, y Nodo opera permanentemente en
+`active`.
+
+**Un registro autoservicio crearía organizaciones que nacen `active` y que nadie puede suspender ni
+cobrar** — porque el flujo que las crea no es el que Centro conoce. No es que falte una pantalla:
+falta decidir **qué estado tiene un tenant que se registró solo y todavía no pagó**, y ese estado no
+existe en el `CHECK` de hoy (`active · expiring · grace · restricted · suspended`).
+
+⚠️ Y agregarlo no es editar un enum: es el **contrato en 6 lados y 3 repos** (R1 punto 3), con aviso
+a Centro **antes** del deploy y sin ningún mecanismo que garantice ese aviso.
+
+### 🔴 DÓNDE VIVE: en G-Centro, no en Nodo
+
+**El que se registra compra un producto de Giiron, no «se crea una cuenta de Nodo».** Centro ya nació
+multi-producto y **ya tiene el estado de suscripción** — es quien lo escribe. Construir el registro
+en Nodo significaría que Nodo aprenda de precios, de planes y de cobro, y que ese conocimiento
+quedara **duplicado el día que Vento o Cresco necesiten lo mismo**: es exactamente el contrato en N
+lados que este proyecto ya viene pagando.
+
+✅ **Lo que Nodo sí aporta, y ya está hecho:** `onboard_organization` no recibe quién la llama. El
+día que Centro tenga el registro, invoca esta misma función después de verificar correo, límites y
+suscripción. **Cambia el llamante, no lo que hace.**
+
+### El disparador
+
+> **Cuando la venta deje de ser cara a cara.**
+
+Hoy Muscle Pro **firmó por teléfono**, y los próximos tres van a ser igual: alguien habla con el
+cliente, cobra, y corre `scripts/onboard-organizacion.mjs`. Mientras el alta la haga una persona que
+ya habló con quien paga, **el autoservicio no resuelve ningún problema que tengamos** — y trae los
+tres de arriba.
+
+⚠️ Se escribe el disparador y no una fecha, por la razón de siempre: *"algún día"* no se ejecuta
+nunca, y una fecha sobre algo que depende del negocio caduca sola.

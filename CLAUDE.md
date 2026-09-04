@@ -1800,6 +1800,48 @@ que la suite E2E pueda correr: es el único verificador que mira esta clase.
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · NO SE QUITA UN GUARD DEL CAMINO NORMAL PARA HABILITAR UN CASO DE ARRANQUE
+
+*Decidido el 2026-09-03, al construir el alta de organización (deuda 36). Se escribe para que nadie
+lo vuelva a proponer como atajo — porque la próxima vez va a sonar razonable otra vez.*
+
+> **Un caso de arranque se resuelve agregando un camino, no debilitando el que ya protege a todos.**
+
+**El caso.** Para el alta de una organización nueva se propuso que la RPC recibiera un `p_user_id` —
+un usuario de Auth ya creado— y armara la organización alrededor. Al verificarlo apareció que **es
+imposible**: `handle_new_user` es un trigger `AFTER INSERT` sobre `auth.users` que **lanza excepción
+si falta `sede_id`**, y una excepción en un trigger aborta el insert. Un usuario de Auth **no puede
+existir sin una sede previa**.
+
+**El atajo evidente era relajar ese guard** —admitir un usuario «pendiente», sin sede— y armar el
+perfil después. **Se descartó.** El guard existe con su razón escrita en el propio código:
+
+> *"un rol implícito es una autorización que nadie decidió"*
+
+Relajarlo para el arranque abriría, **en el camino que usan todos los usuarios todos los días**, la
+posibilidad de un perfil sin sede ni rol — y el defecto no aparecería en el alta sino meses después,
+en un usuario cualquiera, sin nada que lo conecte con esta decisión.
+
+⚠️ **Es el mismo intercambio que ya rechazamos con los `CHECK` de la devolución de compra:** un
+guard estricto molesta en un caso de borde, y aflojarlo *para ese caso* lo afloja **para todos**. La
+respuesta fue la misma las dos veces — el caso de borde gana su propio camino, con sus propios
+guards.
+
+**Lo que se hizo en su lugar:** invertir el orden. `onboard_organization(p_org_name, p_sede_name)`
+crea org + sede + roles y **devuelve el `sede_id`**; el usuario nace después, por el camino normal,
+con su metadata completa. `handle_new_user` **no se tocó** y sigue rechazando lo que siempre
+rechazó.
+
+**LO ACCIONABLE, y es una pregunta:** cuando un guard estorbe, preguntá **a cuántos protege hoy** y
+**a cuántos estorba**. Si protege el camino de todos y estorba un caso que ocurre una vez por
+cliente, lo que falta es un camino nuevo — no un guard más flojo.
+
+⚠️ Y el corolario que lo hace verificable: si la propuesta es *"relajemos X para poder Y"*, escribí
+**qué se cuela por X** una vez relajado. Si eso que se cuela es una autorización, un rol o una
+pertenencia, la respuesta ya está: no.
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · UNA DUDA TIENE UN SUJETO — SI EL SUJETO DESAPARECE, LA DUDA SE DISUELVE, Y ESO NO ES HABERLA CONTESTADO
 
 *2026-09-03. Hermana directa del criterio de abajo: las dos son sobre **no perder el porqué cuando
