@@ -79,9 +79,49 @@ serve(async (req) => {
     if (!['admin', 'cashier'].includes(role))
       return json({ error: 'Rol inválido' }, 400)
 
-    // La sede debe coincidir con la del llamante.
-    if (sede_id !== callerProfile.sede_id)
-      return json({ error: 'No tienes permiso sobre esa sede' }, 403)
+    // ── LA SEDE: DE TU ORGANIZACIÓN, NO «LA TUYA» (deuda 92) ───────────────
+    // Antes esto era `if (sede_id !== callerProfile.sede_id) return 403`, y con
+    // UNA sola sede por organización nadie lo notó: toda alta era en la sede
+    // propia. Con dos, un admin de la sede A no podía dar de alta a nadie en la
+    // sede B **de su misma organización**, aunque tuviera `usuarios.gestionar`.
+    //
+    // ⛔ EL ARREGLO NO ES AFLOJAR EL GUARD: es cambiar la PREGUNTA. De «¿es TU
+    //    sede?» a «¿es una sede de tu organización?» — más ancha en un eje y
+    //    MÁS ESTRICTA en el otro, porque ahora la pertenencia a la organización
+    //    se comprueba EXPLÍCITAMENTE.
+    //
+    // 🔴 Y esa estrictez no es decorativa, está medida (2026-09-04): la línea
+    //    vieja era LO ÚNICO que impedía crear un usuario en otro tenant.
+    //    `enforce_profile_organization` no lo impide —deriva la organización
+    //    DESDE la sede y sólo exige que el par sea coherente— y
+    //    `handle_new_user` deriva `organization_id` de la sede, así que el par
+    //    siempre es coherente. Sin el chequeo de abajo, relajar la comparación
+    //    habría abierto el alta cruzada entre organizaciones.
+    //
+    // ⚠️ El permiso NO cambia: `usuarios.gestionar` ya es una capacidad de
+    //    alcance ORGANIZACIÓN —los roles son por organización y `has_permission`
+    //    resuelve por `auth.uid()`—, y sólo la tienen `owner` y `admin`;
+    //    `cajero` no. Nunca dijo «en tu sede»: eso lo decía la línea vieja.
+    //    🔴 DISPARADOR para una clave nueva, escrito porque este lado es el
+    //    permisivo: el día que el cliente quiera un ADMIN DE SEDE que no pueda
+    //    tocar otras sedes. Hoy ese rol no existe y separarlo costaría el
+    //    catálogo (21→22), el tripwire, el generador y una migración de unión
+    //    para las organizaciones ya creadas.
+    //
+    // 📋 La forma es la MISMA que este archivo ya usa tres líneas más abajo para
+    //    `role_id`: resolver la fila con el cliente admin y comparar su
+    //    `organization_id` con el del llamante. Estaba escrita para roles y no
+    //    para sedes, porque la sede era «la propia» por construcción.
+    const { data: sedeDestino, error: sedeErr } = await admin
+      .from('sedes')
+      .select('id, organization_id')
+      .eq('id', sede_id)
+      .maybeSingle()
+
+    if (sedeErr) return json({ error: 'No se pudo verificar la sede' }, 500)
+    if (!sedeDestino) return json({ error: 'La sede indicada no existe' }, 400)
+    if (sedeDestino.organization_id !== callerProfile.organization_id)
+      return json({ error: 'Esa sede no pertenece a tu organización' }, 403)
 
     // Validación del rol RBAC ANTES de crear la cuenta: si el rol es inválido
     // conviene rechazar sin haber creado nada, y así la compensación de abajo
