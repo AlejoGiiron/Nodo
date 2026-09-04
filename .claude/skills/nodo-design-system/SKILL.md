@@ -473,7 +473,36 @@ Mostrador va suelto arriba, sin título de grupo: es la pantalla del día y no p
 - **Los atajos funcionan siempre pero no se imprimen.** La interfaz no lleva rótulos de tecla en reposo.
 - **Los atajos se revelan con Alt o con `?`**, y también con el control "Atajos" del encabezado. Al revelarse aparecen junto a cada destino de navegación, en el campo de búsqueda y en los medios de pago.
 - **Única excepción permanente: "Cobrar — F12"**, impreso en el botón. Es el atajo que la cajera usa cientos de veces al día y el que justifica la excepción.
-- Teclas asignadas: F1 Mostrador · F2 buscar producto · F3 Compras · F4 cambiar cliente · F5 Catálogo · F6 Clientes · F7 Cartera · F8 Pedidos · F9 Gastos · F10 Inventario · F11 Utilidades · F12 cobrar.
+- Teclas asignadas: F1 Mostrador · F2 buscar producto · F3 Compras · F4 cambiar cliente ·
+  **F8 Catálogo** · F6 Clientes · F7 Cartera · F9 Gastos · F10 Inventario · F12 cobrar.
+  Sin cablear: F11 Utilidades (la pantalla no existe).
+
+#### 🔴 CORRECCIÓN 2026-09-03 — **F5 NO SE TOMA.** La entrega la asignaba a Catálogo.
+
+> **No es que el `preventDefault` no alcance: es que no queremos que alcance.**
+
+F5 es **recargar**, y recargar es la tecla más destructiva que existe sobre una venta a medio armar:
+el carrito vive en el store del navegador y una recarga accidental **lo borra sin confirmación**.
+
+⚠️ **Y el argumento no es que no se pueda atajar — se puede.** `preventDefault` la corta mientras el
+manejador esté montado. El problema es de qué depende esa garantía: de que **toda** pantalla y
+**todo** estado monten ese manejador, hoy y siempre. Basta un límite de error, una ruta nueva, un
+render sin el layout, para que la tecla vuelva a recargar **sin aviso y sin rojo**. Es exactamente el
+perfil que este proyecto no acepta: una garantía que depende de que nadie se olvide.
+
+**Catálogo pasa a F8.** F8 estaba asignada a **Pedidos, que no existe** (deuda 85): una tecla
+reservada para una pantalla inexistente cede ante una que se usa todos los días. Cuando Pedidos
+exista se le asigna otra, **con la pantalla delante**, que es cuando se puede elegir mirando el flujo
+en vez de reservando a ciegas.
+
+✅ **Y la decisión tiene guard, no recordatorio:** `TECLAS_RESERVADAS` en `src/lib/atajos.ts`, con un
+caso unitario que falla si alguna entrada de `ATAJOS` usa una tecla de esa lista — y el rojo imprime
+**la razón entera**, no un booleano. Un comentario que dice «no uses F5» se lee sin contestar y se
+salta en silencio; esto no.
+
+⚠️ Corolario para agregar teclas: la pregunta no es *«¿se puede atajar?»* sino **«si el atajo falla,
+¿qué hace el navegador?»**. Si la respuesta destruye trabajo del usuario, la tecla no se toma aunque
+se pueda cortar.
 
 #### 🔴 CORRECCIÓN 2026-09-03 — las teclas de función NO tienen doble significado
 
