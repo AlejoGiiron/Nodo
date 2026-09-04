@@ -215,7 +215,30 @@ Obligatorio en: precio, costo, cantidad, total, subtotal, descuento, saldo, valo
 
 Prohibido en: texto corrido, nombres, descripciones, etiquetas. Aplicarlo a prosa la afea sin beneficio.
 
-Formato de moneda: **COP sin decimales, separador de miles con punto.** Sin símbolo de peso en columnas de tabla; el encabezado ya dice qué es.
+Formato de moneda: **COP sin decimales, separador de miles con punto.** Sin símbolo de peso en
+columnas de tabla; el encabezado ya dice qué es.
+
+🔴 **UNA EXCEPCIÓN, decidida el 2026-09-03: la LISTA DE PRODUCTOS DEL MOSTRADOR lleva `$`.**
+
+*Se escribe acá y no en el código porque una regla con una excepción no documentada es peor que sin
+la regla: el próximo lee «sin símbolo», ve el `$` en pantalla, y no sabe cuál de los dos está mal.*
+
+| | |
+|---|---|
+| dónde | la lista del Mostrador, y **sólo ahí** |
+| cómo | `MoneyCell` expone `simbolo`, **opt-in y apagado por defecto** |
+| qué NO cambia | las otras columnas de dinero —Catálogo, Cartera, Compras, abonos, total del carrito— siguen sin símbolo |
+
+⚠️ **El argumento de la regla sigue en pie y la excepción lo contradice a propósito.** «El encabezado
+ya dice qué es» es cierto —esa lista **ganó encabezados en el mismo cambio**—, así que por el texto
+de §2 el `$` ahí es redundante. Se puso igual, por decisión de producto: es la lista que el cajero
+mira mientras habla con el cliente, y la única donde el número se lee sin contexto de columna.
+
+🔴 **Y la forma del mecanismo importa más que la excepción: el default PROTEGE.** Una celda de dinero
+nueva nace **sin** símbolo, o sea cumpliendo §2, y desviarse exige escribirlo en el llamador. Es la
+misma decisión que `data-letras-inertes`: **opt-in, no lista de excepciones** — una lista se congela
+y el próximo caso nace del lado equivocado. Si algún día el símbolo pasa a ser la regla, se invierte
+en un lado y no en seis llamadores.
 
 ---
 

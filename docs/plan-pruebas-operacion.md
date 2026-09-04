@@ -79,7 +79,9 @@ tercera columna no se dio por bueno: se dio por no hecho.
 |---|---|---|
 | Ir a **Mostrador** y **no tocar nada** | 🔴 Se ve **todo el catálogo**: 32 productos, de las 9 categorías. ⚠️ Si se ve una sola categoría, volvió el defecto que escondía el strip | |
 | Mirar el encabezado de la lista | Dice **«Todos los productos»** y el conteo. Ese número es la única señal de cuánto hay | |
+| Mirar la **cabecera de la lista** | Tres títulos: `PRODUCTO · CATEGORÍA · PRECIO`. Se queda fija al hacer scroll | |
 | Mirar la columna **CATEGORÍA** | Está, en **gris** — sin el color del cliente. ⚠️ Si trae colores, van a competir con el badge de stock en la misma fila (§1.2) | |
+| Mirar los precios de la lista | Llevan **`$`** adelante: `$140.000`. ⚠️ Es una **excepción a §2**, sólo de esta lista — en Catálogo, Cartera y Compras la cifra va sin símbolo | |
 | Teclear `farmacolog` en el buscador | Filtra **por categoría**: sólo productos de Farmacología. El conteo baja | |
 | Borrar la búsqueda y buscar `CREATINA OPTIMUN` | Aparece con precio **110.000** | |
 | Agregarlo al carrito | La línea muestra el precio **editable** | |
