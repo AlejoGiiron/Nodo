@@ -2498,6 +2498,47 @@ distintas**, y sólo una ejecuta. Si al enumerar coinciden, costó dos minutos. 
 —**todas las veces hasta ahora**—, lo que se encontró es justamente lo que habría hecho fallar el
 plan, o el registro de lo que se hizo.
 
+🔴 **SÉPTIMO CASO, 2026-09-04 — Y ES DE UNA TERCERA ESPECIE: DESCRIBÍA UN MECANISMO QUE NO EXISTE,
+Y AUN ASÍ APUNTABA AL LUGAR CORRECTO.**
+
+Los de la tabla describen mal el **alcance**; el de abajo describe mal la **dirección**. Éste no
+hace ninguna de las dos: **el defecto estaba donde la deuda decía, y la explicación era inventada.**
+
+**El caso (deuda 91).** El enunciado decía: *"el selector se abre sin nada marcado, y quien edite el
+nombre le cambia el color sin querer, porque el formulario arranca en
+`category?.color ?? CATEGORY_COLORS[0]`"*.
+
+| la mitad | veredicto |
+|---|---|
+| *"el selector se abre sin nada marcado"* | ✅ **cierto y medido** — 170 de 684 categorías |
+| *"editar el nombre le cambia el color"* | 🔴 **falso** — el `??` **no dispara nunca**: `categories.color` es `not null default`, así que el estado arranca en el color real y el submit lo devuelve intacto |
+
+**Y el defecto real era otro, y peor:** una **puerta de una sola dirección**. Nada se pierde al
+guardar; se pierde al **explorar** — en cuanto alguien toca cualquier muestra, el color original
+desaparece de la pantalla y no hay forma de volver. Irreversible, y sin que nadie haya guardado nada.
+
+⚠️ **POR QUÉ ES MÁS DIFÍCIL DE DETECTAR QUE UNO QUE APUNTA MAL:**
+
+> **Un enunciado falso puede apuntar al lugar correcto por la razón equivocada.**
+
+Los seis anteriores se caen al enumerar: se mide el alcance y no coincide, se lee la dirección y está
+invertida. **Éste sobrevive a la enumeración**, porque lo que la enumeración confirma —hay categorías
+que el modal no puede editar— es cierto. Lo falso está **una capa más adentro**: en el mecanismo, que
+sólo se destapa leyendo la línea que el enunciado cita. Y el enunciado **citaba la línea**, con su
+`??` y todo, que es lo que lo hacía sonar verificado.
+
+🔴 **Y el costo concreto de creerle:** el arreglo que se desprende del mecanismo falso es *"no pisar
+el color al guardar"* —que ya funciona— y **deja el defecto real intacto**. Se habría cerrado la
+deuda con un cambio que no cambia nada, sobre una pantalla donde el color se sigue perdiendo.
+
+**Lo accionable, y es un paso más que la enumeración de siempre:** cuando una deuda **cita una línea
+de código** para explicar su mecanismo, **abrí esa línea**. No para confirmar que existe —existía—
+sino para comprobar que **hace lo que la deuda dice que hace**. Acá el `??` estaba, y no se ejecuta
+jamás.
+
+⚠️ Es el corolario de R4 en su forma más incómoda: la deuda coincidía con el código *en la cita* y
+divergía *en el comportamiento*, y una cita textual se lee como la evidencia más fuerte que hay.
+
 🔴 **EL ÚLTIMO CASO ES DE OTRA ESPECIE: LOS DEMÁS DESCRIBÍAN MAL EL ALCANCE; ÉSE DESCRIBÍA MAL LA
 DIRECCIÓN.**
 
