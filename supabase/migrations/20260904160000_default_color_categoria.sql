@@ -13,16 +13,35 @@
 --    O sea que la mayoria del problema no la eligio nadie: la escribio esta
 --    linea.
 --
--- ── POR QUE VIOLETA, Y NO EL PRIMERO DE LA LISTA ───────────────────────────
---    `#7c3aed` es el unico de los ocho que no cae cerca de ninguna familia de
---    §1.2: accion es azul, deuda y error son rojos, advertencia es ambar,
---    confirmacion es verde, y los neutros son slate. Un color de categoria NO
---    es un estado, asi que el default correcto es el que menos puede leerse
---    como uno.
---    ⚠️ `#10b981` —el primero de la lista, y el que toma toda categoria nueva
---    creada desde la pantalla— NO se usa acá a proposito: es el acento de otro
---    producto (deuda 88) y ademas es verde, que §1.2 reserva a confirmacion.
---    Cambiar ESE es una decision de producto y no entra en esta migracion.
+-- ── 🔴 EDITADA EL 2026-09-04, DESPUES DE ESCRITA Y ANTES DE APLICARSE ──────
+--    Esta migracion decia `#7c3aed`. Se cambio a `#7e3c9a` porque la PALETA
+--    ENTERA se reemplazo el mismo dia (deudas 88 + 91) y `#7c3aed` ya no existe.
+--    ⚠️ EDITARLA NO VIOLA R5, y se dice aca porque la fecha del nombre invita a
+--    suponer lo contrario: R5 protege las migraciones APLICADAS, y esta NUNCA
+--    SE EJECUTO — el token estaba rotado cuando se escribio. Si alguien ve en el
+--    `git log` una migracion modificada, esta es la razon.
+--
+-- ── POR QUE VIOLETA, Y POR QUE ES EL PRIMERO DE LA LISTA ───────────────────
+--    `#7e3c9a` (tono 282°) es el mas lejano de toda familia de §1.2 —62° de la
+--    mas cercana—, asi que es a la vez el default de la base Y
+--    `CATEGORY_COLORS[0]`, el color con el que nace toda categoria creada desde
+--    la pantalla. Los dos caminos de alta escriben el mismo valor.
+--
+--    🔴 LA PALETA VIEJA ERA LA DE VENTO Y CHOCABA CON §1.2 EN 6 DE 8. Medido el
+--    2026-09-04 contra `src/tokens.css`: `#64748b` era IDENTICO a `--ink-3`, y
+--    cinco mas caian a 12° o menos de una familia (dos sobre success, uno sobre
+--    warning, uno sobre action, uno sobre debt). Su primer elemento era
+--    `#10b981` — el acento de otro producto Y verde, que §1.2 reserva a
+--    confirmacion: toda categoria nueva nacia con el color equivocado en el rol
+--    equivocado.
+--
+--    📐 Y POR QUE LOS OCHO NUEVOS ESTAN APAGADOS (44% de saturacion), que es lo
+--    que hace defendible que dos compartan tono con una familia: §1.2 deja
+--    libre solo el 47% del circulo de tonos, y en DOS tramos —63°-135°, que es
+--    verde y se lee como confirmacion, y 225°-320°—. En 96 grados no entran
+--    ocho tonos distinguibles, asi que EL TONO NO PUEDE SER EL EJE. La
+--    saturacion si: los tokens plenos de §1.2 van de 71% a 95%.
+--    Ver `src/lib/coloresDeCategoria.ts` para la medicion completa.
 --
 -- ── FILAS TOCADAS: CERO, Y ES DELIBERADO (R0) ──────────────────────────────
 --    `alter column ... set default` NO reescribe ninguna fila existente. Las
@@ -45,7 +64,7 @@
 begin;
 
 alter table public.categories
-  alter column color set default '#7c3aed';
+  alter column color set default '#7e3c9a';
 
 comment on column public.categories.color is
   'Color de la etiqueta de la categoria, ELEGIDO POR EL CLIENTE. No es un '

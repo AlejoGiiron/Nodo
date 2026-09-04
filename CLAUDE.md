@@ -2536,6 +2536,17 @@ de código** para explicar su mecanismo, **abrí esa línea**. No para confirmar
 sino para comprobar que **hace lo que la deuda dice que hace**. Acá el `??` estaba, y no se ejecuta
 jamás.
 
+🔴 **Y ES LA PRIMERA DE LAS SIETE DONDE CITAR FUE LO QUE LA HIZO CREÍBLE.**
+
+> **Un enunciado que cita código se lee como MEDIDO.** Las otras seis se sostenían en descripciones
+> —«el catálogo son ~4.212 productos», «Compras ya deja elegir la fecha»— y una descripción invita a
+> comprobar. Ésta traía la línea, **con su `??` y todo**, así que ya parecía comprobada: citar el
+> código es el gesto con el que uno demuestra que fue a mirar.
+
+⚠️ **El costo es exactamente esa credibilidad.** Una deuda sin cita se enumera por costumbre; una
+deuda **con** cita se lee, se entiende y se ejecuta — y el paso que la habría destapado es el mismo
+que la cita hace parecer innecesario.
+
 ⚠️ Es el corolario de R4 en su forma más incómoda: la deuda coincidía con el código *en la cita* y
 divergía *en el comportamiento*, y una cita textual se lee como la evidencia más fuerte que hay.
 
