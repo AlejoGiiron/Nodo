@@ -74,6 +74,25 @@ const MODALES = {
     control: 'Crear sede',
     pantalla: true,   // no hay dialogo que buscar: el control mira la pagina
   },
+  // 🔴 EL ESTADO, no solo la pantalla (criterio del 2026-09-04). Antes de
+  //    agregarlos me pregunte en que estado su primario esta PRESENTE: los dos
+  //    solo se apagan mientras la mutacion esta en vuelo, asi que nacen
+  //    encendidos y no hay que llenar nada. La pregunta se hace igual — la
+  //    respuesta "ya esta" es una respuesta, no una excusa para no preguntar.
+  'turno-abrir': {
+    ruta: '/ventas',
+    abrir: async (page) => page.getByRole('button', { name: /Abrir turno/i }).first().click(),
+    control: 'Abrir turno de caja',
+  },
+  'cliente-nuevo': {
+    ruta: '/fiado',
+    abrir: async (page) => {
+      await page.getByTestId('fiado-tab-customers').click();
+      await page.waitForTimeout(500);
+      await page.getByTestId('new-customer-btn').click();
+    },
+    control: 'Crear cliente',
+  },
   'categoria-nueva': {
     ruta: '/productos',
     abrir: async (page) => page.getByRole('button', { name: /Nueva categor/i }).first().click(),

@@ -153,8 +153,8 @@ export function RecipeEditor({ selfId, products, rows, onChange }: RecipeEditorP
             disabled={!pickId}
             style={{
               padding: '0 12px', border: 'none', borderRadius: 9,
-              background: pickId ? '#10b981' : '#cbd5e1',
-              cursor: pickId ? 'pointer' : 'not-allowed', color: '#fff',
+              background: pickId ? 'var(--action)' : 'var(--ink-4)',
+              cursor: pickId ? 'pointer' : 'not-allowed', color: 'var(--surface)',
               display: 'grid', placeItems: 'center', flexShrink: 0,
             }}
           >

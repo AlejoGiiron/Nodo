@@ -446,10 +446,6 @@ export function MovementsModal({ onClose }: MovementsModalProps) {
                   : type === 'in' ? 'var(--action)' : 'var(--danger)',
                 color: 'var(--surface)', fontSize: 13.5, fontWeight: 700,
                 cursor: !isValid || isAddingMovement ? 'not-allowed' : 'pointer',
-                boxShadow: !isValid || isAddingMovement ? 'none'
-                  : type === 'in'
-                    ? '0 4px 12px rgba(16,185,129,.35)'
-                    : '0 4px 12px rgba(220,38,38,.25)',
                 transition: 'all .15s',
               }}
             >

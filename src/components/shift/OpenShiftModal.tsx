@@ -144,7 +144,6 @@ export function OpenShiftModal({ onClose, onOpened }: {
                 background: isOpeningShift ? 'var(--ink-4)' : 'var(--action)',
                 color: 'var(--surface)', fontSize: 14, fontWeight: 700,
                 cursor: isOpeningShift ? 'not-allowed' : 'pointer',
-                boxShadow: isOpeningShift ? 'none' : '0 6px 16px rgba(16,185,129,.35)',
                 transition: 'all .15s',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               }}

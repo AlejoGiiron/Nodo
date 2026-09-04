@@ -319,7 +319,7 @@ export function NewInvoiceModal({ onClose, onNeedSupplier }: NewInvoiceModalProp
               data-testid="invoice-submit"
               onClick={handleSubmit}
               disabled={!isValid || isRegistering}
-              style={{ padding: '11px 24px', border: 'none', borderRadius: 10, background: !isValid || isRegistering ? 'var(--ink-4)' : 'var(--action)', cursor: !isValid || isRegistering ? 'not-allowed' : 'pointer', fontSize: 13.5, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 6, boxShadow: !isValid || isRegistering ? 'none' : '0 6px 16px rgba(16,185,129,.35)' }}
+              style={{ padding: '11px 24px', border: 'none', borderRadius: 10, background: !isValid || isRegistering ? 'var(--ink-4)' : 'var(--action)', cursor: !isValid || isRegistering ? 'not-allowed' : 'pointer', fontSize: 13.5, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}
             >
               {isRegistering && <Loader2 size={15} className="animate-spin" />}
               {isRegistering ? 'Registrando...' : 'Registrar compra'}

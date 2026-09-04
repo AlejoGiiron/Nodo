@@ -202,7 +202,6 @@ export function StockAdjustModal({ products, preselectedId, onClose }: StockAdju
               cursor: !isValid || adjust.isPending ? 'not-allowed' : 'pointer',
               fontSize: 13.5, fontWeight: 700, color: 'var(--surface)',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-              boxShadow: !isValid || adjust.isPending ? 'none' : '0 6px 16px rgba(16,185,129,.35)',
             }}
           >
             {adjust.isPending ? 'Aplicando...' : <><span>Aplicar ajuste</span><ChevronRight size={15} /></>}

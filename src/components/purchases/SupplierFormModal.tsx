@@ -87,7 +87,7 @@ export function SupplierFormModal({ supplier, onClose }: SupplierFormModalProps)
             data-testid="supplier-save"
             onClick={handleSave}
             disabled={isMutating}
-            style={{ padding: '10px 24px', background: isMutating ? 'var(--ink-4)' : 'var(--action)', border: 'none', borderRadius: 10, cursor: isMutating ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 6, boxShadow: isMutating ? 'none' : '0 4px 12px rgba(16,185,129,.3)' }}
+            style={{ padding: '10px 24px', background: isMutating ? 'var(--ink-4)' : 'var(--action)', border: 'none', borderRadius: 10, cursor: isMutating ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}
           >
             {isMutating && <Loader2 size={14} className="animate-spin" />}
             {isNew ? 'Crear proveedor' : 'Guardar'}
