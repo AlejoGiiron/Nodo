@@ -2800,31 +2800,64 @@ pantalla nueva**.
 - Los tests corren en serie (`workers: 1`) por compartir backend.
 - Leer R8, R9 y R10 antes de interpretar cualquier resultado de suite.
 
-🔴 **SI EL PRODUCTO DECLARA UN ESTADO QUE PLAYWRIGHT RESPETA, LA VÍA NORMAL MIDE EL FRAMEWORK Y NO
-EL PRODUCTO.** *2026-09-03, al aseverar que una fila «se ve y no responde».*
+### 🔴 CRITERIO SIN NÚMERO · EL FRAMEWORK DE PRUEBAS PUEDE SATISFACER UNA ASERCIÓN POR SU CUENTA
 
-La fila del catálogo lleva `aria-disabled` mientras el mostrador no sabe si el producto tiene extras.
-**Playwright honra `aria-disabled` en su chequeo de accionabilidad**: un `.click()` normal se queda
-esperando *"element is not enabled"* y termina en timeout.
+*Medido el 2026-09-03. Es una clase nueva, y no es una variante del control negativo: allá el
+instrumento **no discrimina**; acá el instrumento **contesta él mismo**, correctamente, en lugar del
+sujeto.*
 
-⚠️ **Un caso escrito con `.click()` normal estaría probando que PLAYWRIGHT no clickea, no que el
-producto se niega.** Son cosas distintas con consecuencias distintas: alguien puede borrar el guard
-del manejador y **dejar el atributo**, y ese caso seguiría verde — el defecto vuelve entero, con la
-suite tranquila.
+> **Cuando el framework implementa la misma regla que el producto, el caso mide al framework.**
 
-✅ **Lo que lo convierte en medición es `click({ force: true })`:** el evento **llega** al manejador y
-lo que se asevera es el guard del producto. Verificado por mutación — borrado el guard y conservado
-el atributo, el caso muere nombrando la plata que falta.
+**El caso.** La fila del catálogo lleva `aria-disabled` mientras el mostrador no sabe si el producto
+tiene extras. **Playwright honra `aria-disabled` en su chequeo de accionabilidad**: un `.click()`
+normal ni siquiera despacha el evento — espera *"element is not enabled"* y termina en timeout.
 
-⚠️ Corolario, y aplica igual a `disabled`, `pointer-events: none` e `inert`: cuando el sujeto es
-**que la acción no ocurra**, forzá la acción. Cuando el sujeto es **que el control se vea apagado**,
-aseverá el atributo. Son dos casos, no uno — y el segundo sin el primero es decorativo.
+Así que un caso escrito con la vía normal asevera **que Playwright respeta el atributo**. Eso es
+cierto, es verificable, y **no es lo que el caso dice medir**.
 
-✅ **Y un efecto lateral que conviene conocer:** como Playwright espera a que el elemento se habilite,
-poner `aria-disabled` mientras un insumo carga **estabiliza los specs que ya existían** — dejan de
-clickear antes de tiempo. En esta sesión eso puso en verde un caso de `fiado.spec` que fallaba por
-esa carrera. Es un beneficio real, y **no** es evidencia de que el guard funcione: eso lo prueba el
-clic forzado.
+🔴 **EL MUTANTE QUE LO DEMUESTRA, y es el que separa las dos lecturas: borrar el guard del manejador
+CONSERVANDO el atributo.**
+
+| | `.click()` normal | `.click({ force: true })` |
+|---|---|---|
+| con el guard puesto | verde | verde |
+| **con el guard borrado y el atributo puesto** | 🔴 **verde** | ✅ **rojo**, nombrando la plata que falta |
+
+El producto quedaría cobrando de menos otra vez, con la suite entera tranquila y un atributo
+decorativo sosteniendo el verde.
+
+✅ **`force: true` es lo que lo convierte en medición:** el evento **llega al manejador**, y lo que
+responde es el código del producto.
+
+**LO ACCIONABLE, y son dos casos, no uno:**
+
+- sujeto = **que la acción no ocurra** → **forzá** la acción y asevera el efecto (o su ausencia)
+- sujeto = **que el control se vea apagado** → asevera el atributo
+
+El segundo sin el primero es decorativo. Y aplica igual a `disabled` nativo, `pointer-events: none`,
+`inert`, `readonly`, y a cualquier cosa donde la herramienta **ayude**: auto-waiting, reintentos,
+scroll automático, normalización de espacios. **Toda ayuda del framework es una regla que el caso
+deja de estar midiendo.**
+
+🔴 **Y LA SEGUNDA MITAD, QUE ES LA MISMA TRAMPA VISTA DEL OTRO LADO: UN SÍNTOMA PUEDE DESAPARECER
+SIN QUE EL MECANISMO ESTÉ PROBADO.**
+
+El rojo original —`fiado.spec`, que clickeaba un producto y no veía abrirse el modal de extras— **se
+puso verde solo** al agregar `aria-disabled`: Playwright ahora **espera** a que la fila se habilite
+en vez de clickear en medio de la carga.
+
+⚠️ **El síntoma se fue y el mecanismo no quedó probado por eso.** Si el arreglo hubiera sido sólo el
+atributo —sin el guard en `handleAddProduct`— ese spec habría vuelto a verde **igual**, y el producto
+seguiría cobrando de menos para cualquier usuario real, que no tiene auto-waiting.
+
+> **Un rojo que se apaga solo al tocar otra cosa no es una confirmación: es una pregunta.** Lo que
+> prueba el arreglo es el caso escrito contra el defecto, con su mutante — no el rojo vecino que dejó
+> de sonar.
+
+⚠️ Es el hermano de *"un rojo que no reproduce el defecto es tan inútil como un verde que no lo
+mide"*, movido al momento de **cerrar**: allá el rojo mentía al aparecer; acá miente al desaparecer.
+
+---
 
 **⚠️ EN PLAYWRIGHT, UN TIMEOUT NO ES LENTITUD.**
 *Medido el 2026-09-01: tres fallos de DOM disfrazados de problema de rendimiento.*
