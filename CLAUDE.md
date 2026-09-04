@@ -324,6 +324,29 @@ generados**, el archivo que acabás de escribir **no es el que git materializa**
 son distintos. Un check de artefacto se valida **después de un checkout**, no en la sesión que lo
 creó. El defecto del CRLF mordió al parche que lo documentaba, en el mismo turno.
 
+🔴 **SEGUNDA VEZ QUE UN DEFECTO MUERDE AL TEXTO QUE LO DOCUMENTA, y ya son suficientes para llamarlo
+clase.** *Medido el 2026-09-03, de casualidad, corriendo un barrido de bytes de control sobre otro
+archivo.*
+
+`docs/DEUDAS.md` explicaba un defecto real: *"una regex de un caso E2E quedó con bytes de control
+`0x08` en vez de la secuencia ``"*. **Y en el lugar donde esa frase escribe la secuencia, el
+archivo tenía un byte `0x08`.** La nota sobre el bug del `` contenía el bug del ``, y llevaba
+así desde el commit que la escribió.
+
+⚠️ **Por qué es una clase y no una casualidad:** el texto que documenta un defecto de escape **se
+escribe con las mismas herramientas que lo produjeron** —el mismo heredoc, el mismo script, el mismo
+shell— así que está expuesto al mismo defecto **en el momento exacto en que uno está pensando en
+él**. Pasó con el CRLF y pasó con el ``; no hay razón para que no vuelva a pasar.
+
+✅ **Y lo que lo cazó vale más que el arreglo: un barrido de bytes de control sobre el documento
+entero**, corrido por costumbre después de cada edición por script. Cuesta un `grep -cP` y encuentra
+lo que ninguna lectura encuentra — un `0x08` es **invisible** en cualquier editor y en cualquier
+diff.
+
+```bash
+grep -cP '[ --]' <archivo>   # tiene que dar 0
+```
+
 
 **🔴 COROLARIO — POR QUÉ LEER NO ALCANZA.** R4 dice *qué* hacer. Esto dice *por qué*, que es lo
 que hace que se aplique cuando nadie está mirando:
