@@ -1499,6 +1499,47 @@ número sin comando es una opinión con dígitos.
 ---
 
 
+
+### 🔴 CRITERIO SIN NÚMERO · CAPTURAR UN ESTADO NO ES CAPTURAR LA PANTALLA
+
+*2026-09-04, tanda 1 de la deuda 88. Es lo que A6 aprendió con los modales, un nivel más adentro.*
+
+A6 capturó el estado **normal** de cada pantalla y cerró once en verde mientras **51 ocurrencias del
+emerald de otro producto seguían vivas, casi todas dentro de modales**. La lección fue *"hay que
+abrir el modal"*. **No alcanza.**
+
+> **Un elemento sólo se puede ver en el estado donde EXISTE.** Abrir el modal es la mitad; la otra
+> es abrirlo en el estado donde lo que buscás está presente.
+
+**El caso.** El par de *«producto nuevo»* muestra el modal abierto y completo. Y **no prueba nada
+sobre el botón primario**: con el formulario vacío el primario está **deshabilitado**, o sea gris —
+y el defecto que la tanda venía a arreglar (fondo emerald + un resplandor verde de 16px) vivía
+**exclusivamente en el estado habilitado**. La captura se ve impecable y el sujeto no está en ella.
+
+✅ Lo que lo probó fue el par de *«editar producto»*, donde el formulario nace válido y el primario
+sale encendido: verde con halo → azul y plano.
+
+⚠️ **Por qué engaña más que el caso de A6:** una captura sin el modal se nota —falta el modal—. Una
+captura **con** el modal abierto se lee como completa: está todo, se ve bien, y nada indica que el
+elemento que importaba estaba apagado. Es *«una aserción de presencia no distingue una de dos»*
+movida a lo visual: el par confirma que la pantalla existe y **afirma tácitamente** que muestra el
+cambio.
+
+**LO ACCIONABLE, y es una pregunta antes de disparar la captura:**
+
+> **¿En qué estado está PRESENTE lo que estoy buscando?** Si el par no lo muestra, el par no prueba
+> nada — por más que la pantalla se vea perfecta.
+
+Los estados que hay que provocar a propósito, porque el estado por defecto los esconde: un primario
+**habilitado** (formulario válido), un campo **con error**, una lista **con datos** y otra **vacía**,
+un botón **en hover** o **con foco**, un control **deshabilitado** cuando lo que se cambió es
+justamente cómo se apaga.
+
+⚠️ Corolario para armar un arnés de capturas: la entrada de cada captura declara **el estado**, no
+sólo la pantalla. `producto-nuevo` y `producto-editar` no son dos pantallas: son **dos estados de la
+misma**, y hacen falta los dos.
+
+---
 ### 🔴 CRITERIO SIN NÚMERO · UNA LISTA ESCRITA DE MEMORIA ES UNA HIPÓTESIS — LAS LISTAS SE DERIVAN
 
 *Cuatro casos el 2026-09-04, en una sola tanda, y los cuatro tienen la misma forma. Es el hermano de
@@ -1608,6 +1649,32 @@ imprimiendo cinco líneas y cuatro de ellas eran ciertas.
    repetirlo.
 
 ---
+
+🔴 **TERCER CASO, 2026-09-04 — Y EL COMANDO VIVÍA DENTRO DE LA DEUDA QUE LO USA.**
+
+Los dos anteriores estaban en `CLAUDE.md`. Éste estaba en `docs/DEUDAS.md`, en el cuerpo de la deuda
+88, presentado como *"el comando que lo reproduce"* — la convención cumplida al pie de la letra.
+
+```
+⛔ NO CORRER — mide MENOS de lo que la deuda describe:
+grep -rn "10b981\|16, *185, *129\|16,185,129" src/ --include=*.tsx --include=*.ts
+```
+
+La deuda describe **«el emerald de Vento»**. El comando busca **un hex y su rgba**, y **no ve
+`#ecfdf5` ni `#065f46`** — la misma familia, el mismo verde en pantalla: son el fondo y el texto del
+estado *elegido* de `ProductModal` y el `dragging` de `ImageUpload`.
+
+> **Un comando que mide MENOS que lo que su deuda describe cierra la deuda antes de tiempo, y con un
+> cero.** No hay rojo: hay un censo en cero sobre un modal que se sigue viendo verde.
+
+⚠️ **Y lo que agrega sobre los dos primeros: un comando canónico no vive sólo en este archivo.**
+Vive donde alguien lo escribió al lado de un dato — una deuda, el encabezado de un script, un
+comentario. Todos son código en producción sobre nuestras propias conclusiones, y todos necesitan la
+misma verificación.
+
+✅ **Lo cazó el criterio de cierre, no el comando:** la tanda se cerró con **pares de capturas**, y
+el verde se veía. Corolario práctico: cuando una deuda es sobre **lo que se ve**, su verificación es
+mirar — el censo es una ayuda para saber dónde buscar, nunca el criterio de cierre.
 
 🔴 **SEGUNDO CASO, 2026-09-04 — Y NO FALLÓ POR ESTAR MAL ESCRITO: FALLÓ POR UN SUPUESTO INVISIBLE
 SOBRE LA CODIFICACIÓN.**
