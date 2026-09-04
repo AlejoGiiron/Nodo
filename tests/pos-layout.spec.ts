@@ -228,19 +228,32 @@ test('🔴 la lista tiene CABECERA y el precio lleva $ — y las columnas ALINEA
     'el `$` es una excepción de ESTA lista: si aparece en el resto, se volvió el default sin decidirlo',
   ).not.toContainText('$')
 
-  // ALINEACIÓN: cada título arranca donde arranca su celda (±2px de subpíxel).
+  // ── ALINEACIÓN ───────────────────────────────────────────────────────────
+  // 🔴 SE MIDE EL BORDE IZQUIERDO, Y LA PRIMERA VERSIÓN DE ESTE CASO MEDÍA EL
+  //    DERECHO — y el mutante la sobrevivió.
+  //    Cabecera y fila son flex con `Producto` en `flex: 1` y el resto fijos, así
+  //    que **los fijos quedan pegados al borde derecho del contenedor**:
+  //    ensanchar la columna PRECIO no mueve su borde derecho, le roba ancho al
+  //    flexible. Comparar `right` contra `right` era comparar dos valores
+  //    anclados al mismo borde — una tautología con forma de medición
+  //    geométrica. Lo que se mueve al desalinear es **dónde EMPIEZA** la columna.
+  // ⚠️ Y por eso no se compara PRODUCTO: su `left` es el padding del contenedor
+  //    en los dos, siempre. Habría sido la misma tautología del otro lado.
   const dx = await page.evaluate(() => {
     const cab = document.querySelector('[data-testid=pos-lista-cabecera]')!
     const fila = document.querySelector('[data-testid=product-card]')!
-    const cabs = [...cab.children].map((e) => e.getBoundingClientRect())
-    const celdas = [...fila.children].map((e) => e.getBoundingClientRect())
-    // La fila puede llevar el badge de stock, que es condicional y NO es
-    // columna: se compara la PRIMERA (producto) y la ÚLTIMA (precio).
+    const c = [...cab.children].map((e) => e.getBoundingClientRect())
+    const f = [...fila.children].map((e) => e.getBoundingClientRect())
+    // El badge de stock es condicional y NO es columna: le roba ancho a
+    // Producto, que es el flexible, así que no mueve a los fijos. Por eso las
+    // dos columnas fijas se toman desde el final.
     return {
-      producto: Math.abs(cabs[0].left - celdas[0].left),
-      precio: Math.abs(cabs[cabs.length - 1].right - celdas[celdas.length - 1].right),
+      categoria: Math.abs(c[c.length - 2].left - f[f.length - 2].left),
+      precio: Math.abs(c[c.length - 1].left - f[f.length - 1].left),
     }
   })
-  expect(dx.producto, 'el título PRODUCTO no arranca donde arranca el nombre').toBeLessThanOrEqual(2)
-  expect(dx.precio, 'el título PRECIO no termina donde termina la cifra').toBeLessThanOrEqual(2)
+  expect(dx.categoria, `el título CATEGORÍA no arranca donde arranca su celda (${dx.categoria}px)`)
+    .toBeLessThanOrEqual(2)
+  expect(dx.precio, `el título PRECIO no arranca donde arranca la columna (${dx.precio}px)`)
+    .toBeLessThanOrEqual(2)
 })
