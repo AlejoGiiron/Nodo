@@ -1604,9 +1604,32 @@ producto para que el test vuelva a verde, que es exactamente el movimiento equiv
    que cumplir **con cualquier catálogo**, y tiene mutantes vivos por los dos lados: una máscara
    permanente es decoración, una ausente esconde que hay más.
 
-⚠️ Y el corolario para el lab: **poblarlo con la forma de una operación real es un instrumento de
-auditoría de la suite**, no sólo material de demo. El seed de Muscle Pro puso rojo un caso que
-llevaba semanas mintiendo, y ése fue su hallazgo más caro.
+🔴 **Y EL COROLARIO PARA EL LAB, QUE YA NO ES UNA HIPÓTESIS SINO UNA CUENTA:**
+
+> **Poblar el laboratorio con la FORMA de una operación real es un instrumento de auditoría, no
+> material de demo — y en dos días encontró DOS defectos reales, ninguno de los cuales estaba
+> buscando.**
+
+| # | qué destapó | qué lo escondía |
+|---|---|---|
+| 1 | la aserción *"no hay máscara"* medía **el caso vacío** afirmando medir el común | la línea de base de "pocas categorías" era **una**, la del lab vacío |
+| 2 | el mostrador mostraba **una categoría de ocho** — siete octavos del catálogo inalcanzables por defecto | con una sola categoría sembrada, *"una categoría"* y *"todo el catálogo"* **son lo mismo** |
+
+⚠️ **Los dos son la misma forma, y por eso la cuenta importa más que los casos sueltos:** un lab
+vacío no es un lab con menos datos — es un lab donde **distinciones enteras del producto no se
+pueden observar**. Con una categoría, «filtrar» y «no filtrar» dan el mismo resultado; con una fila
+de pago, «comparar la lista» y «comparar el total» son la misma aserción; con un producto, «entran
+tres filas» y «entra una» no se distinguen.
+
+🔴 **Lo que esto cambia en la planificación:** el seed **no era preparación para el plan de pruebas
+manual**. Era —y sigue siendo— **el instrumento que hace observable lo que la suite no podía
+distinguir**, y su rendimiento se mide en defectos encontrados, no en pantallas que se ven bien.
+Sembrar la forma de la operación va **antes** de escribir casos nuevos, no después.
+
+⚠️ Y la advertencia que lo acompaña: los dos defectos aparecieron **como rojos que parecían
+regresiones**. La reacción natural en los dos casos era "arreglar" el producto para volver al verde.
+El seed no avisa que encontró algo: **produce un rojo indistinguible de una rotura**, y el trabajo
+es preguntarse cuál de los dos es.
 
 ---
 
@@ -2808,6 +2831,34 @@ equivocado, porque su aserción ya espera que no haya nada.
 el `uniq -d` no los ve, porque su problema no es el destino repetido sino que el destino correcto es
 **otra cosa entera**.
 
+**🔴 EL NOMBRE DE UN SPEC AFIRMA QUÉ MIDE — Y SI NOMBRA EL DISPARADOR EN VEZ DEL SUJETO, EL CASO
+PARECE MORIR CUANDO EL DISPARADOR SE VA.**
+*Medido el 2026-09-03, al retirar el strip de categorías.*
+
+`pos-categorias-layout.spec.ts` medía que **el panel del catálogo cediera su ancho** — sin
+`minWidth: 0` se niega a bajar de su min-content, crece más allá del 60% y **el carrito quedaba en
+86px: el cajero no podía cobrar**. Ése era el sujeto. Las categorías eran el **disparador**: un
+strip que no entraba era lo que empujaba el min-content.
+
+Al sacar el strip, el archivo entero se leyó como *"esto ya no aplica"*. **Y lo único que ya no
+aplicaba era el nombre.** La clase de defecto sigue viva y hoy tiene otro disparador —los nombres
+largos del catálogo real más la columna CATEGORÍA nueva—, que además es **mejor entrada**: es el
+dato del cliente en vez de siete categorías fabricadas con nombres de otro tenant.
+
+> **LA SEÑAL, y es una pregunta:** si al quitar una funcionalidad un spec *"se queda sin sentido"*,
+> preguntá si **se fue su SUJETO o solamente su ENTRADA**. Si es la entrada, lo que hay que cambiar
+> es el escenario y el nombre — no borrar el caso.
+
+⚠️ **Por qué el nombre es el que engaña y no el cuerpo:** el nombre es lo primero que se lee y lo
+único que aparece en la salida de la suite, en un `git log` o en una lista de archivos. Un cuerpo se
+lee cuando ya decidiste abrirlo; **el nombre decide si lo abrís.** Es la misma clase que *clasificar
+leyendo el nombre no es clasificar*, aplicada al inventario de tests: allá el nombre de una tabla
+hacía creer que era andamiaje, acá el de un spec hace creer que su cobertura se fue.
+
+**Lo accionable, y cuesta un renombre:** un spec se llama por **lo que asevera**, no por el
+escenario con el que lo consigue. `pos-layout` sobrevive a que el disparador cambie;
+`pos-categorias-layout` no sobrevivió ni al primero.
+
 **🔴 ANTES DE BORRAR UN TEST POR OBSOLETO, VERIFICÁ SI SU ASERCIÓN SIGUE SIENDO VERDADERA BAJO EL
 MODELO NUEVO.** *El sujeto puede haber cambiado y la expectativa seguir valiendo.*
 
@@ -3201,6 +3252,40 @@ default de "no encontré la fila", en vez de un número plausible.
 sólo el mensaje. Si es el default del propio test —`-1`, `null`, `0`, `undefined`, lista vacía—, lo
 más probable es que el escenario no se haya montado y el defecto ni siquiera se haya ejercido. Un
 rojo por la razón equivocada se arregla "arreglando" lo que no estaba roto.
+
+🔴 **Y LA TERCERA FORMA, QUE ES LA MÁS SUTIL: EL ROJO ERA CORRECTO Y SEÑALABA EL LUGAR
+EQUIVOCADO — EL SUJETO VA PRIMERO, EL CONTROL DESPUÉS.**
+*2026-09-03, verificando por mutación el caso «el mostrador muestra TODO el catálogo».*
+
+Un caso bien escrito lleva **dos clases de aserción**: la del **sujeto** —lo que se está probando— y
+la del **control** —que el escenario se haya montado, que el lab tenga datos, que la lectura no
+venga vacía—. Las dos son necesarias. **El orden entre ellas no es estético.**
+
+**El caso.** Aseveraba, en este orden:
+
+```ts
+expect(filas, 'el lab necesita catálogo, o el caso no mide nada').toBeGreaterThan(10)   // control
+expect(categorias.size, 'la lista muestra 1 categoría…').toBeGreaterThan(1)             // SUJETO
+```
+
+El mutante —restaurar el filtro por la primera categoría— **mató el caso, y con el mensaje del
+CONTROL**: *"el lab necesita catálogo"*. Es cierto que quedaban menos de diez filas; también es
+cierto que **la causa era el defecto, no el lab**. El rojo mandaba a revisar el laboratorio.
+
+⚠️ **Y en `describe.serial` el daño se multiplica:** el primer fallo **salta los casos que siguen**,
+así que los otros dos —que también morían con ese mutante, y con sus mensajes correctos— nunca
+corrieron. Un control mal ubicado no sólo dirige mal: **apaga la evidencia que venía detrás.**
+
+> **El sujeto va primero. El control, después.** Invertido, el caso se pone rojo por la razón
+> correcta y lo *dice* por la equivocada.
+
+✅ Con el orden arreglado, el mismo mutante dio: *"la lista muestra productos de **1** categoría(s).
+Con una sola, el mostrador está mostrando el filtro por defecto en vez del catálogo"*.
+
+⚠️ Es hermano de la mitad de arriba y conviene tener los dos escritos, porque **fallan al revés**:
+allá el rojo era falso con un mensaje impecable; acá el rojo era **verdadero** y el mensaje mandaba
+al lugar equivocado. El síntoma que los une: en los dos casos hay que mirar **qué aserción fue la
+que reventó**, no sólo que el caso esté rojo.
 
 ⚠️ Es la misma familia que el control negativo, del otro lado: allá se comprueba que el instrumento
 **puede decir que no**; acá, que el rojo **está diciendo que sí por la razón que dice**. Hay que trabajar activamente para que dirija; por defecto no
