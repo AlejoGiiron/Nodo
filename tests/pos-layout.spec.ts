@@ -184,3 +184,63 @@ test('🔴 la columna CATEGORÍA es TEXTO, sin el color del cliente (§1.2)', as
     'byte a byte con --action-500 y --warning-500',
   ).toBe(aRgb(inkTres))
 })
+
+test('🔴 la lista tiene CABECERA y el precio lleva $ — y las columnas ALINEAN', async ({ page }) => {
+  // ==========================================================================
+  // Decisión del 2026-09-03: la lista del Mostrador lleva títulos de columna, y
+  // su precio lleva `$`.
+  //
+  // ⚠️ ES UNA EXCEPCIÓN A §2, que dice «sin símbolo de peso en columnas de
+  //    tabla; el encabezado ya dice qué es». Se decidió con el alcance acotado a
+  //    ESTA lista, así que `MoneyCell` lo expone como opt-in (`simbolo`) y el
+  //    default sigue siendo el de §2 — las otras cinco columnas de dinero no
+  //    cambian. Este caso fija las dos mitades: que acá esté, y (abajo) que el
+  //    default no se haya movido.
+  //
+  // 🔴 Y LA ALINEACIÓN SE ASEVERA PORQUE ES UN CONTRATO EN DOS LADOS (R1): los
+  //    `minWidth` de la cabecera están copiados a mano de `ProductRow`. Si la
+  //    fila cambia sus anchos, la cabecera queda desalineada y **ningún
+  //    verificador lo ve** — `tsc` no compara dos objetos de estilo. Sin esta
+  //    aserción, el defecto sería una tabla torcida en la pantalla del cliente.
+  // ==========================================================================
+  await loginAsOwner(page)
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/ventas')
+  await waitPosReady(page)
+
+  const cabecera = page.getByTestId('pos-lista-cabecera')
+  await expect(cabecera).toBeVisible()
+  await expect(cabecera).toContainText(/producto/i)
+  await expect(cabecera).toContainText(/categor/i)
+  await expect(cabecera).toContainText(/precio/i)
+
+  // El precio de la lista lleva `$`; el formateador y los miles no cambian.
+  const precio = await page.getByTestId('product-card').first()
+    .locator('span').last().innerText()
+  expect(precio, 'el precio de la lista arranca con $ y conserva el punto de miles')
+    .toMatch(/^\$\d{1,3}(\.\d{3})*$/)
+
+  // 🔴 CONTROL DE LA EXCEPCIÓN: el default de §2 NO se movió. El total del
+  //    carrito usa el mismo formateador sin `simbolo`, así que si alguien
+  //    "unifica" poniendo el `$` dentro de MoneyCell, este caso lo caza.
+  await expect(
+    page.getByTestId('cart-total'),
+    'el `$` es una excepción de ESTA lista: si aparece en el resto, se volvió el default sin decidirlo',
+  ).not.toContainText('$')
+
+  // ALINEACIÓN: cada título arranca donde arranca su celda (±2px de subpíxel).
+  const dx = await page.evaluate(() => {
+    const cab = document.querySelector('[data-testid=pos-lista-cabecera]')!
+    const fila = document.querySelector('[data-testid=product-card]')!
+    const cabs = [...cab.children].map((e) => e.getBoundingClientRect())
+    const celdas = [...fila.children].map((e) => e.getBoundingClientRect())
+    // La fila puede llevar el badge de stock, que es condicional y NO es
+    // columna: se compara la PRIMERA (producto) y la ÚLTIMA (precio).
+    return {
+      producto: Math.abs(cabs[0].left - celdas[0].left),
+      precio: Math.abs(cabs[cabs.length - 1].right - celdas[celdas.length - 1].right),
+    }
+  })
+  expect(dx.producto, 'el título PRODUCTO no arranca donde arranca el nombre').toBeLessThanOrEqual(2)
+  expect(dx.precio, 'el título PRECIO no termina donde termina la cifra').toBeLessThanOrEqual(2)
+})

@@ -16,11 +16,23 @@ import { formatoCOP } from '@/lib/formato'
  * 🔴 `ocultarPlata` (regla 7.6) apaga la CELDA, no la columna: la tabla no
  *    cambia de forma según quién la mire. Quien decide el título de la columna
  *    es la tabla, no esta celda.
+ *
+ * 🔴 `simbolo` — OPT-IN, y por defecto APAGADO (2026-09-03). §2 dice «sin
+ *    símbolo de peso en columnas de tabla; el encabezado ya dice qué es», y ése
+ *    sigue siendo el default del producto: las seis columnas de dinero que
+ *    existen hoy lo omiten. La lista del Mostrador lo pide por decisión
+ *    explícita, así que se declara **en el llamador** en vez de cambiar el
+ *    componente para todos.
+ *    ⚠️ El default protege, igual que `data-letras-inertes`: una celda nueva
+ *    nace SIN símbolo y por lo tanto cumpliendo §2, y desviarse exige escribirlo.
+ *    Si algún día el símbolo se vuelve la regla, se invierte acá —un lado— y no
+ *    en seis llamadores.
  */
 
 export function MoneyCell({
   value,
   oculto = false,
+  simbolo = false,
   style,
   'data-testid': testId,
   title,
@@ -29,6 +41,8 @@ export function MoneyCell({
   value: number | null | undefined
   /** Rol sin permiso de ver plata: la celda muestra `—`, la columna se queda. */
   oculto?: boolean
+  /** Antepone `$`. Opt-in: §2 lo omite por defecto en columnas de tabla. */
+  simbolo?: boolean
   style?: CSSProperties
   'data-testid'?: string
   title?: string
@@ -50,7 +64,7 @@ export function MoneyCell({
         ...style,
       }}
     >
-      {ausente ? '—' : formatoCOP(value as number)}
+      {ausente ? '—' : `${simbolo ? '$' : ''}${formatoCOP(value as number)}`}
     </span>
   )
 }
