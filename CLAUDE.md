@@ -1498,6 +1498,45 @@ número sin comando es una opinión con dígitos.
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · UN GUARD QUE COMPARA CONTRA UNA CREDENCIAL ESTÁ ACOPLADO A SU FORMATO — Y EL FORMATO LO DECIDE UN TERCERO
+
+*Medido el 2026-09-03, corriendo el alta de la primera organización real. El guard rechazó una
+credencial perfectamente válida.*
+
+> **Comparar `token === CLAVE_ESPERADA` no verifica quién llama: verifica que las dos puntas usen la
+> misma REPRESENTACIÓN de la misma autoridad.** Y la representación la elige la plataforma.
+
+**El caso.** La Edge Function del alta autorizaba con
+`token !== Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')`. Al correrla de verdad devolvió
+`paso: autorizacion` con una service_role key **correcta**. La causa, medida: el proyecto tiene
+**dos sistemas de claves conviviendo** — las legacy (`eyJ…`, un JWT) y las nuevas
+(`sb_secret_…`)— y **cuál de las dos recibe la función en esa variable lo decide Supabase**, no
+nosotros. El script mandaba una; la función esperaba la otra.
+
+⚠️ **Es R1 con un tercero del otro lado**, que es la variante que no se puede arreglar
+sincronizando: no controlamos cuándo cambia el formato ni nos avisan. Un guard así **no se rompe al
+tocarlo — se rompe cuando la plataforma migra**, y el síntoma es un rechazo que parece un problema
+de credenciales del operador.
+
+✅ **LA FORMA QUE NO SE ACOPLA: verificar el CLAIM, no la cadena.** Se acepta si el bearer coincide
+con la variable **o** si es un JWT cuyo `role` es `service_role`. Y confiar en ese claim es seguro
+**porque se midió que la plataforma valida la firma antes**:
+
+```
+Bearer <inventado>  → 401 con cuerpo vacío, el handler NUNCA corre
+Bearer <anon key>   → llega al handler, y el claim role=anon lo rechaza
+```
+
+🔴 **El segundo control es el que importa** y es fácil de olvidar: la anon key **también es un JWT
+válido que llega al handler**. Sin comprobar que sigue siendo rechazada, relajar la comparación
+habría abierto el alta de tenants a cualquiera con la clave pública.
+
+**Lo accionable, y es una pregunta:** cuando un guard compare contra un secreto, preguntá **quién
+decide el formato de ese secreto**. Si la respuesta es *"la plataforma"*, el guard tiene que mirar
+**lo que el secreto AFIRMA** —un claim, un rol— y no su texto.
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · UN COMANDO ESCRITO EN ESTE ARCHIVO ES CÓDIGO EN PRODUCCIÓN, Y NECESITA LA MISMA VERIFICACIÓN
 
 *2026-09-03. Es el cierre de la serie de fallas de instrumento, y sale de que la última fue de otra

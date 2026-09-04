@@ -52,19 +52,51 @@ serve(async (req) => {
     const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 
     // ── PASO 0 · AUTORIZACIÓN ────────────────────────────────────────────
-    // Hoy: hay que presentar la service_role key. Es la única autorización
-    // posible mientras el alta la corra una persona con un script — no existe
-    // todavía ningún usuario de esa organización a quien pedirle un permiso.
+    // Hoy: hay que presentar una credencial de service_role. Es la única
+    // autorización posible mientras el alta la corra una persona con un script
+    // — no existe todavía ningún usuario de esa organización a quien pedirle un
+    // permiso.
     //
     // ⚠️ Y ES LA LÍNEA QUE EL AUTOSERVICIO VA A REEMPLAZAR, no borrar: ahí el
     //    invocante sigue siendo el servidor, después de verificar correo
-    //    confirmado, límites y suscripción. Ver la deuda del registro
-    //    autoservicio.
+    //    confirmado, límites y suscripción.
+    //
+    // 🔴 SE ACEPTAN LAS DOS FORMAS, Y NO ES LAXITUD: ES QUE HAY DOS SISTEMAS DE
+    //    CLAVES CONVIVIENDO. El proyecto tiene a la vez las legacy (`eyJ…`, un
+    //    JWT) y las nuevas (`sb_secret_…`), y **cuál de las dos recibe la
+    //    función en `SUPABASE_SERVICE_ROLE_KEY` lo decide la plataforma**, no
+    //    nosotros. La primera versión comparaba sólo contra esa variable y
+    //    rechazó una service_role key perfectamente válida — el guard estaba
+    //    acoplado a un formato, que es un contrato con un tercero que cambia
+    //    sin avisarnos (R1).
+    //
+    // ✅ Y confiar en el claim del JWT es seguro acá, medido el 2026-09-03:
+    //    `verify_jwt` está activo, así que **la plataforma valida la firma
+    //    antes de que este código corra**. Comprobado mandando un bearer
+    //    inventado: devuelve 401 con cuerpo vacío y este handler nunca se
+    //    ejecuta. Un JWT que llega hasta acá ya está verificado; lo único que
+    //    falta mirar es QUÉ dice.
     const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '')
-    if (!SERVICE_KEY || token !== SERVICE_KEY) {
+
+    const esRolDeServicio = (t: string): boolean => {
+      if (!t) return false
+      // Forma 1 — coincide con la que la plataforma le inyectó a esta función.
+      if (SERVICE_KEY && t === SERVICE_KEY) return true
+      // Forma 2 — JWT (ya verificado por la plataforma) con role service_role.
+      try {
+        const payload = t.split('.')[1]
+        if (!payload) return false
+        const claims = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')))
+        return claims?.role === 'service_role'
+      } catch {
+        return false
+      }
+    }
+
+    if (!esRolDeServicio(token)) {
       return json({
         paso: 'autorizacion',
-        error: 'Esta funcion solo se invoca con la service_role key.',
+        error: 'Esta funcion solo se invoca con una credencial de service_role.',
       }, 403)
     }
 
