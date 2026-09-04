@@ -1,5 +1,15 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { crearUsuarioConPerfil } from '../_shared/crear-usuario.ts'
+
+// ⚠️ EL CAMINO DE ALTA SALIÓ DE ACÁ A `_shared/crear-usuario.ts` el 2026-09-03,
+//    y no por estética: `onboard-organization` necesita exactamente lo mismo y
+//    NO puede llamar a esta función —su primer guard exige `usuarios.gestionar`,
+//    que en una organización nueva no tiene nadie—. Copiarlo habría dejado el
+//    alta de usuarios en dos lados sin nada que los sincronice (R1), en el flujo
+//    que da acceso al sistema.
+//    Lo que se comparte es el CAMINO; lo que se queda acá es la AUTORIZACIÓN,
+//    que es lo único distinto entre los dos casos.
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -97,44 +107,12 @@ serve(async (req) => {
     // metadata a propósito: es un canal que el usuario controla en un signUp
     // abierto, y ya se confía en él para el enum `role` (deuda anotada). Meter
     // role_id ahí convertiría esa deuda en escalada directa a owner.
-    const { data, error: createErr } = await admin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: { full_name, role, sede_id },
+    const alta = await crearUsuarioConPerfil(admin, {
+      email, password, full_name, role, sede_id, role_id,
     })
+    if (!alta.ok) return json({ error: alta.error }, alta.status)
 
-    if (createErr) return json({ error: createErr.message }, 400)
-
-    const newUserId = data.user?.id
-    if (!newUserId) return json({ error: 'No se pudo crear el usuario' }, 500)
-
-    // Asignación del rol RBAC EN EL SERVIDOR. Antes lo hacía el navegador en un
-    // segundo paso (useUsers): si ese paso fallaba —o se cerraba la pestaña— el
-    // perfil quedaba SIN ROL y por lo tanto SIN NINGÚN PERMISO (has_permission
-    // hace JOIN contra roles). Ahora ocurre acá, en el mismo request.
-    if (role_id) {
-      const { error: roleErr } = await admin
-        .from('profiles')
-        .update({ role_id })
-        .eq('id', newUserId)
-
-      if (roleErr) {
-        // COMPENSACIÓN: deshacer la creación en vez de dejar un usuario a medias.
-        // profiles.id referencia auth.users ON DELETE CASCADE, así que borrar la
-        // cuenta se lleva el perfil: no queda residuo. Si el propio delete falla
-        // se reporta igual — es preferible un error ruidoso a un perfil mudo.
-        const { error: delErr } = await admin.auth.admin.deleteUser(newUserId)
-        if (delErr)
-          return json({
-            error: 'No se pudo asignar el rol y tampoco revertir la creación. ' +
-                   `Revisa manualmente el usuario ${email}.`,
-          }, 500)
-        return json({ error: 'No se pudo asignar el rol; el usuario no fue creado' }, 500)
-      }
-    }
-
-    return json({ success: true, user_id: newUserId })
+    return json({ success: true, user_id: alta.user_id })
   } catch (err) {
     return json({ error: String(err) }, 500)
   }
