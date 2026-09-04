@@ -208,11 +208,23 @@ test('🔴 la lista tiene CABECERA y el precio lleva $ — y las columnas ALINEA
   await page.goto('/ventas')
   await waitPosReady(page)
 
+  // 🔴 SE CUENTA, NO SE COMPRUEBA PRESENCIA — y esta línea existe por un defecto
+  //    que llegó a producción el 2026-09-03. La lista YA TENÍA una cabecera de
+  //    dos columnas; al pedir «ponele los títulos» se agregó otra encima, y los
+  //    rótulos salieron DUPLICADOS. La versión anterior de este caso hacía
+  //    `toBeVisible()` sobre el testid, así que **pasaba con las dos**: una
+  //    aserción de presencia no puede distinguir «hay una» de «hay dos».
+  //    Lo cazó mirar el desplegado, que es la tercera vez en el proyecto que un
+  //    defecto aparece MIRANDO y no ejecutando.
   const cabecera = page.getByTestId('pos-lista-cabecera')
+  await expect(cabecera, 'tiene que haber UNA cabecera, no dos').toHaveCount(1)
   await expect(cabecera).toBeVisible()
-  await expect(cabecera).toContainText(/producto/i)
-  await expect(cabecera).toContainText(/categor/i)
-  await expect(cabecera).toContainText(/precio/i)
+
+  // Y tres columnas: el badge de stock es condicional, así que no es columna y
+  // no lleva título. Un cuarto rótulo encabezaría una columna casi siempre vacía.
+  const titulos = await cabecera.locator('span').allTextContents()
+  expect(titulos.map((t) => t.trim()), 'los tres títulos, en orden y sin repetir')
+    .toEqual(['Producto', 'Categoría', 'Precio'])
 
   // El precio de la lista lleva `$`; el formateador y los miles no cambian.
   const precio = await page.getByTestId('product-card').first()

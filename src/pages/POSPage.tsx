@@ -2050,28 +2050,39 @@ export function POSPage() {
             </div>
           ) : (
             <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--r-3)', overflow: 'hidden' }}>
-              {/* ── CABECERA DE LA TABLA (§3: 30-32px, `--surface-2`, pegajosa) ──
-                  Los rótulos van en `--fs-label` de §2: 11/600, `.04em`, en
-                  mayúsculas y en `--ink-3`.
+              {/* Cabecera de columnas. Mayúscula sostenida: es de los dos
+                  únicos lugares donde la skill la permite (etiqueta de columna
+                  y de KPI, --fs-label).
 
-                  🔴 SON TRES Y NO CUATRO. El indicador de stock NO lleva título
-                     porque no es una columna: es **condicional** —sólo aparece
-                     con stock bajo o en cero— y vive pegado al nombre. Un título
-                     sobre él encabezaría una columna vacía en la mayoría de las
-                     filas, que es peor que no tenerlo: promete un dato que casi
-                     nunca está.
-                  ⚠️ Los anchos se copian de `ProductRow` a mano, y ése es un
-                     contrato en dos lados (R1): si la fila cambia `minWidth`,
-                     esta cabecera deja de alinear y **nada lo avisa**. El spec
-                     `pos-layout` asevera la alineación por eso. */}
+                  🔴 ESTA CABECERA YA EXISTÍA, con dos columnas. El 2026-09-03,
+                     al pedir «ponele los títulos», se agregó OTRA encima en vez
+                     de extender ésta: la lista salió a producción con los
+                     rótulos DUPLICADOS. No lo cazó `tsc`, ni el lint, ni el
+                     spec —que aseveraba que la cabecera EXISTIERA, nunca que
+                     hubiera UNA—. Se vio mirando el desplegado.
+                     Lo accionable quedó en el spec: se CUENTA, no se comprueba
+                     presencia. Y antes de agregar un elemento a una pantalla,
+                     `grep` de su texto en el archivo — que acá costaba dos
+                     segundos y se saltó.
+
+                  🔴 SON TRES COLUMNAS Y NO CUATRO. El indicador de stock NO
+                     lleva título porque no es una columna: es **condicional**
+                     —sólo aparece con stock bajo o en cero— y vive pegado al
+                     nombre. Un título sobre él encabezaría una columna vacía en
+                     la mayoría de las filas: promete un dato que casi nunca está.
+
+                  ⚠️ Los anchos están copiados de `ProductRow` a mano, y es un
+                     contrato en dos lados (R1): si la fila cambia un `minWidth`,
+                     esta cabecera deja de alinear y **nada lo avisa**. Por eso
+                     `pos-layout` asevera la alineación por el borde IZQUIERDO
+                     —el derecho está anclado al contenedor y no puede fallar—. */}
               <div
                 data-testid="pos-lista-cabecera"
                 style={{
+                  position: 'sticky', top: 0, zIndex: 1,
                   display: 'flex', alignItems: 'center', gap: 10,
                   height: 32, padding: '0 12px',
-                  position: 'sticky', top: 0, zIndex: 1,
-                  background: 'var(--surface-2)',
-                  borderBottom: '1px solid var(--border)',
+                  background: 'var(--surface-2)', borderBottom: '1px solid var(--border)',
                   fontSize: 11, fontWeight: 600, letterSpacing: '.04em',
                   textTransform: 'uppercase', color: 'var(--ink-3)',
                 }}
@@ -2079,20 +2090,6 @@ export function POSPage() {
                 <span style={{ flex: 1, minWidth: 0 }}>Producto</span>
                 <span style={{ flexShrink: 0, minWidth: 108, maxWidth: 132 }}>Categoría</span>
                 <span style={{ flexShrink: 0, minWidth: 96, textAlign: 'right' }}>Precio</span>
-              </div>
-              {/* Cabecera de columnas. Mayúscula sostenida: es de los dos
-                  únicos lugares donde la skill la permite (etiqueta de columna
-                  y de KPI, --fs-label). */}
-              <div style={{
-                position: 'sticky', top: 0, zIndex: 1,
-                display: 'flex', alignItems: 'center', gap: 10,
-                height: 32, padding: '0 12px',
-                background: 'var(--surface-2)', borderBottom: '1px solid var(--border)',
-                fontSize: 11, fontWeight: 600, letterSpacing: '.04em',
-                textTransform: 'uppercase', color: 'var(--ink-3)',
-              }}>
-                <span style={{ flex: 1 }}>Producto</span>
-                <span style={{ minWidth: 88, textAlign: 'right' }}>Precio</span>
               </div>
               {filtered.map((p) => (
                 <ProductRow key={p.id} product={p} onAdd={() => handleAddProduct(p)} />
