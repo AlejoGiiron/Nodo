@@ -1895,6 +1895,52 @@ es preguntarse cuál de los dos es.
 
 ---
 
+
+### 🔴 CRITERIO SIN NÚMERO · UN EJE QUE EL PRODUCTO DICE SOPORTAR Y QUE EL LAB TIENE EN N=1 ES UN EJE SIN PROBAR
+
+*2026-09-04. Sale de que DOS deudas de autorización estuvieran dormidas por la misma razón, y
+aparecieran las dos el mismo día — el día que LAB tuvo una segunda sede.*
+
+Ya está escrito que **una aserción sobre una capacidad de N no está ejercida con N=1**: se midió con
+el alto mínimo del mostrador (una fila no distingue «entran tres» de «entra una») y con la
+comparación de `payments` (una fila no distingue comparar la lista de comparar el total).
+
+> **Esto es lo mismo movido del CASO al ESCENARIO.** Allá el N=1 estaba en la fixture de un test y
+> dejaba una aserción sin ejercer. Acá el N=1 está en el LABORATORIO ENTERO, y deja **un eje del
+> producto** sin ejercer — con todos sus casos, sus policies y sus pantallas.
+
+**El par medido:**
+
+| deuda | qué estaba roto | por qué nadie lo vio |
+|---|---|---|
+| **61** | un cajero se trasladaba solo a cualquier sede de su organización: la restricción vivía **sólo en `StoreSelector.tsx`**, la UI ocupando el lugar de la autorización | con una sola sede **no hay a dónde trasladarse** |
+| **92** | `create-user` valida `sede_id` contra la sede del **llamante**, así que no se puede dar de alta a nadie en otra sede de la propia organización | con una sola sede **toda alta es en la sede propia** |
+
+⚠️ **Y ninguna de las dos falla: no se ejecutan.** Con N=1 el código de la rama multi-sede es
+inalcanzable, así que no hay rojo, no hay excepción y no hay síntoma. El eje entero es **una
+afirmación de diseño que nunca ejecutó** — el corolario de R4 aplicado a una capacidad en vez de a
+un dato.
+
+🔴 **Y la asimetría que lo hace urgente y no una curiosidad: lo que aparece al pasar a N=2 son
+AUTORIZACIONES.** No es casualidad. Un eje sin ejercer acumula guards escritos contra un mundo que
+nunca ocurrió, y los guards que nadie ejecutó son los que fallan **abiertos** — la 61 dejaba a un
+cajero leer otra sede entera.
+
+**LO ACCIONABLE, y es una pregunta al laboratorio, no al código:**
+
+> **Por cada eje que el producto DECLARA soportar, ¿el lab tiene al menos DOS?** Lo que tenga uno
+> solo no está probado — está sin ejecutar, que es distinto de estar en verde.
+
+✅ **Sedes: resuelto el 2026-09-04** — LAB tiene `LAB Principal` y `LAB Pruebas`.
+⛔ **Y queda la pregunta abierta, que es el trabajo real: qué más tiene UNO SOLO.** Organizaciones,
+roles distintos del owner, jornadas simultáneas, usuarios por sede, proveedores, métodos de pago
+conviviendo en una venta. Cada eje con N=1 es un candidato exacto a esta clase.
+
+⚠️ Corolario para leer el lab: **«el lab está poblado» no contesta esta pregunta.** LAB tenía 1.133
+productos y 2.997 órdenes con UNA sede. El volumen y la variedad de ejes son cosas distintas, y sólo
+la segunda encuentra esta clase.
+
+---
 ### 🔴 CRITERIO SIN NÚMERO · UN ESTADO QUE SÓLO SE COMUNICA CON COLOR O POSICIÓN NO SE PUEDE PROBAR QUE EXISTA
 
 *Dos casos, 2026-09-03. Es el hermano del defecto que sólo vive en lo que se ve, mirado desde el

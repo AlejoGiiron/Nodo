@@ -11,9 +11,24 @@ export type StoreAssignment = { user_id: string; sede_id: string }
 /**
  * Sedes (sedes) de la organización + asignación de usuarios (user_stores).
  *
- * Nota: la lectura de profiles está acotada por RLS a la sede activa; con una
- * sola sede coincide con toda la organización. El soporte multi-sede pleno
- * requerirá ampliar el SELECT de profiles a nivel organización.
+ * 🔴 CORREGIDO el 2026-09-04 — esta nota afirmaba lo contrario de lo que hace
+ *    la base, y en la dirección que hace daño: decía que *"la lectura de
+ *    profiles está acotada por RLS a la sede activa"* y que *"el soporte
+ *    multi-sede pleno requerirá ampliar el SELECT de profiles a nivel
+ *    organización"*. Las dos mitades son falsas.
+ *
+ *    La policy es `profiles: ver los de mi organizacion`, y usa
+ *    `organization_id = get_my_organization_id()`: YA es de organización.
+ *    Medido el día que LAB tuvo dos sedes — dos cuentas, en sedes distintas,
+ *    ven 29 perfiles cada una.
+ *
+ *    ⚠️ Por qué importa borrarla y no sólo matizarla: mandaba a AMPLIAR una
+ *    policy que ya está ancha, o sea a tocar una autorización que está bien.
+ *    Una nota que dirige mal cuesta más que una ausente.
+ *
+ * ⛔ Lo que SÍ falta para el multi-sede está medido y tiene número: la deuda 92
+ *    —`create-user` valida `sede_id` contra la sede del LLAMANTE, así que no se
+ *    puede dar de alta a nadie en otra sede de la propia organización—.
  */
 export function useStores() {
   const { organizationId } = useAuth()
