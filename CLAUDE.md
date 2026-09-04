@@ -2308,6 +2308,30 @@ Reglas duras traídas de los hermanos — aplican a todo el trabajo en este repo
   **Cómo se comprueba:** `select proname, proacl from pg_proc … where prosecdef` y mirar que ninguna
   diga `anon=X`.
 
+  ✅ **CORRIDO CONTRA LA BASE el 2026-09-03**, que era la primera vez que se podía desde que el
+  token se rotó. Resultado: de las funciones `SECURITY DEFINER` del esquema, **todas las nuestras
+  tienen exactamente `{postgres, authenticated, service_role}`** — ni `anon` ni el `=X` de PUBLIC.
+  La única con `anon=X` es `rls_auto_enable`, **que no es nuestra**: es andamiaje de plataforma que
+  habilita RLS al crear tablas, y ya estaba enumerada y excluida en
+  `20260902191500_revocar_anon_en_sede_asignada.sql`.
+
+  🔴 **Y esa exclusión pasó de afirmación a MEDICIÓN.** La migración decía *"no se invoca desde
+  PostgREST"*, que es plausible y no se había ejecutado. Invocándola:
+
+  ```
+  select public.rls_auto_enable()
+  → ERROR 0A000: trigger functions can only be called as triggers
+  ```
+
+  O sea que es **más fuerte** que lo que la nota afirmaba: no es que no se invoque desde PostgREST —
+  **no se puede invocar en absoluto**, por regla del lenguaje, sin importar a quién se le haya dado
+  EXECUTE. El grant a `anon` es inerte por construcción.
+
+  ⚠️ Lo que este ejercicio deja como método: la nota original decía *"aparte de `rls_auto_enable`,
+  que es andamiaje y no se invoca"* — una excepción **razonada**. Correrla convirtió el razonamiento
+  en un error de Postgres citable. Cuando una garantía de seguridad lleva una excepción, la
+  excepción **también** se mide.
+
 ---
 
 ## Herencia de Vento
@@ -3595,7 +3619,7 @@ Todo lo de esta sección caduca. Preferí siempre el comando sobre el dato.
 |---|---|
 | Nombre | **Fijado: Nodo** (2026-08-31), tras verificar riesgo marcario. ⛔ Falta el registro en la SIC, clases 9 y 42. |
 | Repo | Creado (2026-08-31). |
-| Proyecto de Supabase | Creado (2026-08-31). CLI verificado sin 403 el mismo día (deuda 2); **17 migraciones aplicadas al 2026-09-02**. Reconfirmar con `pnpm exec supabase migration list --linked`. |
+| Proyecto de Supabase | Creado (2026-08-31). CLI verificado sin 403 el mismo día (deuda 2); **27 migraciones aplicadas al 2026-09-03**, medido — la nota anterior decía 17 y era del 2026-09-02. Reconfirmar con `pnpm exec supabase migration list --linked`. |
 | Vercel | No existe. |
 | Sentry | No existe. Proyecto propio, con el filtro de PII ya corregido. |
 | Origen de la copia | Vento rama `develop`, `d848852`. *(Esta fila decía que `docs/reglas-de-clase` seguía viva "en origin": en el origin de Nodo no existe —`git ls-remote --heads origin` → solo `develop`—; si existe, es en el de Vento. Corregido en A5.)* |

@@ -45,6 +45,7 @@ const SEDE = `E2E OnboardSede ${SUFIJO}`
 let comoUsuario: SupabaseClient
 let comoServicio: SupabaseClient | null = null
 const creadas: string[] = []
+const usuarios: string[] = []
 
 test.beforeAll(async () => {
   const url = process.env.VITE_NODO_SUPABASE_URL!
@@ -62,6 +63,11 @@ test.afterAll(async () => {
   // Las organizaciones de prueba se borran: no tienen historia que conservar
   // —nacen y mueren dentro del spec— y dejarlas rompería el guard de homónimas
   // de la propia función en la corrida siguiente.
+  if (comoServicio && usuarios.length) {
+    // Primero las cuentas: `profiles.id` cae por cascade, y sin eso la sede no
+    // se puede borrar.
+    for (const id of usuarios) await comoServicio.auth.admin.deleteUser(id)
+  }
   if (comoServicio && creadas.length) {
     await comoServicio.from('sedes').delete().in('organization_id', creadas)
     await comoServicio.from('roles').delete().in('organization_id', creadas)
@@ -154,22 +160,26 @@ test.describe('con service_role', () => {
     // inocuo. `usuarios_existentes` es lo que deja al llamador distinguir
     // «completala» de «ya está», y sin ese número tendría que adivinar — y
     // adivinar acá significa un admin de más en el tenant del cliente.
+    //
+    // 🔴 EL USUARIO SE CREA POR EL CAMINO REAL, y la primera versión de este
+    //    caso no lo hacía: insertaba un perfil suelto y se SALTABA si la FK lo
+    //    rechazaba. Se saltó — `profiles.id` referencia `auth.users`— así que
+    //    esta mitad de la idempotencia quedaba SIN MEDIR, y el spec lo decía en
+    //    letra chica en vez de fallar. Un caso que se auto-saltea cuando su
+    //    atajo no funciona es un caso que no existe.
+    //    Crear la cuenta de verdad además ejercita `handle_new_user`, que es
+    //    quien arma el perfil — el mismo mecanismo que va a usar el alta real.
     const sede = (await comoServicio!
       .from('sedes').select('id').eq('organization_id', creadas[0]).limit(1).single()).data!.id
 
-    // Un perfil cualquiera de esa organización alcanza para el conteo; no hace
-    // falta una cuenta de Auth real, y crearla dejaría residuo en el lab.
-    const { error: insErr } = await comoServicio!.from('profiles').insert({
-      id: crypto.randomUUID(),
+    const { data: nuevo, error: altaErr } = await comoServicio!.auth.admin.createUser({
       email: `e2e-onboard-${SUFIJO}@nodo.test`,
-      full_name: 'E2E Onboard',
-      role: 'admin',
-      sede_id: sede,
-      organization_id: creadas[0],
+      password: `E2E-${SUFIJO}-onboard`,
+      email_confirm: true,
+      user_metadata: { full_name: 'E2E Onboard', role: 'admin', sede_id: sede },
     })
-    // Si `profiles.id` exige FK contra auth.users, este atajo no sirve y el
-    // caso se salta diciéndolo — mejor que un verde que no midió nada.
-    test.skip(insErr != null, `no se pudo sembrar el perfil de prueba: ${insErr?.message}`)
+    expect(altaErr, 'el usuario de prueba tiene que crearse, o el caso no mide nada').toBeNull()
+    usuarios.push(nuevo!.user!.id)
 
     const { data, error } = await comoServicio!.rpc('onboard_organization', {
       p_org_name: ORG, p_sede_name: SEDE,
@@ -179,8 +189,6 @@ test.describe('con service_role', () => {
       (data as Record<string, unknown>).usuarios_existentes,
       'ahora la organización tiene usuarios: el llamador NO debe crear otro admin',
     ).toBe(1)
-
-    await comoServicio!.from('profiles').delete().eq('organization_id', creadas[0])
   })
 
   test('🔴 con DOS organizaciones homónimas falla CERRADO, en vez de elegir una', async () => {

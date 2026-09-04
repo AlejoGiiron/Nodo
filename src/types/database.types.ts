@@ -1420,6 +1420,14 @@ export type Database = {
       has_permission: { Args: { perm: string }; Returns: boolean }
       hoy_bogota: { Args: never; Returns: string }
       next_order_number: { Args: { p_sede_id: string }; Returns: number }
+      onboard_organization: {
+        Args: { p_org_name: string; p_sede_name: string }
+        Returns: Json
+      }
+      recalcular_total_de_orden: {
+        Args: { p_order_id: string }
+        Returns: undefined
+      }
       register_debt_payment: {
         Args: { p_amount: number; p_order_id: string; p_payment_method: string }
         Returns: Json
