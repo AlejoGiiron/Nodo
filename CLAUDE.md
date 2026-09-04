@@ -1328,6 +1328,36 @@ no es aplicarla: aplicarla es **correr algo que pueda contestarla que no**.
 algo la hace cumplirse es un mecanismo —el mutante, acá—, no la frescura. El mutante existía en el
 procedimiento desde antes y **fue lo único que la atrapó**.
 
+🔴 **UN CONTROL NEGATIVO APOYADO EN «ESTO TODAVÍA NO EXISTE» TIENE FECHA DE VENCIMIENTO IMPLÍCITA
+— Y NADIE LA ESCRIBE.**
+*2026-09-03, tercera redacción del control del `preventDefault`, y la primera que no va a caducar.*
+
+Un control negativo necesita algo que **no pase**. La forma cómoda de conseguirlo es tomar una parte
+del producto que todavía no está: una tecla sin cablear, una pantalla que no existe, un permiso que
+nadie tiene. **Funciona, y viene con una bomba de tiempo que no se declara en ninguna parte:** el
+producto crece hacia ahí, el control se pone rojo, y el rojo **no es del sujeto que el caso mide**.
+
+| versión | en qué se apoyaba | qué la mató |
+|---|---|---|
+| `F4` | *"§5 la asigna y no se cableó"* | el cobro en línea le dio su control (cambiar cliente) |
+| `F8` | *"Pedidos no existe"* | Catálogo se mudó ahí al liberarse F5 |
+| **`F5`** | 🔴 *"el producto **decidió** no tomarla"* | — **nada puede matarla sin revertir la decisión** |
+
+**La diferencia es la clase de hecho en que se apoya:** las dos primeras se apoyaban en una
+**propiedad temporal** —*todavía* no está—, que es una afirmación de estado, y el estado se pudre.
+La tercera se apoya en una **decisión** —F5 recarga y recargar borra el carrito, así que no se
+toma—, que sólo cambia si alguien la cambia a propósito. Y si la cambia, **el rojo es correcto**:
+está diciendo que la decisión se revirtió.
+
+✅ **Y por eso lleva guard y no comentario:** `TECLAS_RESERVADAS` con un caso unitario que falla si
+alguna entrada de `ATAJOS` usa esa tecla. El control negativo del E2E y el guard unitario se
+sostienen mutuamente — uno mide el efecto, el otro impide la causa.
+
+**LO ACCIONABLE, al escribir un control negativo:** preguntá **por qué** eso que usás no pasa. Si la
+respuesta empieza con *"todavía"*, el control caduca y **escribí cuándo** —el hecho concreto que lo
+va a romper— al lado. Si la respuesta es *"porque se decidió que no"*, no caduca, y conviene decir
+cuál decisión: es lo que hace que el próximo rojo se lea como lo que es.
+
 ✅ **El instrumento que sí mide no observa la CONSECUENCIA: observa el HECHO.** No *"el navegador no
 hizo lo suyo"* —invisible acá— sino *"el evento salió con su default cortado"*:
 
@@ -2904,6 +2934,32 @@ grep -rln "AppLayout\|<Badge\|MoneyCell" src/ tests/       # por símbolo, si el
 ⚠️ Y la señal barata que lo anticipa: **si el archivo que estás editando aparece en más de una
 pantalla, el grupo es la lista de consumidores, no la carpeta.** El sidebar está en las once.
 
+**🔴 `toBeVisible()` ES EL PISO, NO LA MEDICIÓN — Y YA COSTÓ TRES DEFECTOS, UNO DE ELLOS EN
+PRODUCCIÓN.**
+*Las tres formas se escriben juntas a propósito: separadas se leen como tres consejos; juntas son
+una regla.*
+
+> **Una aserción de PRESENCIA confirma que algo existe y no dice nada de su FORMA, su TAMAÑO ni su
+> CANTIDAD.** Y las tres cosas se pueden romper con el elemento perfectamente presente.
+
+| qué se rompió | por qué `toBeVisible()` pasaba igual | la aserción que sí mide |
+|---|---|---|
+| la **lista del carrito colapsada a CERO** | el ítem sigue en el DOM con bounding box: para Playwright, clipeado por un contenedor de altura 0 **es visible** | **geométrica** — que el rectángulo caiga DENTRO del de su contenedor |
+| la **cabecera duplicada** de la lista del mostrador | había dos elementos con el mismo testid, y los dos visibles | **de conteo** — `toHaveCount(1)`, y la lista de títulos con `toEqual` |
+| el cliente **elegido** en el picker | el estado vivía sólo en el fondo y el ícono: no había nada que aseverar | **de atributo** — `aria-pressed`, agregado al producto |
+
+🔴 **La tercera es la que completa la regla, porque no se arregla en el test: se arregla en la
+pantalla.** Si al escribir la aserción no encontrás qué mirar, el hueco no es de cobertura — **es
+que el estado no existe en ningún lugar observable**, y eso también es un defecto del producto.
+
+**LO ACCIONABLE, y es una pregunta antes de escribir `toBeVisible()`:** ¿qué es lo que de verdad
+tiene que ser cierto acá — que **exista**, que se **vea**, que haya **uno**, o que esté en un
+**estado**? `toBeVisible()` sólo contesta la primera, y las otras tres tienen cada una su forma.
+
+⚠️ **Y la señal barata para reconocer que te quedaste en el piso:** preguntá **qué defecto pasaría
+igual**. Si la respuesta es *"uno duplicado"*, *"uno del tamaño equivocado"* o *"uno en el estado
+equivocado"*, la aserción está midiendo la existencia y afirmando otra cosa.
+
 **🔴 UN LOCATOR QUE NO PUEDE NOMBRAR *QUÉ* INSTANCIA QUIERE ESTÁ APOSTANDO A QUE SIEMPRE HAYA UNA.**
 *Ya es clase: tres casos, en tres instrumentos distintos, todos rotos por lo mismo.*
 
@@ -2959,6 +3015,28 @@ alguien actúe **sin señal**, justo cuando la señal se apagó.
 de que alguien se acuerde **en el momento correcto** falla, y falla más cuanto mejor salió el
 arreglo. Por eso el corolario de abajo es un **comando**, no una actitud — se corre aunque uno esté
 seguro de que no hace falta, que es cuando más hace falta.
+
+🔴 **Y LA APARICIÓN DE HOY DESCARTA LA EXPLICACIÓN CÓMODA: NO SE SALTEA POR CARO.**
+*2026-09-03, la cabecera duplicada de la lista del mostrador.*
+
+Todas las veces anteriores el barrido tenía **algún** costo: abrir N archivos, correr un grupo de
+specs, releer una función larga. Quedaba la explicación tranquilizadora de que se saltea **porque
+cuesta**.
+
+**Esta vez el barrido era `grep -n "Producto" src/pages/POSPage.tsx`.** Dos segundos, un archivo, el
+que ya estaba abierto. Se salteó igual, y la lista salió a producción con los rótulos duplicados.
+
+> **No se saltea porque sea caro. Se saltea porque la tarea PARECE CHICA.**
+
+⚠️ **Y eso invierte dónde hay que poner la atención.** La intuición dice que el riesgo está en los
+cambios grandes —más superficie, más lados, más para olvidar—. Los grandes vienen con enumeración
+propia: son lo bastante intimidantes como para que uno la haga. **El que no la trae es el pedido de
+una línea** —«ponele los títulos», «cambiale el color», «agregá una columna»—, porque su tamaño
+aparente **es la razón por la que nadie se detiene a enumerar**.
+
+**Lo accionable, y es más corto que la excusa:** antes de AGREGAR un elemento a una pantalla, `grep`
+de su texto o de su rol en el archivo. No para confirmar que no está — para **descubrir que sí**.
+Es el mismo comando que la poda usa después de borrar, corrido antes de escribir.
 
 🔴 **QUINTA APARICIÓN, Y LA QUE PONE PRECIO AL BARRIDO.** *Corte 3, 2026-09-03.* La migración del
 cobro monta las dos superficies a la vez, así que **todo componente compartido necesita prefijo de
