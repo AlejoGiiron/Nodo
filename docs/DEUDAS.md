@@ -79,6 +79,8 @@ Toda afirmación de estado va fechada. *Última revisión: 2026-08-31.*
 
 | 91 | 🟡 **HAY CATEGORÍAS QUE EL MODAL NO PUEDE EDITAR: su color no está entre los ocho que ofrece el selector, así que se abre con NADA marcado.** Abierta el 2026-09-04. Medido: **170 de 684 categorías del LAB** tienen un color fuera de `CATEGORY_COLORS` (`CategoryModal.tsx`). Muscle Pro: **0 de 8** — la carga usó la paleta de la pantalla a propósito. | 🔴 **La causa NO es el seed del lab: es el DEFAULT DE LA COLUMNA.** De las 170, **164 son `#6366f1`**, que es el `default` de `categories.color` en la migración `catalogo` — y **no está en la paleta del selector**. O sea que **toda categoría creada sin color explícito nace sin poder representarse en su propio formulario**. Las 6 restantes son los colores curados de `lab-seed-c` (Aminoácidos, Crema de arroz, Farmacología, Pre entrenos, Quemadores, Snack); Proteína cayó dentro por casualidad y Creatina usa justo el default.<br>**Son TRES lados sin nada que los sincronice (R1):** el `default` del esquema · `CATEGORY_COLORS` en `CategoryModal.tsx` · la paleta del design system (§1.2). Ninguno deriva de otro.<br>⚠️ **Es la misma clase que ya vimos con el color de la categoría en el Mostrador**, por el otro lado: allá un color del cliente se metía en el rango que la paleta reserva a los estados; acá un color que el producto **escribe solo** queda fuera del rango que el producto **ofrece**. Las dos son un valor que la pantalla no puede representar.<br>🔴 **Y el modo de fallo es silencioso y va en la dirección peor:** el selector no dice «este color no está en la lista» — **se abre con ninguno marcado**, que se lee como «no tiene color». Quien edite el nombre y guarde **le cambia el color sin querer**, porque el estado del formulario arranca en `category?.color ?? CATEGORY_COLORS[0]` y el submit manda lo que haya en `color`.<br>**Alcance, y es chico:** alinear el `default` de la columna con la paleta (migración nueva, R5 — el default de una tabla sí se puede cambiar sin tocar filas) **o** hacer que el selector muestre el color actual aunque no esté en la lista. Lo segundo es una línea y no toca la base; lo primero arregla a los que vengan. **Las dos, idealmente** — una mira al pasado y la otra al futuro.<br>⚠️ **Cosmético hoy**, y se dice para que no suba de prioridad sola: el Mostrador muestra la categoría como **texto sin color** (§1.2), así que ninguna pantalla lee estos valores. Lo que se pierde es poder editarlos sin pisarlos. |
 
+| 92 | 🔴 **NO SE PUEDE CREAR UN USUARIO EN OTRA SEDE DE LA PROPIA ORGANIZACIÓN — el producto es multi-sede y su alta de usuarios no lo es.** Medido el 2026-09-04 al montar la sede de pruebas. `create-user` recibe `sede_id`, pero **para validarlo contra la del llamante, no como destino**: `if (sede_id !== callerProfile.sede_id) return 403`. Un admin de la sede A no puede dar de alta a nadie en la sede B, aunque tenga `usuarios.gestionar` y la sede sea de su misma organización. | 🔴 **Estuvo dormido porque LAB tuvo UNA sola sede desde siempre**, igual que la deuda 61: la segunda sede es lo que lo destapa.<br>⛔ **El arreglo NO es relajar el guard** — es el guard del camino que usan todos, y el criterio escrito dice que un caso de borde gana su propio camino, no un guard más flojo. La forma correcta es **cambiar la pregunta**: hoy pregunta *"¿es TU sede?"* y debería preguntar *"¿es una sede de tu organización, y tenés permiso sobre ella?"* — que es más estricta en un eje (exige el permiso) y más ancha en el otro (admite la org), no simplemente más floja.<br>✅ **Y hay rodeo hoy, todo por el camino del producto**, que es como se montó la sede de pruebas: crear el usuario en la sede propia → asignarlo a la otra en `user_stores` (Configuración → Sedes) → y que **él mismo** cambie su sede activa, que es lo que hace `StoreSelector` y lo que el guard de la deuda 61 autoriza. Tres pasos donde debería haber uno, pero sin tocar ninguna autorización.<br>⚠️ **Segunda mitad, del mismo hueco dormido:** el comentario de `src/hooks/useStores.ts` afirma que *"la lectura de profiles está acotada por RLS a la sede activa"* y que *"el soporte multi-sede pleno requerirá ampliar el SELECT de profiles a nivel organización"*. **Las dos mitades son falsas:** la policy `profiles: ver los de mi organizacion` ya usa `organization_id = get_my_organization_id()`, y se midió — las dos cuentas, en sedes distintas, ven **29 perfiles cada una**. Es una nota que manda a ampliar una policy que ya está ancha. |
+
 ### Contratos y verificación
 
 | # | Deuda | Nota |
@@ -359,6 +361,55 @@ conservar. El prefijo distingue *residuo de test* de *dato de laboratorio*; la f
 nada.
 *(Esta afirmación estaba escrita DOS VECES seguidas, con palabras casi idénticas — edición por
 append. Queda una.)*
+
+🔴 **LA PREMISA CON LA QUE SE PIDIÓ ESTE TRABAJO ERA FALSA, y se anota porque la corrección es
+el hallazgo.** El pedido decía: *«alguien va a ejecutar el plan de pruebas y hoy vería 1.133
+productos donde 32 son reales»*. **Los dos únicos lectores del catálogo filtran `is_active`**
+(`getProducts` y `getCategories`), y **los productos E2E activos son 0 de 998**: quien abra el
+Mostrador ve 32 y 9 categorías, que son exactamente los reales.
+
+**La contaminación existe, pero está en el HISTORIAL, no en el catálogo** — y eso es un problema
+distinto que ningún archivado de `products` resuelve:
+
+| | total | con residuo |
+|---|---|---|
+| órdenes | 2.997 | **1.379 (46%)** |
+| no pagadas (Cartera) | 592 | 187 · 🔴 **405 limpias, que son la evidencia** |
+| clientes | 198 | **2 activos** |
+
+✅ **POR ESO NO SE ARCHIVÓ: SE CREÓ UNA SEDE LIMPIA (2026-09-04).** Cero borrados, cero migraciones,
+cero cambios de código, y LAB Principal queda intacta con su historial.
+
+| | |
+|---|---|
+| sede | **LAB Pruebas** · `2b6ca5df-62b6-4e61-b4f9-6bed51f825ce` |
+| cuenta | `pruebas.lab@nodo.test`, rol **`admin`** |
+| catálogo | los 17 + 8 categorías, con `cargar-catalogo.mjs --sede-id …` **sin tocar el script** |
+
+⚠️ La contraseña se generó al crear la cuenta y **se mostró una sola vez**: no está en ningún
+archivo. Si se perdió, se restablece.
+🔴 **El rol es `admin` y NO `owner`, a propósito:** `owner` lleva el comodín `['*']` y taparía
+cualquier clave mal escrita (deuda 23.4). `admin` es `ALL_PERMISSION_KEYS` **enumerado**, así que la
+cuenta de pruebas ejercita permisos de verdad.
+
+🔴 **Y LOS PREFIJOS DEL ARCHIVADO, MEDIDOS Y FECHADOS — porque «por prefijo `E2E`» NO alcanza.**
+*Medido el 2026-09-04 sobre las 1.133 filas de `products` y las 684 de `categories` de LAB
+Principal, paginando y cruzando contra el `count` exacto.*
+
+| prefijo | está en `PREFIJOS` de `global-setup.ts` |
+|---|---|
+| `E2E %` | ✅ |
+| `AV %` (`AV Simple`, `AV Insumo`) | ✅ |
+| **`RLS Neg %`** (`RLS Neg Track`, `RLS Neg Prod`, `RLS Neg`) | 🔴 **NO** |
+
+**Un archivado por `E2E` solo habría dejado 135 productos donde 32 son reales.** La deuda decía un
+prefijo, el código tiene dos, y los datos piden tres. Cuando se archive, la allowlist sale de
+**medir**, no de recordar — y esta tabla lleva su fecha porque el residuo sigue creciendo.
+
+⛔ **Y lo que las FK ya deciden, medido el 2026-09-04:** de los 998 productos con prefijo `E2E`,
+**782 son imborrables** (`on delete restrict` en `order_items` 408, `stock_movements` 426,
+`purchase_invoice_items` 183, `product_components.component_id` 101, `product_cost_adjustments` 20).
+Los 216 borrables son **exactamente los que no tienen historia**: borrar alcanza sólo lo inofensivo.
 
 ⛔ **Y los 6 clientes inactivos sin órdenes no se tocan.** Borrarlos es trivial y **no arregla
 nada**: el picker estaba vacío porque había cero ACTIVOS, no por ellos.

@@ -1498,6 +1498,47 @@ número sin comando es una opinión con dígitos.
 
 ---
 
+
+### 🔴 CRITERIO SIN NÚMERO · UNA LISTA ESCRITA DE MEMORIA ES UNA HIPÓTESIS — LAS LISTAS SE DERIVAN
+
+*Cuatro casos el 2026-09-04, en una sola tanda, y los cuatro tienen la misma forma. Es el hermano de
+«enumerar antes de contar»: allá el problema es el CONTEO, acá es la LISTA MISMA.*
+
+> **Cuando una decisión se apoya en una lista —de prefijos, de tablas, de columnas, de instancias—
+> la pregunta no es si la lista es correcta: es DE DÓNDE SALIÓ.** Una lista recordada nombra lo que
+> uno vio; una lista derivada nombra lo que hay.
+
+| # | la lista escrita de memoria | lo que la derivación decía |
+|---|---|---|
+| 1 | *«el residuo del lab se archiva por prefijo `E2E`»* | el código ya usa **dos**: `PREFIJOS = ['E2E %', 'AV %']`. Y **falta un tercero**, `RLS Neg %`, que ninguno de los dos alcanza |
+| 2 | las tablas a chequear en el aislamiento, tecleadas a mano | **`shifts` y `expenses` no existen** —son `jornadas`, y los gastos viven en `cash_movements`—; faltaban 10 tablas reales |
+| 3 | la tabla de una FK, deducida del número de línea | el `references public.products` que atribuí a `purchase_return_items` —tabla **inexistente**— era de `product_cost_adjustments` |
+| 4 | *«`user_stores` tiene la sede duplicada»* | la consulta **no filtraba por `user_id`**: las filas eran de OTROS usuarios. La cuenta tenía una sola |
+
+🔴 **Los cuatro producen un resultado que se ve bien.** Ninguno da error: el archivado por un prefijo
+archiva *algo*, la lista de tablas devuelve *ceros*, la FK atribuida *existe*, la fila duplicada *está
+ahí*. Es el modo de fallo de esta familia entera — **plausible y equivocado**.
+
+⚠️ **Y el segundo caso muestra el agravante: `count: null` no es cero.** PostgREST contesta con
+`count: null` y `error: null` cuando la tabla **no está en su cache de esquema**, o sea cuando el
+nombre no existe. Un chequeo de aislamiento escrito sobre nombres inventados **reporta 0 filas para
+las dos cuentas** y se lee como el aislamiento perfecto que uno esperaba encontrar. La versión que
+mide trata el `null` como **hueco**, no como cero, y lo cuenta aparte.
+
+**LO ACCIONABLE, y las tres son un comando:**
+
+| lista | de dónde se deriva |
+|---|---|
+| tablas del esquema | `grep -rhoE "^create table public\.[a-z_]+" supabase/migrations/*.sql \| sort -u` |
+| la tabla de una FK | `awk '/^create table public\./{t=$3} /references public\.X/{print t}'` — el `create table` que la CONTIENE, no el número de línea |
+| prefijos de una allowlist | el **valor en el código** (`PREFIJOS`), más una medición contra los datos de qué prefijos hay de verdad |
+
+⚠️ Y el corolario que ata el caso 4: **al leer una tabla con RLS, filtrá explícitamente por el sujeto
+aunque «ya sabés» que RLS filtra.** RLS acota a la organización o a la sede, no a la fila que te
+interesa: lo que vuelve son filas ajenas legítimas, y atribuírselas al sujeto es el mismo error de
+siempre — el objeto más visible que estaba cerca.
+
+---
 ### 🔴 CRITERIO SIN NÚMERO · UN GUARD QUE COMPARA CONTRA UNA CREDENCIAL ESTÁ ACOPLADO A SU FORMATO — Y EL FORMATO LO DECIDE UN TERCERO
 
 *Medido el 2026-09-03, corriendo el alta de la primera organización real. El guard rechazó una
