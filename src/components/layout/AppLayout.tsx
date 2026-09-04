@@ -122,7 +122,7 @@ export function AppLayout() {
   const { sede } = useSedeConfig()
   const { isOpen, isLoadingShift } = useCashShift()
 
-  // Atajos globales de §5 (F1 · F3 · F5 · F6 · F7 · F9 · F10). Se montan acá y
+  // Atajos globales de §5 (F1 · F3 · F6 · F7 · F8 · F9 · F10). Se montan acá y
   // no en cada pantalla: el layout es el único sitio que existe en las once.
   useAtajos()
 

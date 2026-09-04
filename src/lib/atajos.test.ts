@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { esCampoDeEscritura, ATRIBUTO_LETRAS_INERTES, ATAJOS, ATAJOS_SIN_DESTINO } from './atajos'
+import {
+  esCampoDeEscritura, ATRIBUTO_LETRAS_INERTES, ATAJOS, ATAJOS_SIN_DESTINO, TECLAS_RESERVADAS,
+} from './atajos'
 
 // ============================================================================
 // DÓNDE MANDA UNA LETRA Y DÓNDE SE ESCRIBE
@@ -93,6 +95,18 @@ describe('la tabla de atajos', () => {
     const cableadas = new Set(ATAJOS.map((a) => a.tecla))
     const enConflicto = ATAJOS_SIN_DESTINO.filter((a) => cableadas.has(a.tecla)).map((a) => a.tecla)
     expect(enConflicto.join(', ') || 'ninguna').toBe('ninguna')
+  })
+
+  it('🔴 ninguna tecla RESERVADA por el navegador está cableada', () => {
+    // El guard de la decisión del 2026-09-03: F5 recarga, y una recarga borra el
+    // carrito a medio armar. Un comentario que dice «no uses F5» se puede leer
+    // sin contestar; esto no.
+    // ⚠️ El mensaje nombra la tecla y su razón, no un booleano: el rojo tiene que
+    //    decir POR QUÉ esa tecla no se toma, o el próximo la reasigna igual.
+    const reservadas = new Set(TECLAS_RESERVADAS.map((t) => t.tecla))
+    const invasoras = ATAJOS.filter((a) => reservadas.has(a.tecla))
+      .map((a) => `${a.tecla} (${a.que}) — ${TECLAS_RESERVADAS.find((t) => t.tecla === a.tecla)!.porque}`)
+    expect(invasoras.join(' · ') || 'ninguna').toBe('ninguna')
   })
 
   it('los medios de pago NO usan teclas de función', () => {

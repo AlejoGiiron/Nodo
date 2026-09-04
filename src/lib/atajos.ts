@@ -45,7 +45,11 @@ export const ATAJOS: Atajo[] = [
   // el elegido marcado, así que cambiar de cliente no necesita un botón propio.
   // Ámbito 'cobro' y no 'mostrador' porque el control vive adentro del modal.
   { tecla: 'F4',  ambito: 'cobro', que: 'Cambiar cliente' },
-  { tecla: 'F5',  ambito: 'global',    que: 'Catálogo',       ruta: '/productos' },
+  // Catálogo pasó de F5 a F8 el 2026-09-03: ver `TECLAS_RESERVADAS`. F8 estaba
+  // asignada por §5 a Pedidos, que NO EXISTE (deuda 85), así que una tecla
+  // reservada para una pantalla inexistente cedió ante una que se usa todos los
+  // días. Cuando Pedidos exista se le asigna otra, con la pantalla delante.
+  { tecla: 'F8',  ambito: 'global',    que: 'Catálogo',       ruta: '/productos' },
   { tecla: 'F6',  ambito: 'global',    que: 'Clientes',       ruta: '/clientes' },
   { tecla: 'F7',  ambito: 'global',    que: 'Cartera',        ruta: '/fiado' },
   { tecla: 'F9',  ambito: 'global',    que: 'Gastos',         ruta: '/historial-gastos' },
@@ -147,14 +151,17 @@ export function elFocoEstaEscribiendo(): boolean {
  * porque el que lo aprieta cree que llegó.
  */
 export const ATAJOS_SIN_DESTINO: { tecla: string; que: string; porque: string }[] = [
+  // ⚠️ PEDIDOS SALIÓ DE ESTA LISTA Y NO PORQUE SE HAYA CABLEADO: perdió su tecla.
+  //    F8 pasó a Catálogo el 2026-09-03 al liberarse F5. Pedidos sigue en el
+  //    alcance firmado y sigue sin pantalla (deuda 85); cuando exista se le
+  //    asigna una tecla entonces, que es cuando se puede elegir mirando el flujo
+  //    en vez de reservando a ciegas.
+  //    Se anota acá porque «no está en la lista» es indistinguible de «nadie lo
+  //    pensó», y lo que pasó fue una decisión.
   // ✅ F4 salió de esta lista el 2026-09-03 y NO volvió cuando el cobro volvió
   //    al modal: su control existe en las dos superficies. Un atajo que lleva a
   //    nada es lo que se acababa de arreglar con F12; devolverlo acá habría sido
   //    pagar el mismo defecto dos veces.
-  {
-    tecla: 'F8', que: 'Pedidos',
-    porque: 'la pantalla de Pedidos NO EXISTE (A6, clase (c)). Es alcance, no re-skin.',
-  },
   {
     tecla: 'F11', que: 'Utilidades',
     porque: 'la pantalla de Utilidades NO EXISTE (A6, clase (c)). La MITAD de cobro de F11 ' +
@@ -173,6 +180,30 @@ export const ATAJOS_SIN_DESTINO: { tecla: string; que: string; porque: string }[
  * empate. Los atajos de cobro se suscriben desde el panel de cobro, así que su
  * ámbito lo da el montaje del componente y no una consulta al documento.
  */
+
+/**
+ * 🔴 TECLAS QUE EL PRODUCTO NO TOMA, Y POR QUÉ. Decidido el 2026-09-03.
+ *
+ * No es lo mismo que `ATAJOS_SIN_DESTINO`: aquéllas §5 las asigna y todavía no
+ * se cablearon —falta la pantalla—. **Éstas no se van a cablear nunca**, y la
+ * razón no es del producto sino del entorno.
+ *
+ * ⚠️ Y por eso va como LISTA y no como comentario: un comentario que dice «no
+ * uses F5» se puede leer sin contestar y se salta en silencio. Esta lista la
+ * asevera `atajos.test.ts` —ninguna entrada de `ATAJOS` puede usar una tecla de
+ * acá—, así que el día que alguien la reasigne por comodidad, el test lo frena.
+ * Es la diferencia entre un guard y un recordatorio, aplicada a una tecla.
+ */
+export const TECLAS_RESERVADAS: { tecla: string; porque: string }[] = [
+  {
+    tecla: 'F5',
+    porque: 'RECARGAR. Es la tecla más destructiva que hay en una venta a medio ' +
+            'armar: el carrito vive en el store del navegador y una recarga accidental ' +
+            'la borra. `preventDefault` la ataja mientras el manejador esté montado, pero ' +
+            'basta un render sin él —un error de límite, una pantalla nueva que no lo monte— ' +
+            'para que la tecla vuelva a recargar SIN aviso. No se toma.',
+  },
+]
 
 /** La tecla de una acción, para IMPRIMIRLA sin poder equivocarse. */
 export function teclaDe(que: string): string {

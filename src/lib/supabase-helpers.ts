@@ -938,7 +938,7 @@ export const uploadNequiQR = async (
   return publicUrl
 }
 
-// --- Compras / Proveedores (F5) ---
+// --- Compras / Proveedores (F3) ---
 
 export type Supplier = Tables<'suppliers'>
 

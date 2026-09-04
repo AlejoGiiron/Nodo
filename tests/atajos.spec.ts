@@ -83,7 +83,7 @@ test.describe('Atajos de teclado (§5)', () => {
     // mostrador.
     const destinos: [string, RegExp][] = [
       ['F3',  /\/compras/],
-      ['F5',  /\/productos/],
+      ['F8',  /\/productos/],
       ['F6',  /\/clientes/],
       ['F7',  /\/fiado/],
       ['F9',  /\/historial-gastos/],
@@ -105,11 +105,14 @@ test.describe('Atajos de teclado (§5)', () => {
     await espiarDefaultPrevented(page)
 
     // Las siete globales, y entre ellas las que el navegador ya usa: F1 ayuda,
-    // F3 buscar, F5 recargar. Sin cortarles el paso el atajo pelea y pierde.
-    for (const t of ['F3', 'F5', 'F6', 'F7', 'F9', 'F10', 'F1']) await page.keyboard.press(t)
+    // F3 buscar, F11 pantalla completa. Sin cortarles el paso el atajo pelea y
+    // pierde.
+    // ⚠️ F5 SALIÓ DE ESTA LISTA el 2026-09-03 y no porque dejara de importar:
+    //    dejó de estar cableada. Ver el control negativo, abajo.
+    for (const t of ['F3', 'F6', 'F7', 'F8', 'F9', 'F10', 'F1']) await page.keyboard.press(t)
 
     const espiadas = await loEspiado(page)
-    for (const t of ['F3', 'F5', 'F6', 'F7', 'F9', 'F10', 'F1']) {
+    for (const t of ['F3', 'F6', 'F7', 'F8', 'F9', 'F10', 'F1']) {
       expect(
         espiadas[t],
         `${t} llegó al navegador con su default intacto: el atajo pelea con el navegador y pierde`,
@@ -120,21 +123,26 @@ test.describe('Atajos de teclado (§5)', () => {
     //    espía siempre dice true»: se aprieta una tecla de §5 que NO está
     //    cableada, y tiene que salir con su default INTACTO.
     //
-    // ⚠️ ERA F4, y el corte 3 del cobro en línea LA CABLEÓ —«cambiar cliente»,
-    //    que hasta entonces no tenía control—. El control se puso rojo, y eso
-    //    es exactamente lo que un control existe para hacer: **no falló el
-    //    producto, falló la premisa del control**. Pasa a F8, que sigue sin
-    //    destino porque la pantalla de Pedidos no existe (deuda 85).
-    // 🔴 Y queda la lección: un control negativo se apoya en una propiedad del
-    //    producto —«esta tecla no hace nada»— así que **caduca cuando el
-    //    producto crece**. El día que Pedidos exista, este control hay que
-    //    moverlo otra vez; `src/lib/atajos.test.ts` lo hace fallar al toque,
-    //    porque asevera que ninguna tecla esté cableada Y sin destino.
-    await page.keyboard.press('F8')
+    // ⚠️ ESTE CONTROL YA SE MOVIÓ DOS VECES, y las dos por la misma razón: se
+    //    apoya en una propiedad del producto —«esta tecla no hace nada»— así que
+    //    **caduca cuando el producto crece**.
+    //      · era F4  → el corte 3 del cobro la cableó (cambiar cliente)
+    //      · pasó a F8 → el 2026-09-03 F8 se volvió Catálogo, al liberar F5
+    //    En las dos el control se puso rojo, y en las dos **no falló el producto:
+    //    falló la premisa del control**. Es lo que un control existe para hacer.
+    //
+    // 🔴 AHORA ES F5, Y ESTA VEZ NO CADUCA — que es la diferencia que importa.
+    //    Las anteriores eran teclas «todavía no cableadas», o sea una propiedad
+    //    temporal. F5 está en `TECLAS_RESERVADAS`: **el producto decidió no
+    //    tomarla nunca** porque recargar borra el carrito a medio armar. Que
+    //    salga con su default INTACTO no es un accidente del estado actual — es
+    //    la decisión, aseverada. Y `atajos.test.ts` impide que se reasigne.
+    await page.keyboard.press('F5')
     const conNoCableada = await loEspiado(page)
     expect(
-      conNoCableada['F8'],
-      'el espía dice que TODO viene con el default cortado: no está midiendo nada',
+      conNoCableada['F5'],
+      'F5 salió con el default cortado: o alguien la cableó —y no se puede, recargar borra el ' +
+      'carrito— o el espía dice que TODO viene cortado y no está midiendo nada',
     ).toBe(false)
   })
 

@@ -7,14 +7,18 @@ import { ATAJOS } from '@/lib/atajos'
  *
  * 🔴 `preventDefault` NO ES OPCIONAL, y por eso está acá y no en cada caso: las
  * teclas que §5 eligió son justo las que el navegador ya usa —F1 ayuda, F3
- * buscar, F5 recargar, F11 pantalla completa, F12 herramientas—. Sin cortarle el
- * paso, el atajo pelea con el navegador y pierde: F5 recargaría la aplicación en
- * vez de abrir el Catálogo.
+ * buscar, F11 pantalla completa, F12 herramientas—. Sin cortarle el paso, el
+ * atajo pelea con el navegador y pierde.
+ *
+ * ⚠️ **F5 no está en la lista, y es a propósito**: el producto NO la toma (ver
+ * `TECLAS_RESERVADAS`). Recargar borra el carrito a medio armar, y confiar en
+ * que un `preventDefault` la ataje siempre es confiar en que este manejador
+ * esté montado en todas las pantallas y en todos los estados. No se toma.
  *
  * ⚠️ Y una honesta sobre F12: el `preventDefault` se aplica igual, pero **no se
- * puede verificar desde la suite** — en Chromium headless F12 no abre nada, así
- * que el caso pasaría con y sin él. La tecla que sí discrimina es F5, cuya
- * acción de navegador (recargar) es observable, y ésa es la que lleva el caso.
+ * puede verificar observando su CONSECUENCIA** — en Chromium bajo automatización
+ * F12 no abre nada. Lo que el spec asevera es el HECHO: que el evento salga con
+ * `defaultPrevented`, leído después del despacho. Eso vale para las doce.
  */
 export function useAtajos(): void {
   const navigate = useNavigate()
