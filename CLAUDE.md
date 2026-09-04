@@ -1568,6 +1568,47 @@ imprimiendo cinco líneas y cuatro de ellas eran ciertas.
 
 ---
 
+🔴 **SEGUNDO CASO, 2026-09-04 — Y NO FALLÓ POR ESTAR MAL ESCRITO: FALLÓ POR UN SUPUESTO INVISIBLE
+SOBRE LA CODIFICACIÓN.**
+
+El primero —el bloque de los cinco números— se rompió porque **cambió lo que leía**. Éste nació
+roto, y lo que lo hace distinto es que **leer el patrón no podía delatarlo**.
+
+Para contar los productos curados de un seed escribí, en un documento del repo:
+
+```
+⛔ NO CORRER — ESTE ES EL COMANDO ROTO, esta aca como evidencia:
+awk '/. 2 . PRODUCTOS/,/as t\(nombre, categoria/' supabase/lab-seed-c.sql | grep -cE "..."
+```
+
+Los `.` estaban ahí para saltear el `§` y el `·` del encabezado real —`-- § 2 · PRODUCTOS`— sin
+tener que escribirlos. **Dio `0`. Y su control negativo, sobre un archivo que no tiene ese bloque,
+también dio `0`:** o sea que el comando **no discriminaba en absoluto**, y su cero se leía igual que
+el cero legítimo.
+
+> **En una expresión regular de `awk`, `.` no es un carácter: es un BYTE.** `§` y `·` ocupan **dos
+> bytes cada uno** en UTF-8, así que `.` matchea la mitad de cada uno y el rango nunca abre.
+
+⚠️ **Y eso no se ve leyendo el patrón.** El patrón se lee perfecto: *"cualquier carácter, espacio,
+2, espacio, cualquier carácter, espacio, PRODUCTOS"*. La lectura es correcta **bajo un supuesto que
+el texto no menciona** —que la herramienta cuenta caracteres y no bytes— y ese supuesto es
+invisible: no hay nada en la línea que lo nombre para poder dudarlo.
+
+✅ **LO ACCIONABLE, y es más barato que cualquier análisis:**
+
+> **Un comando que se escribe en un documento se ejecuta TAL COMO QUEDA EN EL ARCHIVO, no como se
+> pensó. Copiar y pegar del documento a la terminal ES la verificación.**
+
+No es lo mismo que correr "el comando": entre lo que uno tiene en la cabeza y lo que termina escrito
+hay escapes, comillas, sustituciones del shell y —acá— bytes. **La única entrada que importa es la
+que va a leer el próximo**, que es la del archivo.
+
+⚠️ **Y el agravante, que es el de siempre en esta familia:** lo escribí **en el mismo turno en que
+estaba citando este criterio**, en un documento que dice que el conteo no se escribe a mano
+justamente para que no se desincronice. La versión que quedó se verificó ejecutándola desde el
+archivo, y discrimina en las dos direcciones: **29 productos · 8 categorías · 0 sobre otro seed**.
+
+
 #### 📋 INVENTARIO DE LOS COMANDOS CANÓNICOS — verificados por ejecución el 2026-09-03
 
 *Todos corridos contra entrada real ese día. La columna del control negativo es la que dice si el
@@ -1587,13 +1628,18 @@ comando **puede** dar vacío: sin ella, un cero no se distingue de un patrón ro
 | `pnpm test:unit` | los unitarios | **349 passed** | — |
 | `node --check .claude/hooks/sql-checklist.mjs` | que el hook no esté mudo | **exit 0** | — |
 
-🔴 **LOS DOS QUE NO PASARON, y son el hallazgo de la enumeración:**
+🔴 **LOS QUE NO PASARON — y su estado al 2026-09-04:**
 
 | Comando | Qué pasa al ejecutarlo |
 |---|---|
-| **`git rev-list --count develop..main`** | ⛔ **`fatal: ambiguous argument 'develop..main'`** — `main` **no existe** en este repo, ni local ni en `origin` (`git branch -a` → sólo `develop`) |
-| `pnpm exec supabase migration list --linked` | ⛔ **401 Unauthorized** — el token se rotó tras el incidente, así que *"17 migraciones al 2026-09-02"* **hoy no se puede reconfirmar** |
-| todo lo que consulta la BASE — `pnpm db:types`, `supabase gen types --linked`, `select proname, proacl from pg_proc …` | ⛔ misma causa: **sin token no se pueden correr**. No están rotos; están **fuera de alcance hasta el próximo token**, y eso es distinto de verificados |
+| **`git rev-list --count develop..main`** | ⛔ **SIGUE ROTO.** `fatal: ambiguous argument 'develop..main'` — `main` **no existe** en este repo, ni local ni en `origin` (`git branch -a` → sólo `develop`) |
+| `select proname, proacl from pg_proc … where prosecdef` | ✅ **CORRIDO el 2026-09-04.** 21 funciones `SECURITY DEFINER`; la única con `anon=X` sigue siendo `rls_auto_enable`, ya enumerada y **medida** como no invocable. La garantía se sostiene |
+| `pnpm exec supabase migration list --linked` | ✅ **CORRIDO el 2026-09-04: 28 aplicadas, 0 pendientes** |
+| `pnpm db:types` + `git diff --exit-code` | ✅ **CORRIDO el 2026-09-04: sin diferencias.** La divergencia del 2026-09-03 (`recalcular_total_de_orden`) sigue cerrada |
+
+⚠️ **Lo que esto NO cambia: el token vuelve a faltar en cuanto termina la sesión**, así que las tres
+filas verdes de arriba son **datos fechados**, no una capacidad permanente. La lección de abajo
+queda entera.
 
 ⚠️ **El primero es el peor de todo el inventario, y por dónde está escrito: es el EJEMPLO con el que
 este archivo enseña el principio *«mejor que fechar: decir cómo consultarlo»*.** La frase dice que
@@ -1631,6 +1677,9 @@ dos frases son idénticas.
 2. 🔴 **Cuando se reponga el acceso, esos tres se corren ANTES de citar cualquier dato que
    dependa de ellos.** No es una tarea de mantenimiento: es la condición para que las afirmaciones
    que los citan vuelvan a ser afirmaciones.
+   ✅ **Cumplido el 2026-09-04, y en el orden fijado** —`pg_proc` primero, después `migration list`,
+   después `db:types`—: los tres corrieron **antes** de aplicar la migración del día. Los tres
+   verdes, y la garantía de seguridad intacta.
 
 🔴 **Y EL ORDEN NO ES ARBITRARIO — decidido el 2026-09-03, y la razón es la clase de lo que
 sostiene cada uno, no su costo:**
@@ -3710,7 +3759,7 @@ Todo lo de esta sección caduca. Preferí siempre el comando sobre el dato.
 |---|---|
 | Nombre | **Fijado: Nodo** (2026-08-31), tras verificar riesgo marcario. ⛔ Falta el registro en la SIC, clases 9 y 42. |
 | Repo | Creado (2026-08-31). |
-| Proyecto de Supabase | Creado (2026-08-31). CLI verificado sin 403 el mismo día (deuda 2); **27 migraciones aplicadas al 2026-09-03**, medido — la nota anterior decía 17 y era del 2026-09-02. Reconfirmar con `pnpm exec supabase migration list --linked`. |
+| Proyecto de Supabase | Creado (2026-08-31). CLI verificado sin 403 el mismo día (deuda 2); **28 migraciones aplicadas y 0 pendientes al 2026-09-04**, medido — la nota anterior decía 27 y era del 2026-09-03. Reconfirmar con `pnpm exec supabase migration list --linked`. |
 | Vercel | No existe. |
 | Sentry | No existe. Proyecto propio, con el filtro de PII ya corregido. |
 | Origen de la copia | Vento rama `develop`, `d848852`. *(Esta fila decía que `docs/reglas-de-clase` seguía viva "en origin": en el origin de Nodo no existe —`git ls-remote --heads origin` → solo `develop`—; si existe, es en el de Vento. Corregido en A5.)* |
