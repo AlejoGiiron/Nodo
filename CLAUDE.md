@@ -903,6 +903,21 @@ grep -n "suite_exit=" salida-limpia.txt   # R9: el exit va escrito ADENTRO del a
 grep -oE "\[[0-9]+/[0-9]+\]" salida-limpia.txt | tail -1
 ```
 
+🔴 **Y UN CUARTO NÚMERO QUE NO ES UN CERO NI UN VERDE: `did not run`.**
+*2026-09-03: `255 passed · 1 failed · 0 flaky · 17 skipped · 2 did not run`.*
+
+Con `describe.serial`, un fallo **saltea los casos que siguen en ese archivo**. Esos casos no
+pasaron, no fallaron y **no se ejecutaron**: están **SIN MEDIR**.
+
+⚠️ **Y se leen como verdes por omisión**, que es el problema: el ojo va a `1 failed`, se arregla ese
+caso, y los `did not run` desaparecen del resumen de la corrida siguiente sin que nadie haya
+comprobado que pasan. La única forma honesta de cerrarlos es **volver a correr el archivo entero**
+después del arreglo, y decirlo.
+
+**Lo accionable al reportar:** `did not run` se enumera aparte y se nombra *sin medir*, nunca se suma
+a los que pasaron. Y entra al cruce: `passed + failed + skipped + did not run` tiene que dar el
+último `[N/N]` emitido.
+
 ⚠️ Y el complemento, que es lo que convierte el conteo en evidencia: **cruzarlo con un número que ya
 conocías**. `202 passed + 17 skipped = 219`, que tiene que ser **el último número de test emitido**.
 Si no cierra, una de las dos cuentas está mal — y averiguar cuál es el trabajo.
@@ -1644,6 +1659,28 @@ producto para que el test vuelva a verde, que es exactamente el movimiento equiv
 |---|---|---|
 | 1 | la aserción *"no hay máscara"* medía **el caso vacío** afirmando medir el común | la línea de base de "pocas categorías" era **una**, la del lab vacío |
 | 2 | el mostrador mostraba **una categoría de ocho** — siete octavos del catálogo inalcanzables por defecto | con una sola categoría sembrada, *"una categoría"* y *"todo el catálogo"* **son lo mismo** |
+| 3 | 🔴 agregar al carrito antes de que cargue el Set de extras **los saltea: cobra de menos** | con 3 filas en la lista, la ventana entre pantalla usable y respuesta del hook era demasiado corta para pegarle |
+
+🔴 **EL TERCERO ES EL PRIMERO QUE CUESTA PLATA, y su causa hay que decirla con precisión porque es
+fácil atribuirla mal:**
+
+> **El cambio no lo causó. Lo hizo PROBABLE.**
+
+El defecto vivía en producción desde antes, con la misma forma exacta: el hook devolvía el Set vacío
+mientras cargaba y el consumidor leía ese vacío como *"no tiene extras"*. Lo que cambió es el
+**tamaño de la ventana**: la lista pasó de renderizar **3 filas —una categoría— a 32**, así que entre
+que la pantalla queda usable y que `products_with_extras` contesta hay mucho más tiempo con el
+mostrador operable. Antes había que ser muy rápido; ahora entra cualquiera.
+
+⚠️ **Y la distinción importa para no sacar la conclusión cómoda.** *"Lo rompió el cambio de ayer"*
+invita a revertir el cambio; *"el cambio ensanchó la ventana de un defecto que ya estaba"* obliga a
+arreglar el defecto. Lo segundo es lo cierto, y se comprueba mirando el hook: su `?? new Set()` no lo
+escribió nadie ayer.
+
+⚠️ **Lo que deja para el lab:** poblarlo con datos reales no sólo hace **observables** distinciones
+que antes no se veían —los casos 1 y 2— sino que **ensancha las ventanas de carrera** hasta hacerlas
+alcanzables. Es un tercer eje de rendimiento del seed, y el más incómodo: las carreras que el lab
+vacío no puede reproducir son exactamente las que el cliente sí va a ver.
 
 ⚠️ **Los dos son la misma forma, y por eso la cuenta importa más que los casos sueltos:** un lab
 vacío no es un lab con menos datos — es un lab donde **distinciones enteras del producto no se
@@ -2763,6 +2800,32 @@ pantalla nueva**.
 - Los tests corren en serie (`workers: 1`) por compartir backend.
 - Leer R8, R9 y R10 antes de interpretar cualquier resultado de suite.
 
+🔴 **SI EL PRODUCTO DECLARA UN ESTADO QUE PLAYWRIGHT RESPETA, LA VÍA NORMAL MIDE EL FRAMEWORK Y NO
+EL PRODUCTO.** *2026-09-03, al aseverar que una fila «se ve y no responde».*
+
+La fila del catálogo lleva `aria-disabled` mientras el mostrador no sabe si el producto tiene extras.
+**Playwright honra `aria-disabled` en su chequeo de accionabilidad**: un `.click()` normal se queda
+esperando *"element is not enabled"* y termina en timeout.
+
+⚠️ **Un caso escrito con `.click()` normal estaría probando que PLAYWRIGHT no clickea, no que el
+producto se niega.** Son cosas distintas con consecuencias distintas: alguien puede borrar el guard
+del manejador y **dejar el atributo**, y ese caso seguiría verde — el defecto vuelve entero, con la
+suite tranquila.
+
+✅ **Lo que lo convierte en medición es `click({ force: true })`:** el evento **llega** al manejador y
+lo que se asevera es el guard del producto. Verificado por mutación — borrado el guard y conservado
+el atributo, el caso muere nombrando la plata que falta.
+
+⚠️ Corolario, y aplica igual a `disabled`, `pointer-events: none` e `inert`: cuando el sujeto es
+**que la acción no ocurra**, forzá la acción. Cuando el sujeto es **que el control se vea apagado**,
+aseverá el atributo. Son dos casos, no uno — y el segundo sin el primero es decorativo.
+
+✅ **Y un efecto lateral que conviene conocer:** como Playwright espera a que el elemento se habilite,
+poner `aria-disabled` mientras un insumo carga **estabiliza los specs que ya existían** — dejan de
+clickear antes de tiempo. En esta sesión eso puso en verde un caso de `fiado.spec` que fallaba por
+esa carrera. Es un beneficio real, y **no** es evidencia de que el guard funcione: eso lo prueba el
+clic forzado.
+
 **⚠️ EN PLAYWRIGHT, UN TIMEOUT NO ES LENTITUD.**
 *Medido el 2026-09-01: tres fallos de DOM disfrazados de problema de rendimiento.*
 
@@ -3000,6 +3063,34 @@ miniatura, dentro de un solo archivo, escrita por quien acababa de nombrar el pr
 ⚠️ **Lo que agrega sobre las otras tres:** las tres primeras se justificaban con *"nadie sabía"*.
 Ésta no: alguien lo supo, lo escribió, y arregló una línea de tres. **Entender la clase no la
 barre.**
+
+🔴 **Y LA PEOR UBICADA DE TODAS, 2026-09-03: EL COROLARIO QUE NOMBRABA AL CULPABLE ESTABA EN LA
+MISMA TABLA QUE EL ARREGLO PARCIAL.**
+
+La auditoría A1 encontró cuatro instancias de *"un hook devuelve un default vacío y el consumidor
+escribe con ese vacío"*, las puso en una tabla, arregló los consumidores… y **dejó el hook mudo**.
+Su propio corolario, tres renglones abajo de la tabla, decía textual:
+
+> *"un hook que devuelve un valor derivado tiene que devolver también su carga… `useProductsWithExtras`
+> no la devolvía; **ése fue el único de los cuatro donde el hook era el culpable**."*
+
+**El hook siguió devolviendo `query.data ?? new Set()` durante todo ese tiempo.** Y su otro
+consumidor —`handleAddProduct`, que decide si el modal de extras se abre siquiera— metía el producto
+al carrito **salteándose sus extras**: la venta se cobra de menos y la línea se lee normal. Estalló
+en la suite el 2026-09-03.
+
+⚠️ **Lo que descarta como explicación:** no falló la enumeración —la instancia estaba enumerada, con
+nombre y apellido, en el documento—; no falló el conocimiento —el corolario nombraba al culpable—; y
+no falló el costo —arreglar el hook eran cuatro líneas—. **Falló que el arreglo se detuviera exactamente
+donde el rojo se puso verde**, que es el disparador que este mismo bloque ya había identificado.
+
+> **Enumerar la clase y arreglar la instancia produce un documento que describe el defecto que sigue
+> vivo.** Y ese documento se lee después como si el defecto estuviera cerrado, porque está en la
+> tabla de una auditoría.
+
+**Lo accionable que agrega:** cuando una auditoría produzca una tabla de instancias, el cierre no es
+*"las cuatro filas tienen su arreglo"* — es **volver a correr la enumeración que produjo la tabla** y
+confirmar que da cero. Acá habría dado uno.
 
 🔴 **Y LA MECÁNICA DE POR QUÉ NO SE BARRE, que es lo que vuelve el corolario obligatorio en vez de
 una recomendación de atención:**
