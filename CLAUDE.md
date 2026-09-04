@@ -825,6 +825,78 @@ que no usarlo**; lo que no vale es no usarlo *y no decir por qué*.
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · UN RE-SKIN TIENE TRES EJES INDEPENDIENTES, Y HAY QUE CONTAR LOS TRES
+
+*2026-09-04, al cerrar la deuda 88. Junta dos criterios que ya existían por separado —«usar los
+tokens no es usar la primitiva» y «un barrido por propiedad deja las hermanas»— porque son **el
+mismo error medido en ejes distintos**, y ninguno de los dos solo alcanza para cerrar una pantalla.*
+
+| eje | qué mide | cómo se cuenta |
+|---|---|---|
+| **valor** | ¿queda algún hex del producto viejo? | `grep` del valor |
+| **superficie** | ¿en qué PROPIEDADES aparecía ese valor? | histograma por propiedad |
+| **forma** | ¿el markup es la primitiva, o `style` inline con tokens? | `grep` del componente |
+
+> **Un cero en cualquiera de los tres NO dice nada de los otros dos.** Y el registro tiene que decir
+> **cuál** se midió, porque «cerrada» sin eje es una afirmación sin sujeto.
+
+🔴 **LA LECTURA RETROACTIVA, que es lo que hace que valga la pena escribirlo:**
+
+> **Es por esto que «cero hexes» cerró el re-skin sobre pantallas que no se parecían a la maqueta.**
+> El eje que medíamos estaba en cero y los otros dos no.
+
+Las once pantallas se cerraron contando **valores** —hexes de seis dígitos, y ni siquiera todos: el
+censo no veía `#fff`—. Nadie contó **propiedades**, y ahí estaba la mayor parte: medido el
+2026-09-04 sobre el árbol previo, **22 `boxShadow` contra 10 `background`**. Y nadie contó **forma**,
+así que quedaron `style` inline con tokens correctos que no le enseñan nada al que escriba el
+siguiente.
+
+⚠️ **Y el modo de fallo es el de siempre en esta familia: los tres ceros se ven iguales en un
+commit.** «Cero hexes en Inventario» y «Inventario cerrado» se escriben con las mismas palabras, y
+sólo el primero se midió.
+
+**LO ACCIONABLE, y es una línea en el registro de cierre:** al cerrar una pantalla, escribí los tres
+números —o los que hayas medido, diciendo cuáles faltan. Ejemplo del cierre de la 88: *«hexes fuera:
+0 · propiedades cubiertas: todas · componentes adentro: los 4 pies de modal sí, los 8 botones de
+ConfigPage NO»*. Ese tercer número es el que impide leer «88 cerrada» como «ConfigPage usa la
+primitiva».
+
+---
+
+### 🔴 CRITERIO SIN NÚMERO · EL CONTEO Y EL NOMBRE FALLAN EN DIRECCIONES OPUESTAS, Y NINGUNO SE ARREGLA MIRANDO EL NÚMERO
+
+*Par medido el 2026-09-04, en la misma tanda y con media hora de diferencia. Se escriben juntos
+porque separados parecen dos anécdotas y juntos son una regla.*
+
+Este archivo ya tiene los dos errores por separado: *«enumerar, no contar»* y *«clasificar leyendo
+el nombre NO es clasificar»*. Lo que faltaba es que **fallan hacia lados contrarios**, y por eso
+ninguna de las dos precauciones cubre a la otra.
+
+| | qué dijo el atajo | qué era | dirección del error |
+|---|---|---|---|
+| **conteo** · `grep -c "facturar\|cupo" LoginPage` | **1 y 1** → *"los defectos de A6 volvieron"* | las dos coincidencias estaban **dentro del comentario que documenta la corrección** | dice **PRESENTE** sobre algo **cerrado** |
+| **nombre** · `CategoryTabs` | *"es el strip que retiramos → código muerto → no tokenizar"* | lo consume `ProductsPage`: son las **pestañas del Catálogo** | dice **MUERTO** sobre algo **vivo** |
+
+🔴 **Y las dos consecuencias son opuestas y las dos caras:** creerle al conteo manda a *"arreglar"*
+algo que ya está bien —y a tocar código correcto—; creerle al nombre manda a *no hacer* trabajo que
+sí hacía falta, y a dejar el defecto vivo con la sensación de haber ahorrado.
+
+⚠️ **Lo que los une, y es lo accionable: ninguno de los dos se resuelve mirando el número.** El
+conteo se resuelve **leyendo el contexto de cada coincidencia**; el nombre se resuelve **grepeando
+quién lo importa**. Los dos comandos cuestan segundos y ninguno es «contar mejor».
+
+```bash
+grep -n "<patrón>" <archivo>          # el conteo, con su contexto: enumerar, no contar
+grep -rn "<Componente>" src/ | grep -v "<su propio archivo>"   # ¿quién lo consume?
+```
+
+⚠️ Y el corolario que cierra el par: **un archivo cuya funcionalidad se retiró de una pantalla no
+queda huérfano por eso.** El strip salió del Mostrador el 2026-09-03; el componente siguió siendo
+las pestañas del Catálogo. La poda de una FUNCIONALIDAD y la muerte de un COMPONENTE son hechos
+distintos, y sólo el segundo se contesta con un grep de importadores.
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · UN BARRIDO POR PROPIEDAD DEJA LAS HERMANAS
 
 *Medido el 2026-09-04, cerrando la deuda 88. Es una forma NUEVA de «usar los tokens no es usar la

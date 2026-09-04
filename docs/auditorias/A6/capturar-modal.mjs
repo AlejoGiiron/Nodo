@@ -122,6 +122,22 @@ const MODALES = {
     control: 'Nueva categor',
     pantalla: true,
   },
+  // 🔴 DEUDA 91 · el estado es "editar una categoria cuyo color esta FUERA de
+  //    la paleta". `Farmacologia` es una de las seis activas del lab sembradas
+  //    con colores propios (#0ea5e9), asi que su selector se abre sin nada
+  //    marcado. Y el lapiz solo aparece EN HOVER sobre la pestaña — otro estado
+  //    que hay que provocar.
+  'categoria-editar-fuera-de-paleta': {
+    ruta: '/productos',
+    abrir: async (page) => {
+      const tab = page.getByRole('button', { name: /Farmacolog/i }).first();
+      await tab.hover();
+      await page.waitForTimeout(300);
+      await tab.locator('[title="Editar categoría"]').click();
+      await page.waitForTimeout(500);
+    },
+    control: 'Color del tab',
+  },
   'categoria-nueva': {
     ruta: '/productos',
     abrir: async (page) => page.getByRole('button', { name: /Nueva categor/i }).first().click(),

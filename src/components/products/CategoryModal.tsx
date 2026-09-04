@@ -3,32 +3,11 @@ import { X, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useCategoryMutations } from '@/hooks/useProductMutations'
 import { useAuth } from '@/hooks/useAuth'
+// ⛔ La paleta NO es el acento del producto: son las opciones que elige el
+//    CLIENTE, y por eso quedo fuera de la deuda 88. Vive en su propio modulo
+//    porque es un contrato de tres lados — ver `coloresDeCategoria.ts`.
+import { CATEGORY_COLORS } from '@/lib/coloresDeCategoria'
 import type { Tables } from '@/types/database.types'
-
-/**
- * ⛔ ESTOS OCHO NO SON EL ACENTO DEL PRODUCTO: son las opciones que el CLIENTE
- *    elige para su categoría. Quedan fuera de la deuda 88 a propósito, y el
- *    `#10b981` de acá abajo NO es el emerald de Vento a barrer — es una muestra
- *    de una paleta de usuario.
- *
- * 🔴 Y cambiarlos tiene un costo medido: la categoría `Proteína` de Muscle Pro
- *    se cargó con este mismo `#10b981`. Tocar la lista dejaría ese color FUERA
- *    de la paleta, que es exactamente el defecto de la deuda 91 — el selector se
- *    abre sin nada marcado y editar el nombre le cambia el color sin querer.
- *
- * La paleta la revisa la deuda 91, junto con el `default` de la columna
- * (`#6366f1`), que tampoco está acá.
- */
-const CATEGORY_COLORS = [
-  '#10b981',
-  '#059669',
-  '#2563eb',
-  '#7c3aed',
-  '#db2777',
-  '#d97706',
-  '#0891b2',
-  '#64748b',
-]
 
 interface CategoryModalProps {
   category: Tables<'categories'> | null
@@ -45,8 +24,29 @@ export function CategoryModal({ category, onClose }: CategoryModalProps) {
   const [name, setName] = useState(category?.name ?? '')
   const [description, setDescription] = useState(category?.description ?? '')
   const [color, setColor] = useState(category?.color ?? CATEGORY_COLORS[0])
+
   const [isActive, setIsActive] = useState(category?.is_active ?? true)
   const [saving, setSaving] = useState(false)
+
+  /**
+   * 🔴 DEUDA 91 · el color guardado puede NO estar en la paleta, y entonces el
+   *    selector se abre SIN NADA MARCADO. El defecto no es que se pierda al
+   *    guardar —`color` arranca en el valor real y el submit lo devuelve
+   *    intacto—: es que **es una PUERTA DE UNA SOLA DIRECCION**. En cuanto
+   *    alguien toca cualquier muestra, el color original desaparece de la
+   *    pantalla y NO HAY FORMA DE VOLVER a el.
+   *
+   *    Medido el 2026-09-04: 170 de las 684 categorias del lab estan fuera de
+   *    la paleta, y 164 de esas son el `default` de la columna (`#6366f1`), que
+   *    tampoco es una de las ocho. O sea que la mayoria no las eligio nadie.
+   *
+   *    Se arregla mostrandolo COMO UNA MUESTRA MAS. Y se usa el color ORIGINAL,
+   *    no el del estado: si se usara el estado, la muestra desapareceria al
+   *    hacer el primer clic — que es exactamente el defecto que viene a cerrar.
+   */
+  const colorOriginal = category?.color ?? null
+  const fueraDePaleta = colorOriginal != null && !CATEGORY_COLORS.includes(colorOriginal)
+  const muestras = fueraDePaleta ? [colorOriginal, ...CATEGORY_COLORS] : CATEGORY_COLORS
 
   const isValid = name.trim().length > 0
 
@@ -175,12 +175,13 @@ export function CategoryModal({ category, onClose }: CategoryModalProps) {
             <div>
               <label style={fieldLabel}>Color del tab</label>
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                {CATEGORY_COLORS.map((c) => (
+                {muestras.map((c) => (
                   <button
                     key={c}
                     type="button"
                     onClick={() => setColor(c)}
-                    title={c}
+                    title={fueraDePaleta && c === colorOriginal ? `${c} — el color actual` : c}
+                    data-testid={fueraDePaleta && c === colorOriginal ? 'category-color-actual' : undefined}
                     style={{
                       width: 32, height: 32, borderRadius: '50%',
                       background: c, border: 'none', cursor: 'pointer',
@@ -193,6 +194,12 @@ export function CategoryModal({ category, onClose }: CategoryModalProps) {
                   />
                 ))}
               </div>
+              {fueraDePaleta && (
+                <p style={{ margin: '8px 0 0', fontSize: 11.5, color: 'var(--ink-3)' }}>
+                  La primera muestra es el color actual de esta categoría, que no
+                  está entre los ocho. Se puede volver a él.
+                </p>
+              )}
               {/* Preview */}
               <div style={{ marginTop: 12, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ fontSize: 12, color: '#94a3b8' }}>Vista previa:</span>
