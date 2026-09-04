@@ -11,7 +11,7 @@ import {
 import { useAuth } from '@/hooks/useAuth'
 import type { Tables, TablesInsert } from '@/types/database.types'
 import type { SentryArea } from '@/lib/sentry'
-import { mensajeDeError } from '@/lib/errores'
+import { mensajeDeError, esNombreDuplicado } from '@/lib/errores'
 
 export function useProductMutations() {
   const queryClient = useQueryClient()
@@ -28,7 +28,22 @@ export function useProductMutations() {
       return result!
     },
     onSuccess: () => { invalidate(); toast.success('Producto guardado') },
-    onError: () => toast.error('Error al guardar producto'),
+    // 🔴 Antes era `toast.error('Error al guardar producto')` PLANO — sin pasar
+    // por `mensajeDeError`, a diferencia de `saveCategory`. Es la instancia que
+    // la barrida de las 11 copias (2026-09-01) no alcanzó.
+    // Va JUNTO con el índice único de la migración `nombre_unico_por_sede`, y
+    // no después: un índice cuya violación produce un error genérico EMPEORA la
+    // pantalla — antes el genérico tapaba algo que el usuario no podía
+    // arreglar; después taparía algo que sí puede, si supiera qué.
+    // ⚠️ «activo» no es de más: el índice es PARCIAL (`where is_active`), así
+    // que un producto ARCHIVADO con ese nombre NO produce este error. Si el
+    // índice se volviera total, esta palabra miente (R1: dos lados).
+    onError: (err) =>
+      toast.error(
+        esNombreDuplicado(err)
+          ? 'Ya existe un producto activo con ese nombre en esta sede.'
+          : mensajeDeError(err, 'Error al guardar producto'),
+      ),
   })
 
   const deactivateProduct = useMutation({
@@ -82,7 +97,14 @@ export function useCategoryMutations() {
       return result!
     },
     onSuccess: () => { invalidate(); toast.success('Categoría guardada') },
-    onError: (err) => toast.error(mensajeDeError(err, 'Error al guardar categoría')),
+    // Mismo criterio que `saveProduct`: el índice único también cubre
+    // categorías, y su violación tiene que nombrar qué pasó.
+    onError: (err) =>
+      toast.error(
+        esNombreDuplicado(err)
+          ? 'Ya existe una categoría activa con ese nombre en esta sede.'
+          : mensajeDeError(err, 'Error al guardar categoría'),
+      ),
   })
 
   const toggleCategoryActive = useMutation({

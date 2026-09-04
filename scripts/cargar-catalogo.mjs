@@ -248,6 +248,42 @@ if (catExistentes.length !== 0 || prodExistentes.length !== 0) {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
+// Lectura por nombre — y NO usa `maybeSingle()`
+//
+// 🔴 El índice `*_nombre_unico_por_sede` es PARCIAL (`where is_active`), así que
+//    pueden convivir dos filas con el mismo nombre: una activa y una archivada.
+//    Con `maybeSingle()` eso revienta con un error de PostgREST que no explica
+//    nada. Se lee la lista entera y se decide explícitamente:
+//
+//      hay una ACTIVA        → ya existe, no se toca (idempotencia)
+//      sólo hay ARCHIVADAS   → 🔴 PARA y la nombra. Crear el gemelo dejaría dos
+//                              filas con el mismo nombre, y quién decide entre
+//                              reactivar o renombrar es el operador, no esto.
+//      no hay ninguna        → se crea
+//
+// ⚠️ Esta búsqueda es por nombre EXACTO; el índice normaliza (mayúsculas y
+//    espacios). O sea que el índice puede rechazar algo que esta lectura no vio
+//    —«mastenom e x ampollas» contra «MASTENOM E X AMPOLLAS»—. Es el orden
+//    correcto: la base es la última palabra y falla cerrado.
+// ════════════════════════════════════════════════════════════════════════════
+async function buscarPorNombre(tabla, nombre, cols) {
+  const { data, error } = await db
+    .from(tabla).select(cols).eq('sede_id', SEDE_ID).eq('name', nombre)
+  if (error) abortar(`no se pudo leer ${tabla} por nombre «${nombre}»: ${error.message}`)
+  return {
+    activa: (data ?? []).find((r) => r.is_active),
+    archivadas: (data ?? []).filter((r) => !r.is_active),
+  }
+}
+
+const pararPorArchivado = (tabla, nombre, archivadas) => abortar(
+  `hay ${archivadas.length} ${tabla} ARCHIVADA(S) con el nombre «${nombre}», y ninguna activa.`,
+  'crear una nueva dejaría dos filas con el mismo nombre. Decidí vos: reactivá la ' +
+  'archivada desde la pantalla, o cambiale el nombre a una de las dos. Después ' +
+  'volvé a correr con --reanudar. No se escribió nada de este ítem.',
+)
+
+// ════════════════════════════════════════════════════════════════════════════
 // § 3 · CATEGORÍAS PRIMERO — el producto necesita su category_id
 // ════════════════════════════════════════════════════════════════════════════
 console.log('\n── CATEGORÍAS ──────────────────────────────────────────────')
@@ -255,14 +291,14 @@ const idPorCategoria = new Map()
 let creadasCat = 0, saltadasCat = 0
 
 for (const c of CATEGORIAS) {
-  const { data: ya } = await db
-    .from('categories').select('id').eq('sede_id', SEDE_ID).eq('name', c.nombre).maybeSingle()
-  if (ya) {
+  const { activa, archivadas } = await buscarPorNombre('categories', c.nombre, 'id, is_active')
+  if (activa) {
     console.log('  = YA EXISTE, no se toca · %s', c.nombre)
-    idPorCategoria.set(c.nombre, ya.id)
+    idPorCategoria.set(c.nombre, activa.id)
     saltadasCat++
     continue
   }
+  if (archivadas.length) pararPorArchivado('categoría', c.nombre, archivadas)
   // El payload de CategoryModal.tsx, campo por campo.
   const { data, error } = await db.from('categories').upsert({
     name: c.nombre,
@@ -289,14 +325,14 @@ for (const p of PRODUCTOS) {
   const categoryId = idPorCategoria.get(p.categoria)
   if (!categoryId) abortar(`no hay category_id para «${p.categoria}» (producto «${p.nombre}»)`)
 
-  const { data: ya } = await db
-    .from('products').select('id, price').eq('sede_id', SEDE_ID).eq('name', p.nombre).maybeSingle()
-  if (ya) {
+  const { activa, archivadas } = await buscarPorNombre('products', p.nombre, 'id, price, is_active')
+  if (activa) {
     console.log('  = YA EXISTE, no se toca · %s (en base: %s)',
-      p.nombre, new Intl.NumberFormat('es-CO').format(Number(ya.price)))
+      p.nombre, new Intl.NumberFormat('es-CO').format(Number(activa.price)))
     saltadosProd++
     continue
   }
+  if (archivadas.length) pararPorArchivado('producto', p.nombre, archivadas)
   // El payload de ProductModal.tsx, campo por campo. Sin cost_price: el
   // formulario no lo tiene, y `cost_price` lo escribe `register_purchase` por
   // promedio ponderado móvil (§8.1). Escribirlo acá sería sembrar la respuesta.

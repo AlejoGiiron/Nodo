@@ -69,10 +69,38 @@ la necesite**: sólo de que una hoja quedó más gruesa que la otra.
 
 ---
 
-## 4 · El precio se negocia por venta — MEDIDO, y ya no es pregunta
+## 4 · Tres productos tienen dos precios — ¿cuál es el de lista?
 
-*No entra en la lista para el cliente: el archivo la contesta solo. Queda como
-hallazgo.*
+🔴 **VUELVE A LA LISTA el 2026-09-04, y con otra forma: es una CONFIRMACION, no
+una medicion.** La version anterior de esta seccion decia *"MEDIDO, y ya no es
+pregunta"* y **la sacaba de la lista del cliente**. Estaba mal, y el error es de
+una clase que este proyecto ya tiene escrita:
+
+> **La medicion dice que precios EXISTEN. No dice cual quiere el como precio de
+> lista.** Son dos preguntas distintas, y la segunda no la contesta ningun dato
+> del archivo.
+
+Al cargar el catalogo (2026-09-04) hubo que elegir uno, y **elegimos el mas alto
+con un argumento nuestro** —el precio de lista es el techo desde el que se
+negocia hacia abajo, no el piso desde el que se sube—. El argumento es bueno y la
+decision puede estar bien. **Pero la tomamos por el.**
+
+| producto | precios en el archivo | cargado |
+|---|---|---|
+| `TESTONOM C X AMPOLLAS` | 109.000 · 110.000 · 115.000 | **115.000** |
+| `CREATINA IRON NUTRITION` | 83.000 · 87.000 | **87.000** |
+| `CREATINA OPTIMUN NUTRITIO` | 110.000 · 118.000 | **118.000** |
+
+**Lo que hay que preguntarle, textual:** *"estos tres los vendiste a dos precios
+distintos el mismo dia. Cargamos el mas alto como precio de lista, para que
+bajarlo en la venta sea el descuento y no al reves. Confirmas?"*
+
+⚠️ **Y si dice que no**, el arreglo es un clic por producto en la pantalla de
+Catalogo — no hay que volver a correr nada.
+
+---
+
+## 4.1 · El hallazgo que SI estaba medido, y se conserva
 
 **Tres productos se vendieron a más de un precio.** El discriminador entre
 «subió el precio» y «se negoció con ese cliente» es la FECHA:

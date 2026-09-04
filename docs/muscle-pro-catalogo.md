@@ -26,6 +26,37 @@ duplicados. Por eso es curado.
 
 **29 curados − 4 (preguntas 1 y 2) − 8 (sin precio de venta) = 17.**
 
+### 🔴 Estado del catálogo — el conteo va una sola vez, acá
+
+**Curados: los de `lab-seed-c.sql` §2. Cargados: los de §5 de este archivo.
+Pendientes: los de las dos listas de abajo.**
+
+```bash
+# curados · el numero NO se escribe a mano. Las filas de PRODUCTO terminan en un
+# booleano (`sin_precio_de_venta`); las de CATEGORIA terminan en un numero.
+grep -cE "^    \('.*(true|false)\)" supabase/lab-seed-c.sql   # -> 29 productos
+grep -cE "^    \('.*, [0-9]+\)"     supabase/lab-seed-c.sql   # ->  8 categorias
+```
+
+✅ **Verificado por ejecucion el 2026-09-04, con sus dos controles:** el mismo
+comando sobre `lab-seed-a.sql` da **0** (control negativo: puede dar vacio), y las
+dos formas se distinguen entre si — 29 y 8, no 37 para las dos.
+
+🔴 *La primera version de este bloque usaba `awk '/. 2 . PRODUCTOS/,.../'` para
+saltar el `§` y el `·`, y **daba 0** — en UTF-8 esos caracteres ocupan dos bytes y
+`.` matchea uno. Su control negativo tambien daba 0, o sea que **no discriminaba
+en absoluto**. Se escribio y se corrigio en el mismo turno en que se citaba el
+criterio «un comando escrito en un archivo del repo es codigo en produccion y
+necesita la misma verificacion». Queda anotado: el comando no se cree, se corre.*
+
+Al 2026-09-04 eso da **29**; cargados **17**; pendientes **12** = 4 de fusión + 8
+sin precio.
+
+⚠️ *Esta cuenta se escribió mal una vez —«17 de 28, faltan 11»— el mismo turno en
+que el 28 ya se había corregido a 29. Es el caso exacto del criterio «un conteo
+dentro de una frase es un lado más del contrato con su tabla»: por eso acá va el
+comando y no el número suelto, y por eso el cuarto de fusión se nombra abajo.*
+
 ### Los 4 que esperan una fusión
 
 | producto | pregunta | por qué espera |
@@ -62,6 +93,10 @@ distintos, con el costo idéntico**. Eso no es un cambio de lista: es **negociac
 | `TESTONOM C X AMPOLLAS` | 109.000 · 110.000 · 115.000 | **115.000** | 109.000 |
 | `CREATINA IRON NUTRITION` | 83.000 · 87.000 | **87.000** | 83.000 |
 | `CREATINA OPTIMUN NUTRITIO` | 110.000 · 118.000 | **118.000** | 110.000 |
+
+🔴 **ESTO SE CONFIRMA CON EL CLIENTE — vuelve a la lista como pregunta 4.** La medición dice
+qué precios **existen**; no dice cuál quiere él **como precio de lista**. Elegimos por él, con
+un argumento nuestro, y eso se confirma, no se mide.
 
 **Se elige el más alto, y la razón es la dirección de la negociación:** el precio de lista es el
 **techo** desde el que se baja, no el piso desde el que se sube. Cargar el bajo obliga a subirlo a
@@ -205,7 +240,14 @@ creado sin extras**, los dos reconcile no tienen nada que borrar ni que insertar
 `useCategoryMutations` agrega un guard **que sólo corre al DESACTIVAR** una categoría (`id` presente
 + `is_active: false`); acá nunca se desactiva nada.
 
-🔴 **Y lo que el `upsert` NO da: idempotencia por nombre.** No hay `unique (sede_id, name)` en
+✅ **CERRADO el 2026-09-04 (deuda 90):** ya existe
+`products_nombre_unico_por_sede` / `categories_nombre_unico_por_sede` — único sobre el nombre
+NORMALIZADO (`lower(btrim(regexp_replace(name, '\s+', ' ', 'g')))`) y **parcial**,
+`where is_active`, porque archivar es dejar de ofrecer, no reservar el nombre. La consecuencia:
+pueden convivir una fila activa y una archivada con el mismo nombre, así que el script **no usa
+`maybeSingle()`** — si encuentra sólo archivadas, **para y las nombra** en vez de crear el gemelo.
+
+🔴 **Y lo que el `upsert` NO daba antes de esa migración: idempotencia por nombre.** No hay `unique (sede_id, name)` en
 ninguna de las dos tablas (verificado), así que `upsert` sin `id` es un **insert puro** — correrlo
 dos veces duplicaría. La idempotencia la pone el script: **lee primero, y si el nombre ya existe lo
 dice y no lo toca.**
