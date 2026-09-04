@@ -2,6 +2,10 @@ import { test, expect } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { loginAsOwner, ownerCreds } from './helpers/auth'
+// 🔴 Se REUSA la aritmética del producto en vez de recalcularla acá: el
+//    escenario tiene que discriminar, y quién decide eso es la misma función
+//    que la pantalla usa. Reescribirla haría que el caso mida su propia copia.
+import { diasVencidos } from '../src/lib/cartera'
 
 // ============================================================================
 // PLAZO DE CRÉDITO — deuda 46
@@ -47,6 +51,7 @@ let db: SupabaseClient
 let SEDE = ''
 let OWNER = ''
 let CLIENTE = ''
+let CLIENTE_PANTALLA = ''
 let CONFIG_ORIGINAL: Record<string, unknown> = {}
 
 test.beforeAll(async () => {
@@ -66,6 +71,7 @@ test.beforeAll(async () => {
 test.afterAll(async () => {
   if (!db) return
   if (CLIENTE) await db.from('customers').update({ is_active: false }).eq('id', CLIENTE)
+  if (CLIENTE_PANTALLA) await db.from('customers').update({ is_active: false }).eq('id', CLIENTE_PANTALLA)
   if (SEDE) await db.from('sedes').update({ config: CONFIG_ORIGINAL }).eq('id', SEDE)
 })
 
@@ -161,4 +167,86 @@ test('🔴 la cartera ordena por DÍAS VENCIDOS y dice qué mide cada columna', 
   // La leyenda de la barra sigue diciendo ANTIGÜEDAD: no cambia de significado
   // porque ahora exista el vencimiento.
   await expect(page.getByTestId('aging-leyenda')).toContainText(/antigüedad/i)
+})
+
+// ============================================================================
+// DEUDA 89 · el mismo invariante, pero CONTRA LA PANTALLA
+//
+// 🔴 ESTO ES UN TRIPWIRE, NO UNA MEDICIÓN DEL CÓDIGO DE HOY — y se dice acá
+//    porque su verde no significa lo mismo que el de un caso normal.
+//
+//    Enumerado el 2026-09-04, que es como se supo: `getDebts` selecciona
+//    `plazo_dias` de `orders` y de `customers` trae **sólo `name`**;
+//    `deriveDebt` copia el de la fila; `FiadoPage` se lo pasa a `diasVencidos`.
+//    **No existe hoy ningún camino por el que el plazo del CLIENTE llegue a la
+//    cartera.** O sea que este caso no puede encontrar un defecto: existe para
+//    que no aparezca uno.
+//
+//    ✅ CONTRA QUÉ CAMBIO PROTEGE, concreto: el día que alguien toque cómo la
+//    cartera lee el plazo —agregar `customers(plazo_dias)` al select de
+//    `getDebts`, o resolverlo en `deriveDebt`, o en una vista—. Ese cambio no
+//    rompe nada visible: el vencimiento de una venta vieja simplemente pasa a
+//    recalcularse cada vez que se renegocia con el cliente, sin error y sin
+//    aviso. Perfil de R7.
+//
+// ⚠️ POR QUÉ NO ALCANZA EL CASO DE ARRIBA. Aquél asevera sobre `orders.plazo_dias`
+//    **directo**: seguiría verde con el defecto puesto, porque la columna no se
+//    movería — lo que cambiaría es QUIÉN la lee. Éste asevera sobre lo que la
+//    pantalla MUESTRA, que es el único lugar donde los dos caminos difieren.
+//
+// 🔴 Y EL ESCENARIO ESTÁ ELEGIDO PARA QUE DISCRIMINE, que es la otra mitad:
+//    con los dos plazos coincidiendo, «lo lee de la orden» y «lo lee del cliente»
+//    dan el mismo texto y el verde no probaría nada — el mismo verde por
+//    construcción que ya nos costó dos veces. Acá la venta se fecha 12 días
+//    atrás: por el plazo de la ORDEN (15) todavía está EN PLAZO; por el del
+//    CLIENTE (8) lleva 4 días de mora. Dos textos distintos en la misma fila.
+// ============================================================================
+test('🔴 TRIPWIRE · el vencido de la cartera sale del plazo de la ORDEN, no del CLIENTE', async ({ page }) => {
+  const HACE_12_DIAS = new Date(Date.now() - 12 * 86_400_000).toISOString()
+
+  // PRECONDICIÓN, y no es un control del lab: es aritmética pura del producto.
+  // Si esto falla, el escenario dejó de discriminar y el caso no mide nada —
+  // así que tiene que reventar ANTES, nombrando eso y no al sujeto.
+  const segunOrden = diasVencidos(HACE_12_DIAS, PLAZO_PACTADO)
+  const segunCliente = diasVencidos(HACE_12_DIAS, PLAZO_NUEVO)
+  expect(
+    `orden=${segunOrden} cliente=${segunCliente}`,
+    'el escenario tiene que dar DISTINTO según de dónde salga el plazo; si coinciden, ' +
+    'el caso pasa por construcción y no mide nada',
+  ).toBe('orden=0 cliente=4')
+
+  const nombre = 'E2E Plazo Pantalla ' + SUFFIX
+  const cli = await db.from('customers').insert({
+    sede_id: SEDE, name: nombre, plazo_dias: PLAZO_NUEVO, is_active: true,
+  }).select('id').single()
+  expect(cli.error, 'no se pudo sembrar el cliente del escenario').toBeNull()
+  CLIENTE_PANTALLA = cli.data!.id
+
+  const venta = await db.from('orders').insert({
+    sede_id: SEDE, created_by: OWNER, canal: 'mostrador', total: 90_000,
+    status: 'pending', payment_status: 'pending',
+    customer_id: CLIENTE_PANTALLA, customer_name: nombre,
+    plazo_dias: PLAZO_PACTADO,          // el plazo pactado ESA vez
+    created_at: HACE_12_DIAS,
+  }).select('id').single()
+  expect(venta.error, 'no se pudo sembrar la venta del escenario').toBeNull()
+
+  await loginAsOwner(page)
+  await page.goto('/fiado')
+  await page.getByTestId('debt-search').fill(nombre)
+  await page.waitForTimeout(600)
+
+  const fila = page.getByTestId('customer-row').filter({ hasText: nombre })
+  await expect(fila, 'la venta sembrada tiene que aparecer en Cartera').toHaveCount(1)
+
+  // 🔴 EL SUJETO, y va PRIMERO. Si dijera «Mora 4 días», el vencimiento se
+  //    estaría calculando con el plazo que el cliente tiene HOY.
+  const vencido = fila.getByTestId('customer-row-vencido')
+  await expect(
+    vencido,
+    'LA CARTERA ESTÁ USANDO EL PLAZO DEL CLIENTE: la venta se pactó a ' +
+    `${PLAZO_PACTADO} días y hace 12 que existe, así que está EN PLAZO. Que diga mora ` +
+    `significa que se recalculó con los ${PLAZO_NUEVO} días que el cliente tiene hoy — ` +
+    'y entonces el vencimiento de una venta vieja cambia cada vez que se renegocia.',
+  ).toHaveText('En plazo')
 })
