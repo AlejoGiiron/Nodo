@@ -100,12 +100,17 @@ test('🔴 el mostrador muestra TODO el catálogo, no una categoría', async ({ 
     await page.getByTestId('product-categoria').allTextContents(),
   )
 
-  expect(filas, 'el lab necesita catálogo, o el caso no mide nada').toBeGreaterThan(10)
+  // 🔴 EL SUJETO VA PRIMERO, y no es orden estético. Con el control de arriba
+  //    —«el lab necesita catálogo»— el mutante que restaura el filtro por
+  //    categoría mataba el caso con ESE mensaje: culpaba al laboratorio en vez
+  //    de nombrar el defecto, porque al filtrar quedan menos de diez filas. Un
+  //    rojo que dirige al lugar equivocado cuesta el diagnóstico entero.
   expect(
     categorias.size,
     `la lista muestra productos de ${categorias.size} categoría(s). Con una sola, el mostrador ` +
     'está mostrando el filtro por defecto en vez del catálogo — el defecto que el strip escondía',
   ).toBeGreaterThan(1)
+  expect(filas, 'y el lab tiene que tener catálogo, o el caso no mediría nada').toBeGreaterThan(10)
 })
 
 test('🔴 el buscador encuentra POR CATEGORÍA — sin esto, sacar el strip retiraba una capacidad', async ({ page }) => {
