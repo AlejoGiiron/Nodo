@@ -227,6 +227,25 @@ en Vento.
    (deuda 5), no una lectura. *(Corregido en A5: la versión anterior describía el problema de Vento
    como si fuera el de Nodo.)*
 
+   🔴 **MEDIDO EL 2026-09-03, LA PRIMERA VEZ QUE SE PUDO CORRER — Y ESTABA DIVERGIDO.** Regenerar y
+   comparar dio **una función faltante en el archivo commiteado**: `recalcular_total_de_orden`, que
+   entró con la migración del total derivado y nunca se regeneró.
+
+   **La causa completa, que es lo que hace que este check no se pueda reemplazar por «`tsc` pasa»:**
+
+   > **Nada de TypeScript consume esa función**, así que no hay ninguna referencia que resolver.
+   > `tsc` no tiene qué comparar, ESLint tampoco, y el archivo **se congela en silencio**.
+
+   ⚠️ Y el dato que dimensiona el silencio: estuvo divergido **desde la migración que la introdujo**
+   —o sea, días— **sin un solo síntoma**. No hubo error, ni test rojo, ni pantalla vacía. Lo que lo
+   destapó no fue notarlo: fue **correr el comando**, que hasta ese día no se podía porque el token
+   estaba rotado.
+
+   🔴 **Por eso el check es de ÁRBOL y no una lectura, y por eso no lo cubre `tsc`:** `tsc` verifica
+   que lo que el código usa exista. Este contrato es sobre lo que el código **no** usa — y lo que no
+   se usa es exactamente lo que nadie mira. El día que alguien empiece a consumir esa función, el
+   tipo va a faltar y el error va a aparecer lejos del cambio que lo causó.
+
 6. **Tabla de columnas de `src/lib/sentry.test.ts` vs el esquema real.** En Vento son 74
    entradas. Agregar una columna al esquema obliga a agregarla ahí, en la misma sesión.
 
@@ -3097,6 +3116,39 @@ hacía creer que era andamiaje, acá el de un spec hace creer que su cobertura s
 **Lo accionable, y cuesta un renombre:** un spec se llama por **lo que asevera**, no por el
 escenario con el que lo consigue. `pos-layout` sobrevive a que el disparador cambie;
 `pos-categorias-layout` no sobrevivió ni al primero.
+
+**🔴 UN CASO QUE SE AUTO-SALTEA CUANDO SU ATAJO NO FUNCIONA ES UN CASO QUE NO EXISTE.**
+*Medido el 2026-09-03, en el spec del alta de organización.*
+
+Hay **dos clases de `skip`** y se ven iguales en la salida de la suite:
+
+| | qué declara | qué es |
+|---|---|---|
+| **skip declarado** — `test.skip(!key, 'Requiere E2E_SERVICE_ROLE_KEY')` | *"este caso necesita algo del ENTORNO que hoy no está"* | ✅ honesto: la condición es externa y el motivo se imprime |
+| 🔴 **skip por atajo roto** — `test.skip(insErr != null, 'no se pudo sembrar…')` | *"mi fixture falló, así que no mido"* | ⛔ **un verde por omisión** |
+
+**El caso.** Para probar que re-correr el alta sobre una organización **ya completa** no crea un
+segundo admin, el caso insertaba un perfil suelto —un atajo, para no crear una cuenta de Auth— y se
+salteaba si el insert fallaba. **Falló** (`profiles.id` referencia `auth.users`), así que **esa mitad
+de la idempotencia quedó sin medir** — y el spec lo decía en letra chica, en un motivo de skip que
+nadie lee, en vez de fallar.
+
+⚠️ **Por qué es peor que no tener el caso:** el caso *aparece* en la lista, con su título rojo y su
+comentario explicando lo que asevera. Quien mire la suite cuenta un caso que cubre esa mitad. Lo
+único que lo desmiente es un `1 skipped` que se lee como *"faltaba una variable de entorno"*.
+
+**LO ACCIONABLE, y es una sola frase:**
+
+> **Si un caso necesita un atajo para armar su escenario, el atajo que falla es un ERROR del caso,
+> no una condición para saltarlo.**
+
+Un `skip` sólo es legítimo cuando la condición es **del entorno** —falta una credencial, falta un
+navegador, el backend no está— y por lo tanto **no puede arreglarse escribiendo mejor el caso**. Si
+la condición está dentro del caso, arreglala: acá el arreglo fue **crear el usuario por el camino
+real**, que además ejercita `handle_new_user` y mide más que el atajo.
+
+⚠️ Corolario para leer una suite: un `skipped` **no es un cero**, igual que un `did not run`. Los dos
+son casos sin medir, y el segundo al menos lo grita.
 
 **🔴 ANTES DE BORRAR UN TEST POR OBSOLETO, VERIFICÁ SI SU ASERCIÓN SIGUE SIENDO VERDADERA BAJO EL
 MODELO NUEVO.** *El sujeto puede haber cambiado y la expectativa seguir valiendo.*
