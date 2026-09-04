@@ -13,7 +13,14 @@ import { loginAsOwner, ownerCreds } from './helpers/auth'
 //
 //   56 · guardar un producto antes de que carguen sus extras/receta LOS BORRA
 //   57 · el modal de extras deja confirmar mientras dice "Cargando extras…"
-//   58 · config de caja: `{}` muestra los defaults como si fueran lo guardado
+//   59 · agregar al carrito antes de que cargue el Set de extras LOS SALTEA
+//
+// ⚠️ El índice decía además «58 · config de caja: `{}` muestra los defaults como
+//    si fueran lo guardado», y **ese caso no está escrito en ningún archivo**
+//    —verificado con un grep sobre `tests/`—. El encabezado prometía tres y hay
+//    dos. Queda anotado acá en vez de borrado: la fila de A1 sigue viva y sin
+//    cubrir, y borrar la línea la haría desaparecer del único lugar donde
+//    alguien la va a volver a leer.
 //
 // 🔴 LA 56 ES DISTINTA DE LAS OTRAS DOS EN GRAVEDAD: no persiste un dato malo,
 //    **destruye uno bueno ya guardado**. `reconcile` re-lee la base y calcula
@@ -257,4 +264,96 @@ test('57 · el modal de extras no deja confirmar mientras dice "Cargando extras�
   await expect(page.getByTestId('item-config-modal')).toBeVisible({ timeout: 10_000 })
   await expect(page.getByTestId('item-config-extra')).toHaveCount(1, { timeout: 15_000 })
   await expect(page.getByTestId('item-config-confirm')).toBeEnabled()
+})
+
+const PRODUCTO_CON_EXTRA = 'Lab Coctel'
+const parseCOP = (t: string) => Number(t.replace(/[^\d]/g, ''))
+
+test('59 · agregar al carrito antes de que cargue el Set de extras LOS SALTEA — y cobra de menos', async ({ page }) => {
+  // ==========================================================================
+  // 🔴 CUARTA FILA DE LA TABLA DE A1, Y LA HERMANA QUE A1 NO BARRIÓ.
+  //
+  //    A1 arregló el consumidor del MODAL (`onConfirm([])`) y dejó el hook
+  //    mudo: `useProductsWithExtras` devolvía `query.data ?? new Set()`, o sea
+  //    **el mismo valor mientras carga y cuando de verdad no hay extras**.
+  //    `handleAddProduct` lee ese Set para decidir si abre el modal, así que
+  //    con el Set todavía vacío el producto entra al carrito DIRECTO,
+  //    salteándose sus extras. La venta se cobra de menos y no hay ningún
+  //    aviso: la línea se ve perfectamente normal.
+  //
+  //    El corolario de A1 nombraba a este hook como el único de los cuatro
+  //    donde el culpable era el hook — y estaba escrito EN LA MISMA TABLA que
+  //    el arreglo parcial.
+  //
+  // ⚠️ LO QUE ESTE CASO ASEVERA NO ES QUE EL MODAL APAREZCA. El modal ausente
+  //    es el SÍNTOMA; el defecto es la plata que falta. Por eso el rojo mide la
+  //    línea y el total, y lo dice con esas palabras.
+  //
+  // 🔴 Y la acción NO SE OFRECE mientras el Set carga: la fila se ve pero no
+  //    responde. A1 ya decidió que no es un spinner —«es que el botón no se
+  //    renderiza»—; acá la fila ENTERA es el botón, y no renderizarla haría
+  //    parpadear el catálogo completo por un producto que quizá ni tiene
+  //    extras. Se ve, no responde.
+  // ==========================================================================
+  await loginAsOwner(page)
+
+  let bloquear = true
+  await page.route('**/rest/v1/product_extras*', async (route) => {
+    if (bloquear && route.request().method() === 'GET') return
+    await route.continue()
+  })
+
+  await page.goto('/ventas')
+  await expect(page.getByTestId('cart-total')).toBeVisible({ timeout: 15_000 })
+
+  const fila = page.getByTestId('product-card').filter({ hasText: PRODUCTO_CON_EXTRA }).first()
+  await expect(fila, `el lab necesita "${PRODUCTO_CON_EXTRA}" en el mostrador`).toBeVisible()
+
+  // La fila SE VE —esto es la mitad «se ve»— y DECLARA que no acepta la acción.
+  await expect(
+    fila,
+    'la fila tiene que declarar que no responde mientras no sabe si el producto tiene extras',
+  ).toHaveAttribute('aria-disabled', 'true')
+
+  // 🔴 `force: true`, Y ES LA PARTE QUE HACE QUE ESTO PRUEBE ALGO.
+  //    Playwright respeta `aria-disabled` y se NIEGA a clickear, así que un
+  //    `.click()` normal probaría **que Playwright no clickea**, no que el
+  //    producto se niega. Son cosas distintas: alguien podría borrar el guard de
+  //    `handleAddProduct` y dejar el atributo, y el caso seguiría verde.
+  //    Forzando el clic, el evento LLEGA al manejador y lo que se mide es el
+  //    guard del producto.
+  await fila.click({ force: true })
+  await page.waitForTimeout(1_500)   // si va a entrar, ya entró
+
+  const lineas = await page.getByTestId('cart-item-price').count()
+  const bloquesDeExtras = await page.getByTestId('cart-item-extras').count()
+  const total = parseCOP(await page.getByTestId('cart-total').innerText())
+
+  expect(
+    lineas,
+    `LA FILA RESPONDIÓ AL CLIC con el Set de extras todavía cargando: entró ${lineas} línea con ` +
+    `${bloquesDeExtras} bloque(s) de extras y el total quedó en ${total}. «${PRODUCTO_CON_EXTRA}» ` +
+    `TIENE un extra, así que esa venta se cobra DE MENOS y nadie lo ve — la línea se lee normal. ` +
+    'El modal ausente es el síntoma; la plata que falta es el defecto.',
+  ).toBe(0)
+
+  // ── CONTROL: sin el bloqueo, el MISMO clic sí abre el modal ──────────────
+  // Sin esto el caso pasaría si el producto simplemente no tuviera extras — el
+  // verde por la razón equivocada, que es lo que la mitad de arriba no puede
+  // distinguir por sí sola.
+  // 🔴 `unroute` y no un flag: dejar el handler puesto con `bloquear=false` es
+  //    una condición MÁS que puede fallar, y de hecho falló —la fila seguía
+  //    `aria-disabled` tras el reload—. Quitar el interceptor entero no deja
+  //    ninguna: el control tiene que ser lo más simple del caso, o deja de ser
+  //    control.
+  bloquear = false
+  await page.unroute('**/rest/v1/product_extras*')
+  await page.reload()
+  await expect(page.getByTestId('cart-total')).toBeVisible({ timeout: 15_000 })
+  await page.getByTestId('product-card').filter({ hasText: PRODUCTO_CON_EXTRA }).first().click()
+  await expect(
+    page.getByTestId('item-config-modal'),
+    `control del propio caso: con el Set cargado, "${PRODUCTO_CON_EXTRA}" TIENE que abrir el modal. ` +
+    'Si no lo abre, el producto perdió su extra y la mitad de arriba no estaba midiendo nada',
+  ).toBeVisible({ timeout: 15_000 })
 })

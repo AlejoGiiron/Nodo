@@ -233,7 +233,12 @@ function PrintTicket({
 //    las sostiene.
 const ALTO_FILA = 34
 
-function ProductRow({ product, onAdd }: { product: ProductWithCategory; onAdd: () => void }) {
+function ProductRow({ product, onAdd, inerte = false }: {
+  product: ProductWithCategory
+  onAdd: () => void
+  /** El mostrador todavía no sabe si este producto tiene extras: se ve, no responde. */
+  inerte?: boolean
+}) {
   // Indicador discreto de stock. NO bloquea la venta (el stock negativo está
   // permitido: se vende aunque el conteo diga 0); solo avisa. Sale de la MISMA
   // regla que usa Inventario (`stockStatus`), que es lo que impide que las dos
@@ -251,6 +256,11 @@ function ProductRow({ product, onAdd }: { product: ProductWithCategory; onAdd: (
   return (
     <button
       data-testid="product-card"
+      // `aria-disabled` y no `disabled`: la fila se VE igual —apagarla haría
+      // parpadear el catálogo entero mientras carga un Set que suele tardar
+      // poco— pero declara que no está aceptando la acción, y eso lo asevera
+      // el spec y lo anuncia el lector de pantalla.
+      aria-disabled={inerte || undefined}
       onClick={onAdd}
       title={product.description ?? undefined}
       style={{
@@ -1746,7 +1756,7 @@ export function POSPage() {
   const [editingItem, setEditingItem] = useState<CartItem | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
   const { isOpen: isShiftOpen } = useCashShift()
-  const productsWithExtras = useProductsWithExtras()
+  const { conExtras, listo: extrasListos } = useProductsWithExtras()
 
   // Cobrar exige turno abierto: si no hay, abre el modal de apertura primero.
   const handleCheckout = () => {
@@ -1886,8 +1896,22 @@ export function POSPage() {
 
   // Agregar producto: si tiene extras asignados, abrir el modal de
   // configuración; si no, agregar directo (sin fricción).
+  /**
+   * 🔴 NO SE ACTÚA SIN SABER. Mientras `products_with_extras` no haya
+   *    contestado, `conExtras` está vacío — y ese vacío significa «todavía no
+   *    sé», no «no tiene extras». Agregar con ese vacío mete el producto al
+   *    carrito salteándose sus extras, o sea **cobrando de menos**, y la línea
+   *    se lee normal: no hay ningún síntoma.
+   * ⚠️ Y NO ES UN SPINNER: la tabla de A1 ya lo decidió —«no es un spinner sobre
+   *    el botón: es que el botón no se renderiza»—. Acá la fila ENTERA es el
+   *    botón, y no renderizarlas haría **parpadear el catálogo completo** por un
+   *    producto que quizá ni tiene extras. Así que la fila se VE y no RESPONDE,
+   *    y lo declara con `aria-disabled` para que sea aseverable y lo anuncie el
+   *    lector de pantalla.
+   */
   const handleAddProduct = (product: ProductWithCategory) => {
-    if (productsWithExtras.has(product.id)) setConfigProduct(product)
+    if (!extrasListos) return
+    if (conExtras.has(product.id)) setConfigProduct(product)
     else add(product)
   }
 
@@ -2092,7 +2116,12 @@ export function POSPage() {
                 <span style={{ flexShrink: 0, minWidth: 96, textAlign: 'right' }}>Precio</span>
               </div>
               {filtered.map((p) => (
-                <ProductRow key={p.id} product={p} onAdd={() => handleAddProduct(p)} />
+                <ProductRow
+                  key={p.id}
+                  product={p}
+                  inerte={!extrasListos}
+                  onAdd={() => handleAddProduct(p)}
+                />
               ))}
             </div>
           )}
@@ -2112,7 +2141,7 @@ export function POSPage() {
         onHold={() => setShowHoldModal(true)}
         heldCount={heldOrders.length}
         onShowHeld={() => setShowHeldPanel(true)}
-        productsWithExtras={productsWithExtras}
+        productsWithExtras={conExtras}
         onEditExtras={(item) => setEditingItem(item)}
       />
 
