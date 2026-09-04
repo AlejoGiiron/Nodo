@@ -1695,6 +1695,48 @@ sólo la pantalla. `producto-nuevo` y `producto-editar` no son dos pantallas: so
 misma**, y hacen falta los dos.
 
 ---
+### 🔴 CRITERIO SIN NÚMERO · UN ESTADO QUE AFIRMA UNA PERSONA SE VERIFICA IGUAL QUE UNO QUE AFIRMA UNA HERRAMIENTA
+
+*Quinta aparición al 2026-09-04, contada por quien las produjo: `seed_system_roles` ×2, el token ×2,
+y la `service_role` key. Se escribe con la cuenta porque el número es el argumento.*
+
+Este archivo ya dice que un objeto aplicado **se verifica contra el catálogo del sistema antes de
+construir encima**. Faltaba la generalización, y es incómoda:
+
+> **Vale para cualquier estado que alguien AFIRME haber dejado — incluida la persona con la que
+> estás trabajando.**
+
+**Por qué es peligroso, y no es una cuestión de confianza:**
+
+> **Del otro lado, *«ya está»* y *«creo que ya está»* son la misma frase.** No hay marca que las
+> distinga, y el que la recibe **construye encima**: despliega, corre, cita el dato, cierra la deuda.
+
+⚠️ Y el modo de fallo no es que la afirmación sea falsa: es que el trabajo que se apoya en ella
+**avanza igual**. Cinco veces sobre cinco, lo que lo cazó fue **medir antes de usar** —
+`grep` sobre `.env.test`, `mtime` del archivo, un `select` sobre `pg_proc` —, no que quien lo afirmó
+lo revisara.
+
+🔴 **LO ACCIONABLE, y es lo que hace útil el criterio: no es «que la otra parte tenga más cuidado».**
+Eso ya falló las cinco veces, y pedirlo otra vez es pedir el mismo mecanismo que viene fallando. Es
+que el **receptor** trate la afirmación como lo que es —una hipótesis fechada— y corra el comando de
+un renglón antes de apoyarse en ella:
+
+```bash
+grep -oE '^[A-Za-z_0-9]+=' .env.test        # ¿está la variable, de verdad?
+stat -c '%y' .env.test                       # ¿se tocó el archivo?
+```
+
+⚠️ **Y hay una asimetría que conviene decir en voz alta: verificarlo NO es desconfiar.** Es
+exactamente el mismo trato que este proyecto le da a `pnpm gen:rbac:check`, a `migration list` y a
+cualquier verde de la suite — ninguno se cree sin correrlo, y nadie lo toma como una acusación. Un
+estado afirmado por una persona **no es una fuente distinta**: es una declaración, y las
+declaraciones no ejecutan (corolario de R4).
+
+✅ El caso del día: *«E2E_SERVICE_ROLE_KEY puesta en .env.test»*. El archivo tenía **cuatro claves y
+un mtime de tres días antes**. Costó un `grep` no construir encima.
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · LA REGLA QUE ACOTA UNA CAPACIDAD LLEGA TARDE SI SE ESCRIBE CUANDO SE ABRE LA PUERTA
 
 *2026-09-04, al poner `E2E_SERVICE_ROLE_KEY` en el arnés. Es «enumerar antes de decidir» aplicado al

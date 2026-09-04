@@ -52,6 +52,10 @@ loadEnv('.env'); loadEnv('.env.test')
 const URL_BASE = process.env.VITE_NODO_SUPABASE_URL!
 const ANON = process.env.VITE_NODO_SUPABASE_ANON_KEY!
 const SUFFIX = Date.now().toString().slice(-6)
+// 🔴 El nombre de la función es un PARÁMETRO para poder correr este spec contra
+//    un despliegue de prueba ANTES de publicar sobre el nombre real. Por defecto
+//    apunta al real, así que en CI y en la suite normal no cambia nada.
+const FUNCION = process.env.E2E_CREATE_USER_FN ?? 'create-user'
 
 let db: SupabaseClient
 let comoServicio: SupabaseClient | null = null
@@ -64,7 +68,7 @@ const creados: string[] = []      // auth users a borrar
 const orgsCreadas: string[] = []  // organizaciones desechables
 
 async function alta(sedeId: string, email: string) {
-  const r = await fetch(`${URL_BASE}/functions/v1/create-user`, {
+  const r = await fetch(`${URL_BASE}/functions/v1/${FUNCION}`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${TOKEN}`, apikey: ANON, 'Content-Type': 'application/json' },
     body: JSON.stringify({
