@@ -1943,6 +1943,29 @@ y con la sensación de haber cerrado la deuda.
 moverse, no sólo cuánto. Un enunciado en negativo —*"no permite"*, *"falta"*, *"no existe"*— es el
 que más fácil invierte el signo del trabajo, porque describe una ausencia sin decir dónde la midió.
 
+🔴 **Y HAY UNA VARIANTE QUE NO ESTÁ EN LA TABLA PORQUE NO VIENE DE UNA DEUDA: EL ARGUMENTO CON QUE
+SE TOMA LA DECISIÓN TAMBIÉN PUEDE APOYARSE EN UNA CAPACIDAD QUE NO EXISTE.** *2026-09-03, al
+retirar el strip de categorías del mostrador.*
+
+La decisión de sacarlo se sostenía —entre otras razones— en ésta: *«teclear tres letras es más
+rápido que navegar por pestañas»*. Impecable, y **falsa**: el buscador miraba `name` y
+`description`, **no la categoría**. Teclear «farma» no encontraba nada.
+
+> **Un argumento que describe lo que el producto PODRÍA hacer se lee igual que uno que describe lo
+> que hace.** Y el que lo escribe rara vez abre el código, porque el argumento es sobre el diseño.
+
+⚠️ **La consecuencia concreta, si nadie lo verifica:** el cambio se ejecuta según su enunciado y
+**retira una capacidad en vez de moverla** —acá, *«mostrame todo lo de Farmacología»* dejaba de
+tener respuesta y la categoría pasaba a ser una columna que se lee y por la que no se filtra—. Es
+exactamente la forma de la deuda 75: **el enunciado describe mal la dirección del trabajo**, y
+ejecutarlo al pie de la letra deja el sistema peor, con la sensación de haber cerrado algo.
+
+**Lo accionable, y es la misma enumeración de siempre movida un paso antes:** cuando un argumento
+diga *"X ya se puede hacer de otra manera"*, **abrí esa otra manera y confirmá que se puede.** Si no
+se puede, el trabajo no es el que decía el enunciado: es **ese trabajo más construir X primero**.
+
+---
+
 🔴 **EL CUARTO CASO ES EL QUE MEJOR EXPLICA POR QUÉ ESTO VALE LA PENA, justamente porque NO costó
 nada.** El enunciado decía "ordena por antigüedad, cambialo a días vencidos"; el código ordenaba por
 **saldo**. La decisión no cambió —días vencidos sigue siendo lo correcto— pero **el punto de partida

@@ -3630,3 +3630,118 @@ turno.
 El resto del mapeo —19 pares de testid— pasó `sort | uniq -d` **sin destinos repetidos**, y por eso
 el botón del paso del monto y el del reparto quedaron con nombre propio en vez de compartir uno: un
 destino con dos orígenes es la forma que ya nos costó tres sitios con dobles clics.
+
+
+---
+
+## 2026-09-03 · El strip de categorías no FILTRABA: POBLABA — y el catálogo estaba mayormente inalcanzable
+
+**El mostrador mostraba UNA categoría de ocho.** No como filtro elegido: como estado por defecto,
+sin forma de ver el resto salvo hacer clic en una pestaña o teclear en el buscador.
+
+```ts
+// lo que había
+const resolvedCat = activeCat ?? categories[0]?.id ?? null
+useEffect(() => { if (!activeCat && categories.length) setActiveCat(categories[0].id) }, [...])
+
+if (q) return products.filter(name/description)      // buscando
+if (!resolvedCat) return products                     // sólo si NO hay categorías
+return products.filter(p => p.category_id === resolvedCat)
+```
+
+**No existía la opción «Todos».** La rama que devuelve el catálogo entero sólo se alcanza cuando la
+sede **no tiene ninguna categoría** — o sea, exactamente el estado que el laboratorio vacío tenía y
+el negocio real no tiene nunca.
+
+🔴 **Con las ocho categorías del cliente, siete octavos del catálogo estaban a un clic que nadie
+ve.** Eso no es un problema de layout: **es el producto no mostrando lo que tiene.**
+
+### Por qué no lo vio nadie, incluida la suite
+
+| quién debía verlo | por qué no lo vio |
+|---|---|
+| los specs de cobro | usan `Lab Cerveza`, que **cae en la primera categoría**. Todos verdes |
+| un caso de *"hay productos en la lista"* | habría estado **verde con el defecto puesto**: la lista tenía productos |
+| mirar la captura | 🔴 **los dos la estábamos mirando** — y se lee como una pantalla con pestañas, que es una forma normal de navegar un catálogo |
+
+⚠️ **Lo destapó ENUMERAR ANTES DE TOCAR**, y no la intención de buscar un defecto: la pregunta era
+*«¿el strip es el único camino al filtro por categoría?»* —para no retirar una capacidad sin
+reemplazo—, y la respuesta obligó a abrir `filtered`. Ahí estaba.
+
+> **La enumeración previa no sólo dimensiona el trabajo: encuentra defectos que nadie estaba
+> buscando, porque obliga a leer código que nadie tenía motivo para abrir.**
+
+Es la misma mecánica que *"dibujar una pantalla audita un esquema"*, del otro lado: allá dibujar
+obliga a nombrar los datos que faltan; acá **retirar** obliga a nombrar lo que la pieza hacía de
+verdad — que casi nunca es lo que su nombre dice.
+
+### El segundo hallazgo, y salvó la decisión de ser falsa
+
+La decisión de sacar el strip se apoyaba en *«teclear tres letras es más rápido que navegar por
+pestañas»*. **Ese argumento era falso**: el buscador miraba `name` y `description`, **no la
+categoría**, así que teclear «farma» no encontraba nada.
+
+Sacar el strip sin tocar el buscador **habría retirado la capacidad** *«mostrame todo lo de
+Farmacología»* en vez de moverla a un lugar más rápido. Se agregó la categoría al predicado — una
+línea— y la decisión pasó de apoyarse en una capacidad inexistente a apoyarse en una que existe.
+
+⚠️ Es la misma forma que la deuda 75 —*"el mostrador no permite editar el precio"*, cuando el precio
+ya era libre—: **un enunciado que describe mal la dirección del trabajo.** Allá el trabajo no era
+abrir sino poner la red; acá no era mover sino **construir primero lo que se creía que ya estaba**.
+
+### Los colores del cliente colisionan con los tokens, medido
+
+La columna CATEGORÍA iba a llevar `categories.color`. Se cruzaron los ocho colores sembrados contra
+`src/tokens.css` **antes** de pintarlos:
+
+| categoría | color | colisión |
+|---|---|---|
+| Farmacología | `#0ea5e9` | **es `--action-500`, byte por byte** |
+| Pre entrenos | `#f59e0b` | **es `--warning-500`, byte por byte** |
+| Proteína | `#10b981` | el **emerald de Vento** (deuda 88); y verde es sólo confirmación (§1.2) |
+| Quemadores | `#ef4444` | familia `--danger` |
+| Snack | `#a855f7` | violeta — §4 dice que "ni siquiera existe en el sistema" |
+
+**Dos son coincidencia exacta.** Pintado, un disco verde quedaría al lado del badge «Sin stock» en
+la misma fila. §4 ya tenía la regla escrita —*una categoría no se pinta con la paleta de los
+estados*— y su corolario decidió el resto: el color era **redundante**, porque el nombre ya
+distingue. La columna va en `--ink-3`.
+
+⚠️ Y el color de categoría **es dato del cliente**, así que la colisión no se arregla eligiendo
+mejor: el próximo tenant elige los suyos. Cualquier decisión de pintar con `categories.color`
+tendría que pasar por una paleta acotada, y eso es producto, no re-skin.
+
+
+### 🟡 DUDA DISUELTA — «la máscara del strip aparece si y sólo si desborda»
+
+*Se anota siguiendo el criterio de `CLAUDE.md`: **una duda tiene un sujeto; si el sujeto desaparece
+se disuelve, y eso no es haberla contestado.** El sujeto —el strip— se retiró el mismo día.*
+
+**Qué era.** `pos-categorias-layout` tenía un caso que aseveraba que la máscara de continuación del
+strip saliera exactamente cuando el strip desbordara. Se re-derivó esa misma mañana —de afirmar una
+CONSTANTE (*"no hay máscara"*) a afirmar la RELACIÓN— y quedó verde. Horas después el strip dejó de
+existir y con él la máscara: **el caso no se rompió, se quedó sin sujeto.**
+
+**El argumento, intacto, por si el strip vuelve:**
+
+1. **La máscara era la ÚNICA señal de que había más categorías**, porque la scrollbar del strip
+   estaba oculta (`scrollbarWidth: none`). Sin ella, las categorías fuera de vista no existían para
+   el cajero.
+2. **La relación es la aserción correcta, no la constante.** *"No hay máscara"* depende del
+   catálogo; *"hay máscara si y sólo si desborda"* es la invariante, y tiene mutantes vivos por los
+   dos lados: una máscara permanente es decoración, una ausente esconde que hay más.
+3. **El tamaño del strip lo decidían los datos del cliente** — con 8 categorías ya desbordaba a
+   1280px, y en agosto empujó el carrito fuera de pantalla.
+
+⚠️ **Nadie decidió que la máscara estuviera bien o mal**: se fue con su elemento. Si vuelve un strip
+—o cualquier tira horizontal con scrollbar oculta: filtros, chips, pestañas— **la duda vuelve
+entera**, y el punto 2 es el que hay que aplicar sin volver a descubrirlo.
+
+🔴 **LO QUE *NO* SE DISUELVE, Y ES LO MÁS VALIOSO DE ESE CASO:** el hallazgo de que su versión
+original —*"con POCAS categorías el layout no cambia"*— **medía el caso vacío mientras afirmaba
+medir el común**, porque la línea de base de "pocas" era UNA categoría, la del lab vacío. Eso ya es
+un criterio de `CLAUDE.md` (*una fixture vacía no es el caso común: es el degenerado*) y **no
+depende del strip en absoluto**: aplica a cualquier aserción escrita contra una base sin datos.
+
+⚠️ La distinción importa al podar: de un caso que se disuelve, **la parte que era sobre el sujeto
+muere y la que era sobre el MÉTODO se queda.** Borrar el caso entero se habría llevado el hallazgo.

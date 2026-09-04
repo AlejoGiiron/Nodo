@@ -77,7 +77,11 @@ tercera columna no se dio por bueno: se dio por no hecho.
 
 | qué se hace | qué debería pasar | qué pasó |
 |---|---|---|
-| Ir a **Mostrador**, buscar `CREATINA OPTIMUN` | Aparece con precio **110.000** | |
+| Ir a **Mostrador** y **no tocar nada** | 🔴 Se ve **todo el catálogo**: 32 productos, de las 9 categorías. ⚠️ Si se ve una sola categoría, volvió el defecto que escondía el strip | |
+| Mirar el encabezado de la lista | Dice **«Todos los productos»** y el conteo. Ese número es la única señal de cuánto hay | |
+| Mirar la columna **CATEGORÍA** | Está, en **gris** — sin el color del cliente. ⚠️ Si trae colores, van a competir con el badge de stock en la misma fila (§1.2) | |
+| Teclear `farmacolog` en el buscador | Filtra **por categoría**: sólo productos de Farmacología. El conteo baja | |
+| Borrar la búsqueda y buscar `CREATINA OPTIMUN` | Aparece con precio **110.000** | |
 | Agregarlo al carrito | La línea muestra el precio **editable** | |
 | Cambiar el precio de la línea a **125.000** | El total sube. Puede aparecer un aviso de que el precio está lejos del catálogo | |
 | Apretar **F12** | **Abre el cobro** — y NO cobra | |
