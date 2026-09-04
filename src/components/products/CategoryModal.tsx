@@ -1,9 +1,24 @@
 import { useState, useEffect, useId } from 'react'
 import { X, ChevronRight } from 'lucide-react'
+import { Button } from '@/components/ui/Button'
 import { useCategoryMutations } from '@/hooks/useProductMutations'
 import { useAuth } from '@/hooks/useAuth'
 import type { Tables } from '@/types/database.types'
 
+/**
+ * ⛔ ESTOS OCHO NO SON EL ACENTO DEL PRODUCTO: son las opciones que el CLIENTE
+ *    elige para su categoría. Quedan fuera de la deuda 88 a propósito, y el
+ *    `#10b981` de acá abajo NO es el emerald de Vento a barrer — es una muestra
+ *    de una paleta de usuario.
+ *
+ * 🔴 Y cambiarlos tiene un costo medido: la categoría `Proteína` de Muscle Pro
+ *    se cargó con este mismo `#10b981`. Tocar la lista dejaría ese color FUERA
+ *    de la paleta, que es exactamente el defecto de la deuda 91 — el selector se
+ *    abre sin nada marcado y editar el nombre le cambia el color sin querer.
+ *
+ * La paleta la revisa la deuda 91, junto con el `default` de la columna
+ * (`#6366f1`), que tampoco está acá.
+ */
 const CATEGORY_COLORS = [
   '#10b981',
   '#059669',
@@ -103,7 +118,7 @@ export function CategoryModal({ category, onClose }: CategoryModalProps) {
           flexShrink: 0,
         }}>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: '#10b981', textTransform: 'uppercase', letterSpacing: 1 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: 1 }}>
               {isEditing ? 'Editar categoría' : 'Nueva categoría'}
             </div>
             <div style={{ fontSize: 17, fontWeight: 700, color: '#0f172a', letterSpacing: -0.3, marginTop: 1 }}>
@@ -137,8 +152,8 @@ export function CategoryModal({ category, onClose }: CategoryModalProps) {
                 placeholder="Ej: Cocteles clásicos"
                 required
                 style={inputStyle}
-                onFocus={(e) => { e.currentTarget.style.borderColor = '#10b981' }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = '#e5e7eb' }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--action)'; e.currentTarget.style.boxShadow = '0 0 0 3px var(--action-soft)' }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none' }}
               />
             </div>
 
@@ -151,8 +166,8 @@ export function CategoryModal({ category, onClose }: CategoryModalProps) {
                 placeholder="Breve descripción de la categoría..."
                 rows={2}
                 style={{ ...inputStyle, resize: 'none', lineHeight: 1.5 }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = '#10b981' }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = '#e5e7eb' }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--action)'; e.currentTarget.style.boxShadow = '0 0 0 3px var(--action-soft)' }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none' }}
               />
             </div>
 
@@ -208,7 +223,7 @@ export function CategoryModal({ category, onClose }: CategoryModalProps) {
                     onClick={() => setIsActive(!isActive)}
                     style={{
                       width: 44, height: 24, borderRadius: 12,
-                      background: isActive ? '#10b981' : '#e2e8f0',
+                      background: isActive ? 'var(--action)' : 'var(--border)',
                       border: 'none', cursor: 'pointer',
                       position: 'relative', transition: 'background .15s', flexShrink: 0,
                     }}
@@ -246,39 +261,20 @@ export function CategoryModal({ category, onClose }: CategoryModalProps) {
           display: 'flex', gap: 10, flexShrink: 0,
           background: 'linear-gradient(180deg, #f8fafc 0%, #fff 100%)',
         }}>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              flex: 1, padding: '11px 16px',
-              border: '1.5px solid #e5e7eb', background: '#fff',
-              borderRadius: 9, cursor: 'pointer',
-              fontSize: 13.5, fontWeight: 600, color: '#334155',
-            }}
-          >
+          <Button variant="secondary" onClick={onClose} style={{ flex: 1 }}>
             Cancelar
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
             form={formId}
             disabled={!isValid || saving}
-            style={{
-              flex: 2, padding: '11px 16px',
-              border: 'none',
-              background: !isValid || saving ? '#cbd5e1' : '#10b981',
-              borderRadius: 9,
-              cursor: !isValid || saving ? 'not-allowed' : 'pointer',
-              fontSize: 13.5, fontWeight: 700, color: '#fff',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-              boxShadow: !isValid || saving ? 'none' : '0 6px 16px rgba(16,185,129,.35)',
-              transition: 'all .15s',
-            }}
+            style={{ flex: 2, gap: 6 }}
           >
             {saving
               ? 'Guardando...'
               : <><span>{isEditing ? 'Guardar cambios' : 'Crear categoría'}</span><ChevronRight size={15} /></>
             }
-          </button>
+          </Button>
         </div>
       </div>
     </div>

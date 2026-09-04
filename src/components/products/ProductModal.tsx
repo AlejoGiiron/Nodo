@@ -1,6 +1,7 @@
 import { useState, useEffect, useId } from 'react'
 import { X, ChevronRight, Package, AlertTriangle } from 'lucide-react'
 import { toast } from 'react-hot-toast'
+import { Button } from '@/components/ui/Button'
 import { ImageUpload } from './ImageUpload'
 import { RecipeEditor } from './RecipeEditor'
 import { useProductMutations } from '@/hooks/useProductMutations'
@@ -250,7 +251,7 @@ export function ProductModal({ product, categories, onClose }: ProductModalProps
           flexShrink: 0,
         }}>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: '#10b981', textTransform: 'uppercase', letterSpacing: 1 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: 1 }}>
               {isEditing ? 'Editar producto' : 'Nuevo producto'}
             </div>
             <div style={{ fontSize: 17, fontWeight: 700, color: '#0f172a', letterSpacing: -0.3, marginTop: 1 }}>
@@ -294,8 +295,8 @@ export function ProductModal({ product, categories, onClose }: ProductModalProps
                 placeholder="Ej: Mojito Cubano"
                 required
                 style={inputStyle}
-                onFocus={(e) => { e.currentTarget.style.borderColor = '#10b981' }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = '#e5e7eb' }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--action)'; e.currentTarget.style.boxShadow = '0 0 0 3px var(--action-soft)' }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none' }}
               />
             </div>
 
@@ -308,8 +309,8 @@ export function ProductModal({ product, categories, onClose }: ProductModalProps
                 placeholder="Ron, menta, limón, soda..."
                 rows={2}
                 style={{ ...inputStyle, resize: 'none', lineHeight: 1.5 }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = '#10b981' }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = '#e5e7eb' }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--action)'; e.currentTarget.style.boxShadow = '0 0 0 3px var(--action-soft)' }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none' }}
               />
             </div>
 
@@ -330,8 +331,8 @@ export function ProductModal({ product, categories, onClose }: ProductModalProps
                     placeholder="0"
                     required
                     style={{ ...inputStyle, paddingLeft: 24 }}
-                    onFocus={(e) => { e.currentTarget.style.borderColor = '#10b981' }}
-                    onBlur={(e) => { e.currentTarget.style.borderColor = '#e5e7eb' }}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--action)'; e.currentTarget.style.boxShadow = '0 0 0 3px var(--action-soft)' }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none' }}
                   />
                 </div>
               </div>
@@ -344,8 +345,8 @@ export function ProductModal({ product, categories, onClose }: ProductModalProps
                   onChange={(e) => setCategoryId(e.target.value)}
                   required
                   style={{ ...inputStyle, cursor: 'pointer', appearance: 'none' }}
-                  onFocus={(e) => { e.currentTarget.style.borderColor = '#10b981' }}
-                  onBlur={(e) => { e.currentTarget.style.borderColor = '#e5e7eb' }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--action)'; e.currentTarget.style.boxShadow = '0 0 0 3px var(--action-soft)' }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none' }}
                 >
                   <option value="" disabled>Seleccionar...</option>
                   {categories.map((c) => (
@@ -372,12 +373,12 @@ export function ProductModal({ product, categories, onClose }: ProductModalProps
                       onClick={() => setKind(opt.value)}
                       style={{
                         flex: 1, textAlign: 'left', cursor: 'pointer',
-                        border: `1.5px solid ${active ? '#10b981' : '#e5e7eb'}`,
-                        background: active ? '#ecfdf5' : '#fff',
+                        border: `1.5px solid ${active ? 'var(--action)' : 'var(--border)'}`,
+                        background: active ? 'var(--action-soft)' : 'var(--surface)',
                         borderRadius: 9, padding: '10px 12px', transition: 'all .12s',
                       }}
                     >
-                      <div style={{ fontSize: 13.5, fontWeight: 700, color: active ? '#065f46' : '#0f172a' }}>{opt.title}</div>
+                      <div style={{ fontSize: 13.5, fontWeight: 700, color: active ? 'var(--action-on-soft)' : 'var(--ink)' }}>{opt.title}</div>
                       <div style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 2 }}>{opt.desc}</div>
                     </button>
                   )
@@ -402,7 +403,7 @@ export function ProductModal({ product, categories, onClose }: ProductModalProps
                     onClick={() => setStockTracking(!stockTracking)}
                     style={{
                       width: 44, height: 24, borderRadius: 12,
-                      background: stockTracking ? '#10b981' : '#e2e8f0',
+                      background: stockTracking ? 'var(--action)' : 'var(--border)',
                       border: 'none', cursor: 'pointer',
                       position: 'relative', transition: 'background .15s', flexShrink: 0,
                     }}
@@ -459,8 +460,8 @@ export function ProductModal({ product, categories, onClose }: ProductModalProps
                         onChange={(e) => setMinStock(e.target.value)}
                         placeholder="0"
                         style={{ ...inputStyle, width: 120 }}
-                        onFocus={(e) => { e.currentTarget.style.borderColor = '#10b981' }}
-                        onBlur={(e) => { e.currentTarget.style.borderColor = '#e5e7eb' }}
+                        onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--action)'; e.currentTarget.style.boxShadow = '0 0 0 3px var(--action-soft)' }}
+                        onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none' }}
                       />
                     </div>
                   </div>
@@ -551,16 +552,16 @@ export function ProductModal({ product, categories, onClose }: ProductModalProps
                         style={{
                           display: 'flex', alignItems: 'center', gap: 10,
                           padding: '10px 12px', textAlign: 'left',
-                          border: `1.5px solid ${checked ? '#10b981' : '#e5e7eb'}`,
-                          background: checked ? '#ecfdf5' : '#fff',
+                          border: `1.5px solid ${checked ? 'var(--action)' : 'var(--border)'}`,
+                          background: checked ? 'var(--action-soft)' : 'var(--surface)',
                           borderRadius: 9, cursor: 'pointer', width: '100%',
                           transition: 'all .12s',
                         }}
                       >
                         <span style={{
                           width: 18, height: 18, borderRadius: 5, flexShrink: 0,
-                          border: `1.5px solid ${checked ? '#10b981' : '#cbd5e1'}`,
-                          background: checked ? '#10b981' : '#fff',
+                          border: `1.5px solid ${checked ? 'var(--action)' : 'var(--ink-4)'}`,
+                          background: checked ? 'var(--action)' : 'var(--surface)',
                           display: 'grid', placeItems: 'center',
                         }}>
                           {checked && (
@@ -592,18 +593,9 @@ export function ProductModal({ product, categories, onClose }: ProductModalProps
           display: 'flex', gap: 10, flexShrink: 0,
           background: 'linear-gradient(180deg, #f8fafc 0%, #fff 100%)',
         }}>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              flex: 1, padding: '11px 16px',
-              border: '1.5px solid #e5e7eb', background: '#fff',
-              borderRadius: 9, cursor: 'pointer',
-              fontSize: 13.5, fontWeight: 600, color: '#334155',
-            }}
-          >
+          <Button variant="secondary" onClick={onClose} style={{ flex: 1 }}>
             Cancelar
-          </button>
+          </Button>
           {/* 🔴 Mientras los insumos no cargaron, el botón NO EXISTE (deuda 56).
               No es un spinner: un botón deshabilitado invita a esperar y
               reintentar; uno ausente dice que la pantalla todavía no sabe lo
@@ -621,24 +613,14 @@ export function ProductModal({ product, categories, onClose }: ProductModalProps
               Cargando extras y receta…
             </div>
           ) : (
-          <button
+          <Button
             type="submit"
             form={formId}
             disabled={!isValid || saving}
-            style={{
-              flex: 2, padding: '11px 16px',
-              border: 'none',
-              background: !isValid || saving ? '#cbd5e1' : '#10b981',
-              borderRadius: 9,
-              cursor: !isValid || saving ? 'not-allowed' : 'pointer',
-              fontSize: 13.5, fontWeight: 700, color: '#fff',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-              boxShadow: !isValid || saving ? 'none' : '0 6px 16px rgba(16,185,129,.35)',
-              transition: 'all .15s',
-            }}
+            style={{ flex: 2, gap: 6 }}
           >
             {saving ? 'Guardando...' : <><span>{isEditing ? 'Guardar cambios' : 'Crear producto'}</span><ChevronRight size={15} /></>}
-          </button>
+          </Button>
           )}
         </div>
       </div>

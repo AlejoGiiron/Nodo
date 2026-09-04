@@ -103,10 +103,10 @@ export function ImageUpload({ value, onChange, onRemove }: ImageUploadProps) {
         onDragLeave={handleDragLeave}
         onClick={() => inputRef.current?.click()}
         style={{
-          border: `2px dashed ${dragging ? '#10b981' : (sizeError || typeError) ? '#ef4444' : '#e2e8f0'}`,
+          border: `2px dashed ${dragging ? 'var(--action)' : (sizeError || typeError) ? 'var(--danger)' : 'var(--border)'}`,
           borderRadius: 10,
           padding: '28px 20px',
-          background: dragging ? 'rgba(16,185,129,.04)' : '#fafafa',
+          background: dragging ? 'var(--action-soft)' : 'var(--surface-2)',
           display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
           cursor: 'pointer', transition: 'all .15s',
           textAlign: 'center',
@@ -114,9 +114,9 @@ export function ImageUpload({ value, onChange, onRemove }: ImageUploadProps) {
       >
         <div style={{
           width: 40, height: 40, borderRadius: 10,
-          background: dragging ? '#ecfdf5' : '#f1f5f9',
+          background: dragging ? 'var(--action-soft)' : 'var(--border-2)',
           display: 'grid', placeItems: 'center',
-          color: dragging ? '#10b981' : '#94a3b8',
+          color: dragging ? 'var(--action)' : 'var(--ink-4)',
           transition: 'all .15s',
         }}>
           <ImageIcon size={20} />
@@ -125,7 +125,7 @@ export function ImageUpload({ value, onChange, onRemove }: ImageUploadProps) {
           <div style={{ fontSize: 13, fontWeight: 600, color: '#334155' }}>
             {dragging ? 'Suelta aquí' : 'Arrastra una imagen o'}
             {!dragging && (
-              <span style={{ color: '#10b981', marginLeft: 4 }}>selecciona un archivo</span>
+              <span style={{ color: 'var(--action-700)', marginLeft: 4 }}>selecciona un archivo</span>
             )}
           </div>
           <div style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 3 }}>

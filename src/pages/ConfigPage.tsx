@@ -522,7 +522,6 @@ function CreateUserModal({ onClose }: { onClose: () => void }) {
               display: 'flex',
               alignItems: 'center',
               gap: 6,
-              boxShadow: isCreatingUser ? 'none' : '0 4px 12px rgba(16,185,129,.3)',
             }}
           >
             {isCreatingUser && <Loader2 size={14} className="animate-spin" />}
@@ -560,7 +559,6 @@ function SectionUsers() {
             fontSize: 13,
             fontWeight: 700,
             color: 'var(--surface)',
-            boxShadow: '0 4px 12px rgba(16,185,129,.3)',
           }}
         >
           <UserPlus size={15} /> Crear usuario
@@ -965,7 +963,7 @@ function StoreModal({
           <button
             onClick={handleSave}
             disabled={saving}
-            style={{ padding: '10px 24px', background: saving ? 'var(--ink-4)' : 'var(--action)', border: 'none', borderRadius: 10, cursor: saving ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 700, color: 'var(--surface)', display: 'flex', alignItems: 'center', gap: 6, boxShadow: saving ? 'none' : '0 4px 12px rgba(16,185,129,.3)' }}
+            style={{ padding: '10px 24px', background: saving ? 'var(--ink-4)' : 'var(--action)', border: 'none', borderRadius: 10, cursor: saving ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 700, color: 'var(--surface)', display: 'flex', alignItems: 'center', gap: 6 }}
           >
             {saving && <Loader2 size={14} className="animate-spin" />}
             {isNew ? 'Crear sede' : 'Guardar'}
@@ -1003,7 +1001,7 @@ function SectionSedes() {
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
         <button
           onClick={() => setEditStore('new')}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', background: 'var(--action)', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 13, fontWeight: 700, color: 'var(--surface)', boxShadow: '0 4px 12px rgba(16,185,129,.3)' }}
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', background: 'var(--action)', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 13, fontWeight: 700, color: 'var(--surface)' }}
         >
           <Plus size={15} /> Crear sede
         </button>
@@ -1141,7 +1139,7 @@ function RoleModal({ role, onClose }: { role: RoleRow | 'new'; onClose: () => vo
           <button
             onClick={handleSave}
             disabled={isMutating}
-            style={{ padding: '10px 24px', background: isMutating ? 'var(--ink-4)' : 'var(--action)', border: 'none', borderRadius: 10, cursor: isMutating ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 700, color: 'var(--surface)', display: 'flex', alignItems: 'center', gap: 6, boxShadow: isMutating ? 'none' : '0 4px 12px rgba(16,185,129,.3)' }}
+            style={{ padding: '10px 24px', background: isMutating ? 'var(--ink-4)' : 'var(--action)', border: 'none', borderRadius: 10, cursor: isMutating ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 700, color: 'var(--surface)', display: 'flex', alignItems: 'center', gap: 6 }}
           >
             {isMutating && <Loader2 size={14} className="animate-spin" />}
             {isNew ? 'Crear rol' : 'Guardar'}
@@ -1170,7 +1168,7 @@ function SectionRoles() {
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
         <button
           onClick={() => setEditRole('new')}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', background: 'var(--action)', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 13, fontWeight: 700, color: 'var(--surface)', boxShadow: '0 4px 12px rgba(16,185,129,.3)' }}
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', background: 'var(--action)', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 13, fontWeight: 700, color: 'var(--surface)' }}
         >
           <Plus size={15} /> Crear rol
         </button>
@@ -1353,7 +1351,7 @@ function ExtraFormModal({
             onClick={handleSave}
             disabled={!isValid || saving}
             data-testid="extra-save"
-            style={{ padding: '10px 24px', background: !isValid || saving ? 'var(--ink-4)' : 'var(--action)', border: 'none', borderRadius: 10, cursor: !isValid || saving ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 700, color: 'var(--surface)', display: 'flex', alignItems: 'center', gap: 6, boxShadow: !isValid || saving ? 'none' : '0 4px 12px rgba(16,185,129,.3)' }}
+            style={{ padding: '10px 24px', background: !isValid || saving ? 'var(--ink-4)' : 'var(--action)', border: 'none', borderRadius: 10, cursor: !isValid || saving ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 700, color: 'var(--surface)', display: 'flex', alignItems: 'center', gap: 6 }}
           >
             {saving && <Loader2 size={14} className="animate-spin" />}
             Guardar
@@ -1403,7 +1401,7 @@ function SectionExtras() {
         <button
           onClick={() => setEditExtra('new')}
           data-testid="extra-new"
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: 'var(--action)', border: 'none', borderRadius: 9, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: 'var(--surface)', boxShadow: '0 4px 12px rgba(16,185,129,.3)' }}
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: 'var(--action)', border: 'none', borderRadius: 9, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: 'var(--surface)' }}
         >
           <Plus size={14} /> Nuevo extra
         </button>
