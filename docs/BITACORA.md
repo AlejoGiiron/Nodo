@@ -3745,3 +3745,45 @@ depende del strip en absoluto**: aplica a cualquier aserción escrita contra una
 
 ⚠️ La distinción importa al podar: de un caso que se disuelve, **la parte que era sobre el sujeto
 muere y la que era sobre el MÉTODO se queda.** Borrar el caso entero se habría llevado el hallazgo.
+
+---
+
+## 2026-09-04 · La carga del catálogo verificó de rebote algo que nadie había probado
+
+Cargar los 17 productos de Muscle Pro necesitaba una decisión: `upsertProduct` y `upsertCategory`
+viven en `src/` y no se pueden importar desde un script. Se enumeró qué hacen —dos líneas cada una,
+un `.upsert().select().single()`— y salió que **la garantía no está en su cuerpo sino en quién las
+ejecuta**: la anon key más el JWT del usuario, o sea RLS.
+
+Por eso el script **inicia sesión como el admin de la sede** en vez de usar la service_role key. Con
+service_role la policy no se evalúa siquiera:
+
+```sql
+create policy "products: gestionar" on public.products for all to authenticated
+  using      (sede_id = get_my_sede_id() and has_permission('productos.editar'))
+  with check (sede_id = get_my_sede_id() and has_permission('productos.editar'));
+```
+
+🔴 **Y eso ejercitó, sin que fuera el objetivo, algo que el proyecto nunca había verificado: que dar
+de alta productos FUNCIONA para un usuario de una organización recién creada.**
+
+El alta de la deuda 36 se verificó entrando con la cuenta y consultando `has_permission` — o sea
+**preguntándole a la función**. Esto es distinto: son **25 escrituras reales** (8 categorías + 17
+productos) pasando por `get_my_sede_id()` y por `has_permission('productos.editar')` resueltos
+contra el `role_id = owner` que `seed_system_roles` sembró en una organización que tenía horas de
+vida. La cadena entera —perfil → sede → rol → permiso → policy → escritura— corrió de punta a punta
+con datos del cliente.
+
+⚠️ **Vale anotarlo justamente porque salió de rebote.** Nadie lo había probado, y era una de esas
+afirmaciones que se dan por ciertas porque el mecanismo está escrito: *"seed_system_roles siembra el
+owner, el owner tiene el comodín, entonces puede todo"*. Es un razonamiento, no una medición — la
+misma forma que este proyecto viene marcando desde el primer día. Ahora es una medición, y el
+control negativo ya estaba puesto: el mismo script con una `--sede-id` ajena **aborta antes de
+escribir**, y si el guard fallara RLS rechaza igual.
+
+✅ **El otro hallazgo del día fue de instrumento, y es el decimocuarto:** la primera sonda de
+duplicados devolvió *"products: 1000 filas · 1000 nombres distintos · 0 duplicados"*. **1000 es el
+tope por defecto de PostgREST.** El número no era el catálogo: era el límite, y sostenía
+exactamente la conclusión cómoda —*"no hay duplicados"*— que la deuda 90 necesitaba. Lo cazó que
+1000 sea un número demasiado redondo. La versión que mide **pagina y cruza contra el `count`
+exacto**, y aborta si las dos cifras no cierran: **1.133**.
