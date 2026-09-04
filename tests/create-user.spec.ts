@@ -240,7 +240,12 @@ test('limpieza: borrar el usuario de prueba', async () => {
   // lab-seed-b.sql (la purga del final).
   //
   // ⚠️  OJO AL PONER ESA KEY: la BD es UNA sola. El service role de este
-  //     proyecto es también el de G-10 y Salchimelo, no solo el del lab.
+  //     proyecto es también el de MUSCLE PRO, un cliente real con datos reales.
+  //     🔴 CORREGIDO el 2026-09-04: esta nota decía "G-10 y Salchimelo", que son
+  //     clientes de VENTO y no existen en este proyecto. Una advertencia que
+  //     nombra tenants ajenos se descarta sola —"acá no tenemos esos"— y deja de
+  //     advertir justo de lo que importa. Es el corolario del renombre: un texto
+  //     que nombra algo de otro repo y que nadie movió en la misma pasada.
   const key = process.env.E2E_SERVICE_ROLE_KEY
   if (!key) {
     console.warn(

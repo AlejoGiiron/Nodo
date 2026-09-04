@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { ownerCreds } from './helpers/auth'
+import { clienteDeServicio } from './helpers/servicio'
 
 // ============================================================================
 // ALTA DE USUARIO ENTRE SEDES — deuda 92
@@ -90,8 +91,11 @@ test.beforeAll(async () => {
   const rol = await db.from('roles').select('id').eq('organization_id', ORG).eq('name', 'cajero').single()
   ROL_CAJERO = rol.data!.id as string
 
-  const key = process.env.E2E_SERVICE_ROLE_KEY
-  if (key) comoServicio = createClient(URL_BASE, key, { auth: { persistSession: false } })
+  // 🔴 La key NO se toma de `process.env` acá: se pide por la puerta, con el
+  //    motivo declarado. El tripwire `src/lib/arnes-service-role.test.ts` se
+  //    pone rojo si algún spec la toma por su cuenta — con service_role las
+  //    policies ni se evalúan, así que un atajo deja de medir RLS en silencio.
+  comoServicio = clienteDeServicio('crear-organizacion')
 })
 
 test.afterAll(async () => {

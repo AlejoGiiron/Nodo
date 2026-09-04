@@ -1112,6 +1112,29 @@ caso, y los `did not run` desaparecen del resumen de la corrida siguiente sin qu
 comprobado que pasan. La única forma honesta de cerrarlos es **volver a correr el archivo entero**
 después del arreglo, y decirlo.
 
+🔴 **Y EL CASO EN QUE `describe.serial` HACE MÁS DAÑO QUE ESCONDER CASOS: cuando el que se salta es
+el CONTROL NEGATIVO.** *2026-09-04, spec de la deuda 92.*
+
+El spec tenía dos direcciones: ① *un admin SÍ puede dar de alta en otra sede de su organización* y
+② *NO puede en una sede de otra organización*. ② es el control: sin él, **relajar el guard pasa
+verde**, porque ① sola no distingue *«se cambió la pregunta»* de *«se borró el guard»*.
+
+Estaba en `describe.serial`. ① salió roja —era el rojo esperado, antes del arreglo— y **② quedó en
+`did not run`**.
+
+> **El control negativo desapareció por el fallo del caso que venía a controlar.** Y no es mala
+> suerte: es la relación normal entre los dos. El control existe para el momento en que el otro se
+> mueve, o sea exactamente cuando el otro está rojo.
+
+⚠️ **Y se lee como verde por omisión** —lo de arriba—: en la corrida siguiente, con ① ya arreglada,
+② desaparece del resumen sin que nadie haya comprobado que pasa. Un guard de seguridad cerrado sobre
+un caso que **nunca corrió**.
+
+**Lo accionable:** `describe.serial` es para casos que **comparten estado** —el segundo continúa
+donde quedó el primero—. Dos casos que sólo comparten una **fixture** no son seriales: comparten el
+`beforeAll`, no el resultado. Y la pregunta antes de poner `serial`: **¿alguno de los que siguen es
+el control de alguno de los anteriores?** Si lo es, no puede ir detrás de él.
+
 **Lo accionable al reportar:** `did not run` se enumera aparte y se nombra *sin medir*, nunca se suma
 a los que pasaron. Y entra al cruce: `passed + failed + skipped + did not run` tiene que dar el
 último `[N/N]` emitido.
