@@ -1695,6 +1695,46 @@ sólo la pantalla. `producto-nuevo` y `producto-editar` no son dos pantallas: so
 misma**, y hacen falta los dos.
 
 ---
+### 🔴 CRITERIO SIN NÚMERO · LA REGLA QUE ACOTA UNA CAPACIDAD LLEGA TARDE SI SE ESCRIBE CUANDO SE ABRE LA PUERTA
+
+*2026-09-04, al poner `E2E_SERVICE_ROLE_KEY` en el arnés. Es «enumerar antes de decidir» aplicado al
+momento de CONCEDER algo, no de borrarlo.*
+
+La condición estaba bien pensada y bien dicha:
+
+> *«acotá su uso al caso ② — si queda disponible para todos, el próximo caso que necesite un atajo
+> la va a usar y dejaremos de medir RLS sin que nada avise.»*
+
+**Y llegó tarde: el próximo ya había pasado.** Al enumerar aparecieron **cuatro** consumidores de esa
+key, no uno — y uno de ellos, `create-user.spec`, la usaba como **atajo de limpieza** desde antes.
+La puerta se estaba «abriendo» con gente adentro.
+
+> **Una capacidad no empieza a usarse cuando se concede formalmente: empieza cuando alguien la
+> necesita y encuentra la forma.** La concesión formal sólo la vuelve visible.
+
+⚠️ **Por qué se escapa, y no es descuido:** al decidir conceder algo, la pregunta que sale sola es
+*«¿quién va a poder usarlo?»* — futuro. La que hace falta es *«¿quién lo está usando ya?»*, y no sale
+sola porque la premisa de la decisión es que **todavía no está concedido**. La palabra *«abrir»* trae
+implícito que del otro lado no hay nadie.
+
+**LO ACCIONABLE, y es un grep antes de la decisión, no después:**
+
+> **Antes de conceder una capacidad, enumerá quién la usa hoy.** Si aparece alguien, la decisión no
+> es *«conceder o no»*: es *«qué hago con los que ya están»* — y ésos son justamente los casos que
+> nadie revisó, porque entraron sin que hubiera regla.
+
+✅ **Y lo que salió bien, que es lo que hace barato el hallazgo:** la enumeración se hizo igual,
+aunque el encargo dijera *«acotá su uso al caso ②»* — o sea aunque el alcance viniera dado. Es la
+misma línea que ya está escrita para las deudas: **la enumeración previa se hace igual, aunque el
+encargo ya diga el alcance.** Acá el encargo decía «uno» y había cuatro.
+
+⚠️ Corolario para la contención que se escribe después: los que ya estaban entran a la allowlist
+**marcados por lo que son**, no normalizados. `create-user` quedó en la lista con la etiqueta
+*«ATAJO DE LIMPIEZA, no sujeto»* — porque una allowlist que no distingue por qué está cada uno se
+lee, al mes, como si todos tuvieran la misma razón.
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · UNA LISTA ESCRITA DE MEMORIA ES UNA HIPÓTESIS — LAS LISTAS SE DERIVAN
 
 *Cuatro casos el 2026-09-04, en una sola tanda, y los cuatro tienen la misma forma. Es el hermano de
