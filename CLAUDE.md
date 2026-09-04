@@ -329,14 +329,14 @@ clase.** *Medido el 2026-09-03, de casualidad, corriendo un barrido de bytes de 
 archivo.*
 
 `docs/DEUDAS.md` explicaba un defecto real: *"una regex de un caso E2E quedó con bytes de control
-`0x08` en vez de la secuencia ``"*. **Y en el lugar donde esa frase escribe la secuencia, el
-archivo tenía un byte `0x08`.** La nota sobre el bug del `` contenía el bug del ``, y llevaba
+`0x08` en vez de la secuencia `\b`"*. **Y en el lugar donde esa frase escribe la secuencia, el
+archivo tenía un byte `0x08`.** La nota sobre el bug del `\b` contenía el bug del `\b`, y llevaba
 así desde el commit que la escribió.
 
 ⚠️ **Por qué es una clase y no una casualidad:** el texto que documenta un defecto de escape **se
 escribe con las mismas herramientas que lo produjeron** —el mismo heredoc, el mismo script, el mismo
 shell— así que está expuesto al mismo defecto **en el momento exacto en que uno está pensando en
-él**. Pasó con el CRLF y pasó con el ``; no hay razón para que no vuelva a pasar.
+él**. Pasó con el CRLF y pasó con el `\b`; no hay razón para que no vuelva a pasar.
 
 ✅ **Y lo que lo cazó vale más que el arreglo: un barrido de bytes de control sobre el documento
 entero**, corrido por costumbre después de cada edición por script. Cuesta un `grep -cP` y encuentra
@@ -344,8 +344,32 @@ lo que ninguna lectura encuentra — un `0x08` es **invisible** en cualquier edi
 diff.
 
 ```bash
-grep -cP '[ --]' <archivo>   # tiene que dar 0
+grep -cP '[\x00-\x08\x0b\x0c\x0e-\x1f]' <archivo>   # tiene que dar 0
 ```
+
+🔴 **TERCERA VEZ, Y FUE EN EL COMMIT QUE ESCRIBIÓ ESTA MISMA NOTA.** Al redactar el párrafo de
+arriba —el que dice que el defecto muerde a su documentación— **volví a meter los bytes**: cuatro
+líneas de `CLAUDE.md`, incluida la del comando de acá arriba. Y al intentar escribir *esta*
+corrección, pasó una cuarta vez y la edición ni siquiera se aplicó.
+
+**La causa ya está escrita en la sección de hooks de este archivo: un heredoc de bash colapsa los
+backslashes.** El script llegaba a Python con un escape menos, y Python interpretaba `x00` como NUL
+de verdad. Lo mismo con los `\b` de la prosa, que quedaron como backspaces.
+
+⚠️ **Lo que agrega sobre las dos anteriores:** no fue el defecto reapareciendo — **fue el defecto
+reapareciendo mientras yo escribía sobre él**, dos veces seguidas, sin que ninguna lectura del texto
+lo mostrara. Un `0x08` es invisible en el editor y en el `git diff`.
+
+✅ **LO ACCIONABLE ES UN MECANISMO, NO ATENCIÓN — y son dos:**
+
+1. **Los scripts de edición van a un ARCHIVO, no a un heredoc.** Un archivo lo lee Python
+   directamente y no hay shell en el medio que reinterprete nada. Las cuatro veces que mordió fue
+   por heredoc; ninguna por archivo.
+2. **El barrido se corre después de CADA edición por script**, no cuando uno sospecha — porque en
+   las tres veces nadie sospechaba, y la tercera la escribió quien estaba documentando la primera.
+
+⚠️ Y si un ancla o un reemplazo tiene que contener un backslash, se construye con `chr(92)` en vez
+de escribirlo: no hay forma de que sobreviva a un escape de más ni a uno de menos.
 
 
 **🔴 COROLARIO — POR QUÉ LEER NO ALCANZA.** R4 dice *qué* hacer. Esto dice *por qué*, que es lo
