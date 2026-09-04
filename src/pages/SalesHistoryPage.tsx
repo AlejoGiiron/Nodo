@@ -334,7 +334,6 @@ function SaleDetailModal({ orderId, onClose }: { orderId: string; onClose: () =>
               background: sale ? 'var(--action)' : 'var(--ink-4)', borderRadius: 9,
               cursor: sale ? 'pointer' : 'not-allowed', fontSize: 13.5, fontWeight: 700, color: 'var(--surface)',
               display: 'flex', alignItems: 'center', gap: 7,
-              boxShadow: sale ? '0 6px 16px rgba(16,185,129,.35)' : 'none',
             }}
           >
             <Printer size={15} /> Reimprimir ticket

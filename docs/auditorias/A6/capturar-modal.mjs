@@ -93,6 +93,35 @@ const MODALES = {
     },
     control: 'Crear cliente',
   },
+  // 🔴 TANDA 3 · tres ESTADOS que el estado por defecto esconde. Cada uno se
+  //    provoca a proposito: el boton de exportar solo tiene su resplandor si
+  //    hay datos; el de reimprimir, solo con una venta ELEGIDA; y el "+ Nueva
+  //    categoria" solo se pinta EN HOVER. Capturar las tres pantallas "como
+  //    abren" no habria mostrado ninguno de los tres.
+  'reportes': {
+    ruta: '/reportes',
+    abrir: async () => {},
+    control: 'Exportar',
+    pantalla: true,
+  },
+  'historial-venta-elegida': {
+    ruta: '/historial',
+    abrir: async (page) => {
+      await page.getByTestId('sale-row').first().click();
+      await page.waitForTimeout(500);
+    },
+    control: 'Reimprimir ticket',
+    pantalla: true,
+  },
+  'catalogo-nueva-categoria-hover': {
+    ruta: '/productos',
+    abrir: async (page) => {
+      await page.getByRole('button', { name: /Nueva categor/i }).first().hover();
+      await page.waitForTimeout(400);
+    },
+    control: 'Nueva categor',
+    pantalla: true,
+  },
   'categoria-nueva': {
     ruta: '/productos',
     abrir: async (page) => page.getByRole('button', { name: /Nueva categor/i }).first().click(),

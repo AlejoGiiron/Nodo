@@ -418,7 +418,6 @@ export function ReportsPage() {
                 cursor:     exportDisabled ? 'not-allowed' : 'pointer',
                 background: exportDisabled ? 'var(--ink-4)'     : 'var(--action)',
                 color: 'var(--surface)',
-                boxShadow: exportDisabled ? 'none' : '0 4px 12px rgba(16,185,129,.35)',
               }}
             >
               <Download size={14} />
@@ -697,7 +696,6 @@ export function ReportsPage() {
                 cursor:     exportStockDisabled ? 'not-allowed' : 'pointer',
                 background: exportStockDisabled ? 'var(--ink-4)'     : 'var(--action)',
                 color: 'var(--surface)',
-                boxShadow: exportStockDisabled ? 'none' : '0 4px 12px rgba(16,185,129,.35)',
               }}
             >
               <Download size={14} />

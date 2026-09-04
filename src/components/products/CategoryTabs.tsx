@@ -120,7 +120,7 @@ export function CategoryTabs({ categories, activeId, productCounts, onSelect, on
             padding: '10px 12px 12px',
             border: 'none', background: 'transparent',
             borderBottom: '3px solid transparent',
-            color: hoveredId === 'new' ? '#10b981' : '#94a3b8',
+            color: hoveredId === 'new' ? 'var(--action)' : 'var(--ink-4)',
             fontSize: 13, fontWeight: 500,
             fontFamily: 'Inter, system-ui, sans-serif',
             cursor: 'pointer', whiteSpace: 'nowrap',

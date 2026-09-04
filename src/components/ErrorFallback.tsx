@@ -59,10 +59,9 @@ export function ErrorFallback({ eventId }: ErrorFallbackProps) {
           data-testid="error-boundary-reload"
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 8,
-            background: '#10b981', color: '#fff', border: 'none',
+            background: 'var(--action)', color: 'var(--surface)', border: 'none',
             borderRadius: 10, padding: '12px 28px',
             fontSize: 15, fontWeight: 600, cursor: 'pointer',
-            boxShadow: '0 4px 12px rgba(16,185,129,.35)',
           }}
         >
           <RotateCw size={17} />

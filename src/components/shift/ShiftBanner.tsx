@@ -58,7 +58,7 @@ export function ShiftBanner() {
           <span style={{
             width: 7, height: 7, borderRadius: '50%',
             background: 'var(--success-700)', flexShrink: 0,
-            boxShadow: '0 0 0 2px rgba(16,185,129,.25)',
+            boxShadow: '0 0 0 2px var(--success-border)',
           }} />
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>

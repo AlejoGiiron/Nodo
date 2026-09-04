@@ -825,6 +825,66 @@ que no usarlo**; lo que no vale es no usarlo *y no decir por qué*.
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · UN BARRIDO POR PROPIEDAD DEJA LAS HERMANAS
+
+*Medido el 2026-09-04, cerrando la deuda 88. Es una forma NUEVA de «usar los tokens no es usar la
+primitiva», y no la que ese criterio describe.*
+
+Aquél dice que un barrido de color **no cambia la forma del markup**: quedan 30 líneas de `style`
+inline con `var(--…)` en vez de un componente. Cierto, y no es lo que pasó acá.
+
+> **El barrido original tokenizó los FONDOS y dejó las SOMBRAS.** No falló en la profundidad —falló
+> en la **superficie**: cubrió una propiedad CSS y no las hermanas.
+
+**La cuenta, y es lo que lo convierte en criterio:**
+
+| tanda | qué se encontró |
+|---|---|
+| 2 | de 22 ocurrencias, **12 eran `boxShadow`** — y **6 de 7 archivos tenían el `background` YA migrado** a `var(--action)` |
+| 3 | de 7 ocurrencias reales, **4 eran `boxShadow`**; una era un `boxShadow` usado como **anillo** (`0 0 0 2px`), no como sombra proyectada |
+
+🔴 **`ConfigPage` no era un caso raro: era una muestra.** Ocho botones **azules con halo verde** — el
+fondo decía una cosa y la sombra otra, en el mismo elemento. Y el resultado es peor que no haber
+barrido: un elemento a medio migrar **se ve intencional**.
+
+⚠️ **Por qué se escapa, y no es descuido:** un barrido se escribe buscando **un valor** —`#10b981`—
+y se verifica contando ese valor por **archivo**. Las dos cosas son correctas y ninguna pregunta *en
+qué propiedad estaba*. El que barre mira `background` porque es lo que se ve primero; `boxShadow`,
+`border`, `color`, `outline`, `fill`, `stroke` y los gradientes quedan fuera del campo visual sin que
+nada lo señale.
+
+**LO ACCIONABLE, y es un paso antes de barrer:**
+
+> **Cuando un barrido apunta a un VALOR, enumerá en qué PROPIEDADES aparece ese valor — no sólo en
+> qué archivos.** El inventario del barrido es una tabla de dos ejes, no una lista.
+
+```bash
+# el valor, con la PROPIEDAD que lo usa — no `grep -c` por archivo
+grep -rhoE "[a-zA-Z]+: *[^;,]*(10b981|16, ?185, ?129)[^;,]*" src/ | sed 's/:.*//' | sort | uniq -c
+```
+
+✅ **Verificado por ejecución el 2026-09-04**, corriéndolo contra el árbol de ANTES de las tres
+tandas (`git grep … a612c69 -- src/`), que es donde tenía que discriminar:
+
+```
+     22 boxShadow      <- la propiedad que el barrido original NO cubrió
+     10 background     <- la que sí
+      6 color
+      4 border
+      3 shadow         (dentro de `--shadow-1` y de comentarios)
+```
+
+🔴 **`boxShadow` era MÁS del doble que `background`.** O sea que el barrido no dejó un resto: dejó
+**la mayor parte**, y su censo por archivo daba números que bajaban igual. Ése es el dato que
+convierte esto en criterio y no en impresión.
+
+⚠️ Y el corolario que lo ata al criterio hermano: **son dos ejes independientes y hay que contar los
+tres.** Hexes fuera (valor) · propiedades cubiertas (superficie) · componentes adentro (forma). Un
+cero en cualquiera de los tres **no implica nada sobre los otros dos**, y el registro tiene que decir
+cuál se midió.
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · TODO LO QUE SALE DEL PRODUCTO EN PAPEL O EN ARCHIVO TIENE QUE SER ASEVERABLE SIN UN HUMANO MIRANDO
 
 *Medido el 2026-09-02 quitando el IVA falso del ticket (deuda 62a).*
