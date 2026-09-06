@@ -1,6 +1,21 @@
 # Muscle Pro — catálogo curado para la carga inicial
 
-*Escrito el 2026-09-04, al preparar la carga. **Este archivo es la entrada del script**
+> ⛔ **SUPERADO el 2026-09-06. NO es la entrada de ninguna carga.**
+> Los precios de §5 y §6 —*"el más alto observado"*— **ya no son los del catálogo**: el cruce de
+> `Control_Mp_2.xlsx` los pasó al `Precio Base` del cliente. La entrada vigente es
+> [`docs/muscle-pro-carga-v2.md`](muscle-pro-carga-v2.md), con los **42**; la decisión y su
+> evidencia, [`docs/muscle-pro-catalogo-v2.md`](muscle-pro-catalogo-v2.md).
+>
+> **Se conserva entero y sin corregir**, porque es el registro de qué se cargó el 2026-09-04 y con
+> qué argumento — la historia no se reescribe, se le agrega. Lo que caducó es §3 (*por qué se eligió
+> el alto*): esa pregunta se le hizo al cliente y **la contestó él**, con la regla `costo × 1,15`.
+>
+> ⚠️ `cargar-catalogo.mjs` todavía tiene **este archivo como `--catalogo` por defecto**. Correrlo sin
+> ese argumento no puede escribir precios viejos —los guards abortan: sin `--reanudar` la sede no
+> está vacía, y con `--reanudar` los 25 productos nuevos no están declarados acá— pero el default
+> apunta a un documento superado y hay que pasarle `--catalogo` siempre.
+
+*Escrito el 2026-09-04, al preparar la carga. **Este archivo fue la entrada del script**
 `scripts/cargar-catalogo.mjs`: las tablas de §4 y §5 se parsean, no se leen a ojo.*
 
 ---

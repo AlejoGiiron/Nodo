@@ -94,11 +94,46 @@ necesita uno, será una decisión tomada y fechada, no una herencia asumida.
 
 ## Comportamientos del negocio — NO son bugs, NO "arreglar"
 
-*(Vacío al 2026-08-31 — no hay clientes.)*
-
 Esta sección existe desde el día uno a propósito. Cuando un cliente haga algo que al mirar los
 datos parezca una anomalía y sea en realidad una decisión suya, se anota **acá y antes** de que
 alguna sesión lo "descubra" y proponga arreglarlo. En Vento pasó exactamente eso.
+
+---
+
+### 1 · Muscle Pro · EL PRECIO DE CATÁLOGO ES UN PISO, NO UN PRECIO — y casi ninguna venta sale a ese número
+
+*Anotado el 2026-09-06, con el cruce de `Control_Mp_2.xlsx` (ver `docs/muscle-pro-catalogo-v2.md`).
+**Primera entrada de esta sección, y nace ANTES de que ninguna sesión lo mire.***
+
+**Lo que se va a ver en los datos:** el precio de casi toda línea de venta **no coincide** con el
+`products.price` de su producto. Cuando alguien cruce las dos columnas va a encontrar diferencias
+por todos lados, en las dos direcciones y de hasta un tercio del valor.
+
+**Qué es en realidad:** su precio de catálogo es su `Precio Base` = **`costo × 1,15`**, verificado
+en **55 de 55** ventas del archivo. Ese número es su **regla de margen mínimo**, no su precio de
+venta: es lo mínimo que acepta cobrar. El precio de cada venta lo pone la negociación.
+
+| en el archivo del cliente | |
+|---|---|
+| ventas **por encima** del base | 33 de 55 |
+| ventas **por debajo** del base | 22 de 55 |
+| ventas **exactamente** en el base | ninguna |
+
+⛔ **Lo que NO es, y es la lectura que hay que atajar:** no es un catálogo desactualizado, no es una
+cajera que teclea mal, no es que falte un mecanismo de listas de precios. **Es el negocio.** Vende
+sobre un mostrador, a clientes que conoce, y el precio se acuerda por venta — igual que el crédito,
+que también sale por acuerdo (17 de 55 ventas a 8 clientes).
+
+⚠️ **La consecuencia que hoy no se entiende sin esto: la deuda 94.** La confirmación del ±20%
+(deuda 75) se diseñó para cazar el typo de un dígito, suponiendo que editar el precio fuera raro y
+por poco. Con el catálogo en base, editar es **lo normal**, y hacia arriba: Best Whey base
+**102.350**, vendido a **140.000** = **+37%**. El cartel va a salir en ventas corrientes. Eso es
+deuda **nuestra**, no un comportamiento a corregirle a él.
+
+🔴 **Y la trampa concreta para una sesión futura:** ver el desvío y "arreglarlo" subiendo
+`products.price` al precio observado **destruye el dato**. El base es lo único del archivo que
+tiene una regla verificable detrás; el precio observado es el resultado de una negociación que no
+se repite. Si algún día hace falta un techo, es una **columna nueva**, no pisar el piso.
 
 **No se hereda nada de esta sección de Vento.** Los comportamientos de G-10 y Salchimelo —las
 mesas abiertas usadas como cuenta corriente interna, por ejemplo— son estado de negocio ajeno.
@@ -1697,8 +1732,9 @@ misma**, y hacen falta los dos.
 ---
 ### 🔴 CRITERIO SIN NÚMERO · UN ESTADO QUE AFIRMA UNA PERSONA SE VERIFICA IGUAL QUE UNO QUE AFIRMA UNA HERRAMIENTA
 
-*Quinta aparición al 2026-09-04, contada por quien las produjo: `seed_system_roles` ×2, el token ×2,
-y la `service_role` key. Se escribe con la cuenta porque el número es el argumento.*
+*Sexta aparición al 2026-09-06, contada por quien las produjo: `seed_system_roles` ×2, el token ×2,
+la `service_role` key, y **la suma de control de la carga v2**. Se escribe con la cuenta porque el
+número es el argumento.*
 
 Este archivo ya dice que un objeto aplicado **se verifica contra el catálogo del sistema antes de
 construir encima**. Faltaba la generalización, y es incómoda:
@@ -1712,12 +1748,12 @@ construir encima**. Faltaba la generalización, y es incómoda:
 > distinga, y el que la recibe **construye encima**: despliega, corre, cita el dato, cierra la deuda.
 
 ⚠️ Y el modo de fallo no es que la afirmación sea falsa: es que el trabajo que se apoya en ella
-**avanza igual**. Cinco veces sobre cinco, lo que lo cazó fue **medir antes de usar** —
-`grep` sobre `.env.test`, `mtime` del archivo, un `select` sobre `pg_proc` —, no que quien lo afirmó
-lo revisara.
+**avanza igual**. Todas las veces hasta ahora, lo que lo cazó fue **medir antes de usar** —
+`grep` sobre `.env.test`, `mtime` del archivo, un `select` sobre `pg_proc`, **reproducir el número
+por otro camino** —, no que quien lo afirmó lo revisara.
 
 🔴 **LO ACCIONABLE, y es lo que hace útil el criterio: no es «que la otra parte tenga más cuidado».**
-Eso ya falló las cinco veces, y pedirlo otra vez es pedir el mismo mecanismo que viene fallando. Es
+Eso ya falló todas las veces, y pedirlo otra vez es pedir el mismo mecanismo que viene fallando. Es
 que el **receptor** trate la afirmación como lo que es —una hipótesis fechada— y corra el comando de
 un renglón antes de apoyarse en ella:
 
@@ -1732,8 +1768,47 @@ cualquier verde de la suite — ninguno se cree sin correrlo, y nadie lo toma co
 estado afirmado por una persona **no es una fuente distinta**: es una declaración, y las
 declaraciones no ejecutan (corolario de R4).
 
-✅ El caso del día: *«E2E_SERVICE_ROLE_KEY puesta en .env.test»*. El archivo tenía **cuatro claves y
-un mtime de tres días antes**. Costó un `grep` no construir encima.
+✅ El caso del 2026-09-04: *«E2E_SERVICE_ROLE_KEY puesta en .env.test»*. El archivo tenía **cuatro
+claves y un mtime de tres días antes**. Costó un `grep` no construir encima.
+
+🔴 **LA SEXTA ES LA MÁS GRAVE, Y POR UNA RAZÓN QUE INVIERTE EL CRITERIO: LO AFIRMADO NO ERA UN
+ESTADO, ERA EL INSTRUMENTO.** *2026-09-06, la carga v2 del catálogo de Muscle Pro.*
+
+La suma de control de los 42 precios se afirmó en **3.921.096**, escrita sin calcular. El valor es
+**3.540.688**.
+
+> **Las cinco anteriores afirmaban un estado y fallaban ABRIENDO: el trabajo avanzaba sobre algo que
+> no estaba. Ésta afirmaba el VERIFICADOR, y falla CERRANDO — habría hecho fallar una carga
+> correcta.**
+
+⚠️ **Y por eso es peor, no mejor, que falle cerrado.** Un rojo dirige a arreglar lo que está rojo, y
+lo que estaba rojo eran **las 42 filas del catálogo**, que estaban bien. La reacción natural ante una
+suma que no cierra es **tocar los datos hasta que cierre** — o sea *editar la lista de un tripwire
+para que pase*, que este archivo ya nombra como el movimiento equivocado. La diferencia es que acá
+la lista es el catálogo de un cliente, y el resultado habría sido **precios inventados en producción
+para satisfacer un número que nadie calculó**.
+
+🔴 **Y no hay nada río abajo que lo cace, por construcción: una suma de control es la última red.**
+Todo lo demás —el parser con round-trip, el cruce fila por fila, la relectura de la base— se compara
+**contra ella**. Un verificador falso no lo desmiente ninguno de los verificadores que verifica.
+
+✅ **LO QUE LA CAZÓ, y es la tercera técnica de la tabla de fallas de instrumento —cruzar contra un
+número que ya conocías—, aplicada a un número que venía de una persona:** se reprodujo por dos
+caminos independientes, con dos parsers distintos sobre dos documentos distintos, y las partes
+cierran entre sí:
+
+```
+1.406.105   (los 17, tabla del cruce, leída por actualizar-precios.mjs)
+2.134.583   (los 25 nuevos)
+─────────
+3.540.688   (los 42, tabla de la carga, leída por cargar-catalogo.mjs)
+```
+
+⚠️ **Lo accionable que agrega sobre las cinco primeras:** un número que va a **decidir si algo pasa o
+falla** no se acepta afirmado, ni siquiera de quien conoce los datos. Es *un número sin comando es
+una opinión con dígitos* leído sobre el instrumento en vez de sobre el dato — y la forma de
+verificarlo no es recalcularlo igual, es **descomponerlo**: que las partes cierren con el total es
+una segunda medición, recalcular por el mismo camino es la misma.
 
 ---
 

@@ -63,4 +63,7 @@ vite.config.ts.timestamp-*.mjs
 # `Control Mp.xlsx` nombra a 11 clientes reales de Muscle Pro (PII de terceros).
 # Una vez en el historial de GitHub no se saca sin reescribir todos los commits.
 docs/Control Mp.xlsx
+# `Control Mp 2.xlsx` (2026-09-06) nombra a 20 clientes reales: MAS PII que el
+# primero, no menos. Mismo trato, y por la misma razon irreversible.
+docs/Control Mp 2.xlsx
 docs/PLAN-2026-09-02.md
