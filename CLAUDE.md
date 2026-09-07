@@ -3599,6 +3599,41 @@ falsa. El estado es lo que se pudre, así que se escribe distinto.
   skill y en este archivo: los tres lados de esa decisión llevan la marca, porque un solo lado
   marcado es otra vez un par contradictorio.
 
+- 🔴 **UNA CONCESIÓN CUYO MOTIVO CADUCÓ — ES ESTADO PODRIDO, Y NO TIENE SÍNTOMA.** *2026-09-07,
+  decidiendo la deuda 99.*
+
+  Las formas de estado podrido que este archivo ya tiene son **afirmaciones falsas**: una nota que
+  dice un número viejo, una garantía que ya no se sostiene, una razón que murió. Ésta es distinta:
+
+  > **No hay ninguna afirmación falsa. Lo que caducó es una CONCESIÓN** — un campo opcional, una
+  > excepción, un parámetro con default, una rama de compatibilidad— **y su motivo desapareció sin
+  > que la concesión desapareciera con él.**
+
+  **El caso.** `create-user` aceptaba `role_id` **opcional**, con su razón escrita al lado: *«por
+  compatibilidad con llamantes viejos»*. Al enumerarlos aparecieron **cuatro consumidores y los
+  cuatro lo mandaban**. Y más atrás: el alta en **dos pasos** que justificaba la opcionalidad **ya
+  se había retirado**, con su diagnóstico escrito en `useUsers.ts`. **El caso de negocio murió y la
+  concesión le sobrevivió sola.**
+
+  🔴 **POR QUÉ NO TIENE SÍNTOMA, y es lo que la separa de las otras formas:** una nota falsa se
+  puede leer y desmentir. **Una firma opcional FUNCIONA PERFECTAMENTE** — no falla, no avisa, no
+  hay nada que contradecir. Sólo se manifiesta el día que alguien la usa mal, y entonces el defecto
+  no aparece donde está la concesión sino lejos: acá, una cuenta que **entra y no puede hacer
+  nada**, con el síntoma *«no me deja»*.
+
+  ⚠️ Y el precedente medido: **un spec nuevo tropezó con esto en su primer uso** —hubo que pasarle
+  `role_id` explícito para que su cuenta desechable sirviera—. La concesión no es neutral: **invita
+  al error que la deuda describe**.
+
+  **LO ACCIONABLE, y es un grep:**
+
+  > **Cuando algo sea opcional «por compatibilidad», enumerá los llamantes. Si no hay ninguno, la
+  > compatibilidad es con el pasado — y el pasado no llama.**
+
+  ⚠️ Y la pregunta hermana, para cuando sí haya llamantes: **¿el caso de negocio que justificó la
+  concesión sigue existiendo?** Acá la respuesta estaba escrita en un comentario del propio repo, y
+  era que no. Una concesión se hereda con su motivo o no se hereda.
+
 - **UNA NOTA QUE DIRIGE MAL CUESTA MÁS QUE UNA AUSENTE.** Las dos peores del documento no eran
   omisiones: describían código eliminado y una relación de ramas invertida. Si no podés verificar
   una afirmación, no la escribas como hecho.

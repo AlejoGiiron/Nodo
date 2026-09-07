@@ -899,8 +899,12 @@ export const createUser = (params: {
   full_name: string
   /** Rol enum legacy que consume el trigger handle_new_user. */
   role: 'admin' | 'cashier'
-  /** Rol RBAC. Lo asigna la propia Edge Function, en el mismo request. */
-  role_id: string | null
+  /**
+   * Rol RBAC. Lo asigna la propia Edge Function, en el mismo request.
+   * 🔴 NO admite null desde el 2026-09-07 (deuda 99): una cuenta sin rol entra
+   *    y no puede hacer nada. La Edge Function lo rechaza con 400.
+   */
+  role_id: string
   sede_id: string
 }) => supabase.functions.invoke('create-user', { body: params })
 

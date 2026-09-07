@@ -49,8 +49,11 @@ export function useUsers() {
       full_name: string
       /** Rol enum legacy que requiere la Edge Function / trigger handle_new_user. */
       enumRole: 'admin' | 'cashier'
-      /** Rol RBAC (roles.id). Lo asigna la Edge Function, no el navegador. */
-      roleId: string | null
+      /**
+       * Rol RBAC (roles.id). Lo asigna la Edge Function, no el navegador.
+       * 🔴 Obligatorio (deuda 99): sin rol la cuenta entra y no puede hacer nada.
+       */
+      roleId: string
     }) => {
       // UN SOLO PASO. Antes esto eran dos: crear la cuenta y, después, un
       // updateProfile del role_id desde el navegador. Si ese segundo paso fallaba

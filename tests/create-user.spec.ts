@@ -166,6 +166,37 @@ test('llamante DESACTIVADO → 403 con el mensaje de is_active', async () => {
   }
 })
 
+// ── deuda 99 · role_id OBLIGATORIO ──────────────────────────────────────────
+// Antes era opcional «por compatibilidad con llamantes viejos». Al enumerarlos
+// apareció que no hay ninguno: los cuatro consumidores lo mandan. Y una cuenta
+// sin `role_id` ENTRA y no puede hacer nada — `has_permission` da falso para
+// todo y RLS rechaza cada escritura con 0 filas y NINGÚN error. Es peor que no
+// poder crearla: el usuario ve la app entera y todo le falla sin mensaje.
+test('🔴 SIN role_id → 400, y NO queda cuenta que entre sin poder hacer nada', async () => {
+  const email = `e2e-cu-norol-${SUFFIX}@nodo.test`
+  const { status, body } = await llamar(await tokenDe(owner), {
+    email,
+    password: NUEVO_PASS,
+    full_name: 'Sin Rol',
+    role: 'cashier',
+    sede_id: SEDE,
+    // role_id ausente a propósito — es el sujeto del caso.
+  })
+
+  expect(status).toBe(400)
+  // El mensaje NOMBRA el campo y la razón: un 400 genérico manda a adivinar.
+  expect(String(body?.error)).toMatch(/role_id/i)
+
+  // 🔴 LA MITAD QUE IMPORTA, y sin ella el caso pasa con la función vieja:
+  //    la vieja devolvía 200 y DEJABA la cuenta creada. Comprobar sólo el
+  //    status verificaría el código HTTP; esto verifica que no quedó el
+  //    usuario roto que la deuda describe.
+  expect(
+    await puedeLoguear(email, NUEVO_PASS),
+    'quedó una cuenta que entra y no puede hacer nada: es exactamente la deuda 99',
+  ).toBe(false)
+})
+
 test('role_id inexistente → 400 y NO queda cuenta colgada', async () => {
   const email = `e2e-cu-bad-${SUFFIX}@nodo.test`
   const { status, body } = await llamar(await tokenDe(owner), {

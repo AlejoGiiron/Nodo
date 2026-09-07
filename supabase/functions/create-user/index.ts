@@ -66,12 +66,26 @@ serve(async (req) => {
     if (permErr) return json({ error: 'No se pudo verificar el permiso' }, 403)
     if (!puede) return json({ error: 'Se requiere el permiso usuarios.gestionar' }, 403)
 
-    // Parsea y valida el cuerpo. `role_id` (RBAC) es opcional por compatibilidad
-    // con llamantes viejos, pero la UI siempre lo manda.
+    // Parsea y valida el cuerpo.
+    //
+    // 🔴 `role_id` ES OBLIGATORIO desde el 2026-09-07 (deuda 99). ANTES era
+    //    opcional «por compatibilidad con llamantes viejos», y al enumerarlos
+    //    aparecio que NO HAY NINGUNO: los cuatro consumidores lo mandan. La
+    //    concesion sobrevivio a su motivo.
+    //
+    // ⚠️ Lo que se cerraba: sin `role_id` el perfil queda con el enum legacy
+    //    `role` y SIN rol RBAC, y quien concede permisos es `role_id`. La cuenta
+    //    ENTRA y no puede hacer nada: `has_permission` da falso para todo y RLS
+    //    rechaza cada escritura con 0 filas y NINGUN error. Es peor que no poder
+    //    crearla — el usuario ve la app entera y todo le falla sin mensaje.
+    //    Fail-closed: sin rol no se crea la cuenta.
     const { email, password, full_name, role, role_id, sede_id } = await req.json()
 
     if (!email || !password || !full_name || !role || !sede_id)
       return json({ error: 'Faltan campos requeridos' }, 400)
+
+    if (!role_id)
+      return json({ error: 'Falta role_id: una cuenta sin rol no puede hacer nada' }, 400)
 
     if (password.length < 8)
       return json({ error: 'La contraseña debe tener mínimo 8 caracteres' }, 400)
@@ -128,7 +142,7 @@ serve(async (req) => {
     // queda solo para el fallo genuino del UPDATE (raro), no para el caso comun.
     // Cross-org: el rol DEBE pertenecer a la organización del llamante. La UI
     // solo lista los de su org, pero la Edge Function es un endpoint directo.
-    if (role_id) {
+    {
       const { data: rol, error: rolErr } = await admin
         .from('roles')
         .select('id, organization_id')
