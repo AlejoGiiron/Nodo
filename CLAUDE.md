@@ -135,6 +135,41 @@ deuda **nuestra**, no un comportamiento a corregirle a él.
 tiene una regla verificable detrás; el precio observado es el resultado de una negociación que no
 se repite. Si algún día hace falta un techo, es una **columna nueva**, no pisar el piso.
 
+---
+
+### 2 · Muscle Pro · LOS COSTOS DEL HISTÓRICO Y LOS DE LAS COMPRAS NUEVAS NO SON COMPARABLES — y la caída de margen en el corte va a parecer del negocio
+
+*Anotado el 2026-09-06, al medir el 16% de su cotización (ver `docs/historico-muscle-pro-enumeracion.md` §9).
+Nace ANTES de que exista el dato que va a producir la anomalía.*
+
+**Lo que se va a ver en los datos, en algún reporte de utilidades futuro:** el margen **cae** de un
+período al siguiente, sin que haya cambiado ni el precio ni el proveedor. La caída va a estar
+alrededor del corte entre el histórico cargado y la operación real.
+
+**Qué es en realidad:** **un cambio de método, no del negocio.**
+
+| | costo que lleva la línea |
+|---|---|
+| histórico cargado (44 compras) | **lo que él anotó**, y sabemos que incluye *algo*: de GMN, un 16%; de los otros cinco proveedores, no se sabe |
+| compras nuevas, cuando se pague la deuda 98 | el costo **con el IVA que realmente le cobran** |
+
+🔴 **Y no es que el histórico esté mal cargado: es que su archivo no dice qué incluye cada costo.**
+De GMN se midió que lleva `× 1,16` en 14 de 14 líneas. De Venom, Vida Fit, Anaboli, Gomeisa y
+Mutantes, los costos son enteros redondos y **no muestran aritmética**: pueden traer IVA adentro o
+no, y no hay forma de saberlo desde el archivo.
+
+⛔ **Lo que NO hay que hacer, y es la reacción natural:** «normalizar» los costos del histórico
+sumándoles un IVA estimado para que sean comparables. Eso **inventa un dato** sobre 44 compras
+reales y lo congela en las utilidades de 55 ventas. El histórico se cargó **tal cual el archivo**,
+por decisión del cliente, y esa decisión es la correcta: *sus costos incluyen lo que incluyan, y
+nosotros no sabemos qué.*
+
+✅ **Lo que sí corresponde cuando aparezca la anomalía:** decir que el corte es de método, señalar la
+fecha exacta del corte, y **no comparar márgenes a través de él**. Es el mismo criterio de *la
+historia no se reescribe, se le agrega*.
+
+---
+
 **No se hereda nada de esta sección de Vento.** Los comportamientos de G-10 y Salchimelo —las
 mesas abiertas usadas como cuenta corriente interna, por ejemplo— son estado de negocio ajeno.
 

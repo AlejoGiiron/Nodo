@@ -185,26 +185,26 @@ otra.** Es la misma forma que la dependencia con la 97.
 Si la 97 se arregla —`closed_at` inmutable— **la reconstrucción pierde el único camino** para dejar
 las jornadas con su fecha real. Anotado en las dos puntas.
 
-### ⛔ Pregunta que bloquea: «Compra Gmn» está en la hoja de GASTOS
+### ✅ RESUELTO · «Compra Gmn» es la MISMA factura → **7 gastos, no 8**
 
 | dónde | concepto | monto |
 |---|---|---|
-| hoja `Gasto` | `Compra Gmn` | **5.049.000** |
-| hoja `Compra de inventario` | factura GMN del 04-sep | **4.916.773** |
+| hoja `Gasto` | `Compra Gmn` | 5.049.000 |
+| hoja `Compra de inventario` | factura GMN del 04-sep | 4.916.773 |
 
-**Parece la misma compra anotada dos veces, en dos hojas y con dos montos.** Es la conflación que la
-deuda 63 corrige, otra vez en el archivo real. **Cargar las dos contaría la compra dos veces** y
-dejaría el flujo de caja con 5.049.000 de más.
+**Confirmado por el cliente: es la misma.** La línea de gastos **se descarta** y la compra entra como
+compra. Cargar las dos habría contado 5.049.000 dos veces.
 
-**Recomendación:** cargar **la factura** y **no** el gasto, o sea **7 gastos y no 8** — pero es una
-pregunta para el cliente, no una decisión nuestra: puede ser que el gasto incluya algo que la
-factura no tiene (un flete, un anticipo). **La diferencia son 132.227 y él sabe qué es.**
+✅ **Y la diferencia de 132.227 quedó explicada al medir Hoja1** (enumeración §9): son los **3 puntos
+entre el 16% que la cotización calcula y el 19% que pagó** —`4.238.597 × 0,03 = 127.158`— más unos
+5.070 de redondeo entre el total calculado y el redondo que anotó como gasto. **No era un flete ni
+un anticipo: era la tasa.**
 
-### ⛔ Pregunta que NO bloquea la carga pero sí la cartera: los plazos
+### ✅ RESUELTO · plazo de crédito: **15 días** en las 9 ventas a crédito
 
-Las 9 ventas a crédito necesitan `plazo_dias`, que se **congela en la venta**. **El archivo no trae
-plazo de pago por cliente ni por venta.** Sin ese dato la cartera se carga sin vencimiento —los
-saldos son correctos, la antigüedad no se puede calcular—. Hay que preguntarle a cuántos días fía.
+**Confirmado por el cliente**, ya no es un supuesto. Se escribe en `orders.plazo_dias`, que **se
+congela en la venta** (deuda 46): la cartera lo lee de ahí y no del cliente, así que cambiarle el
+plazo mañana no mueve el vencimiento de estas nueve.
 
 ---
 

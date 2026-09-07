@@ -485,7 +485,79 @@ números tecleados a mano que ya no cuadran con sus propias hojas.
 
 ---
 
-## 9 · Residuo de las mediciones
+## 9 · El 16% de «Hoja1» — medido, y el archivo trae DOS tasas distintas
+
+*Enumerado el 2026-09-06 porque de esto dependía si había que rehacer el precio de 25 productos.*
+
+### ✅ La respuesta corta: el 16% YA ESTABA ADENTRO. No hay que rehacer nada.
+
+**14 de 14** costos de GMN en la hoja de compras son exactamente `base × 1,16`:
+
+```
+SUPER MEGA GAINER 2L   37.218 × 1,16 =  43.172,88   ← el costo cargado
+BI ONE 3L             168.706 × 1,16 = 195.698,96   ← el costo cargado
+CREATINA 100 GR        20.319 × 1,16 =  23.570,04   ← el costo cargado
+…14 de 14 ✅
+```
+
+Y el `Costo ref.` con el que calculamos el precio de esos 25 es **ese mismo número**. O sea que
+`precio = costo(con 16%) × 1,15`: **la misma regla que el resto del catálogo, aplicada al costo que
+él anotó.** Los precios quedan como están.
+
+### Cómo está armada Hoja1
+
+Es una **cotización de GMN**, no una factura. Por fila: `C` = precio con 40% de descuento, `D` = ese
+mismo con 5% más (`D = C × 0,95`), `E` = cantidad, `F = D × E`, `G = 0,16`, `H = F × G`, `I = F + H`.
+
+### 🔴 Y acá está lo que ninguna hipótesis contemplaba: el archivo trae DOS tasas
+
+| celda | qué es | valor | tasa sobre el subtotal |
+|---|---|---|---|
+| `F16` | subtotal, sin nada | 4.238.597 | — |
+| `H16` | **calculado por fórmula** | 678.175,52 | **16,0000%** |
+| `I16` = `F16+H16` | **= la factura GMN de la hoja de compras** | **4.916.772,52** | 16% |
+| `H17` | **escrito a mano** | 805.334 | 🔴 **19,0000%** |
+| `J16` | **escrito a mano** | 5.043.936 | 🔴 **19,000%** (`F16 × 1,19` + 5,57 de redondeo) |
+| gasto «Compra Gmn» | escrito a mano | 5.049.000 | 19,12% |
+
+> **La cotización calcula 16% y el pago real fue 19%.** Los dos números están en la misma hoja, uno
+> por fórmula y otro tecleado al lado.
+
+✅ **Y eso explica los 132.227 que no cerraban:** los 3 puntos entre 16 y 19 son
+`4.238.597 × 0,03 = 127.158`. El resto —unos 5.070— es la diferencia entre el `J16` calculado y el
+redondo `5.049.000` que anotó como gasto.
+
+⚠️ **El 16% no es un IVA colombiano vigente: fue la tasa general hasta 2016**, y desde 2017 es 19%.
+El archivo no dice qué es —la columna `G` no tiene encabezado, sólo el número—, así que **puede ser
+una plantilla vieja de GMN o un descuento comercial que coincide con la tasa vieja**. Eso lo contesta
+el cliente, no el archivo.
+
+### Consecuencia concreta sobre el margen de esos 25
+
+Si el costo real es `base × 1,19` y el precio de lista es `base × 1,16 × 1,15`:
+
+```
+1,16 × 1,15 = 1,3340        →  1,3340 / 1,19 = 1,1210
+```
+
+**Su piso de margen en esos 25 productos no es 15%: es 12,1%.** No porque el precio esté mal
+calculado, sino porque **la base sobre la que lo calculó es 3 puntos más baja de lo que pagó**.
+
+### ¿Y los otros 5 proveedores? — no se puede saber desde el archivo
+
+| proveedor | líneas | costos |
+|---|---|---|
+| GMN | 14 | **con decimales**, y los decimales salen exactamente de `× 1,16` |
+| Venom · Vida Fit · Anaboli · Gomeisa · Mutantes | 30 | **enteros redondos** (120.000 · 75.000 · 17.000 · 7.300…) |
+
+Un costo redondo es un precio acordado a mano y **no muestra su aritmética**: puede incluir IVA o
+no, y el archivo no lo dice. **Los costos NO son verificablemente consistentes entre proveedores** —
+de uno sabemos que lleva 16% adentro y de los otros cinco no sabemos nada. Es la pregunta que va con
+la deuda 98.
+
+---
+
+## 10 · Residuo de las mediciones
 
 Ninguna tabla tiene policy de `DELETE`, así que lo que una sonda escribe **no se puede borrar**.
 
