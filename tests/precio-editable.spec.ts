@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { loginAsOwner, ownerCreds } from './helpers/auth'
@@ -56,12 +56,28 @@ let CATALOGO = 0        // el precio de lista de POS_PRODUCTO
 let PRODUCTO_ID = ''
 
 /** Última orden de la sede, para leer lo que realmente se persistió. */
-async function ultimaOrden() {
+/**
+ * La orden que ESTE caso acaba de cobrar, nombrada por su número.
+ *
+ * 🔴 ANTES ERA «la última orden por created_at» y eso es una APUESTA a que nadie
+ *    más escriba después (deuda 100). Se pagó: una sonda dejó una orden fechada
+ *    MAÑANA, pasó a ser la más nueva del lab, y este spec murió con
+ *    `Cannot read properties of undefined (reading 'unit_price')` — la sonda no
+ *    tiene líneas. El síntoma no nombraba ni fechas ni sondas.
+ *
+ * ✅ El equivalente del testid, en una consulta, es un valor DEL PROPIO FLUJO:
+ *    el correlativo que el producto acaba de mostrar.
+ */
+async function ordenDelFlujo(page: Page) {
+  const texto = await page.getByText(/Venta #\d+ registrada/).innerText()
+  const m = /Venta #(\d+)/.exec(texto)
+  // Sin número no hay fallback: cualquiera vuelve a «la última».
+  expect(m, `el aviso de venta registrada no trae correlativo: «${texto}»`).not.toBeNull()
   const { data, error } = await db.from('orders')
     .select('id, total, discount_amount, order_items(product_id, qty, unit_price)')
     .eq('sede_id', SEDE)
-    .order('created_at', { ascending: false })
-    .limit(1).single()
+    .eq('order_number', Number(m![1]))
+    .single()
   if (error) throw error
   return data
 }
@@ -115,7 +131,7 @@ test('🔴 el precio de la línea se edita, manda el total, y es el que se persi
   await cobrarCon(page, 'nequi')
   await expect(page.getByText(/Venta #\d+ registrada/)).toBeVisible({ timeout: 15_000 })
 
-  const orden = await ultimaOrden()
+  const orden = await ordenDelFlujo(page)
   const linea = (orden.order_items as { product_id: string; qty: number; unit_price: number }[])
     .find((i) => i.product_id === PRODUCTO_ID)!
   expect(

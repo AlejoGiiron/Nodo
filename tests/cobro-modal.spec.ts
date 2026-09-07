@@ -69,12 +69,29 @@ async function loQueQuedo(orderId: string) {
   }
 }
 
-/** La última orden numerada de la sede — la que se acaba de cobrar. */
-async function ultimaOrden(): Promise<string> {
+/**
+ * La orden que ESTE caso acaba de cobrar, nombrada por su número.
+ *
+ * 🔴 ANTES ERA «la última orden numerada de la sede» —`order by created_at desc
+ *    limit 1`— y eso es una APUESTA a que nadie más escriba después (deuda 100).
+ *    Se pagó: una sonda dejó una orden fechada MAÑANA y pasó a ser la más nueva
+ *    del lab; cuatro specs murieron al día siguiente con un mensaje que no
+ *    nombraba nada de lo que lo causó.
+ *
+ * ✅ Es la misma clase que un locator posicional del DOM, pero en una CONSULTA:
+ *    no hay contenedor que acotar ni testid que poner. El equivalente del testid
+ *    es nombrar la fila por un valor DEL PROPIO FLUJO — el correlativo que el
+ *    producto acaba de mostrar en pantalla.
+ */
+async function ordenDelFlujo(page: Page): Promise<string> {
+  const texto = await page.getByTestId('success-order-number').innerText()
+  const m = /Venta #(\d+)/.exec(texto)
+  // Sin número el caso NO puede seguir: cualquier fallback vuelve a «la última»,
+  // que es exactamente la apuesta que este helper existe para no hacer.
+  expect(m, `la pantalla de éxito no muestra un correlativo: «${texto}»`).not.toBeNull()
   const { data, error } = await db
     .from('orders').select('id')
-    .eq('sede_id', SEDE).not('order_number', 'is', null)
-    .order('created_at', { ascending: false }).limit(1).single()
+    .eq('sede_id', SEDE).eq('order_number', Number(m![1])).single()
   if (error) throw error
   return data.id as string
 }
@@ -173,7 +190,7 @@ test('🔴 la venta simple queda en la base: total, pago y estado', async ({ pag
   await expect(page.getByTestId('success-order-number').or(page.getByTestId('success-sin-numero')))
     .toBeVisible({ timeout: 20_000 })
 
-  const quedo = await loQueQuedo(await ultimaOrden())
+  const quedo = await loQueQuedo(await ordenDelFlujo(page))
   expect(quedo.total, 'el total lo deriva el servidor de las líneas (deuda 80)').toBe(8_000)
   expect(quedo.pagos, 'una fila de pago, con su método y su monto')
     .toEqual([{ metodo: 'cash', monto: 8_000 }])
@@ -427,7 +444,7 @@ test('🔴 el reparto queda en la base FILA POR FILA, no sólo su total', async 
   await expect(page.getByTestId('success-order-number').or(page.getByTestId('success-sin-numero')))
     .toBeVisible({ timeout: 20_000 })
 
-  const quedo = await loQueQuedo(await ultimaOrden())
+  const quedo = await loQueQuedo(await ordenDelFlujo(page))
   expect(quedo.pagos.length, 'el escenario TIENE que tener dos filas, o no mide nada').toBe(2)
   expect(
     quedo.pagos,
@@ -544,7 +561,7 @@ test('🔴 PLAZO CONGELADO: cambiarle el plazo al cliente NO mueve la venta ya h
   await expect(page.getByTestId('success-order-number').or(page.getByTestId('success-sin-numero')))
     .toBeVisible({ timeout: 20_000 })
 
-  const ordenId = await ultimaOrden()
+  const ordenId = await ordenDelFlujo(page)
   const plazoDe = async (id: string) =>
     (await db.from('orders').select('plazo_dias').eq('id', id).single()).data!.plazo_dias
   expect(await plazoDe(ordenId), 'la venta guarda el plazo pactado').toBe(15)
@@ -580,7 +597,7 @@ test('🔴 la venta a crédito queda pendiente, SIN pago y con su plazo', async 
   await expect(page.getByTestId('success-order-number').or(page.getByTestId('success-sin-numero')))
     .toBeVisible({ timeout: 20_000 })
 
-  const quedo = await loQueQuedo(await ultimaOrden())
+  const quedo = await loQueQuedo(await ordenDelFlujo(page))
   expect(quedo.estadoDePago, 'a crédito la orden queda pendiente de pago').toBe('pending')
   expect(quedo.pagos, 'y NO registra pago: no entró dinero a la caja').toEqual([])
   expect(quedo.total, 'el total se deriva igual: la mercancía salió').toBe(8_000)

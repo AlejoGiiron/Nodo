@@ -4054,8 +4054,9 @@ tiene que ser cierto acá — que **exista**, que se **vea**, que haya **uno**, 
 igual**. Si la respuesta es *"uno duplicado"*, *"uno del tamaño equivocado"* o *"uno en el estado
 equivocado"*, la aserción está midiendo la existencia y afirmando otra cosa.
 
-**🔴 UN LOCATOR QUE NO PUEDE NOMBRAR *QUÉ* INSTANCIA QUIERE ESTÁ APOSTANDO A QUE SIEMPRE HAYA UNA.**
-*Ya es clase: tres casos, en tres instrumentos distintos, todos rotos por lo mismo.*
+**🔴 UN LOCATOR QUE NO PUEDE NOMBRAR *QUÉ* INSTANCIA QUIERE ESTÁ APOSTANDO A QUE SIEMPRE HAYA UNA
+— Y LA APUESTA NO VIVE SÓLO EN EL DOM: TAMBIÉN EN UNA CONSULTA.**
+*Los casos de la tabla, en instrumentos distintos, todos rotos por lo mismo.*
 
 > **La unicidad es una propiedad del PRODUCTO, no del test.** Un locator que se apoya en ella no
 > declara esa dependencia en ninguna parte — así que el día que el producto gana una segunda
@@ -4067,6 +4068,7 @@ equivocado"*, la aserción está midiendo la existencia y afirmando otra cosa.
 | `getByTestId('product-card').first()` en `pos.spec` | que el primer producto del POS fuera **siempre el mismo** | otro spec dejó activo un producto que ordena antes → cinco casos con total cero (deuda 67) |
 | `getByText('Historial').last()` en el script de captura de A6 | que el rótulo apareciera **una sola vez** | el panel de Clientes tenía un encabezado con el mismo texto → **capturó otra pantalla, sin error** |
 | `getByText('Efectivo', { exact: true })` en el bucle de los 4 métodos de `pos.spec` | ídem la primera fila | ídem — **y la nota que explicaba esta clase estaba TRES LÍNEAS ARRIBA, en el mismo test** |
+| 🔴 `.order('created_at').limit(1)` — **«la última orden»**, en `precio-editable`, `cobro-modal`, `descuento` y `pago-mixto` | que **nada más escriba una orden** en el lab después del caso | una **sonda mía** dejó una orden fechada **mañana**: pasó a ser la más nueva y los cuatro murieron con *«undefined leyendo unit_price»* |
 
 ⚠️ **Los tres funcionaron durante meses**, y ésa es la parte que los hace clase y no descuidos: no
 se rompen al escribirlos, se rompen cuando el producto crece. Y los tres fallan **distinto** —uno
@@ -4080,6 +4082,36 @@ del mismo componente, el testid lleva **prefijo** — como `pay-method-*` (el mo
 
 ⚠️ Y el corolario para cuando aparezca la segunda instancia: **no se arregla agregando `.first()`**.
 Eso conserva la apuesta y la esconde mejor.
+
+🔴 **LA QUINTA SUBE LA CLASE A LA BASE, Y POR ESO NINGUNO DE LOS REMEDIOS DE ARRIBA APLICA.**
+*2026-09-07, al cerrar la deuda 94.*
+
+Las cuatro primeras apuestan sobre el **DOM**, y se arreglan **acotando**: por contenedor, por
+testid, con prefijo. La quinta apuesta sobre una **consulta**:
+
+```ts
+.from('orders').order('created_at', { ascending: false }).limit(1)   // «la última orden»
+```
+
+> **No hay contenedor que acotar ni testid que poner: la unicidad que se supone es que NADIE MÁS
+> ESCRIBA DESPUÉS.** Y en un laboratorio compartido eso no se sostiene — alcanza una sonda, un seed,
+> una corrida en paralelo o una fila con la fecha rara.
+
+✅ **El equivalente del testid, acá, es nombrar la fila por un valor DEL PROPIO FLUJO:** el **número
+de orden**, que el caso ya conoce **porque el producto se lo mostró** (*«Venta #N registrada»*). Deja
+de ser «la última que haya» y pasa a ser «la que yo acabo de crear».
+
+🔴 **Y lo que la hace peor que las cuatro anteriores es la DISTANCIA entre causa y síntoma:**
+
+| | |
+|---|---|
+| en el tiempo | la sonda se escribió **un día antes** |
+| en la superficie | reventaron **cuatro specs a la vez** |
+| en el tema | **ninguno hablaba de fechas** — el rojo decía *«undefined leyendo unit_price»* en un spec de precios |
+
+⚠️ Las del DOM fallan **donde y cuando** se toca el producto. Ésta falla en cuatro archivos ajenos,
+al día siguiente, con un mensaje que no nombra nada de lo que la causó. **Por eso no se encuentra
+buscando: se encuentra sabiendo que la clase existe.**
 
 🔴 **EL CUARTO CASO ES EL QUE MÁS ENSEÑA, PORQUE LA LECCIÓN ESTABA ESCRITA EN EL MISMO TEST.**
 *2026-09-03.* `pos.spec` tenía, textual, esta nota sobre el rótulo `Total a cobrar`:
@@ -4558,6 +4590,39 @@ Ninguna verificación lo buscaba, así que sin esa impresión accidental el defe
 **Una fila cargada que ninguna pantalla muestra es, para el cliente, una fila que no se cargó.**
 
 ✅ Sumado al cargador: asevera que las 30 tengan número y que no haya duplicados.
+
+---
+
+### 🔴 CRITERIO SIN NÚMERO · UNA SONDA QUE ESCRIBE NECESITA SU LIMPIEZA EN EL MISMO TURNO
+
+*Segunda vez que una medición de enumeración deja algo vivo en el lab. La primera fueron tres
+órdenes de sonda anuladas (2026-09-06); la segunda, una de ellas **fechada en el futuro**, que un
+día después rompió cuatro specs.*
+
+> **Una sonda es código que escribe en la base para contestar UNA pregunta. Contestada la pregunta,
+> la fila sigue ahí — y ya no es evidencia: es un habitante del lab.**
+
+⚠️ **El problema no es dejar residuo: es dejarlo DONDE ALGO LO VA A TOMAR.** Las tres órdenes
+anuladas del 2026-09-06 no molestaron a nadie —quedaron con `cancelled_at`, fuera de los filtros—.
+La que rompió todo fue la única fechada **mañana**: se volvió *la más nueva del lab*, que es
+exactamente el rango que cuatro specs consultan.
+
+🔴 **Y la fecha futura no fue un descuido: era el SUJETO de la medición.** La sonda existía para
+comprobar que `orders` acepta fechas futuras (deuda 96). O sea que **el valor que hacía valiosa a la
+sonda es el mismo que la volvió tóxica** — y por eso no alcanza con «tener cuidado con los datos
+raros»: el dato raro era el punto.
+
+**LO ACCIONABLE, y son dos, en este orden:**
+
+1. **La limpieza va en el MISMO turno que la sonda**, no en una pasada posterior. Una sonda que
+   escribe y no limpia es una sonda a medio escribir.
+2. 🔴 **Si la tabla no tiene `DELETE` —y acá ninguna lo tiene—, la fila tiene que quedar FUERA del
+   rango que cualquier consumidor pueda tomar.** Anular no alcanza por sí solo: hay que preguntarse
+   *por qué campo la van a buscar*. Si es por fecha, la fila **no puede quedar en un extremo**;
+   fechada al futuro está en el peor lugar posible, porque es el extremo que todos consultan.
+
+⚠️ Corolario para escribir la sonda: preguntá **qué consulta va a devolver esta fila mañana**. Si la
+respuesta es «la de cualquiera que pida la última», la sonda necesita otra fecha o no debe existir.
 
 ---
 
