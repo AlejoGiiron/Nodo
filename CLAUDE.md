@@ -4133,6 +4133,34 @@ justamente en la parte del producto que sabíamos que iba a moverse.
 ✅ **Barrido en la misma pasada (R3):** un `data-testid="producto-nombre"` en el campo y los diez
 migrados juntos — cero menciones restantes, verificado por conteo. Arreglar sólo el spec que dolía
 habría dejado nueve esperando.
+
+🔴 **Y AL BARRER APARECIERON DOS MÁS: SON 31 SPECS Y TRES PLACEHOLDERS.**
+
+| placeholder | qué era | specs |
+|---|---|---|
+| `Ej: Mojito Cubano` | copy de Vento | 10 |
+| 🔴 `0` | el precio | **11** |
+| `Ej: Cocteles clásicos` | copy de Vento | 10 |
+
+🔴 **EL DEL PRECIO ES EL CASO NUEVO, Y ES DE OTRA ESPECIE: EL LOCATOR ERA CORRECTO Y LO ROMPIÓ UN
+DATO, NO UN CAMBIO DE ESTRUCTURA.**
+
+`getByPlaceholder('0')` apuntaba al campo de precio y funcionó siempre. Al agregar el campo de
+código, su ejemplo quedó **`Ej: 005-1`** — y **`getByPlaceholder` matchea por SUBCADENA**, así que
+un `0` adentro de `005-1` lo convirtió en una segunda coincidencia. *Strict mode violation*, once
+specs.
+
+> **Las cinco anteriores se rompieron porque el PRODUCTO ganó una instancia —otra grilla, otro
+> rótulo, otra fila—. Ésta se rompió porque un TEXTO ajeno contenía el texto buscado.** No hubo
+> segunda instancia del campo de precio: hubo un carácter compartido.
+
+⚠️ **Y eso hace inútil la intuición que protegía de las otras.** Uno puede prever «esto va a tener
+dos instancias»; **nadie mira un placeholder nuevo y se pregunta qué locators de la suite contienen
+su texto como subcadena**. Un locator por texto corto —`'0'`, `'1'`, `'Sí'`— es una apuesta a que
+ningún texto futuro lo contenga, y esa apuesta no se puede evaluar mirando el locator.
+
+✅ **Lo accionable es el mismo testid**, y la regla se endurece: **por texto no se localiza nunca, y
+menos por un texto de un carácter.** Cuanto más corto el texto, más grande la apuesta.
 *2026-09-07, al cerrar la deuda 94.*
 
 Las cuatro primeras apuestan sobre el **DOM**, y se arreglan **acotando**: por contenedor, por
@@ -4639,6 +4667,43 @@ Ninguna verificación lo buscaba, así que sin esa impresión accidental el defe
 **Una fila cargada que ninguna pantalla muestra es, para el cliente, una fila que no se cargó.**
 
 ✅ Sumado al cargador: asevera que las 30 tengan número y que no haya duplicados.
+
+---
+
+### 🔴 CRITERIO SIN NÚMERO · UNA ADVERTENCIA ESCRITA SE CUMPLIÓ EN LA FECHA EXACTA QUE ANTICIPABA — Y NO EVITÓ NADA
+
+*2026-09-07, deuda 41. **Primera vez en el proyecto que una advertencia escrita se cumple tal
+cual.** Y por eso mismo es la evidencia más limpia de lo que este archivo viene sosteniendo.*
+
+`esNombreDuplicado` miraba sólo el código `23505` y devolvía un booleano. Su comentario, escrito el
+2026-09-04, decía **textual**:
+
+> *«Si algún día una de esas tablas gana un segundo índice único, este helper deja de discriminar y
+> hay que mirar el nombre.»*
+
+El 2026-09-07 `products` ganó `products_codigo_unico_por_sede`. **La advertencia era exacta, estaba
+en el archivo correcto, a diez líneas de la función, y no evitó nada:** el índice se agregó sin que
+nadie la leyera. Se descubrió después, revisando los consumidores del helper — no al escribir la
+migración.
+
+🔴 **Y el defecto que dejaba era el peor de su clase: un mensaje que MANDA AL CAMPO EQUIVOCADO.** Un
+código repetido habría dicho *«ya existe un producto con ese NOMBRE»*, y el nombre estaba bien. No
+es un error genérico: es una afirmación falsa en el punto donde la persona decide qué corregir.
+
+⚠️ **LO ACCIONABLE NO ES ESCRIBIR MÁS ADVERTENCIAS. Es cerrar en el MECANISMO.** La advertencia hizo
+lo único que una advertencia puede hacer —explicar el defecto una vez descubierto— y falló en lo
+único que importaba, que era prevenirlo. Lo que sí lo cierra:
+
+> **Ante un caso que no reconoce, el discriminador devuelve `'otro'` — nunca cae al primero.**
+
+`campoDuplicado()` distingue `nombre`, `codigo`, `otro` y `null`. Un índice único futuro que nadie
+enseñe a reconocer **no se hace pasar por «nombre»**: da un mensaje que no nombra ningún campo. El
+tercer índice ya no necesita que alguien recuerde nada.
+
+⚠️ Es el argumento del hook contra el recordatorio, medido una vez más y en su forma más nítida: la
+advertencia estaba **escrita, correcta y cerca**, y la distancia que importaba —entre la carga y la
+decisión— seguía siendo infinita. **Un default que falla hacia lo seguro reemplaza a una advertencia
+que hay que acordarse de leer.**
 
 ---
 

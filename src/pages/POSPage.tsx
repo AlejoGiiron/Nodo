@@ -274,11 +274,38 @@ function ProductRow({ product, onAdd, inerte = false }: {
       onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--surface-2)' }}
       onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--surface)' }}
     >
+      {/* ── CÓDIGO (deuda 41) ────────────────────────────────────────────
+          Va PRIMERO, como en la maqueta y como en el Catálogo, y con
+          `tabular-nums` porque el §2 lo hace obligatorio para el código de
+          producto: se lee por dígito, que es como se busca.
+          ⚠️ Ancho fijo y NO `flex`: si compitiera por espacio con el nombre,
+             los códigos dejarían de alinearse entre filas y el `tabular-nums`
+             no serviría de nada.
+          ⚠️ `—` cuando falta (§7.5): el guión dice que no hay dato, no cero. */}
+      <span
+        data-testid="pos-codigo"
+        style={{
+          flexShrink: 0, width: 62, fontSize: 12, color: 'var(--ink-4)',
+          fontVariantNumeric: 'tabular-nums',
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}
+      >
+        {product.codigo ?? '—'}
+      </span>
+
       <span style={{
         flex: 1, minWidth: 0, fontSize: 14, fontWeight: 400,
         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
       }}>
         {product.name}
+        {/* La UNIDAD como metadato del nombre, no como columna: el §2 la tipa
+            `--fs-meta`, y el mostrador ya tiene poco ancho. En el Catálogo sí
+            es columna, porque ahí la fila es una tabla. */}
+        {product.unidad ? (
+          <span data-testid="pos-unidad" style={{ fontSize: 12, color: 'var(--ink-4)', marginLeft: 6 }}>
+            {product.unidad}
+          </span>
+        ) : null}
       </span>
       {alertaStock && badge && (
         <span
