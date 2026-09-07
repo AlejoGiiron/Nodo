@@ -19,6 +19,7 @@ import {
   Shield,
   Pencil,
   Lock,
+  KeyRound,
   Puzzle,
   Package,
   type LucideIcon,
@@ -44,13 +45,20 @@ import type { Tables } from '@/types/database.types'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { formatoCOP } from '@/lib/formato'
+import { useCambiarPassword } from '@/hooks/useCambiarPassword'
+import { PASSWORD_REGLA } from '@/lib/password'
 
 // ─── Constants ────────────────────────────────────────────────────
 
-type SectionId = 'sede' | 'usuarios' | 'sedes' | 'roles' | 'extras' | 'caja'
+type SectionId = 'sede' | 'cuenta' | 'usuarios' | 'sedes' | 'roles' | 'extras' | 'caja'
 
 const SECTIONS: { id: SectionId; label: string; icon: LucideIcon; permission?: string }[] = [
   { id: 'sede', label: 'Sede', icon: Building2 },
+  // 🔴 SIN `permission`, y es una decisión: cambiar la PROPIA contraseña no es
+  //    una capacidad que se conceda — la tiene cualquiera que pueda entrar.
+  //    Gatearla con un permiso dejaría cuentas sin forma de rotar su clave, que
+  //    es exactamente la deuda 95 con otro disfraz.
+  { id: 'cuenta', label: 'Mi cuenta', icon: KeyRound },
   { id: 'usuarios', label: 'Usuarios', icon: Users },
   { id: 'sedes', label: 'Sedes', icon: Store, permission: 'sedes.gestionar' },
   { id: 'roles', label: 'Roles y permisos', icon: Shield, permission: 'roles.gestionar' },
@@ -457,8 +465,20 @@ function CreateUserModal({ onClose }: { onClose: () => void }) {
                 <RefreshCw size={15} />
               </button>
             </div>
+            {/*
+              🔴 ESTE TEXTO DECÍA «El usuario deberá cambiar esta contraseña al
+                 ingresar por primera vez» — Y ERA FALSO: no existía ninguna
+                 pantalla para cambiarla, así que la clave que se entregaba acá
+                 era PERMANENTE. Una promesa en la interfaz es una afirmación
+                 del producto, y ésta tranquilizaba sobre algo que no ocurría.
+              ⚠️ Ahora existe la pantalla (Mi cuenta), pero el texto sigue sin
+                 decir «deberá»: NADA lo obliga. Se dice lo que es — puede — y
+                 dónde, que es lo único verificable. El día que haya un
+                 «cambio obligatorio en el primer ingreso», ese texto se escribe
+                 junto con el mecanismo, no antes.
+            */}
             <p style={{ fontSize: 11, color: 'var(--ink-4)', marginTop: 6, marginBottom: 0 }}>
-              El usuario deberá cambiar esta contraseña al ingresar por primera vez.
+              Entrégasela al usuario. Podrá cambiarla desde Configuración → Mi cuenta.
             </p>
           </div>
 
@@ -529,6 +549,94 @@ function CreateUserModal({ onClose }: { onClose: () => void }) {
           </button>
         </div>
       </div>
+    </div>
+  )
+}
+
+/**
+ * Mi cuenta · cambiar la propia contraseña. Deuda 95, primera mitad.
+ *
+ * ⛔ NO tiene «olvidé mi contraseña»: eso es la segunda mitad y necesita correo
+ *    saliente configurado, que no existe. No se dibuja un enlace que no lleva a
+ *    ningún lado — una promesa en la interfaz es una afirmación del producto.
+ */
+function SectionCuenta() {
+  const { user, profile } = useAuth()
+  const { cambiar, estado, error, reiniciar } = useCambiarPassword()
+  const [actual, setActual] = useState('')
+  const [nueva, setNueva] = useState('')
+  const [repetida, setRepetida] = useState('')
+
+  const handleSave = async () => {
+    const ok = await cambiar(actual, nueva, repetida)
+    if (ok) { setActual(''); setNueva(''); setRepetida('') }
+  }
+
+  const editar = (set: (v: string) => void) => (v: string) => {
+    if (error || estado === 'listo') reiniciar()
+    set(v)
+  }
+
+  return (
+    <div>
+      <SectionTitle>Mi cuenta</SectionTitle>
+
+      <div style={{ marginBottom: 24 }}>
+        <FieldLabel>Usuario</FieldLabel>
+        <p data-testid="cuenta-email" style={{ fontSize: 14, color: 'var(--ink-2)', margin: 0 }}>
+          {user?.email ?? '—'}
+          {profile?.full_name ? <span style={{ color: 'var(--ink-4)' }}> · {profile.full_name}</span> : null}
+        </p>
+      </div>
+
+      <div style={{ display: 'grid', gap: 16, maxWidth: 380 }}>
+        <div>
+          <FieldLabel>Contraseña actual</FieldLabel>
+          <TextInput type="password" testId="pass-actual" value={actual} onChange={editar(setActual)} />
+        </div>
+        <div>
+          <FieldLabel>Contraseña nueva</FieldLabel>
+          <TextInput type="password" testId="pass-nueva" value={nueva} onChange={editar(setNueva)} />
+          <p style={{ fontSize: 11, color: 'var(--ink-4)', marginTop: 6, marginBottom: 0 }}>
+            {PASSWORD_REGLA}
+          </p>
+        </div>
+        <div>
+          <FieldLabel>Repite la contraseña nueva</FieldLabel>
+          <TextInput type="password" testId="pass-repetida" value={repetida} onChange={editar(setRepetida)} />
+        </div>
+      </div>
+
+      {error && (
+        <p
+          data-testid="pass-error"
+          role="alert"
+          style={{ marginTop: 16, marginBottom: 0, fontSize: 13, color: 'var(--danger)' }}
+        >
+          {error}
+        </p>
+      )}
+
+      {/*
+        🔴 El mensaje dice QUÉ PASÓ DE VERDAD, no «guardado».
+           Medido el 2026-09-07: después de `auth.updateUser` la sesión SIGUE
+           VIVA —el access token ni cambia—, así que no hay que volver a entrar.
+           Un «guardado» a secas dejaría a la persona sin saber si sigue adentro,
+           y si algún día el comportamiento cambiara, este texto sería una
+           confirmación que dirige mal.
+      */}
+      {estado === 'listo' && !error && (
+        <p
+          data-testid="pass-exito"
+          role="status"
+          style={{ marginTop: 16, marginBottom: 0, fontSize: 13, color: 'var(--success)' }}
+        >
+          Contraseña cambiada. Tu sesión sigue abierta: no necesitas volver a entrar.
+          La próxima vez que entres, usa la nueva.
+        </p>
+      )}
+
+      <SaveButton onClick={handleSave} loading={estado === 'guardando'} />
     </div>
   )
 }
@@ -1471,6 +1579,7 @@ export function ConfigPage() {
 
   const SECTION_MAP: Record<SectionId, React.ReactNode> = {
     sede: <SectionSede />,
+    cuenta: <SectionCuenta />,
     usuarios: <SectionUsers />,
     sedes: <SectionSedes />,
     roles: <SectionRoles />,
