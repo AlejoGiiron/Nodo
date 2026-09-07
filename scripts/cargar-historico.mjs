@@ -475,20 +475,49 @@ const conFechaDeHoy = (ords ?? []).filter((o) => o.created_at.slice(0, 10) === h
 console.log('  %-34s %14d   esperado %14d  %s', 'órdenes fechadas HOY por error', conFechaDeHoy, 0, conFechaDeHoy === 0 ? '✅' : '🔴')
 if (conFechaDeHoy) problemas.push(`${conFechaDeHoy} órdenes quedaron fechadas hoy`)
 
-// 🔴 EL CONTROL CRUZADO: el conteo FÍSICO de las galletas, que el cliente hizo
-//    contando cajas. Viene de otro camino que nuestras sumas.
+// ── STOCK · el invariante que el cargador SÍ tiene que cumplir ────────────
+// 🔴 El criterio original era el conteo FÍSICO de las galletas, y ERA EL
+//    CRITERIO EQUIVOCADO. El ensayo en LAB lo destapó: el conteo físico del
+//    cliente NO se reproduce desde su archivo a ninguna fecha de corte, porque
+//    la columna «Ventas» de su hoja de inventario (20 y 18) es MENOR que sus
+//    propias líneas de venta (23 y 23). Es una inconsistencia entre DOS HOJAS
+//    SUYAS, no un defecto de esta carga. Ver el plan §5.
+//    Lo que el cargador debe cumplir es esto, que sale del mismo archivo:
+const esperadoStock = new Map()
+for (const l of lineasCompra) {
+  const k = norm(l.producto)
+  esperadoStock.set(k, (esperadoStock.get(k) ?? 0) + l.qty)
+}
+for (const l of lineasVenta) {
+  const k = norm(l.producto)
+  esperadoStock.set(k, (esperadoStock.get(k) ?? 0) - l.qty)
+}
+console.log('\n  STOCK · contra compras − ventas del archivo (el invariante del cargador):')
+const { data: prodFin } = await db.from('products').select('name, stock_qty, cost_price').eq('sede_id', SEDE_ID).eq('is_active', true)
+let malStock = 0
+for (const [k, esperado] of [...esperadoStock].sort()) {
+  const p = (prodFin ?? []).find((x) => norm(x.name) === k)
+  const real = p ? Number(p.stock_qty) : null
+  if (real === esperado) continue
+  malStock++
+  console.log('    🔴 %-32s base %5s   compras−ventas %5d', k, real ?? 'FALTA', esperado)
+  problemas.push(`stock de ${k}: base ${real}, compras−ventas del archivo ${esperado}`)
+}
+console.log('    %s', malStock === 0
+  ? `✅ los ${esperadoStock.size} productos con movimiento cierran con compras − ventas`
+  : `🔴 ${malStock} producto(s) no cierran`)
+
+// El conteo FÍSICO del cliente, como INFORMACIÓN — no como criterio.
 const FISICO = {
   'GALLETA MANI MUTANTES': 0, 'GALLETA NUTELLA MUTANTES': 20, 'GALLETA OREO MUTANTES': 7,
   'GALLETA ARANDANOS CHOCOLATE': 2, 'GALLETA ALMENDRA CHOCOLATE': 0,
 }
-console.log('\n  🔴 CONTROL CRUZADO · stock contra el conteo FÍSICO del cliente:')
-const { data: prodFin } = await db.from('products').select('name, stock_qty, cost_price').eq('sede_id', SEDE_ID).eq('is_active', true)
-for (const [nombre, esperado] of Object.entries(FISICO)) {
+console.log('\n  ℹ️ conteo FÍSICO del cliente — informativo, NO es criterio de aceptación:')
+for (const [nombre, fisico] of Object.entries(FISICO)) {
   const p = (prodFin ?? []).find((x) => norm(x.name) === norm(nombre))
   const real = p ? Number(p.stock_qty) : null
-  const ok = real === esperado
-  console.log('    %-30s %5s   esperado %3d  %s', nombre, real ?? 'FALTA', esperado, ok ? '✅' : '🔴')
-  if (!ok) problemas.push(`stock de ${nombre}: ${real}, el conteo físico dice ${esperado}`)
+  console.log('    %-30s base %3s   su conteo %3d  %s', nombre, real ?? '—', fisico,
+    real === fisico ? '✅ coincide' : `⚠️ difiere en ${Math.abs((real ?? 0) - fisico)} — pregunta para el cliente`)
 }
 const sinCosto = (prodFin ?? []).filter((p) => p.cost_price === null && Number(p.stock_qty) !== 0 || (p.cost_price === null))
 console.log('\n  productos sin costo: %d  (esperado: los que nunca se compraron)', sinCosto.length)

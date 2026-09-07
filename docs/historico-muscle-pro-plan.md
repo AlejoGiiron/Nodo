@@ -77,6 +77,39 @@ por período y **la antigüedad de cartera**, que deriva de `orders.created_at`.
 | 6 | las **camisas son gasto**, no mercancía | son uniformes. No entran al catálogo ni al inventario |
 | 7 | las dos líneas de **Galleta Oreo del 03-sep son un ticket** | **confirmado por el cliente**, no inferido |
 | 8 | canal = **`mostrador`** en los 30 | `orders.canal` es `not null` y sin default a propósito. El archivo no distingue canal, y el negocio es de mostrador |
+| 9 | 🔴 **las jornadas reconstruidas se cierran SIN ARQUEO** | ver abajo |
+| 10 | el abono de 20.000 entra como **`transfer`** | 🔴 **INFERIDO, no es dato del archivo** — ver abajo |
+
+### 🔴 Decisión 9 · las jornadas se cierran con `closing_amount`, `expected_amount` y `difference` en NULO
+
+**Alguien que vea tres nulos va a querer llenarlos. No hay que llenarlos.**
+
+> **Un cero ahí no es «sin diferencia»: es un arqueo FALSO persistido.**
+
+Esos tres campos son el resultado de **contar la plata del cajón**. En estos nueve días **nadie
+contó nada** —son jornadas administrativas, creadas porque `register_purchase` exige una abierta y
+`cash_movements.jornada_id` es `not null`—. Escribir `closing_amount = 0` afirmaría que se contó y
+que había cero.
+
+Es exactamente el defecto que documentó la **auditoría A1** en el cierre de caja: persistir un
+cálculo hecho sobre insumos vacíos produce un número plausible que después **se reimprime sin
+recomputar**. Un nulo se lee como *no hay dato*; un cero se lee como *dato*.
+
+⚠️ Y hay una razón más, específica de esta carga: el arqueo de una jornada reconstruida **no podría
+ser correcto aunque lo calculáramos**, porque los pagos y los movimientos de stock quedan fechados
+hoy (§2). El único valor honesto es la ausencia.
+
+### 🔴 Decisión 10 · el método del abono es INFERIDO — no está en el archivo
+
+El archivo dice **`ABONO 20 MIL`** en la columna de método de pago, y eso **no nombra un método**:
+dice que hubo un abono. Se carga como `transfer` porque 37 de sus 39 métodos conocidos son
+transferencia, **pero es una inferencia nuestra y queda marcada como tal**.
+
+⚠️ **Y no es cosmética: si fue en EFECTIVO, `register_debt_payment` crea un movimiento de caja y
+cambia el arqueo de ese día.** En transferencia no toca la caja.
+
+⛔ **Pendiente de preguntarle al cliente.** Hasta que conteste, el dato en la base es una inferencia
+con un origen distinto al resto del histórico, que es transcripción.
 
 ### 🔴 Si aparece la compra de Oxandronom — el procedimiento, para que nadie lo haga al revés
 
@@ -123,23 +156,45 @@ de la base:
 | movimientos de gasto | **7** | ver §7 |
 | productos con `cost_price` nulo | **1** (`OXANDRONOM`) | decisión 5 |
 
-### 🔴 Y el control cruzado que vale más que todos: el conteo físico de las galletas
+### 🔴 EL CRITERIO DE STOCK CAMBIÓ — y lo cambió el ensayo, que es para lo que existía
 
-Su hoja `Control de inventario` trae un conteo **físico** que ya cuadra con su teórico. Es un número
-que **conocemos antes de cargar** y que sale de un camino distinto (contar cajas, no sumar filas):
+*Corregido el 2026-09-07, con el ensayo en LAB Pruebas. **La versión anterior de esta sección era el
+criterio equivocado**, y se reemplaza en vez de agregarse al lado.*
 
-| producto | stock esperado |
-|---|---|
-| GALLETA MANI MUTANTES | **0** |
-| GALLETA NUTELLA MUTANTES | **20** |
-| GALLETA OREO MUTANTES | **7** |
-| GALLETA ARANDANOS CHOCOLATE | **2** |
-| GALLETA ALMENDRA CHOCOLATE | **0** |
+**Lo que decía:** que `products.stock_qty` tenía que dar el **conteo físico** del cliente —0, 20, 7,
+2, 0— y que si no daba eso, la reconstrucción estaba mal.
 
-Si después de cargar las 44 compras y las 55 ventas `products.stock_qty` no da exactamente eso, **la
-reconstrucción está mal** y no hay que buscar la explicación en el conteo del cliente.
+**Lo que el ensayo midió:** el stock quedó en **0, 17, 2, 2, 0**. Dos no coincidían.
 
-⚠️ Y cubre las dos direcciones: si diera de más, faltan ventas; si diera de menos, faltan compras.
+🔴 **Y el defecto no era del cargador: era del criterio.** Medido sobre el archivo:
+
+| producto | su hoja de inventario dice | sus líneas de venta dicen |
+|---|---|---|
+| GALLETA NUTELLA MUTANTES | ventas **20** | ventas **23** |
+| GALLETA OREO MUTANTES | ventas **18** | ventas **23** |
+
+> **Dos hojas del cliente se contradicen entre sí**, y el conteo físico está calculado contra la que
+> tiene menos ventas. `40 − 23 = 17` y `25 − 23 = 2` es exactamente lo que el cargador escribió: el
+> cargador **transcribió bien**.
+
+⚠️ **Y no es un corte por fecha:** se probó cada fecha de corte y **ninguna** reproduce las cinco
+cifras. La más cercana es el 04-sep, donde tres coinciden y dos quedan a uno de distancia. El conteo
+físico **no es reproducible desde el archivo**, y por lo tanto no puede ser criterio de aceptación.
+
+**EL CRITERIO QUE SÍ SIRVE, y es el que el cargador asevera ahora:**
+
+> **`products.stock_qty` = Σ compras − Σ ventas del archivo, para los 42 productos.**
+
+Sale del mismo archivo, cubre **todo** el catálogo en vez de cinco filas, y falla en las dos
+direcciones. ✅ **Verde en el ensayo: los 42 cierran.**
+
+**El conteo físico queda como INFORMACIÓN y como pregunta para el cliente:** difiere en 3 en Nutella
+y en 5 en Oreo, y esa diferencia es entre **dos hojas suyas**, no algo que la carga pueda arreglar.
+
+⚠️ Es el mismo error que este proyecto ya tiene escrito, en un eje nuevo: *un número que viene de
+otro camino* es un gran control cruzado **siempre que ese número sea reproducible**. Éste no lo era,
+y darlo por criterio habría hecho fallar una carga correcta — la misma forma que la suma de control
+inventada del 2026-09-06.
 
 ---
 
