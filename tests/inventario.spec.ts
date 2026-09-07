@@ -19,8 +19,8 @@ const COCTEL_VENTA = `E2E CoctelVenta ${SUFFIX}`
 async function createSimpleTracked(page: Page, name: string, price: string) {
   await page.goto('/productos')
   await page.getByRole('button', { name: 'Nuevo producto' }).click()
-  await page.getByPlaceholder('Ej: Mojito Cubano').fill(name)
-  await page.getByPlaceholder('0').first().fill(price)
+  await page.getByTestId('producto-nombre').fill(name)
+  await page.getByTestId('producto-precio').fill(price)
   await page.getByTestId('product-category-select').selectOption({ label: CAT })
   // kind 'simple' es el default; activar control de inventario.
   await page.getByTestId('product-stock-tracking').click()
@@ -31,8 +31,8 @@ async function createSimpleTracked(page: Page, name: string, price: string) {
 async function createComposite(page: Page, name: string, price: string, insumo: string, qty: number) {
   await page.goto('/productos')
   await page.getByRole('button', { name: 'Nuevo producto' }).click()
-  await page.getByPlaceholder('Ej: Mojito Cubano').fill(name)
-  await page.getByPlaceholder('0').first().fill(price)
+  await page.getByTestId('producto-nombre').fill(name)
+  await page.getByTestId('producto-precio').fill(price)
   await page.getByTestId('product-category-select').selectOption({ label: CAT })
   await page.getByTestId('product-kind-composite').click()
   // Agregar el insumo a la receta.
@@ -89,7 +89,7 @@ test.describe.serial('Inventario por recetas', () => {
 
     await page.goto('/productos')
     await page.getByRole('button', { name: 'Nueva categoría' }).click()
-    await page.getByPlaceholder('Ej: Cocteles clásicos').fill(CAT)
+    await page.getByTestId('categoria-nombre').fill(CAT)
     await page.getByRole('button', { name: 'Crear categoría' }).click()
     await expect(page.getByRole('button', { name: new RegExp(CAT) })).toBeVisible()
 

@@ -12,8 +12,8 @@ const PROVEEDOR = `E2E Proveedor ${SUFFIX}`
 async function createSimpleTracked(page: Page, name: string, price: string) {
   await page.goto('/productos')
   await page.getByRole('button', { name: 'Nuevo producto' }).click()
-  await page.getByPlaceholder('Ej: Mojito Cubano').fill(name)
-  await page.getByPlaceholder('0').first().fill(price)
+  await page.getByTestId('producto-nombre').fill(name)
+  await page.getByTestId('producto-precio').fill(price)
   await page.getByTestId('product-category-select').selectOption({ label: CAT })
   // kind 'simple' es el default; activar control de inventario.
   await page.getByTestId('product-stock-tracking').click()
@@ -78,7 +78,7 @@ test.describe.serial('Compras / Proveedores', () => {
 
     await page.goto('/productos')
     await page.getByRole('button', { name: 'Nueva categoría' }).click()
-    await page.getByPlaceholder('Ej: Cocteles clásicos').fill(CAT)
+    await page.getByTestId('categoria-nombre').fill(CAT)
     await page.getByRole('button', { name: 'Crear categoría' }).click()
     await expect(page.getByRole('button', { name: new RegExp(CAT) })).toBeVisible()
 

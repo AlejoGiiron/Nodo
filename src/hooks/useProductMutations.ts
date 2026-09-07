@@ -11,7 +11,7 @@ import {
 import { useAuth } from '@/hooks/useAuth'
 import type { Tables, TablesInsert } from '@/types/database.types'
 import type { SentryArea } from '@/lib/sentry'
-import { mensajeDeError, esNombreDuplicado } from '@/lib/errores'
+import { mensajeDeError, campoDuplicado } from '@/lib/errores'
 
 export function useProductMutations() {
   const queryClient = useQueryClient()
@@ -38,12 +38,21 @@ export function useProductMutations() {
     // ⚠️ «activo» no es de más: el índice es PARCIAL (`where is_active`), así
     // que un producto ARCHIVADO con ese nombre NO produce este error. Si el
     // índice se volviera total, esta palabra miente (R1: dos lados).
-    onError: (err) =>
+    // 🔴 El mensaje NOMBRA EL CAMPO. Con dos índices únicos en `products`, un
+    //    «ya existe con ese nombre» sobre un código repetido manda a corregir
+    //    el campo equivocado — y el nombre estaba bien.
+    onError: (err) => {
+      const campo = campoDuplicado(err)
       toast.error(
-        esNombreDuplicado(err)
-          ? 'Ya existe un producto activo con ese nombre en esta sede.'
-          : mensajeDeError(err, 'Error al guardar producto'),
-      ),
+        campo === 'codigo'
+          ? 'Ya existe un producto activo con ese código en esta sede.'
+          : campo === 'nombre'
+            ? 'Ya existe un producto activo con ese nombre en esta sede.'
+            : campo === 'otro'
+              ? 'Ya existe otro producto con ese dato en esta sede.'
+              : mensajeDeError(err, 'Error al guardar producto'),
+      )
+    },
   })
 
   const deactivateProduct = useMutation({
@@ -101,7 +110,7 @@ export function useCategoryMutations() {
     // categorías, y su violación tiene que nombrar qué pasó.
     onError: (err) =>
       toast.error(
-        esNombreDuplicado(err)
+        campoDuplicado(err) !== null
           ? 'Ya existe una categoría activa con ese nombre en esta sede.'
           : mensajeDeError(err, 'Error al guardar categoría'),
       ),

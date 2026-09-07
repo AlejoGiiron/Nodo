@@ -14,7 +14,7 @@ test.describe.serial('Productos', () => {
     await page.goto('/productos')
 
     await page.getByRole('button', { name: 'Nueva categoría' }).click()
-    await page.getByPlaceholder('Ej: Cocteles clásicos').fill(CAT)
+    await page.getByTestId('categoria-nombre').fill(CAT)
     await page.getByRole('button', { name: 'Crear categoría' }).click()
 
     await expect(page.getByRole('button', { name: new RegExp(CAT) })).toBeVisible()
@@ -25,8 +25,8 @@ test.describe.serial('Productos', () => {
     await page.goto('/productos')
 
     await page.getByRole('button', { name: 'Nuevo producto' }).click()
-    await page.getByPlaceholder('Ej: Mojito Cubano').fill(PROD)
-    await page.getByPlaceholder('0').fill('12000')
+    await page.getByTestId('producto-nombre').fill(PROD)
+    await page.getByTestId('producto-precio').fill('12000')
     await page.getByTestId('product-category-select').selectOption({ label: CAT })
     await page.getByRole('button', { name: 'Crear producto' }).click()
 
@@ -40,7 +40,7 @@ test.describe.serial('Productos', () => {
 
     // Botón editar (título "Editar") de la FILA del producto.
     await page.getByTitle('Editar', { exact: true }).first().click()
-    const price = page.getByPlaceholder('0')
+    const price = page.getByTestId('producto-precio')
     await price.fill('')
     await price.fill('15000')
     await page.getByRole('button', { name: 'Guardar cambios' }).click()

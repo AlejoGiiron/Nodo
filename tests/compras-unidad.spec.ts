@@ -56,8 +56,8 @@ test.beforeAll(async () => {
 async function crearProducto(page: Page, name: string) {
   await page.goto('/productos')
   await page.getByRole('button', { name: 'Nuevo producto' }).click()
-  await page.getByPlaceholder('Ej: Mojito Cubano').fill(name)
-  await page.getByPlaceholder('0').first().fill('1000')
+  await page.getByTestId('producto-nombre').fill(name)
+  await page.getByTestId('producto-precio').fill('1000')
   await page.getByTestId('product-category-select').selectOption({ label: CAT })
   await page.getByTestId('product-stock-tracking').click()
   await page.getByRole('button', { name: 'Crear producto' }).click()
@@ -114,7 +114,7 @@ test.describe('Compras · unidad de compra y factor', () => {
 
     await page.goto('/productos')
     await page.getByRole('button', { name: 'Nueva categoría' }).click()
-    await page.getByPlaceholder('Ej: Cocteles clásicos').fill(CAT)
+    await page.getByTestId('categoria-nombre').fill(CAT)
     await page.getByRole('button', { name: 'Crear categoría' }).click()
     await expect(page.getByRole('button', { name: new RegExp(CAT) })).toBeVisible()
 

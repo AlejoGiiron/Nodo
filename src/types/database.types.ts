@@ -798,6 +798,7 @@ export type Database = {
       products: {
         Row: {
           category_id: string
+          codigo: string | null
           cost_price: number | null
           created_at: string
           description: string | null
@@ -811,10 +812,12 @@ export type Database = {
           sede_id: string
           stock_qty: number | null
           stock_tracking: boolean
+          unidad: string | null
           updated_at: string
         }
         Insert: {
           category_id: string
+          codigo?: string | null
           cost_price?: number | null
           created_at?: string
           description?: string | null
@@ -828,10 +831,12 @@ export type Database = {
           sede_id: string
           stock_qty?: number | null
           stock_tracking?: boolean
+          unidad?: string | null
           updated_at?: string
         }
         Update: {
           category_id?: string
+          codigo?: string | null
           cost_price?: number | null
           created_at?: string
           description?: string | null
@@ -845,6 +850,7 @@ export type Database = {
           sede_id?: string
           stock_qty?: number | null
           stock_tracking?: boolean
+          unidad?: string | null
           updated_at?: string
         }
         Relationships: [

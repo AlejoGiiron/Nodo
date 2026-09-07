@@ -1834,7 +1834,13 @@ export function POSPage() {
       (p) =>
         p.name.toLowerCase().includes(q) ||
         (p.description ?? '').toLowerCase().includes(q) ||
-        (p.categories?.name ?? '').toLowerCase().includes(q),
+        (p.categories?.name ?? '').toLowerCase().includes(q) ||
+        // 🔴 El CÓDIGO (deuda 41): es el modo de búsqueda del mostrador —se
+        //    teclea antes que el nombre—, y el MISMO `||` va en el Catálogo.
+        //    Si encontrara acá y no allá, el mismo texto significaría dos cosas
+        //    según dónde se teclee, y nadie va a suponer que son buscadores
+        //    distintos. Por eso los dos filtros se tocan juntos.
+        (p.codigo ?? '').toLowerCase().includes(q),
     )
   }, [products, query])
 

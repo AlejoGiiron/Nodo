@@ -2855,6 +2855,33 @@ que la cita hace parecer innecesario.
 ⚠️ Es el corolario de R4 en su forma más incómoda: la deuda coincidía con el código *en la cita* y
 divergía *en el comportamiento*, y una cita textual se lee como la evidencia más fuerte que hay.
 
+🔴 **OCTAVO CASO, 2026-09-07 — Y ES LA MISMA VARIANTE: LA CITA ERA A UNA FUENTE, Y LA MITAD NO
+EXISTE.** *Al abrir la deuda 41.*
+
+La deuda decía, para justificar que el código era alcance real y no adorno:
+
+> *«la skill lo nombra **dos veces** — en la fila del mostrador y en la lista de `tabular-nums` del
+> §2»*
+
+**Sólo existe una.** El §2 sí lo nombra (línea 214, `tabular-nums` obligatorio en «código de
+producto»). **La fila del mostrador no está en la skill**: viene de `docs/reskin-esquema.md`, que es
+otro documento. Y la conclusión de la deuda era correcta —el código es alcance real, y de hecho en
+**cinco** pantallas, no en una—, así que **la cita falsa apuntaba al lugar correcto**, igual que la
+séptima.
+
+⚠️ **Lo que agrega sobre la séptima: ahí la cita era a una LÍNEA DE CÓDIGO y acá a un DOCUMENTO
+NUESTRO.** Y eso lo hace más barato de escribir y más difícil de dudar: nadie abre una skill de mil
+líneas para contar en cuántos lugares aparece una palabra, mientras que una línea de código se abre
+en un segundo. **Cuanto más grande es la fuente citada, más protegida está la cita.**
+
+✅ **Y el paso que la habría destapado es de nuevo el que la cita hace parecer innecesario:** un
+`grep -n "código" SKILL.md`, que además fue lo que la destapó — buscando dónde poner las columnas,
+no auditando la deuda.
+
+**Lo accionable, y suma al de la séptima:** cuando una deuda diga **cuántas veces** algo aparece en
+una fuente, **contá**. Un «lo nombra dos veces» es un conteo, y *un número sin comando es una
+opinión con dígitos* — también cuando el número es 2.
+
 🔴 **EL ÚLTIMO CASO ES DE OTRA ESPECIE: LOS DEMÁS DESCRIBÍAN MAL EL ALCANCE; ÉSE DESCRIBÍA MAL LA
 DIRECCIÓN.**
 
@@ -4083,7 +4110,29 @@ del mismo componente, el testid lleva **prefijo** — como `pay-method-*` (el mo
 ⚠️ Y el corolario para cuando aparezca la segunda instancia: **no se arregla agregando `.first()`**.
 Eso conserva la apuesta y la esconde mejor.
 
-🔴 **LA QUINTA SUBE LA CLASE A LA BASE, Y POR ESO NINGUNO DE LOS REMEDIOS DE ARRIBA APLICA.**
+🔴 **SEXTA APARICIÓN, Y ES LA QUE MÁS BARATO SE HABRÍA EVITADO: DIEZ SPECS ATADOS A UN PLACEHOLDER
+QUE ERA COPY HEREDADO.** *2026-09-07, deuda 41.*
+
+Al agregar dos campos al formulario de producto se corrigió su placeholder, que decía **«Ej: Mojito
+Cubano»** — copy de **Vento**, del bar, en la pantalla donde este cliente carga su catálogo de
+suplementos. Cambiar ese string rompió **diez specs**: todos localizaban el campo de nombre con
+`getByPlaceholder('Ej: Mojito Cubano')`.
+
+> **Un placeholder es COPY: cambia porque alguien mejora un texto, no porque cambie el
+> comportamiento.** Atar un locator a él ata la suite a una decisión de redacción.
+
+⚠️ **Y el rojo llegó como «timeout» en specs de inventario y de compras**, que no hablan de
+placeholders ni de formularios de producto. Otra vez la distancia entre causa y síntoma: el mensaje
+decía `locator.fill: Test timeout`, y la causa era una frase corregida en otro archivo.
+
+🔴 **Lo que lo hace peor que un texto visible cualquiera: el copy heredado de un fork ESTÁ DESTINADO
+A CAMBIAR.** «Ej: Mojito Cubano» en un producto horizontal no era un texto estable que alguien
+pudiera tocar: era una **deuda esperando a que alguien la viera**. Diez specs se apoyaron
+justamente en la parte del producto que sabíamos que iba a moverse.
+
+✅ **Barrido en la misma pasada (R3):** un `data-testid="producto-nombre"` en el campo y los diez
+migrados juntos — cero menciones restantes, verificado por conteo. Arreglar sólo el spec que dolía
+habría dejado nueve esperando.
 *2026-09-07, al cerrar la deuda 94.*
 
 Las cuatro primeras apuestan sobre el **DOM**, y se arreglan **acotando**: por contenedor, por

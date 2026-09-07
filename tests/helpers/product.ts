@@ -10,11 +10,11 @@ import { type Page, expect } from '@playwright/test'
  * el producto ya en la grilla), la navegación **aborta el reconcile en vuelo** y
  * la receta/extras no se persisten → fallos flaky aguas abajo.
  *
- * Señal de cierre robusta: el input de nombre (placeholder "Ej: Mojito Cubano")
+ * Señal de cierre robusta: el input de nombre (data-testid "producto-nombre")
  * es exclusivo del modal y desaparece SOLO al cerrar. No se usa el texto del
  * botón porque cambia a "Guardando..." durante el guardado.
  */
 export async function saveProductAndClose(page: Page): Promise<void> {
   await page.getByRole('button', { name: /^(Crear producto|Guardar cambios)$/ }).click()
-  await expect(page.getByPlaceholder('Ej: Mojito Cubano')).toHaveCount(0, { timeout: 15_000 })
+  await expect(page.getByTestId('producto-nombre')).toHaveCount(0, { timeout: 15_000 })
 }

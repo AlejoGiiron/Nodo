@@ -40,13 +40,13 @@ test.describe.serial('Stock bajo en el POS', () => {
     await page.goto('/productos')
 
     await page.getByRole('button', { name: 'Nueva categoría' }).click()
-    await page.getByPlaceholder('Ej: Cocteles clásicos').fill(CAT)
+    await page.getByTestId('categoria-nombre').fill(CAT)
     await page.getByRole('button', { name: 'Crear categoría' }).click()
     await expect(page.getByRole('button', { name: new RegExp(CAT) })).toBeVisible()
 
     await page.getByRole('button', { name: 'Nuevo producto' }).click()
-    await page.getByPlaceholder('Ej: Mojito Cubano').fill(PROD)
-    await page.getByPlaceholder('0').first().fill('4000')
+    await page.getByTestId('producto-nombre').fill(PROD)
+    await page.getByTestId('producto-precio').fill('4000')
     await page.getByTestId('product-category-select').selectOption({ label: CAT })
     await page.getByTestId('product-stock-tracking').click()
     await page.getByTestId('product-min-stock').fill(String(MIN_STOCK))

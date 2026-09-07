@@ -80,7 +80,21 @@ export function ProductsPage() {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     let list = activeCat ? products.filter(p => p.category_id === activeCat) : products
-    if (q) list = list.filter(p => p.name.toLowerCase().includes(q) || (p.description ?? '').toLowerCase().includes(q))
+    // 🔴 EL MISMO FILTRO QUE EL MOSTRADOR, y por eso se tocan juntos (deuda 41).
+    //    Si el código encontrara en una pantalla y no en la otra, el mismo
+    //    texto significaría dos cosas según dónde se teclee — y nadie va a
+    //    suponer que son buscadores distintos.
+    // ⚠️ La CATEGORÍA la tenía el mostrador desde que se retiró el strip y acá
+    //    NO se agregó nunca: lo destapó enumerar para el código, no el re-skin.
+    if (q) {
+      list = list.filter(
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          (p.description ?? '').toLowerCase().includes(q) ||
+          (p.categories?.name ?? '').toLowerCase().includes(q) ||
+          (p.codigo ?? '').toLowerCase().includes(q),
+      )
+    }
     return list
   }, [products, activeCat, query])
 
@@ -188,7 +202,7 @@ export function ProductsPage() {
           <div
             data-testid="catalogo-encabezado"
             style={{
-              display: 'grid', gridTemplateColumns: '34px 1fr 130px 190px 110px 150px', gap: 12,
+              display: 'grid', gridTemplateColumns: '34px 84px 1fr 130px 54px 190px 110px 150px', gap: 12,
               padding: '9px 16px', background: 'var(--surface-2)',
               borderBottom: '1px solid var(--border)',
               fontSize: 11, fontWeight: 600, color: 'var(--ink-3)',
@@ -196,8 +210,10 @@ export function ProductsPage() {
             }}
           >
             <span />
+            <span>Código</span>
             <span>Producto</span>
             <span>Categoría</span>
+            <span>Unid</span>
             <span style={{ textAlign: 'right' }}>Existencia</span>
             <span style={{ textAlign: 'right' }}>Precio</span>
             <span />

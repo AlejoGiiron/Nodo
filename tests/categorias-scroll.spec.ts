@@ -18,7 +18,7 @@ async function esperarCategorias(page: Page) {
 
 async function crearCategoria(page: Page, nombre: string) {
   await page.getByRole('button', { name: 'Nueva categoría' }).click()
-  await page.getByPlaceholder('Ej: Cocteles clásicos').fill(nombre)
+  await page.getByTestId('categoria-nombre').fill(nombre)
   await page.getByRole('button', { name: 'Crear categoría' }).click()
   await expect(page.getByRole('button', { name: new RegExp(nombre) })).toBeVisible()
 }

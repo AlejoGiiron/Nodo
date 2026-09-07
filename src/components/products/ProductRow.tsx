@@ -23,11 +23,17 @@ import type { ProductWithCategory } from '@/stores/cartStore'
  * borrando funcionalidad probada. La imagen pasa a miniatura y la existencia a
  * su propia columna.
  *
- * ── LO QUE NO ESTÁ, Y NO ES UN OLVIDO ─────────────────────────────────────
- * La maqueta muestra además `CÓDIGO`, `UNIDAD`, `COSTO` y `MARGEN`. Ninguna se
- * pinta: **`codigo` y `unidad` no existen en el esquema** (deuda 41) y `COSTO`
- * —con su margen derivado— **no tiene permiso que lo gatee** (deuda 42).
- * Inventarlas sería llenar columnas con `—`.
+ * ── CÓDIGO Y UNIDAD, DESDE EL 2026-09-07 (deuda 41) ───────────────────────
+ * Las dos ya existen en el esquema y se pintan como las dibuja la maqueta:
+ * `CÓDIGO` primero —con `tabular-nums`, que el §2 hace obligatorio para el
+ * código de producto— y `UNID` en una columna angosta.
+ * ⚠️ Cuando falten van con `—`: §7.5, el guión no es un cero, dice que el dato
+ * no aplica. Eso es distinto de pintar una columna que **nadie** puede llenar,
+ * que es lo que se evitaba antes de que la columna existiera.
+ *
+ * ── LO QUE SIGUE SIN ESTAR, Y NO ES UN OLVIDO ─────────────────────────────
+ * La maqueta muestra además `COSTO` y `MARGEN`. No se pintan: **no tienen
+ * permiso que los gatee** (deuda 42).
  */
 export function ProductRow({
   product, onEdit, onDeactivate,
@@ -52,7 +58,7 @@ export function ProductRow({
       className="nodo-fila"
       style={{
         display: 'grid',
-        gridTemplateColumns: '34px 1fr 130px 190px 110px 150px',
+        gridTemplateColumns: '34px 84px 1fr 130px 54px 190px 110px 150px',
         gap: 12,
         alignItems: 'center',
         padding: '8px 16px',
@@ -80,6 +86,18 @@ export function ProductRow({
         </div>
       )}
 
+      {/* CÓDIGO — §2: `tabular-nums` es OBLIGATORIO en el código de producto.
+          Es el modo de búsqueda del mostrador, así que se lee por dígito. */}
+      <span
+        data-testid="catalogo-codigo"
+        style={{
+          fontSize: 12.5, color: 'var(--ink-3)', fontVariantNumeric: 'tabular-nums',
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}
+      >
+        {product.codigo ?? '—'}
+      </span>
+
       <div style={{ minWidth: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
         <span style={{ width: 3, alignSelf: 'stretch', borderRadius: 2, background: color, flexShrink: 0 }} />
         <span
@@ -99,6 +117,17 @@ export function ProductRow({
         }}
       >
         {product.categories?.name ?? '—'}
+      </span>
+
+      {/* UNID — §2 la tipa como `--fs-meta`: es una etiqueta, no una cifra. */}
+      <span
+        data-testid="catalogo-unidad"
+        style={{
+          fontSize: 12, color: 'var(--ink-4)',
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}
+      >
+        {product.unidad ?? '—'}
       </span>
 
       {/* Existencia — (d). `—` cuando el producto no se inventaría: §7.5, el

@@ -72,6 +72,14 @@ export function ProductModal({ product, categories, onClose }: ProductModalProps
 
   const [name, setName] = useState(product?.name ?? '')
   const [description, setDescription] = useState(product?.description ?? '')
+  const [codigo, setCodigo] = useState(product?.codigo ?? '')
+  // 🔴 PRESELECCIONADA en 'unidad' al CREAR, y NO por un default de la base
+  //    (deuda 41). La columna no tiene default a propósito: un default
+  //    etiquetaría como «unidad» lo que una ferretería vende por metro, y
+  //    nadie lo notaría. Acá la persona lo VE antes de guardar, así que hay
+  //    confirmación humana en vez de un dato inventado en silencio.
+  //    Al EDITAR se respeta lo que haya, incluido el vacío.
+  const [unidad, setUnidad] = useState(product ? (product.unidad ?? '') : 'unidad')
   const [price, setPrice] = useState(product ? String(product.price) : '')
   const [categoryId, setCategoryId] = useState(product?.category_id ?? categories[0]?.id ?? '')
   const [imageUrl, setImageUrl] = useState<string | null>(product?.image_url ?? null)
@@ -150,6 +158,11 @@ export function ProductModal({ product, categories, onClose }: ProductModalProps
         id: productId,
         name: name.trim(),
         description: description.trim() || null,
+        // Vacío ⇒ null, no cadena vacía: «sin código» es un estado válido y el
+        // índice único parcial sólo mira los NO nulos. Una cadena vacía sería
+        // un código, y dos productos «sin código» colisionarían entre sí.
+        codigo: codigo.trim() || null,
+        unidad: unidad.trim() || null,
         price: priceNum,
         category_id: categoryId,
         sede_id: profile.sede_id,
@@ -285,19 +298,79 @@ export function ProductModal({ product, categories, onClose }: ProductModalProps
               />
             </div>
 
-            {/* Name */}
+            {/* Name
+                🔴 EL PLACEHOLDER DECÍA «Ej: Mojito Cubano» y el de Descripción
+                   «Ron, menta, limón, soda...» — copy de VENTO, heredado del
+                   fork, en la pantalla que el cliente usa para cargar SU
+                   catálogo de suplementos. Misma clase que el copy del Login:
+                   un ejemplo nombra un mundo, y éstos nombraban el de un bar.
+                   Ningún verificador los mira — el compilador ve un string. */}
             <div>
               <label style={fieldLabel}>Nombre <span style={{ color: '#dc2626' }}>*</span></label>
               <input
                 type="text"
+                /* 🔴 EL TESTID NO ES DECORATIVO: diez specs localizaban este
+                   campo por su PLACEHOLDER, así que cambiar un texto de UI los
+                   rompía a todos — y el rojo llegaba como «timeout» en specs de
+                   inventario y de compras, que no hablan de placeholders.
+                   Es la clase que el repo ya nombra: un locator se acota por
+                   testid, nunca por texto visible. */
+                data-testid="producto-nombre"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Ej: Mojito Cubano"
+                placeholder="Ej: Proteína whey 2 lb"
                 required
                 style={inputStyle}
                 onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--action)'; e.currentTarget.style.boxShadow = '0 0 0 3px var(--action-soft)' }}
                 onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none' }}
               />
+            </div>
+
+            {/* Código y unidad de venta — deuda 41.
+                Van juntos y después del nombre porque así los dibuja la
+                maqueta: el código encabeza la fila del Catálogo y la unidad
+                va en su columna angosta. */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div>
+                <label style={fieldLabel}>Código <span style={{ color: '#94a3b8', fontWeight: 400 }}>(opcional)</span></label>
+                <input
+                  type="text"
+                  data-testid="producto-codigo"
+                  value={codigo}
+                  onChange={(e) => setCodigo(e.target.value)}
+                  placeholder="Ej: 005-1"
+                  /* §2: `tabular-nums` es obligatorio en el código de producto.
+                     También en el campo, para que lo que se teclea se vea igual
+                     que lo que después se lee en la lista. */
+                  style={{ ...inputStyle, fontVariantNumeric: 'tabular-nums' }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--action)'; e.currentTarget.style.boxShadow = '0 0 0 3px var(--action-soft)' }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none' }}
+                />
+                <p style={{ fontSize: 11, color: 'var(--ink-4)', marginTop: 6, marginBottom: 0 }}>
+                  Con el que lo buscás en el mostrador. No se puede repetir.
+                </p>
+              </div>
+              <div>
+                <label style={fieldLabel}>Unidad de venta <span style={{ color: '#94a3b8', fontWeight: 400 }}>(opcional)</span></label>
+                <input
+                  type="text"
+                  data-testid="producto-unidad"
+                  value={unidad}
+                  onChange={(e) => setUnidad(e.target.value)}
+                  placeholder="Ej: unidad, caja, kg"
+                  /* TEXTO LIBRE, no lista: hoy nada agrupa ni calcula por la
+                     unidad — es una etiqueta para el mostrador. El día que
+                     participe de un cálculo (vender por peso o por metro) se
+                     normaliza; cerrarla antes bloquea al cliente que traiga una
+                     presentación que no anticipamos. */
+                  style={inputStyle}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--action)'; e.currentTarget.style.boxShadow = '0 0 0 3px var(--action-soft)' }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none' }}
+                />
+                <p style={{ fontSize: 11, color: 'var(--ink-4)', marginTop: 6, marginBottom: 0 }}>
+                  Cómo se vende: por unidad, por caja, por kilo.
+                </p>
+              </div>
             </div>
 
             {/* Description */}
@@ -306,7 +379,7 @@ export function ProductModal({ product, categories, onClose }: ProductModalProps
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Ron, menta, limón, soda..."
+                placeholder="Presentación, sabor, contenido..."
                 rows={2}
                 style={{ ...inputStyle, resize: 'none', lineHeight: 1.5 }}
                 onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--action)'; e.currentTarget.style.boxShadow = '0 0 0 3px var(--action-soft)' }}
@@ -325,6 +398,10 @@ export function ProductModal({ product, categories, onClose }: ProductModalProps
                   }}>$</span>
                   <input
                     type="text"
+                    /* Ver la nota del testid de nombre: el locator por
+                       placeholder «0» matcheaba por SUBCADENA y se rompio al
+                       agregar el campo de codigo, cuyo ejemplo contiene un 0. */
+                    data-testid="producto-precio"
                     inputMode="numeric"
                     value={price ? formatCOP(priceNum).replace('$', '').trim() : ''}
                     onChange={(e) => setPrice(e.target.value.replace(/\D/g, ''))}
@@ -548,6 +625,16 @@ export function ProductModal({ product, categories, onClose }: ProductModalProps
                         type="button"
                         key={extra.id}
                         data-testid="product-extra-option"
+                        /* 🔴 El estado ELEGIDO se comunicaba SÓLO con el fondo,
+                           y un color no se puede aseverar sin atar el spec a un
+                           hex que el próximo re-skin mueve — y pasó: la deuda 88
+                           sacó el emerald de Vento y `extras.spec` quedó rojo
+                           contra un valor viejo, con el producto bien.
+                           `aria-pressed` es el estado mismo, así que sirve dos
+                           veces: lo asevera la suite y lo anuncia el lector de
+                           pantalla. Un testid dice QUIÉN es el elemento; esto
+                           dice EN QUÉ ESTADO está. */
+                        aria-pressed={checked}
                         onClick={() => toggleExtra(extra.id)}
                         style={{
                           display: 'flex', alignItems: 'center', gap: 10,

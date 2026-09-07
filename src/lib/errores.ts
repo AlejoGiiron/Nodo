@@ -22,22 +22,44 @@ export function mensajeDeError(err: unknown, fallback: string): string {
   return typeof m === 'string' && m !== '' ? m : fallback
 }
 
+/** Qué unicidad se violó. `null` = el error no es una violación de unicidad. */
+export type CampoDuplicado = 'nombre' | 'codigo' | 'otro' | null
+
 /**
- * ¿El error es una violación de unicidad de Postgres (`23505`)?
+ * ¿Qué unicidad de Postgres (`23505`) se violó?
  *
- * 🔴 POR QUÉ POR CÓDIGO Y NO POR NOMBRE DE CONSTRAINT — 2026-09-04, deuda 90.
- *    Matchear el nombre del índice acoplaría el cliente a una cadena que vive
- *    en una migración: dos lados sin sincronizador (R1), y el día que alguien
- *    renombre el índice el mensaje vuelve al genérico SIN QUE NADA SE PONGA
- *    ROJO. El código `23505` lo define Postgres, no nosotros.
+ * 🔴 ESTE HELPER MIRABA SÓLO EL CÓDIGO `23505` Y DEVOLVÍA UN BOOLEANO —y su
+ *    propio comentario, escrito el 2026-09-04, decía TEXTUAL: *«si algún día
+ *    una de esas tablas gana un segundo índice único, este helper deja de
+ *    discriminar y hay que mirar el nombre»*. **Ese día fue el 2026-09-07**:
+ *    `products` ganó `products_codigo_unico_por_sede` (deuda 41), y un código
+ *    repetido habría dicho «ya existe un producto con ese NOMBRE» — un mensaje
+ *    que manda a mirar el campo equivocado.
  *
- * ⚠️ Lo que esto asume, y hay que decirlo: que en `products` y `categories` la
- *    ÚNICA unicidad alcanzable sea la del nombre. La PK es un uuid v4 que el
- *    cliente genera fresco en cada alta, así que colisionar con ella no es un
- *    caso real. Si algún día una de esas tablas gana un segundo índice único,
- *    este helper deja de discriminar y hay que mirar el nombre.
+ * ⚠️ Así que ahora SÍ se mira el nombre del índice, y el argumento que lo
+ *    desaconsejaba sigue siendo cierto: **son dos lados sin sincronizador**
+ *    —la migración y esta constante— y renombrar el índice devolvería el
+ *    mensaje genérico sin ponerse rojo. Lo que cambió es que la alternativa
+ *    dejó de existir: sin mirar el nombre, el mensaje MIENTE. Se elige el
+ *    riesgo de un mensaje genérico sobre el de un mensaje falso.
+ *    El otro lado se declara acá y `errores.test.ts` clava las dos cadenas.
+ *
+ * 🔴 Y `'otro'` NO es un caso de más: un índice único que no reconocemos debe
+ *    dar un mensaje que NO nombre ningún campo. Caer a `'nombre'` sería
+ *    exactamente el defecto que este cambio corrige, con otro disfraz.
  */
-export function esNombreDuplicado(err: unknown): boolean {
-  const code = (err as { code?: unknown } | null | undefined)?.code
-  return code === '23505'
+const INDICES = {
+  nombre: ['products_nombre_unico_por_sede', 'categories_nombre_unico_por_sede'],
+  codigo: ['products_codigo_unico_por_sede'],
+} as const
+
+export function campoDuplicado(err: unknown): CampoDuplicado {
+  const e = err as { code?: unknown; message?: unknown; details?: unknown } | null | undefined
+  if (e?.code !== '23505') return null
+  // Postgres pone el nombre del índice en el mensaje; PostgREST lo reenvía.
+  const texto = `${typeof e?.message === 'string' ? e.message : ''} ${typeof e?.details === 'string' ? e.details : ''}`
+  for (const [campo, nombres] of Object.entries(INDICES)) {
+    if (nombres.some((n) => texto.includes(n))) return campo as 'nombre' | 'codigo'
+  }
+  return 'otro'
 }

@@ -20,8 +20,8 @@ const E_LINKED = `E2E ExtraInsumo ${SUFFIX}` // extra vinculado a P_STOCK
 async function createProduct(page: Page, name: string, price: string, opts?: { stock?: string }) {
   await page.goto('/productos')
   await page.getByRole('button', { name: 'Nuevo producto' }).click()
-  await page.getByPlaceholder('Ej: Mojito Cubano').fill(name)
-  await page.getByPlaceholder('0').first().fill(price)
+  await page.getByTestId('producto-nombre').fill(name)
+  await page.getByTestId('producto-precio').fill(price)
   await page.getByTestId('product-category-select').selectOption({ label: CAT })
   if (opts?.stock) {
     await page.getByTestId('product-stock-tracking').click() // Control de inventario (kind simple)
@@ -104,7 +104,7 @@ test.describe.serial('Extras en POS', () => {
     // Categoría.
     await page.goto('/productos')
     await page.getByRole('button', { name: 'Nueva categoría' }).click()
-    await page.getByPlaceholder('Ej: Cocteles clásicos').fill(CAT)
+    await page.getByTestId('categoria-nombre').fill(CAT)
     await page.getByRole('button', { name: 'Crear categoría' }).click()
     await expect(page.getByRole('button', { name: new RegExp(CAT) })).toBeVisible()
 

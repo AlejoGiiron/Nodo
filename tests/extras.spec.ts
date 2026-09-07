@@ -16,13 +16,13 @@ test.describe.serial('Extras', () => {
     await page.goto('/productos')
 
     await page.getByRole('button', { name: 'Nueva categoría' }).click()
-    await page.getByPlaceholder('Ej: Cocteles clásicos').fill(CAT)
+    await page.getByTestId('categoria-nombre').fill(CAT)
     await page.getByRole('button', { name: 'Crear categoría' }).click()
     await expect(page.getByRole('button', { name: new RegExp(CAT) })).toBeVisible()
 
     await page.getByRole('button', { name: 'Nuevo producto' }).click()
-    await page.getByPlaceholder('Ej: Mojito Cubano').fill(PROD)
-    await page.getByPlaceholder('0').fill('12000')
+    await page.getByTestId('producto-nombre').fill(PROD)
+    await page.getByTestId('producto-precio').fill('12000')
     await page.getByTestId('product-category-select').selectOption({ label: CAT })
     await page.getByRole('button', { name: 'Crear producto' }).click()
     await expect(page.getByText(PROD)).toBeVisible()
@@ -78,8 +78,11 @@ test.describe.serial('Extras', () => {
     await page.getByPlaceholder('Buscar producto...').fill(PROD)
     await page.getByTitle('Editar', { exact: true }).first().click()
     const reopened = page.getByTestId('product-extra-option').filter({ hasText: EXTRA_SIMPLE })
-    // El fondo verde (#ecfdf5) indica selección activa.
-    await expect(reopened).toHaveCSS('background-color', 'rgb(236, 253, 245)')
+    // 🔴 SE ASEVERA EL ESTADO, NO EL COLOR. Antes esto miraba el fondo
+    //    `#ecfdf5` y quedó ROJO cuando la deuda 88 sacó el emerald de Vento:
+    //    el producto estaba bien y el spec aseveraba un valor viejo. Un color
+    //    es un valor que cada re-skin mueve; `aria-pressed` es el estado.
+    await expect(reopened).toHaveAttribute('aria-pressed', 'true')
   })
 
   test('desactivar un extra lo marca como inactivo', async ({ page }) => {

@@ -149,7 +149,8 @@ export function CategoryModal({ category, onClose }: CategoryModalProps) {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Ej: Cocteles clásicos"
+                data-testid="categoria-nombre"
+                placeholder="Ej: Proteínas"
                 required
                 style={inputStyle}
                 onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--action)'; e.currentTarget.style.boxShadow = '0 0 0 3px var(--action-soft)' }}
