@@ -66,19 +66,48 @@ export function desvioDelCatalogo(item: Pick<CartItem, 'price' | 'product'>): nu
 }
 
 /**
- * 🔴 El umbral que dispara la confirmación — deuda 75. ±20%: negociar 109.000
- * sobre 110.000 no molesta, y un typo de un dígito (15.000 por 115.000) cae
- * holgado afuera.
+ * 🔴 EL UMBRAL QUE DISPARA LA CONFIRMACIÓN — deuda 75, RE-MEDIDO en la 94.
  *
  * Es la ÚNICA red que existe: el servidor nunca compara `unit_price` contra
  * `products.price` — la RPC lo toma directo del payload y lo único que hay es
  * `check (unit_price >= 0)`.
+ *
+ * ── POR QUÉ ES ASIMÉTRICO, Y NO HAY QUE "CORREGIRLO" POR CONSISTENCIA ───────
+ * 🔴 Las dos direcciones NO son el mismo hecho, así que un umbral simétrico
+ *    trata como iguales dos cosas que no lo son:
+ *
+ *    HACIA ARRIBA es SU NEGOCIO. El precio de catálogo es su `Precio Base`
+ *    (costo × 1,15): un PISO, no un precio. Medido en su archivo: vende por
+ *    encima del base en 33 de 55 ventas, con un máximo de +65,6%. Un cartel que
+ *    salta cuando el negocio funciona normal se aprende a ignorar, y entonces
+ *    deja de existir el día que hace falta.
+ *
+ *    HACIA ABAJO es donde vive el typo caro Y donde el sistema pierde plata.
+ *    Ninguna venta real del histórico bajó más de −13,0% del base.
+ *
+ * ── LOS NÚMEROS QUE LO FIJARON (55 líneas del histórico, 2026-09-07) ────────
+ *    venta real más alta:  +65,6%   ·  typo hacia arriba más chico:  +769,6%
+ *    venta real más baja:  −13,0%   ·  typo hacia abajo menos hondo:  −60,9%
+ *    Hay hueco limpio en las dos direcciones. Con +100 / −35:
+ *      salta en 0 de 55 ventas reales  ·  caza 151 de 151 typos simulados.
+ *    ⚠️ El simétrico ±75% también da 0 falsos, pero PIERDE 5 typos. Por eso no.
+ *
+ * ── LO QUE ESTE UMBRAL NO PUEDE ARREGLAR, Y CUÁL ES LA SALIDA SI APARECE ────
+ * 🔴 La desviación escala con el PRECIO, no con la categoría: redondear a plata
+ *    cómoda cuesta lo mismo en pesos y muchísimo más en porcentaje.
+ *      `8.395 → 10.000` es **+19%** y son **1.605 pesos**.
+ *    Un umbral porcentual castiga a los productos baratos por ser baratos, y
+ *    **ningún ajuste del porcentaje lo arregla** — es la forma del instrumento.
+ *    Si algún día aparece ruido, la salida es un **piso ABSOLUTO en pesos**
+ *    (no avisar por debajo de N), NO un umbral por producto ni por categoría.
  */
-export const UMBRAL_PRECIO = 0.20
+export const UMBRAL_PRECIO_ARRIBA = 1.00
+export const UMBRAL_PRECIO_ABAJO = 0.35
 
 export function precioLejosDelCatalogo(item: Pick<CartItem, 'price' | 'product'>): boolean {
   const d = desvioDelCatalogo(item)
-  return d !== null && Math.abs(d) > UMBRAL_PRECIO
+  if (d === null) return false
+  return d > UMBRAL_PRECIO_ARRIBA || d < -UMBRAL_PRECIO_ABAJO
 }
 
 /**

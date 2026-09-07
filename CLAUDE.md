@@ -1870,6 +1870,32 @@ declaraciones no ejecutan (corolario de R4).
 ✅ El caso del 2026-09-04: *«E2E_SERVICE_ROLE_KEY puesta en .env.test»*. El archivo tenía **cuatro
 claves y un mtime de tres días antes**. Costó un `grep` no construir encima.
 
+🔴 **LA SÉPTIMA ES DE OTRA ESPECIE, Y ES LA QUE MÁS SE PARECE A TRABAJO BIEN HECHO: NO ES UN ESTADO,
+ES UNA INFERENCIA SOBRE DATOS QUE ESTABAN A LA VISTA.** *2026-09-07, al abrir la deuda 94.*
+
+Las seis anteriores afirmaban un **estado** —*«ya está puesta»*, *«la suma es X»*, *«el token es de
+proyecto»*—. Ésta afirma una **lectura del dato**: *«las galletas se venden a más del doble del
+base»*, dicho mirando 8.395 contra 13.000 **sin dividir**. El máximo real de todo el histórico es
+**+65,6%**, y las galletas llegan a **+54,9%**.
+
+> **Un «se vende a más del doble» se lee como el resultado de haber mirado los datos, no como un
+> número sin verificar.** Ahí está la diferencia: una afirmación de estado invita a comprobar —*«¿ya
+> está?»*—; una inferencia **suena a análisis**, y el análisis es justamente lo que uno delega en
+> quien lo dice.
+
+⚠️ **Y el agravante es que los datos estaban DELANTE.** No fue una afirmación sobre algo remoto o
+pasado: fue sobre las dos cifras que se estaban mirando en ese momento. La cercanía del dato **no
+protege** — al contrario, hace que dividir parezca innecesario.
+
+✅ **Lo que la cazó fue medir la distribución entera** para decidir el umbral, no revisar la frase.
+Y el número correcto **cambió la propuesta**: con «más del doble» el umbral tendría que haber pasado
+de +100%; con +65,6% medido, +100% deja 34 puntos de margen.
+
+**Lo accionable, y es la misma frase de siempre con otro sujeto:** *un número sin comando es una
+opinión con dígitos* — **incluido el número que uno deduce de un dato que tiene delante**. Si la
+afirmación es una razón (*«el doble»*, *«la mitad»*, *«el triple»*), hay una división, y la división
+se hace.
+
 🔴 **LA SEXTA ES LA MÁS GRAVE, Y POR UNA RAZÓN QUE INVIERTE EL CRITERIO: LO AFIRMADO NO ERA UN
 ESTADO, ERA EL INSTRUMENTO.** *2026-09-06, la carga v2 del catálogo de Muscle Pro.*
 
