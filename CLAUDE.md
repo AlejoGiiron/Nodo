@@ -3729,6 +3729,40 @@ seguiría cobrando de menos para cualquier usuario real, que no tiene auto-waiti
 ⚠️ Es el hermano de *"un rojo que no reproduce el defecto es tan inútil como un verde que no lo
 mide"*, movido al momento de **cerrar**: allá el rojo mentía al aparecer; acá miente al desaparecer.
 
+🔴 **Y LA MISMA DISTINCIÓN DECIDE EL ORDEN DEL TRABAJO: CUANDO UN CONTRATO SE MUEVE EN VARIOS LADOS,
+LOS LADOS NO SE ACTIVAN A LA VEZ — Y EL ROJO DEL INTERVALO ES CORRECTO.**
+*2026-09-07, al hacer `role_id` obligatorio (deuda 99).*
+
+Los tres lados del contrato se movieron **en la misma pasada**, como manda R1. Pero **sólo dos
+quedaron vivos al instante**: el cliente y el tipo se activan con el commit, y **la Edge Function
+recién con el deploy**. Entre una cosa y la otra hay un intervalo —minutos u horas— con el
+contrato **medio aplicado**.
+
+| lado | cuándo se activa |
+|---|---|
+| `createUser` (tipo) · `useUsers` | con el commit |
+| 🔴 la Edge Function | con el **deploy** |
+
+**Y en ese intervalo el caso está ROJO, y el rojo es correcto.** La tentación es taparlo —marcarlo
+`skip`, o relajar la aserción hasta que pase— y las dos cosas rompen lo mismo:
+
+> **Un verde ahí estaría midiendo que el CLIENTE no manda el payload malo, no que la FUNCIÓN lo
+> rechace.** Y el cliente ya no puede mandarlo: el tipo se lo impide. O sea que el caso pasaría
+> midiendo la capa que está delante del sujeto.
+
+⚠️ **Es exactamente la distinción del `force: true` sobre `aria-disabled`**: allá el framework
+respetaba el atributo y el evento nunca llegaba al manejador, así que el caso medía a Playwright en
+vez de al producto. Acá el tipo de TypeScript hace de `aria-disabled`, y el caso tiene que **saltear
+al cliente** —llamar al endpoint directo— para medir la función. **Medir al producto, no a lo que
+está delante.**
+
+✅ **Lo accionable, y son dos:** ① el caso que cruza esa frontera **llama al endpoint directo**, no
+por el cliente tipado; ② mientras dure el intervalo, **el rojo se declara** —en el commit y en la
+deuda— en vez de taparse. Un rojo declarado con su fecha de vencimiento es información; un `skip`
+es un caso que deja de existir sin que nadie lo note.
+
+---
+
 🔴 **LA HERMANA POR EL OTRO LADO: UNA API DEL ARNÉS QUE HACE MÁS DE LO QUE SU NOMBRE SUGIERE Y
 ROMPE EL SUJETO.** *2026-09-07, construyendo el cambio de contraseña (deuda 95).*
 
