@@ -4106,6 +4106,41 @@ verificación**, y se paga en el corte que trae el escenario. Se anota ahí, no 
 exactamente lo que pasó con *«E con el foco en el campo de dinero»*, que estuvo en dos mitades hasta
 que la columna existió.
 
+🔴 **SÉPTIMA APARICIÓN DE «UN VERDE QUE NO DISCRIMINA» — Y LA PRIMERA CUYA CAUSA SON LOS DATOS, NO EL
+CASO.** *2026-09-06, verificando el costeo del histórico de Muscle Pro contra su archivo.*
+
+Las seis anteriores eran defectos **del caso**: una fixture con un elemento, un locator apoyado en
+la unicidad, un control que no podía dar rojo, un escenario que no ejercía la capacidad. Todas se
+arreglan **escribiendo mejor el caso**. Ésta no.
+
+**El caso.** Se simuló el promedio ponderado móvil de `register_purchase` sobre las 44 compras y 55
+ventas del cliente, en orden cronológico, y el costo congelado coincidió con el `Costo Unitario` del
+archivo en **54 de 54** líneas comparables. Se leía como *«nuestro método reproduce su archivo»*.
+
+**Y el control lo desarmó:** el **último costo de compra** también coincide **54 de 54**. La razón,
+medida: de los productos comprados más de una vez, **ninguno** se compró a costos distintos.
+
+> **Sin variación de costo entre dos compras del mismo producto, promedio ponderado y último costo
+> son ARITMÉTICAMENTE EL MISMO NÚMERO.** El archivo no contiene el hecho que separa los dos métodos.
+
+⚠️ **Por eso no se arregla escribiendo mejor la simulación — y ésa es la lección nueva.** Se puede
+reescribir el simulador, agregarle casos, auditarlo por mutación: **ningún escenario construido
+sobre este archivo puede distinguir los dos métodos**, porque la entrada no tiene la variación que
+los distingue. El límite no está en el instrumento ni en el caso: está en **los datos**.
+
+**LO ACCIONABLE, y es una pregunta sobre la ENTRADA, no sobre el test:**
+
+> **Antes de leer una coincidencia como confirmación de un método, preguntá qué propiedad de los
+> datos tendrían que tener para que los dos métodos candidatos dieran resultados DISTINTOS. Si los
+> datos no la tienen, la coincidencia no es evidencia sobre el método.**
+
+Acá esa propiedad se nombra en una línea —*dos compras del mismo producto a costos distintos*— y
+medirla costó un `groupBy`. La respuesta fue cero.
+
+⚠️ Y el corolario honesto, que es lo que hay que escribir en el registro: la simulación **es
+consistente** con el archivo, y eso vale para cargar. Lo que **no** se puede afirmar es que el
+método esté verificado. Son dos frases distintas y sólo una está medida.
+
 **🔴 SI DOS SUPERFICIES COMPARTEN UNA ESCRITURA, ESO SE MIDE — NO SE AFIRMA.**
 *Condición fijada el 2026-09-03, antes de partir el cobro en línea en cortes.*
 
