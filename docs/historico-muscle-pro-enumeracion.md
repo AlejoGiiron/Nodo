@@ -16,6 +16,25 @@ la base de Nodo.*
 porque es el caso exacto del criterio *«la deuda es una hipótesis fechada; el código es el dato»*,
 esta vez sobre el archivo del cliente en vez de sobre el código.
 
+### 🔴 El número pasó por tres valores, y lo que lo fijó no fue contar mejor
+
+| valor | de dónde salió | por qué se cayó |
+|---|---|---|
+| **55** | del encargo, escrito sin medir | son líneas, no ventas |
+| **28** | agrupando por (fecha, cliente) | **produce un objeto imposible** |
+| **30** | agrupando por (fecha, cliente, tipo de pago) | ✅ vigente |
+
+> **Lo que fijó el número no fue contar con más cuidado: fue CHOCAR CONTRA UNA RESTRICCIÓN DEL
+> MODELO.** Un ticket de 28 contenía líneas de contado y de crédito a la vez, y una orden tiene **un
+> solo `payment_status`. No es que 28 fuera impreciso: es que 28 describe algo que la base no puede
+> representar.**
+
+⚠️ **Y por eso vale como método y no como anécdota.** Las tres primeras cifras se podían defender
+con argumentos razonables y ninguna medición de conteo las separaba — contar mejor daba 28 igual.
+Lo que discriminó fue preguntarle **al modelo** si el objeto resultante existía. Es el hermano del
+criterio *«un valor que significa dos cosas no es un dato»*, leído desde el otro lado: acá **dos
+hechos distintos estaban siendo forzados dentro de un objeto que sólo admite uno**.
+
 | | medido |
 |---|---|
 | líneas de venta | **55** |
@@ -244,13 +263,45 @@ pagó»*, no *«falta el dato»*.
 
 | conjunto | medido | nota |
 |---|---|---|
-| **compras** | **44 líneas**, en **3 fechas** (31-ago: 16 · 02-sep: 14 · 04-sep: 14) | agrupables como 3 facturas por día, o por proveedor |
+| **compras** | **44 líneas**, en **3 fechas** y **6 proveedores** → **7 facturas** | ver abajo |
 | **gastos** | **8**, del 30-ago al 06-sep | ninguno fechado en el futuro |
 | **inventario inicial** | 🔴 **cero en las cinco galletas** | esa hoja compara **teórico contra físico**; no aporta saldo de apertura. Dos de las cinco quedaron en cero físico |
 
 ⚠️ **El «inventario inicial de las galletas» del encargo no existe como saldo de apertura.** Lo que
 existe es un **conteo de verificación** que ya cuadra con el teórico. Si lo que se quiere es dejar
 el stock actual correcto, sale solo de cargar compras y ventas — no hay nada que sembrar.
+
+### Las 7 facturas de compra — decisión: una por PROVEEDOR y por DÍA
+
+*Razón: es lo que un proveedor emite, y `purchase_invoices` tiene proveedor.*
+
+| fecha | proveedor | líneas | unidades | total |
+|---|---|---|---|---|
+| 2026-08-31 | ANABOLI | 4 | 31 | 540.000 |
+| 2026-08-31 | VENOM | 10 | 20 | 1.959.500 |
+| 2026-08-31 | VIDA FIT | 2 | 2 | 162.000 |
+| 2026-09-02 | GOMEISA | 1 | 1 | 63.000 |
+| 2026-09-02 | MUTANTES | 5 | 100 | 755.000 |
+| 2026-09-02 | VIDA FIT | 8 | 8 | 601.000 |
+| 2026-09-04 | GMN | 14 | 71 | 4.916.773 |
+| | | **44** | | **8.997.273** |
+
+✅ **Control de que la decisión era necesaria, no estética:** agrupar **sólo por día** habría fundido
+**3 proveedores el 31-ago** (Venom + Vida Fit + Anaboli) y **3 el 02-sep** (Vida Fit + Mutantes +
+Gomeisa) en documentos que nunca existieron. Sólo el 04-sep tiene un proveedor único.
+
+🔴 **Y hay UN caso de producto repetido dentro de una misma factura**, que era lo que había que
+verificar:
+
+```
+2026-09-02 · VIDA FIT · CREATINA IRON NUTRITION    ×2 → 1u a 63.000  |  1u a 63.000
+2026-09-02 · VIDA FIT · CREATINA OPTIMUN NUTRITIO  ×2 → 1u a 84.000  |  1u a 84.000
+```
+
+**Las dos veces el costo unitario es idéntico**, así que sumar las cantidades **no pierde
+información** y da el mismo promedio ponderado. Decisión: **se suman** (2 unidades en una línea).
+Si los costos hubieran diferido habría que dejarlas separadas, porque la línea de factura congela
+un costo por unidad.
 
 ---
 
@@ -270,18 +321,171 @@ filas del archivo no están ordenadas. Se corrigió midiendo mínimo y máximo.*
 
 ---
 
-## 7 · Preguntas abiertas para el cliente
+## 7 · Las preguntas, CONTESTADAS por el cliente (2026-09-06)
 
-1. **¿`GALLETA OREO MUTANTES` del 2026-09-03 (C10) son dos ventas o una línea repetida?** Es el
-   único caso donde la fusión por (fecha, cliente, tipo) podría estar juntando dos visitas.
-2. **¿Las 2 ventas fechadas 2026-09-07 son de mañana, o es un typo?**
-3. **¿`OXANDRONOM 100 TABS` se compró y no se registró?** Se vendió sin compra previa.
-4. **¿Las 3 fechas de compra son 3 facturas, o varias facturas por día?** De eso depende cuántas
-   `purchase_invoices` se crean y con qué número.
+| # | pregunta | respuesta |
+|---|---|---|
+| 1 | ¿`GALLETA OREO MUTANTES` del 03-sep son dos ventas o una? | **Es la MISMA venta.** Las dos líneas se fusionan en un ticket. **Confirmado por él, no inferido** |
+| 2 | ¿Las 2 ventas del 07-sep son de mañana o un typo? | **Se cargan con su fecha.** Ver §1 y la deuda 96 |
+| 3 | ¿`OXANDRONOM` se compró y no se registró? | **La venta se carga SIN COSTO.** Ver abajo |
+| 4 | ¿Las camisas son mercancía o uniformes? | **Uniformes → GASTO**, con subcategoría. No entra al catálogo ni al inventario |
+
+⚠️ **Sobre la 1, y hay que dejarlo escrito antes de cargar:** la fusión ahora está **confirmada por
+el cliente**, no deducida de la ausencia de hora. Pero el principio general sigue en pie — **una
+fusión no se puede deshacer después de cargar**: dos visitas cargadas como un ticket quedan como una
+sola venta, con un solo número correlativo y un solo total, y nada en la base recuerda que eran dos.
+
+### 🔴 `OXANDRONOM 100 TABS` — la venta se carga y el costo queda NULO
+
+**No se inventa una compra.** Confirmado por el cliente.
+
+> **Un costo nulo es VERDADERO y la pantalla lo dice con «—». Un costo inventado es FALSO y se ve
+> bien.**
+
+**La razón, entera:** fabricar una compra que no ocurrió agrega un hecho falso al inventario **y**
+le pone un costo elegido por nosotros — que después **se congela en la línea de venta** (R1 punto 8)
+y alimenta utilidades para siempre. El daño no queda en la compra inventada: se propaga al margen de
+una venta real y ya no se puede distinguir de un dato medido.
+
+Es el mismo criterio del **«—» para dato insuficiente**, y **la primera vez que se aplica sobre
+datos de un cliente** en vez de sobre una pantalla nuestra.
+
+🔴 **CÓMO SE CORRIGE SI APARECE LA COMPRA — y va escrito para que nadie lo intente al revés:**
+
+| ⛔ lo que NO se hace | ✅ lo que se hace |
+|---|---|
+| editar la venta vieja para ponerle costo | **registrar la compra que faltó** |
+| recalcular su utilidad hacia atrás | y usar **`adjust_cost`** para el costo del producto |
+
+**La venta vieja se queda sin ganancia, y eso es correcto.** El costo está **congelado** en
+`order_items.unit_cost` justamente para que una compra registrada hoy no cambie las utilidades de
+ayer — si se pudiera editar, el reporte daría distinto cada vez que se abre, que es el fallo
+silencioso que esa columna existe para evitar. **Se corrige de ahí en adelante, no hacia atrás.**
+
+### La pregunta que queda abierta
+
+**¿De dónde salió el Oxandronom?** Se vendió sin haberse comprado nunca. Puede ser una compra que no
+anotó, y entonces **la respuesta la tiene él**. Si aparece, se aplica el procedimiento de arriba.
+
+### `HALOTESTIN` → `001-10` · verificado contra el maestro
+
+*No bloquea nada: la columna de código no existe (deuda 41). Se anota para cuando exista.*
+
+La serie de Farmacología en la hoja `Productos`, enumerada:
+
+```
+001-1 CLEMBUTEROL · 001-2 MASTENOM E · 001-3 MASTENOM P · 001-4 OXANDRONOM
+001-5 TESTONOM C  · 001-6 TESTONOM P · 001-7 HALOTESTIN 🔴 · 001-7 TRENBONOM A 🔴
+001-8 DECANOM     · 001-9 TESTONOM E
+```
+
+| candidato | estado |
+|---|---|
+| `001-8` | ⛔ ocupado por `DECANOM X AMPOLLAS` |
+| `001-9` | ⛔ ocupado por `TESTONOM E X AMPOLLAS` |
+| **`001-10`** | ✅ **libre** |
+
+La serie llega a 9 **sin huecos**, así que el siguiente libre es el 10. `001-7` es el único
+duplicado, y la hoja de compras lo usa para Trenbonom: **el que se mueve es Halotestin**.
+
+### Las camisas → gasto con subcategoría
+
+`Camisas` **520.800**, en la hoja `Gasto`. Son uniformes, así que **no son mercancía**: no entran al
+catálogo, no entran al inventario y no tienen costo de venta. Van como gasto con su subcategoría
+(deuda 45, que hizo la subcategoría un desplegable editable por sede justamente para esto).
 
 ---
 
-## 8 · Residuo de las mediciones
+## 8 · La hoja «Resumen General» — qué es, y qué tendría que pasar para replicarla
+
+*Enumerada celda por celda con sus fórmulas. **No se construyó nada**: esto es el informe previo.*
+
+### 🔴 Primero, el dato que cambia la conversación: la hoja NO CALCULA — está rota
+
+**8 de sus celdas están en `#REF!`**, y no es un detalle de una esquina: es la **columna del saldo
+entera**.
+
+| celda | fórmula | resultado |
+|---|---|---|
+| `D3` compras | `='Compra de inventario'!#REF!` | 🔴 `#REF!` |
+| `E3` `E4` `E5` `E6` saldo | encadenadas sobre `D3` | 🔴 `#REF!` |
+| `J9` `L9` `E10` cuadre | encadenadas sobre `E6` | 🔴 `#REF!` |
+
+**El cliente no está mirando esos números: está mirando errores.** Lo que sí ve son las tres celdas
+que sobreviven, y dos de ellas son valores **escritos a mano**.
+
+### Qué muestra, fila por fila
+
+No es un reporte de ventas: es un **flujo de caja / posición de capital**.
+
+| fila | concepto | de dónde sale | medido |
+|---|---|---|---|
+| 2 | Capital inicial (entrada) | **escrito a mano** | 5.000.000 |
+| 3 | Compra de inventario (salida) | fórmula a la hoja de compras | 🔴 `#REF!` |
+| 4 | Ventas acumuladas (entrada) | **escrito a mano, sin fórmula** | 2.343.100 |
+| 5 | Gastos (salida) | `=Gasto!C6` | 30.500 |
+| 6 | Total | `=E5` | 🔴 `#REF!` |
+| 7 | «lo que hay en nequi» | `=1131300+36000` **a mano** | 1.167.300 |
+| 8 | «Lo de nelly» | **a mano** | 90.500 |
+| 9 | «cuadre de caja 04 sep» | `=E7+E8` | 1.257.800 |
+| 10 | diferencia | `=E9-E6` | 🔴 `#REF!` |
+
+### 🔴 Y los dos números que sí muestra tampoco cuadran con sus propias hojas
+
+| lo que el resumen dice | lo que suman sus hojas | diferencia |
+|---|---|---|
+| Gastos **30.500** (`=Gasto!C6`, **una celda**) | la hoja `Gasto` suma **8.617.300** en 8 filas | toma **una fila de ocho** |
+| Ventas acumuladas **2.343.100** (a mano) | vendido **3.263.100** · cobrado **2.387.100** | 920.000 · **44.000** |
+| Compras `#REF!` | 44 líneas suman **8.997.273** | no se calcula |
+
+⚠️ **El 2.343.100 se parece al cobrado (2.387.100) pero no es igual**: se quedó 44.000 atrás. Es un
+número que fue cierto en algún momento y nadie volvió a tocar — exactamente lo que este proyecto
+llama *una afirmación de estado sin fecha*.
+
+⚠️ **Y la hoja de gastos tiene adentro `Compra Gmn = 5.049.000`**, que es una **compra**, no un
+gasto. Es la conflación que la deuda 63 corrige, otra vez en el archivo real. Los gastos reales, sin
+esa fila, son **3.568.300**.
+
+### Qué de su resumen ya existe en Nodo, qué se deriva, y qué falta
+
+| lo que su resumen muestra | estado en Nodo |
+|---|---|
+| **Ventas acumuladas** | ✅ **ya existe** — `Vendido` y `Cobrado` en Reportes, y **separados**, que es más de lo que su hoja distingue |
+| **Gastos del período** | ✅ **ya existe** — `cash_movements` con `categoria` y `subcategoria`, y con `document_date` para ordenarlos por período |
+| **Compra de inventario del período** | 🟡 **se deriva** — `purchase_invoices` tiene todo (total, proveedor, `document_date`); no hay pantalla que lo muestre como una línea del flujo |
+| **Saldo / caja teórica** | 🟡 **se deriva** — capital inicial + cobrado − compras − gastos. Todos los sumandos existen salvo el primero |
+| **Capital inicial** | 🔴 **ESQUEMA NUEVO** — no existe el concepto de aporte de capital. `cash_movements` es de jornada, no de patrimonio |
+| **«lo que hay en nequi» / «lo de nelly»** | 🔴 **ESQUEMA NUEVO** — es **saldo por cuenta o por lugar de la plata**. Nodo tiene `payment_method` en la transacción, pero **no tiene cuentas con saldo** |
+| **Cuadre contra la plata real** | 🟡 parcial — el arqueo de caja cuadra **el cajón de una jornada**, no todas las cuentas |
+
+### Contra lo que Reportes muestra hoy
+
+| Reportes hoy | su resumen |
+|---|---|
+| `Vendido` · `Cobrado` · `Órdenes` · `Ticket promedio` | no distingue vendido de cobrado |
+| períodos: hoy / semana / mes / mes anterior | un solo acumulado sin período |
+| «Vendido por día y canal», «Cobrado por hora» | — |
+| pestañas Financiero y Stock, con export | — |
+| — | 🔴 **capital, cuentas y cuadre patrimonial** |
+
+**Las cuatro vistas del archivo 12** (`daily_sales_summary`, `product_performance`, `hourly_sales`,
+`user_performance`): sólo la primera fue corregida para medir **vendido y cobrado** (deuda 53); las
+otras tres siguen midiendo **cobrado** por su `join payments`, o sea que **una venta a crédito sin
+abonos no aparece** (deuda 73). Para un cliente con **9 deudas de 30 tickets** eso no es un detalle.
+
+### 🔴 Lo que hay que decirle antes de prometer
+
+> **Su «Resumen General» y la pantalla de Reportes contestan preguntas distintas.** Reportes contesta
+> *cuánto vendí*; su hoja contesta *dónde está mi plata*. La segunda necesita **dos conceptos que
+> Nodo no tiene**: aporte de capital y cuentas con saldo.
+
+Replicar la hoja **tal cual** no es un re-skin de Reportes: es un módulo de tesorería. Y conviene
+decirle también que **la hoja que quiere replicar hoy no funciona** — 8 celdas en error y dos
+números tecleados a mano que ya no cuadran con sus propias hojas.
+
+---
+
+## 9 · Residuo de las mediciones
 
 Ninguna tabla tiene policy de `DELETE`, así que lo que una sonda escribe **no se puede borrar**.
 
