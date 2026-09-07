@@ -78,7 +78,7 @@ por período y **la antigüedad de cartera**, que deriva de `orders.created_at`.
 | 7 | las dos líneas de **Galleta Oreo del 03-sep son un ticket** | **confirmado por el cliente**, no inferido |
 | 8 | canal = **`mostrador`** en los 30 | `orders.canal` es `not null` y sin default a propósito. El archivo no distingue canal, y el negocio es de mostrador |
 | 9 | 🔴 **las jornadas reconstruidas se cierran SIN ARQUEO** | ver abajo |
-| 10 | el abono de 20.000 entra como **`transfer`** | 🔴 **INFERIDO, no es dato del archivo** — ver abajo |
+| 10 | el abono de 20.000 entra como **`transfer`** | ✅ **CONFIRMADO por el cliente** el 2026-09-07 — ver abajo |
 
 ### 🔴 Decisión 9 · las jornadas se cierran con `closing_amount`, `expected_amount` y `difference` en NULO
 
@@ -99,7 +99,7 @@ recomputar**. Un nulo se lee como *no hay dato*; un cero se lee como *dato*.
 ser correcto aunque lo calculáramos**, porque los pagos y los movimientos de stock quedan fechados
 hoy (§2). El único valor honesto es la ausencia.
 
-### 🔴 Decisión 10 · el método del abono es INFERIDO — no está en el archivo
+### ✅ Decisión 10 · el método del abono: INFERIDO primero, CONFIRMADO después
 
 El archivo dice **`ABONO 20 MIL`** en la columna de método de pago, y eso **no nombra un método**:
 dice que hubo un abono. Se carga como `transfer` porque 37 de sus 39 métodos conocidos son
@@ -108,10 +108,21 @@ transferencia, **pero es una inferencia nuestra y queda marcada como tal**.
 ⚠️ **Y no es cosmética: si fue en EFECTIVO, `register_debt_payment` crea un movimiento de caja y
 cambia el arqueo de ese día.** En transferencia no toca la caja.
 
-⛔ **Pendiente de preguntarle al cliente.** Hasta que conteste, el dato en la base es una inferencia
-con un origen distinto al resto del histórico, que es transcripción.
+✅ **CONFIRMADO POR EL CLIENTE el 2026-09-07: fue transferencia.** La inferencia era correcta, así
+que **la base no cambia** y el arqueo del 6 de septiembre queda como está — no tocó la caja.
 
-🔴 **SI CONTESTA QUE FUE EN EFECTIVO, SE CORRIGE CON UN MOVIMIENTO DE CAJA — NO editando el abono.**
+🔴 **Y la distinción que hay que conservar es la del ORIGEN, no la del valor.** El dato en la base es
+el mismo antes y después de preguntar; lo que cambió es de dónde viene. Una inferencia **correcta y
+confirmada** no es lo mismo que una **que nunca se preguntó**: la segunda también sería correcta —y
+seguiría siendo una suposición nuestra escrita como si fuera de él—. Lo que la convierte en dato no
+es acertar: es preguntar.
+
+⚠️ **EL PROCEDIMIENTO DE ABAJO YA NO SE NECESITA PARA ESTE CASO —contestó transferencia— pero se
+conserva porque la regla vale para el próximo.** No se borra ni se deja escrito en presente: se
+marca como resuelto, con su razón intacta.
+
+🔴 **SI ALGÚN ABONO RESULTA HABER SIDO EN EFECTIVO, SE CORRIGE CON UN MOVIMIENTO DE CAJA — NO
+editando el abono.**
 
 | ⛔ NO | ✅ SÍ |
 |---|---|

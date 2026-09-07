@@ -18,13 +18,15 @@
  *               cargados — su tabla es «producto | cargado | pasa a», sin
  *               columna de código. El documento se usa igual, como CONTROL
  *               CRUZADO de esos 25 contra el Excel.
- * 🔴 `unidad`  — VALOR ASUMIDO POR NOSOTROS, no un dato de su archivo. Su Excel
- *               NO tiene unidad de venta en ninguna hoja. Se pone `unidad` en
- *               los 42 porque todo lo que vende son frascos, tarros y galletas.
- *               **Es el mismo trato que el plazo de 15 días antes de que él lo
- *               confirmara: se carga, se marca como asumido, y se pregunta.**
- *               ⛔ Pregunta pendiente: «puse todos por unidad — ¿alguno se vende
- *               por peso, por metro o por paquete?»
+ * ✅ `unidad`  — **CONFIRMADO POR EL CLIENTE el 2026-09-07**: todos por unidad.
+ *               ⚠️ Sigue SIN estar en su archivo —su Excel no tiene unidad de
+ *               venta en ninguna hoja—, así que el origen del dato **no es la
+ *               transcripción sino su respuesta**. Se cargó primero como valor
+ *               ASUMIDO, marcado como tal, y se preguntó; la respuesta lo
+ *               convirtió en dato. Mismo recorrido que el plazo de 15 días.
+ *               🔴 El DISPARADOR no cambia: el día que un producto se venda por
+ *               PESO o por METRO, la unidad deja de ser un rótulo y pasa a ser
+ *               un FACTOR — y ahí el texto libre deja de alcanzar.
  *
  * ── LAS CUATRO DE R0 ───────────────────────────────────────────────────────
  * 1. CLASE — UPDATE por-id y fail-closed, sobre una allowlist explícita: las
@@ -70,7 +72,12 @@ const ORG_ESPERADA = args.get('org-esperada')
 const RUTA = args.get('catalogo') || 'docs/muscle-pro-catalogo-v2.md'
 const ARCHIVO = args.get('archivo') || 'docs/Control Mp 2.xlsx'
 const APLICAR = banderas.has('aplicar')
-/** 🔴 ASUMIDO, no leído del archivo del cliente. Ver el encabezado. */
+/**
+ * ✅ Confirmado por el cliente el 2026-09-07 (todos por unidad). NO sale de su
+ * archivo: sale de su respuesta. El nombre conserva «ASUMIDA» a propósito —
+ * describe cómo entró el valor la primera vez, y ese recorrido es lo que hace
+ * que hoy sea un dato y no una suposición que nadie revisó.
+ */
 const UNIDAD_ASUMIDA = args.get('unidad') || 'unidad'
 
 const salir = (c) => { console.log(`\ncodigos_exit=${c}`); process.exit(c) }
@@ -190,7 +197,7 @@ if (new Set(CODIGOS.map((c) => norm(c.codigo))).size !== CODIGOS.length) {
     'el índice único los rechazaría igual. Resolvelo antes de cargar.')
 }
 console.log('  TOTAL: %d códigos, todos distintos', CODIGOS.length)
-console.log('  unidad a cargar: «%s»  🔴 VALOR ASUMIDO, no está en el archivo del cliente', UNIDAD_ASUMIDA)
+console.log('  unidad a cargar: «%s»  ✅ confirmada por el cliente (no está en su archivo)', UNIDAD_ASUMIDA)
 console.log('  modo: %s', APLICAR ? '🔴 --aplicar: ESCRIBE' : 'sólo lectura')
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -316,6 +323,6 @@ if (malos.length) {
   salir(1)
 }
 console.log('\n✅ LOS %d PRODUCTOS TIENEN CÓDIGO Y UNIDAD, y el duplicado del archivo quedó resuelto.', plan.length)
-console.log('⛔ RECORDATORIO: la unidad es un VALOR ASUMIDO. Preguntarle al cliente:')
-console.log('   «puse todos por unidad — ¿alguno se vende por peso, por metro o por paquete?»')
+console.log('ℹ️ La unidad no sale de su archivo: la confirmó él el 2026-09-07 (todos por unidad).')
+console.log('   Vuelve a preguntarse el día que algo se venda por peso o por metro.')
 salir(0)

@@ -4709,6 +4709,42 @@ Ninguna verificación lo buscaba, así que sin esa impresión accidental el defe
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · UNA INFERENCIA CORRECTA QUE SE CONFIRMA NO ES LO MISMO QUE UNA QUE NUNCA SE PREGUNTÓ
+
+*2026-09-07, con las dos respuestas del cliente sobre el histórico de Muscle Pro. **Ninguna cambió
+la base**: las dos inferencias eran correctas. Y por eso mismo el caso vale.*
+
+| dato | cómo entró | qué contestó el cliente |
+|---|---|---|
+| la **unidad** de los 42 productos | asumida: *«todo lo que vende son frascos y tarros»* | ✅ todos por unidad |
+| el **método del abono** de 20.000 | inferido: *37 de 39 métodos son transferencia* | ✅ transferencia |
+
+> **El valor en la base es idéntico antes y después de preguntar. Lo que cambió es su ORIGEN — y el
+> origen es lo único que se puede auditar después.**
+
+🔴 **Por qué no alcanza con acertar.** Una inferencia que nunca se preguntó y resulta correcta
+produce **exactamente la misma fila** que una confirmada. La diferencia no está en el dato: está en
+que la primera sigue siendo **una suposición nuestra escrita como si fuera del cliente**, y nada en
+la base la distingue de un hecho suyo. El día que alguien la cuestione, no hay a quién remitirse.
+
+⚠️ **Y el riesgo real no es equivocarse: es que la suposición se vuelva PREMISA.** Un valor asumido
+que nadie marcó se cita después como dato del cliente, y sobre él se construye —un reporte, una
+regla, otra decisión—. Acertar lo hace más peligroso, no menos: **una suposición equivocada se
+descubre sola; una correcta no se descubre nunca**, y hereda una autoridad que nadie le dio.
+
+✅ **LO ACCIONABLE, y son dos mitades que van juntas:**
+
+1. **Cargar el valor asumido MARCADO como asumido** —en el código, en el documento y en la salida
+   del script—, no esperar la respuesta para poder avanzar.
+2. **Preguntar igual, aunque se esté seguro.** Y cuando conteste, **cambiar la marca**: el trabajo
+   no termina cuando el dato entra, termina cuando el dato tiene dueño.
+
+⚠️ Corolario para escribir: al confirmar, **la marca se reemplaza y el recorrido se conserva** —
+*«entró como asumido, se preguntó, lo confirmó»*—. Borrar el recorrido convierte el dato en algo que
+siempre fue del cliente, y eso es una afirmación falsa sobre su origen.
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · UNA ADVERTENCIA ESCRITA SE CUMPLIÓ EN LA FECHA EXACTA QUE ANTICIPABA — Y NO EVITÓ NADA
 
 *2026-09-07, deuda 41. **Primera vez en el proyecto que una advertencia escrita se cumple tal
