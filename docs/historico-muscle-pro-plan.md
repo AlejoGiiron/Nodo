@@ -111,6 +111,18 @@ cambia el arqueo de ese día.** En transferencia no toca la caja.
 ⛔ **Pendiente de preguntarle al cliente.** Hasta que conteste, el dato en la base es una inferencia
 con un origen distinto al resto del histórico, que es transcripción.
 
+🔴 **SI CONTESTA QUE FUE EN EFECTIVO, SE CORRIGE CON UN MOVIMIENTO DE CAJA — NO editando el abono.**
+
+| ⛔ NO | ✅ SÍ |
+|---|---|
+| cambiar `debt_payments.payment_method` | registrar el **ingreso de caja** que faltó |
+
+El abono ya ocurrió y su fila lo registra: el saldo del cliente es correcto en las dos versiones.
+Lo único que cambia es **si entró plata al cajón**, y eso es un hecho **de caja**, no del abono.
+Editarlo hacia atrás reescribiría la historia y **dejaría el arqueo de ese día sin explicación**: la
+caja mostraría un ingreso que ninguna fila justifica. Es *la historia no se reescribe, se le agrega*
+aplicado a este caso.
+
 ### 🔴 Si aparece la compra de Oxandronom — el procedimiento, para que nadie lo haga al revés
 
 | ⛔ NO | ✅ SÍ |

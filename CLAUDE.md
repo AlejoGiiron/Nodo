@@ -170,6 +170,40 @@ historia no se reescribe, se le agrega*.
 
 ---
 
+### 3 · Muscle Pro · SU HOJA DE INVENTARIO ESTÁ DESACTUALIZADA, Y NODO VA A MOSTRAR MENOS STOCK DEL QUE ÉL ESPERA
+
+*Anotado el 2026-09-07, con la carga del histórico. **Confirmado por el cliente**: las líneas de
+venta son la fuente; su hoja `Control de inventario` está desactualizada.*
+
+**Lo que va a pasar, y va a pasar la primera vez que abra Inventario:** va a ver **17 Galleta
+Nutella** donde su Excel decía **20**, y **2 Galleta Oreo** donde decía **7**. Y lo va a reportar
+como un error del sistema.
+
+**No es un error.** Son **dos hojas suyas que se contradicen**:
+
+| producto | su hoja `Control de inventario` | sus líneas de venta reales |
+|---|---|---|
+| GALLETA NUTELLA MUTANTES | ventas **20** | ventas **23** |
+| GALLETA OREO MUTANTES | ventas **18** | ventas **23** |
+
+Su conteo físico —0, 20, 7, 2, 0— **estaba calculado contra la hoja mala**. Con las ventas reales,
+`40 − 23 = 17` y `25 − 23 = 2`, que es lo que Nodo muestra y lo que el archivo dice.
+
+⛔ **Lo que NO hay que hacer:** «ajustar» el stock para que coincida con su conteo. Eso metería un
+`adjust_stock` de +3 y +5 sobre un inventario que ya es correcto, y taparía la única señal de que
+una de sus hojas estaba mal.
+
+✅ **Lo que corresponde si él quiere que el número refleje la realidad física de hoy:** un
+**conteo nuevo**, hecho ahora, y un ajuste de inventario contra ese conteo — que es un hecho nuevo
+con su fecha, no una corrección del pasado.
+
+⚠️ **Y la parte que hace que esto valga escrito:** el cargador **transcribió bien**. Verificado
+contra la base: los 42 productos cierran con `Σ compras − Σ ventas` del archivo. Si dentro de tres
+meses alguien encuentra este desvío y va a buscar el defecto al cargador, lo va a buscar donde no
+está.
+
+---
+
 **No se hereda nada de esta sección de Vento.** Los comportamientos de G-10 y Salchimelo —las
 mesas abiertas usadas como cuenta corriente interna, por ejemplo— son estado de negocio ajeno.
 
@@ -1488,6 +1522,36 @@ nota.
    práctico: al escribir una consulta de diagnóstico, **incluí una columna que ya sepas cuánto
    debe dar** — un conteo, un total del día — aunque no la necesites para la pregunta. Es el
    control negativo de los números.
+
+   🔴 **PERO EL CONTROL CRUZADO TIENE UNA CONDICIÓN, Y NO ES «QUE VENGA DE OTRO CAMINO».**
+   *Medido el 2026-09-07, en el ensayo del histórico de Muscle Pro.*
+
+   > **Un control cruzado sólo valida la carga si es REPRODUCIBLE desde lo que se está cargando.
+   > Si no lo es, no valida nada sobre la carga: valida que dos fuentes coincidan — y si no
+   > coinciden, no dice cuál está mal.**
+
+   **El caso, y la premisa falsa es la que lo hace registrable.** Se fijó como criterio de
+   aceptación el **conteo físico** de cinco productos, y se elogió justamente porque *venía de otro
+   camino*: contar cajas, no sumar filas. Eso es **cierto y no alcanza**. Se dijo, además, que si el
+   ensayo no reproducía ese número **el problema sería del cargador**. El ensayo no lo reprodujo
+   —17 contra 20, 2 contra 7— y **el problema era el criterio**: el conteo estaba calculado contra
+   una hoja del cliente cuya columna de ventas (20 y 18) contradice sus propias líneas de venta
+   (23 y 23), y **ninguna fecha de corte lo reproduce**.
+
+   ⚠️ **La independencia es lo que hace valioso a un control cruzado y lo que lo vuelve inutilizable
+   como criterio de aceptación cuando no cierra.** Las dos cosas salen de la misma propiedad, y por
+   eso conviene tenerlas escritas juntas: si el número viene de un camino que **no se puede
+   recorrer** desde los datos que se cargan, un desvío no distingue *«la carga está mal»* de *«la
+   otra fuente está mal»*.
+
+   ✅ **Lo accionable, y es una pregunta antes de fijar un criterio:** ¿puedo **derivar** este
+   número desde lo que voy a cargar? Si sí, es criterio. Si no, es **información** y es una pregunta
+   para quien lo produjo. El criterio que quedó —`stock = Σ compras − Σ ventas`, sobre los 42— sale
+   del mismo archivo, cubre todo el catálogo en vez de cinco filas, y falla en las dos direcciones.
+
+   ⚠️ Es la misma familia que la **suma de control inventada** del 2026-09-06, en otro eje: allá el
+   verificador era falso y habría hecho fallar una carga correcta; acá el verificador era **cierto
+   pero no reproducible**, y habría hecho fallar una carga correcta igual.
 
 🔴 **LA UNDÉCIMA ES DE OTRO EJE: NO MIDIÓ MAL, MIDIÓ OTRA COSA — UN INSTRUMENTO DE FECHADO.**
 *2026-09-03, comparando el bundle desplegado contra el local.*
