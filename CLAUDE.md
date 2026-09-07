@@ -1896,6 +1896,45 @@ opinión con dígitos* — **incluido el número que uno deduce de un dato que t
 afirmación es una razón (*«el doble»*, *«la mitad»*, *«el triple»*), hay una división, y la división
 se hace.
 
+🔴 **LA OCTAVA ES LA PRIMERA SOBRE TRABAJO AJENO, Y SE INFIRIÓ DESDE UNA ETIQUETA.**
+*2026-09-07, al cerrar la primera tanda de la deuda 41.*
+
+Las siete anteriores eran sobre cosas que **quien las afirmaba había hecho o dicho**: una clave que
+puso, una suma que escribió, un número que dedujo de un dato suyo. Ésta no:
+
+> *«código y unidad están en la base pero NO se ven todavía en pantalla»* — y el **Catálogo ya las
+> mostraba**, con sus columnas `CÓDIGO` y `UNID`, desde el commit anterior.
+
+🔴 **De dónde salió: del TÍTULO de la tanda.** El commit se llamaba *«deuda 41, Mostrador y
+Catálogo»* y el mensaje decía que faltaban las pantallas. De ahí se dedujo que **nada** se veía.
+
+> **Un título de tanda es un RESUMEN, y un resumen se lee como ESTADO.** Comprime para poder
+> leerse, así que necesariamente omite qué parte quedó hecha — y el que lo lee completa el hueco
+> con lo que la etiqueta sugiere.
+
+⚠️ **Y por eso es peor que inferir sobre lo propio:** sobre lo propio uno tiene el recuerdo de
+haberlo hecho, que al menos es una señal. Sobre trabajo ajeno **la etiqueta es todo lo que hay**, y
+la etiqueta la escribió alguien que sabía lo que estaba adentro y no necesitaba que se lo dijeran.
+
+✅ **Lo que la cazó fue mirar antes de comunicar**, y a un paso de que importara: se iba a escribir
+al cliente *«todavía no los vas a ver»* con las columnas ya en pantalla. Costó un `grep` de los dos
+testids.
+
+**Lo accionable, y es la misma frase con otro sujeto:** antes de afirmar el estado de un trabajo,
+**abrí el trabajo**. El título dice de qué se trata; no dice qué quedó adentro.
+
+🔴 **Y LA MITAD QUE HIZO VISIBLE EL ERROR NO FUE UNA REVISIÓN: FUE COMPLETAR EL SCOPE.** La tanda se
+había declarado *«Mostrador y Catálogo»* y se entregó a medias — el Catálogo con sus dos columnas y
+el Mostrador **sólo con el código en el buscador**, sin mostrarlo en la fila. Al revisar el scope
+declarado contra lo entregado apareció el hueco, y al medirlo para taparlo apareció **también** que
+la otra mitad ya estaba hecha.
+
+⚠️ **Sin ese repaso, el mensaje al cliente habría sido falso EN LA OTRA DIRECCIÓN:** «ya podés ver
+los códigos» cuando en el Mostrador todavía no se veían. Dos afirmaciones falsas opuestas, y la
+única forma de no emitir ninguna era **verificar el scope declarado contra lo entregado**, que es un
+paso distinto de correr los tests: los tests estaban en verde con el Mostrador a medias, porque
+nadie había escrito un caso para lo que faltaba.
+
 🔴 **LA SEXTA ES LA MÁS GRAVE, Y POR UNA RAZÓN QUE INVIERTE EL CRITERIO: LO AFIRMADO NO ERA UN
 ESTADO, ERA EL INSTRUMENTO.** *2026-09-06, la carga v2 del catálogo de Muscle Pro.*
 

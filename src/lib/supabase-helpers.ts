@@ -1118,7 +1118,9 @@ export interface PurchaseInvoiceDetailRow {
     subtotal: number
     purchase_unit: string | null
     units_per_purchase_unit: number
-    products: { name: string } | null
+    /** `codigo` se agrego el 2026-09-07 (deuda 41) Y CON SU `select`: declarar
+     *  una clave que la consulta no pide devuelve `undefined`, que es falsy. */
+    products: { name: string; codigo: string | null } | null
   }[]
 }
 
@@ -1131,7 +1133,7 @@ export const getPurchaseInvoiceDetail = (invoiceId: string) =>
         'suppliers(name, contact, phone), ' +
         'profiles!purchase_invoices_created_by_fkey(full_name), ' +
         'purchase_invoice_items(id, qty, unit_cost, subtotal, ' +
-        'purchase_unit, units_per_purchase_unit, products(name))',
+        'purchase_unit, units_per_purchase_unit, products(name, codigo))',
     )
     .eq('id', invoiceId)
     .single()

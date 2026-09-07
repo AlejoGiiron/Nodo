@@ -146,8 +146,10 @@ function LevelsTab({ products, onAdjust }: { products: ProductWithCategory[]; on
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr style={{ background: 'var(--surface-2)', textAlign: 'left', color: 'var(--ink-3)', fontSize: 11.5 }}>
+              <th style={{ padding: '10px 16px', fontWeight: 600 }}>Código</th>
               <th style={{ padding: '10px 16px', fontWeight: 600 }}>Producto</th>
               <th style={{ padding: '10px 16px', fontWeight: 600 }}>Categoría</th>
+              <th style={{ padding: '10px 16px', fontWeight: 600 }}>Unid</th>
               <th style={{ padding: '10px 16px', fontWeight: 600, textAlign: 'right' }}>Stock</th>
               <th style={{ padding: '10px 16px', fontWeight: 600, textAlign: 'right' }}>Mínimo</th>
               <th style={{ padding: '10px 16px', fontWeight: 600 }}>Estado</th>
@@ -156,14 +158,23 @@ function LevelsTab({ products, onAdjust }: { products: ProductWithCategory[]; on
           </thead>
           <tbody>
             {filtered.length === 0 ? (
-              <tr><td colSpan={6} style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--ink-4)' }}>Sin productos que coincidan</td></tr>
+              /* ⚠️ El colSpan es un LADO MAS del contrato con la cabecera (R1): agregar
+                     una columna y no tocarlo deja el estado vacio desalineado, y eso
+                     NO lo rompe ningun test — es una fila que solo se ve sin datos. */
+                  <tr><td colSpan={8} style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--ink-4)' }}>Sin productos que coincidan</td></tr>
             ) : filtered.map(p => {
               const st = stockStatus(p)
               const stock = p.stock_qty ?? 0
               return (
                 <tr key={p.id} data-testid="stock-level-row" style={{ borderTop: '1px solid var(--border-2)' }}>
+                  {/* §2: `tabular-nums` obligatorio en el codigo de producto. */}
+                  <td data-testid="inventario-codigo" style={{ padding: '11px 16px', color: 'var(--ink-3)', fontVariantNumeric: 'tabular-nums' }}>{p.codigo ?? '—'}</td>
                   <td style={{ padding: '11px 16px', fontWeight: 600, color: 'var(--ink)' }}>{p.name}</td>
                   <td style={{ padding: '11px 16px', color: 'var(--ink-3)' }}>{p.categories?.name ?? '—'}</td>
+                  {/* La unidad da sentido a la EXISTENCIA: «7» no dice nada sin
+                      saber 7 de qué. Por eso en Inventario es columna y no
+                      metadato, al reves que en el mostrador. */}
+                  <td data-testid="inventario-unidad" style={{ padding: '11px 16px', color: 'var(--ink-4)' }}>{p.unidad ?? '—'}</td>
                   <td data-testid="stock-level-qty" style={{ padding: '11px 16px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: stock < 0 ? 'var(--danger-on-soft)' : 'var(--ink)' }}>{stock}</td>
                   <td style={{ padding: '11px 16px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--ink-4)' }}>{p.min_stock}</td>
                   <td style={{ padding: '11px 16px' }}><StatusBadge status={st} stock={stock} /></td>

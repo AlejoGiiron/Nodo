@@ -58,6 +58,7 @@ export function PurchaseDetailModal({ invoiceId, onClose }: PurchaseDetailModalP
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
                     <tr style={{ background: 'var(--surface-2)', textAlign: 'left', color: 'var(--ink-3)', fontSize: 11.5 }}>
+                      <th style={{ padding: '9px 12px', fontWeight: 600 }}>Código</th>
                       <th style={{ padding: '9px 12px', fontWeight: 600 }}>Producto</th>
                       <th style={{ padding: '9px 12px', fontWeight: 600, textAlign: 'right' }}>Cant.</th>
                       <th style={{ padding: '9px 12px', fontWeight: 600, textAlign: 'right' }}>Costo</th>
@@ -67,6 +68,8 @@ export function PurchaseDetailModal({ invoiceId, onClose }: PurchaseDetailModalP
                   <tbody>
                     {invoice.purchase_invoice_items.map(it => (
                       <tr key={it.id} data-testid="purchase-detail-item" style={{ borderTop: '1px solid var(--border-2)' }}>
+                        {/* §2: `tabular-nums` obligatorio en el codigo de producto. */}
+                        <td data-testid="compra-linea-codigo" style={{ padding: '10px 12px', color: 'var(--ink-3)', fontVariantNumeric: 'tabular-nums' }}>{it.products?.codigo ?? '—'}</td>
                         <td style={{ padding: '10px 12px', fontWeight: 600, color: 'var(--ink)' }}>{it.products?.name ?? '—'}</td>
                         <td style={{ padding: '10px 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{it.qty}</td>
                         <td style={{ padding: '10px 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--ink-3)' }}>{formatoCOP(it.unit_cost)}</td>
