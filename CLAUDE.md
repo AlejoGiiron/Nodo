@@ -3694,6 +3694,39 @@ seguiría cobrando de menos para cualquier usuario real, que no tiene auto-waiti
 ⚠️ Es el hermano de *"un rojo que no reproduce el defecto es tan inútil como un verde que no lo
 mide"*, movido al momento de **cerrar**: allá el rojo mentía al aparecer; acá miente al desaparecer.
 
+🔴 **LA HERMANA POR EL OTRO LADO: UNA API DEL ARNÉS QUE HACE MÁS DE LO QUE SU NOMBRE SUGIERE Y
+ROMPE EL SUJETO.** *2026-09-07, construyendo el cambio de contraseña (deuda 95).*
+
+> **Arriba la herramienta CONTESTA por el producto. Acá la herramienta DESTRUYE el sujeto que el
+> caso venía a medir.** Las dos son la misma clase —el entorno haciendo algo que nadie le pidió— y
+> se manifiestan al revés: una produce un verde que no mide, la otra un rojo que no señala nada.
+
+**El caso.** Para verificar la contraseña **actual** antes de cambiarla, el hook abre un cliente
+aparte y hace `signInWithPassword` + `signOut`. Y `signOut()` **por defecto es GLOBAL**: revoca
+**todas las sesiones del usuario en el servidor**, incluida la que la persona está usando en ese
+momento. O sea que verificar la contraseña **deslogueaba a quien la estaba verificando**, y el
+`updateUser` siguiente fallaba por sesión muerta.
+
+⚠️ **Y el síntoma no apuntaba a nada:** el formulario no mostraba **ni error ni éxito**. El artefacto
+del spec fue lo que lo destapó — la página con los campos llenos y sin ningún mensaje.
+
+```ts
+await verificador.auth.signOut()                    // ⛔ GLOBAL: mata la sesión viva
+await verificador.auth.signOut({ scope: 'local' })  // ✅ verifica sin destruir
+```
+
+**LO ACCIONABLE, y es una pregunta sobre la API, no sobre el test:**
+
+> **Antes de usar una API del entorno dentro de una verificación, preguntá cuál es su ALCANCE POR
+> DEFECTO.** `signOut` suena a *«cerrar esta sesión»* y su default es *«cerrar todas, en todos los
+> dispositivos»*. Un default global dentro de algo que se llama «verificar» es un efecto que nadie
+> declaró.
+
+⚠️ La familia completa: cualquier cosa del entorno con un default más ancho que su nombre —un
+`signOut` global, un `clear()` que borra más de lo que se cree, un `reset` que además desconecta, un
+cliente que comparte almacenamiento con otro—. **El nombre describe la intención; el default
+describe el alcance, y no siempre coinciden.**
+
 ---
 
 **⚠️ EN PLAYWRIGHT, UN TIMEOUT NO ES LENTITUD.**
@@ -4430,6 +4463,34 @@ Ninguna verificación lo buscaba, así que sin esa impresión accidental el defe
 **Una fila cargada que ninguna pantalla muestra es, para el cliente, una fila que no se cargó.**
 
 ✅ Sumado al cargador: asevera que las 30 tengan número y que no haya duplicados.
+
+---
+
+### 🔴 CRITERIO SIN NÚMERO · UNA VALIDACIÓN NO PUEDE COSTAR MÁS QUE EL ERROR QUE PREVIENE
+
+*2026-09-07, verificando la contraseña actual antes de cambiarla (deuda 95). Se anota porque es la
+clase de decisión que **se pierde al refactorizar**: el código resultante se ve como una vuelta de
+más y alguien lo «simplifica».*
+
+**El caso.** El formulario pide la contraseña **actual** y hay que comprobarla. Lo obvio es
+`supabase.auth.signInWithPassword` sobre el cliente de la aplicación. **Y eso reemplaza la sesión
+activa.** Consecuencia: **un typo en la clave vieja desloguea a la persona** — la echa de la
+aplicación por escribir mal, en el único formulario donde escribir mal es lo esperable.
+
+✅ La forma que quedó: un **cliente efímero** (`crearClienteEfimero`, `persistSession: false`) que
+comprueba y se descarta. Comprobar deja de tener efecto sobre nada.
+
+> **Una validación que castiga el error que existe para detectar está mal diseñada, por más que
+> valide bien.**
+
+⚠️ **Por qué se pierde al refactorizar, y por eso va escrito EN EL CÓDIGO además de acá:** el
+segundo cliente se lee como duplicación —«ya tenemos un cliente de Supabase»— y unificarlo no rompe
+ningún test del camino feliz. **El defecto sólo aparece cuando alguien se equivoca al teclear**, que
+es justo el escenario que nadie prueba a mano.
+
+**Lo accionable, en una pregunta:** cuando escribas una comprobación, preguntá **qué le pasa al
+usuario si la comprobación DA QUE NO**. Si la respuesta incluye perder trabajo, perder la sesión o
+volver a empezar, el costo del rechazo es parte del diseño de la validación, no un efecto colateral.
 
 ---
 
