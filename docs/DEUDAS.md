@@ -403,6 +403,11 @@ cero cambios de código, y LAB Principal queda intacta con su historial.
 | cuenta | `pruebas.lab@nodo.test`, rol **`admin`** |
 | catálogo | los 17 + 8 categorías, con `cargar-catalogo.mjs --sede-id …` **sin tocar el script** |
 
+⚠️ **LAB Pruebas ya NO es un espejo del cliente, desde el 2026-09-06.** Sigue con esos 17 y con los
+precios de la v1; **Muscle Pro pasó a 42 productos con el `Precio Base`** (carga v2). Se anota
+porque la fila de arriba es cierta y aun así se puede leer como *"lo mismo que tiene el cliente"*, y
+eso ya no vale: un caso escrito contra LAB Pruebas no ejercita los precios de producción.
+
 ⚠️ La contraseña se generó al crear la cuenta y **se mostró una sola vez**: no está en ningún
 archivo. Si se perdió, se restablece.
 🔴 **El rol es `admin` y NO `owner`, a propósito:** `owner` lleva el comodín `['*']` y taparía
