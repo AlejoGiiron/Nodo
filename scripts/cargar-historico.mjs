@@ -395,8 +395,19 @@ for (const dia of DIAS) {
       })
       if (eP) abortar(`pago de ${t.clave}: ${eP.message}`, 'la orden quedó con líneas y SIN pago.')
     }
-    const { error: eN } = await db.rpc('next_order_number', { p_sede_id: SEDE_ID })
-    if (eN) console.error('    ⚠️ numeración: %s', eN.message)
+    // 🔴 `next_order_number` DEVUELVE el número; NO lo asigna. La app hace las
+    //    DOS cosas (`assignOrderNumber` = pedir + update). La primera versión de
+    //    este script sólo pedía: las 30 órdenes quedaron con `order_number` NULL
+    //    y la secuencia consumida igual. Y no lo cazó ninguna verificación,
+    //    porque el criterio de aceptación no miraba la numeración.
+    const { data: numero, error: eN } = await db.rpc('next_order_number', { p_sede_id: SEDE_ID })
+    if (eN || typeof numero !== 'number') abortar(`numeración de ${t.clave}: ${eN?.message ?? 'no devolvió un número'}`,
+      'la venta quedó completa y SIN número: no aparece en el Historial, que ordena por número.')
+    const { data: numerada, error: eU } = await db.from('orders')
+      .update({ order_number: numero }).eq('id', orden.id).eq('sede_id', SEDE_ID).is('order_number', null)
+      .select('id')
+    if (eU) abortar(`no se pudo escribir el número ${numero} en ${t.clave}: ${eU.message}`)
+    if (!numerada || numerada.length !== 1) abortar(`el número ${numero} afectó ${numerada?.length ?? 0} filas, esperaba 1`)
     ordenPorTicket.set(t.clave, orden.id)
     nTickets++
     console.log('  venta  · %s %-9s %2d línea(s) %10s %s',
@@ -452,11 +463,16 @@ console.log('\n── VERIFICACIÓN · leída de la base ───────�
 const problemas = []
 const chequear = (etq, real, esperado) => {
   const ok = Math.abs(real - esperado) < 0.5
-  console.log('  %-34s %14s   esperado %14s  %s', etq, COP(real), COP(esperado), ok ? '✅' : '🔴')
+  console.log('  ' + etq.padEnd(32) + String(COP(real)).padStart(14) + '   esperado ' + String(COP(esperado)).padStart(14) + '  ' + (ok ? '✅' : '🔴'))
   if (!ok) problemas.push(`${etq}: base ${real}, esperado ${esperado}`)
 }
-const { data: ords } = await db.from('orders').select('id, total, payment_status, created_at').eq('sede_id', SEDE_ID).is('cancelled_at', null)
+const { data: ords } = await db.from('orders').select('id, total, payment_status, created_at, order_number').eq('sede_id', SEDE_ID).is('cancelled_at', null)
 chequear('órdenes no anuladas', (ords ?? []).length, TICKETS.length)
+// 🔴 La numeración se asevera porque su ausencia NO se nota: una venta sin
+//    número no aparece en el Historial, que ordena por número.
+const nums = (ords ?? []).map((o) => o.order_number)
+chequear('órdenes CON número', nums.filter((n) => n !== null).length, TICKETS.length)
+chequear('números duplicados', nums.filter((n, i) => n !== null && nums.indexOf(n) !== i).length, 0)
 chequear('Σ orders.total', (ords ?? []).reduce((s, o) => s + Number(o.total), 0), SUM_VENTAS)
 chequear('órdenes a fiado pendientes', (ords ?? []).filter((o) => o.payment_status !== 'paid').length, TICKETS.filter((t) => t.esFiado).length)
 const { data: pays } = await db.from('payments').select('amount').eq('sede_id', SEDE_ID)
@@ -472,7 +488,7 @@ chequear('Σ abonos', (abs ?? []).reduce((s, a) => s + Number(a.amount), 0), ABO
 // fechas: ninguna orden puede haber quedado con la fecha de hoy
 const hoy = new Date().toISOString().slice(0, 10)
 const conFechaDeHoy = (ords ?? []).filter((o) => o.created_at.slice(0, 10) === hoy && !DIAS.includes(hoy)).length
-console.log('  %-34s %14d   esperado %14d  %s', 'órdenes fechadas HOY por error', conFechaDeHoy, 0, conFechaDeHoy === 0 ? '✅' : '🔴')
+console.log('  ' + 'órdenes fechadas HOY por error'.padEnd(32) + String(conFechaDeHoy).padStart(14) + '   esperado ' + String(0).padStart(14) + '  ' + (conFechaDeHoy === 0 ? '✅' : '🔴'))
 if (conFechaDeHoy) problemas.push(`${conFechaDeHoy} órdenes quedaron fechadas hoy`)
 
 // ── STOCK · el invariante que el cargador SÍ tiene que cumplir ────────────
@@ -516,8 +532,8 @@ console.log('\n  ℹ️ conteo FÍSICO del cliente — informativo, NO es criter
 for (const [nombre, fisico] of Object.entries(FISICO)) {
   const p = (prodFin ?? []).find((x) => norm(x.name) === norm(nombre))
   const real = p ? Number(p.stock_qty) : null
-  console.log('    %-30s base %3s   su conteo %3d  %s', nombre, real ?? '—', fisico,
-    real === fisico ? '✅ coincide' : `⚠️ difiere en ${Math.abs((real ?? 0) - fisico)} — pregunta para el cliente`)
+  console.log('    ' + nombre.padEnd(30) + ' base ' + String(real ?? '—').padStart(3) + '   su conteo ' + String(fisico).padStart(3) + '  ' +
+    (real === fisico ? '✅ coincide' : `⚠️ difiere en ${Math.abs((real ?? 0) - fisico)} — pregunta para el cliente`))
 }
 const sinCosto = (prodFin ?? []).filter((p) => p.cost_price === null && Number(p.stock_qty) !== 0 || (p.cost_price === null))
 console.log('\n  productos sin costo: %d  (esperado: los que nunca se compraron)', sinCosto.length)
@@ -529,5 +545,5 @@ if (problemas.length) {
   console.error('\n⚠️ NO HAY POLICY DE DELETE: lo escrito quedó. Hay que mirarlo antes de reintentar.')
   salir(1)
 }
-console.log('\n✅ EL HISTÓRICO CIERRA con el archivo, y el stock cierra con el conteo físico del cliente.')
+console.log('\n✅ EL HISTÓRICO CIERRA CON EL ARCHIVO: los nueve números y el stock de los 42 productos.')
 salir(0)
