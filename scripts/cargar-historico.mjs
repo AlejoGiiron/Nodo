@@ -485,6 +485,17 @@ chequear('movimientos de gasto', (movs ?? []).length, GASTOS.length)
 const { data: abs } = await db.from('debt_payments').select('amount').eq('sede_id', SEDE_ID)
 chequear('Σ abonos', (abs ?? []).reduce((s, a) => s + Number(a.amount), 0), ABONOS.reduce((s, a) => s + a.monto, 0))
 
+// 🔴 VISIBILIDAD · que las filas se PUEDAN VER por el camino del producto.
+//    Los nueve números de arriba cierran igual con 30 ventas invisibles: el
+//    Historial filtra `order_number not null`, así que una venta sin número no
+//    aparece y el síntoma es «cargaste 30 ventas y no veo ninguna». Esta
+//    consulta es la de `getSalesHistory`, no una equivalente.
+const { count: visibles, error: eVis } = await db.from('orders')
+  .select('*', { count: 'exact', head: true })
+  .eq('sede_id', SEDE_ID).not('order_number', 'is', null)
+if (eVis) abortar(`no se pudo releer por el camino del Historial: ${eVis.message}`)
+chequear('VISIBLES en el Historial', visibles ?? 0, TICKETS.length)
+
 // fechas: ninguna orden puede haber quedado con la fecha de hoy
 const hoy = new Date().toISOString().slice(0, 10)
 const conFechaDeHoy = (ords ?? []).filter((o) => o.created_at.slice(0, 10) === hoy && !DIAS.includes(hoy)).length

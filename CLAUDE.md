@@ -4401,6 +4401,85 @@ lo hace. Corolario práctico: al auditar por mutación (R10), **leé el mensaje*
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · UN CRITERIO DE ACEPTACIÓN SOBRE DATOS CARGADOS TIENE QUE INCLUIR QUE SE PUEDAN VER
+
+*2026-09-07, cargando el histórico de Muscle Pro. **Nueve verificaciones, y ninguna lo miraba.***
+
+El criterio de aceptación de la carga tenía nueve números y todos cerraron: órdenes, vendido,
+cobrado, fiado, facturas, compras, gastos, abonos, saldo de cartera, más el stock de los 42
+productos. **Y las 30 ventas eran invisibles en el producto**: quedaron con `order_number` en NULL
+porque `next_order_number` **devuelve** el correlativo y no lo asigna —la app hace las dos cosas—.
+
+> **El criterio cubría lo que se SUMA y no cubrió lo que hace VISIBLE a lo demás.**
+
+⚠️ **Y el síntoma que habría llegado no se parece en nada a la causa:** *«cargaste 30 ventas y no
+veo ninguna»*. El Historial **ordena por número**, así que una venta sin número no aparece. Los
+nueve números seguían siendo ciertos mientras la pantalla estaba vacía.
+
+🔴 **Cómo apareció, y es la parte incómoda: de casualidad.** Imprimí las primeras órdenes para
+confirmar que la carga había caído en el tenant correcto, y la columna del número decía `—`.
+Ninguna verificación lo buscaba, así que sin esa impresión accidental el defecto llegaba al cliente.
+
+**LO ACCIONABLE, y es una categoría más en el criterio, no un chequeo más:**
+
+| lo que casi siempre se asevera | lo que hay que agregar |
+|---|---|
+| que los totales cierren | que las filas **aparezcan por los caminos del producto** |
+| que los conteos cierren | o sea: los campos de los que depende **verse** — el correlativo, el orden, el filtro por defecto, `is_active` |
+
+**Una fila cargada que ninguna pantalla muestra es, para el cliente, una fila que no se cargó.**
+
+✅ Sumado al cargador: asevera que las 30 tengan número y que no haya duplicados.
+
+---
+
+### 🔴 CRITERIO SIN NÚMERO · CUANDO TODAS LAS FILAS DE UN GRUPO COMPARTEN TIMESTAMP, ASEVERAR SU ORDEN ES ASEVERAR EL AZAR
+
+*2026-09-07, verificando la numeración reparada.*
+
+El verificador dijo **«¿crecen con la fecha?: false»** sobre datos **correctos**. La causa: el
+cargador escribe todas las órdenes de un día con **la misma hora** —un timestamp fijo, a propósito,
+para que caigan en el mismo día de Bogotá (R7)—. Con `order by created_at`, el desempate entre filas
+idénticas **lo elige el motor**, y puede dar distinto en dos lecturas seguidas.
+
+> **Un `order by` sobre una columna con empates no define un orden: define una partición.** Lo único
+> aseverable es la relación **entre grupos**, no la de los elementos adentro de uno.
+
+✅ La invariante que sí vale, y va verde: **los bloques por día van en orden** — el número máximo del
+día D es menor que el mínimo del día D+1.
+
+⚠️ Corolario para escribir aserciones: antes de aseverar un orden, preguntá **si la clave de orden
+tiene empates**. Si los tiene, o se agrega un desempate determinista a la consulta, o se asevera la
+propiedad de grupo. Aseverar el orden interno es aseverar algo que nadie eligió.
+
+---
+
+### 🔴 CRITERIO SIN NÚMERO · DOS CONFIRMACIONES FALSAS EN UNA SESIÓN — LA MITAD MÁS SILENCIOSA DE LA REGLA
+
+*2026-09-07. Se escriben juntas porque son la misma forma y aparecieron con horas de diferencia.*
+
+La regla de la garantía falsa tiene tres mitades: la garantía tranquiliza de más, la advertencia
+alarma de más, y **la confirmación dice «todo bien» donde algo está mal**. Las dos de este día son de
+la tercera, que es la que **no produce una acción equivocada sino la AUSENCIA de una correcta**.
+
+| qué afirmó | qué pasaba |
+|---|---|
+| *«¿crecen con la fecha?: false»* | 🔴 afirmó algo **falso sobre datos correctos** — el orden interno era arbitrario, no incorrecto |
+| *«el stock cierra con el conteo físico del cliente»*, en el mensaje de éxito del cargador | 🔴 afirmó un **criterio superado**: quedó del criterio viejo, y seguía imprimiéndose en verde después de reemplazarlo |
+
+🔴 **La segunda es la peor de las dos, y por dónde estaba: en el mensaje de ÉXITO.** Un texto que
+sólo se imprime cuando todo salió bien es el que nadie relee — se lee como el sello de que terminó,
+no como una afirmación que pueda ser falsa.
+
+⚠️ **Y es un lado más del contrato de R1 que no estaba en el inventario:** cuando se cambia un
+criterio de aceptación, **el mensaje que lo anuncia es otro lado**, y se congela porque nadie edita
+un texto que ya dice «✅».
+
+**Lo accionable:** al cambiar un criterio, `grep` de su enunciado en el mismo archivo — el mensaje de
+éxito, el de error y el comentario que lo explica son tres lados, y los tres mienten juntos.
+
+---
+
 ## Estado
 
 *Actualizado: 2026-09-02 (A5: nueve celdas corregidas; ver `docs/auditorias/A5-estado-en-los-documentos.md`).*
