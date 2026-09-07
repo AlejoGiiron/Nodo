@@ -994,6 +994,25 @@ grep -n "<patrón>" <archivo>          # el conteo, con su contexto: enumerar, n
 grep -rn "<Componente>" src/ | grep -v "<su propio archivo>"   # ¿quién lo consume?
 ```
 
+🔴 **Y HAY UN TERCER MODO, QUE NO ES DE CONTEO NI DE NOMBRE: CONTAR LA UI EN VEZ DEL MODELO.**
+*2026-09-07, verificando el documento de investigación.*
+
+Decía **«5 medios de pago»**. El enum `payment_method` tiene **4** —`cash`, `card`, `transfer`,
+`nequi`—. El quinto era **fiado**, que la UI ofrece en la misma grilla y **no es un medio de pago:
+es la AUSENCIA de pago**. El repo lo dice explícitamente — una venta a fiado **no escribe fila en
+`payments`**.
+
+> **No fue un conteo mal hecho: fue contar la superficie equivocada.** Los cinco botones existen; lo
+> que no existe es el quinto método.
+
+⚠️ Es la misma clase que *contar menciones en vez de usos*: el número es correcto **sobre lo que se
+contó**, y lo que se contó no era el sujeto. Y engaña más cuando la UI agrupa por comodidad cosas
+que el modelo separa a propósito — acá la grilla junta «cómo me pagó» con «no me pagó».
+
+**Lo accionable:** cuando el número describa una capacidad del sistema, contá **en el modelo** —el
+enum, la tabla, el CHECK—, no en la pantalla. La pantalla agrupa para que se entienda; el modelo
+separa para que se pueda medir.
+
 ⚠️ Y el corolario que cierra el par: **un archivo cuya funcionalidad se retiró de una pantalla no
 queda huérfano por eso.** El strip salió del Mostrador el 2026-09-03; el componente siguió siendo
 las pestañas del Catálogo. La poda de una FUNCIONALIDAD y la muerte de un COMPONENTE son hechos
@@ -4706,6 +4725,70 @@ Ninguna verificación lo buscaba, así que sin esa impresión accidental el defe
 **Una fila cargada que ninguna pantalla muestra es, para el cliente, una fila que no se cargó.**
 
 ✅ Sumado al cargador: asevera que las 30 tengan número y que no haya duplicados.
+
+---
+
+### 🔴 CRITERIO SIN NÚMERO · EL CIERRE DE UNA DEUDA ES UN LADO MÁS DEL CONTRATO CON SU ARREGLO
+
+*2026-09-07. **Primera vez que el registro falla diciendo MÁS de lo que hay**, y por eso vale
+aparte.*
+
+`DEUDAS.md` marcaba la **54** como 🔴 abierta —la carrera del mostrador que agregaba un producto sin
+sus extras y **cobraba de menos**—. El defecto estaba **cerrado desde hacía cuatro días**: el commit
+`0752b1c` puso los dos pasos aprobados y no tocó el registro.
+
+> **Todas las notas falsas anteriores de este proyecto decían MENOS de lo que había** —un conteo
+> viejo, un pendiente ya hecho, un estado que envejeció—. **Ésta dice MÁS: afirma un defecto que ya
+> no existe.**
+
+🔴 **Y es peor, no mejor.** Una deuda que figura abierta sin serlo **hace que alguien vuelva a pagar
+el diagnóstico entero** — y el de la 54 costó encontrar la causa raíz en un hook, no en la pantalla
+donde se veía. Una nota que subestima cuesta una sorpresa; ésta cuesta **repetir el trabajo más
+caro**, y encima con la sensación de estar atacando algo urgente.
+
+⚠️ **Por qué se escapa, y no es descuido:** el commit que arregla **se verifica solo** —hay tests,
+hay `tsc`, hay una suite en verde—. El registro no tiene verificador: **ningún check mira
+`DEUDAS.md`**, así que la mitad que se olvida es exactamente la que nadie puede olvidar de forma
+ruidosa.
+
+**LO ACCIONABLE, y es la misma forma de R1:**
+
+> **El commit que arregla una deuda toca `DEUDAS.md` EN LA MISMA PASADA. Si no lo hace, la deuda
+> sobrevive a su causa.**
+
+✅ Lo destapó revisar un documento de venta contra el repo — y el documento **tenía razón**: decía
+«Mostrador ✅ Completo» y el registro decía que no. Cuando dos fuentes se contradicen, la que
+ejecuta gana; acá la que ejecutaba era el código.
+
+---
+
+### 🔴 CRITERIO SIN NÚMERO · «MOTOR SÍ, TABLERO NO» ES UNA FORMA ESPECÍFICA DE INCOMPLETO, NO «CASI COMPLETO»
+
+*2026-09-07, verificando las 18 capas del documento de investigación. **Cuatro capas distintas, la
+misma forma.***
+
+| capa | el motor, en la base | lo que falta |
+|---|---|---|
+| Compras | `register_purchase_return`, aplicada y probada | **el botón** de devolver (deuda 77) |
+| Cartera | `requiere_conciliacion`, se escribe y se muestra | **la pantalla** que liste los marcados (deuda 37) |
+| Inventario | `adjust_cost`, con motivo y rastro | **cerrar el camino directo** que lo saltea (deuda 78) |
+| Caja | el trigger que sella `closed_at` | **que siga sellando** después de la primera vez (deuda 97) |
+
+> **Llamarlas «parciales» las mete a todas en la misma bolsa y esconde lo único que importa: si lo
+> que falta es PANTALLA o es GUARD.**
+
+✅ **Las dos primeras son trabajo de interfaz sobre algo que ya funciona**, y su espera **no pierde
+información**: el dato se está guardando bien hoy.
+🔴 **Las dos últimas NO son de pantalla: son guards que faltan**, y por eso **no se cierran
+dibujando** — un botón más no impide que alguien edite `cost_price` por la tabla ni que un cierre se
+reescriba.
+
+⚠️ **Y es la distinción que decide la urgencia**, igual que la de hueco de esquema contra hueco de
+pantalla: un motor sin tablero **espera gratis**; un guard que falta **está abierto todos los días**.
+
+**Lo accionable, en una pregunta:** ante algo «casi completo», preguntá **qué falta exactamente** —
+¿el camino para usarlo, o la red que lo protege? Son dos trabajos distintos, los hace gente
+distinta, y sólo uno corre reloj.
 
 ---
 

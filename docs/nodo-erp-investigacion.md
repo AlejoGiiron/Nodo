@@ -28,14 +28,18 @@ Y el cumplimiento ya no es solo facturar: <cite index="58-1">El cumplimiento con
 
 Medido sobre el repo al 2026-09-07, no sobre la intención.
 
+> 🔴 **CORREGIDO el 2026-09-07, verificando capa por capa contra el código y las deudas abiertas.**
+> La versión anterior marcaba **cinco capas como «✅ Completo» teniendo deuda abierta**, y le faltaba
+> una capa entera. Se escribió de memoria; esto es lo medido.
+
 | Capa | Estado | Evidencia |
 |---|---|---|
-| **Mostrador (POS)** | ✅ Completo | Cobro en modal, 5 medios de pago, pago mixto, fiado, precio negociado con guard asimétrico (+100%/−35%) medido sobre 55 ventas reales |
+| **Mostrador (POS)** | ✅ Completo | Cobro en modal, **4 medios de pago** (`cash`·`card`·`transfer`·`nequi`), pago mixto, fiado, precio negociado con guard asimétrico (+100%/−35%) medido sobre 55 ventas reales. ⚠️ *Decía «5 medios»: el quinto de la UI es **fiado**, que no es un medio de pago sino la AUSENCIA de pago — no escribe fila en `payments`* |
 | **Catálogo** | ✅ Completo | 42 productos con código y unidad, búsqueda por código, índice único por sede |
-| **Inventario** | ✅ Completo | Existencias, movimientos, ajuste con motivo, promedio ponderado móvil, costo congelado por línea de venta |
-| **Compras** | ✅ Completo | Facturas por proveedor, fecha de documento, unidad de compra con factor, devolución como hecho nuevo, `adjust_cost` |
-| **Cartera (CxC)** | ✅ Completo | Deudas, abonos, plazo por cliente congelado en venta, antigüedad, `requiere_conciliacion` |
-| **Caja** | ✅ Completo | Jornadas, arqueo, movimientos con categoría estructurada |
+| **Inventario** | 🟡 Motor sí, tablero no | Existencias, movimientos, ajuste con motivo, promedio ponderado móvil, costo congelado por línea. **Pero `cost_price` se puede cambiar por la tabla sin motivo y sin rastro** — `adjust_cost` no cierra ese camino (deuda **78**) |
+| **Compras** | 🟡 Motor sí, tablero no | Facturas por proveedor, fecha de documento, unidad de compra con factor, `adjust_cost`. 🔴 **La DEVOLUCIÓN existe en la base y NO tiene botón** (deuda **77**): `register_purchase_return` está aplicada y probada, y desde la UI no se puede hacer |
+| **Cartera (CxC)** | 🟡 Motor sí, tablero no | Deudas, abonos, plazo congelado en la venta, antigüedad. La marca `requiere_conciliacion` se pone y se ve en el modal de abonos, pero **no hay pantalla de conciliación** que liste los marcados (deuda **37**) |
+| **Caja** | 🟡 Motor sí, tablero no | Jornadas, arqueo, movimientos con categoría estructurada. **La fecha de cierre de una jornada ya cerrada se puede reescribir sin que nada avise** (deuda **97**): el trigger sólo sella la primera vez |
 | **Gastos** | ✅ Completo | Subcategorías por sede, activo fijo como subcategoría |
 | **Multi-sede / multi-tenant** | ✅ Completo | RLS medida en 828 celdas, alta entre sedes, aislamiento verificado |
 | **Reportes** | 🟡 Parcial | Vendido, cobrado, órdenes, ticket, con definiciones. **No hay Utilidades como pantalla** (deuda 86) |
@@ -48,6 +52,29 @@ Medido sobre el repo al 2026-09-07, no sobre la intención.
 | **Tesorería / bancos** | ⛔ No existe | El "Resumen General" del cliente pedía esto; se anotó como módulo aparte |
 | **Cuentas por pagar (CxP)** | ⛔ No existe | Compras son de contado; la compra a crédito a proveedor es idea pospuesta |
 | **Activos fijos** | 🟡 Parcial | Como subcategoría de gasto, sin depreciación |
+| **Suscripción / corte de acceso** | ✅ Construido | 🔴 **Faltaba en esta tabla.** `subscription_status` (5 estados, `text` con `CHECK`), `SubscriptionBanner` y la Edge Function `aplicar-estado`. O sea **el mecanismo para cortar el acceso por estado de pago ya existe** — sin que haya un precio |
+
+### 🔴 Las cuatro 🟡 comparten una forma, y no es «casi completo»
+
+**El motor está y el tablero no.** En las cuatro, el mecanismo vive en la base —probado, con su
+migración y su RPC— y **lo que falta es el camino en la interfaz**:
+
+| capa | el motor | lo que falta en la UI |
+|---|---|---|
+| Compras | `register_purchase_return`, aplicada y probada | el botón de devolver |
+| Cartera | `requiere_conciliacion`, se escribe y se muestra en el modal | la pantalla que liste los marcados |
+| Inventario | `adjust_cost`, con motivo y rastro | **cerrar el camino directo** que lo saltea |
+| Caja | el trigger que sella `closed_at` | que siga sellando después de la primera vez |
+
+⚠️ **Por qué vale nombrarlo y no llamarlo «parcial»:** son incompletos de **coste bajo y riesgo
+distinto**. Los dos primeros son trabajo de pantalla sobre algo que ya funciona. Los dos últimos
+**no son de pantalla: son guards que faltan**, y por eso no se cierran dibujando.
+
+🔴 **Y para una conversación de venta la distinción es la que importa:** «el motor está» significa
+que el dato se está guardando bien hoy, así que la espera **no pierde información**. Un hueco de
+esquema, en cambio, pierde datos todos los días.
+
+---
 
 **Lo que Nodo tiene y no es común en su tier:** el costo congelado por línea de venta, el promedio ponderado con sus caídas explícitas, el plazo de crédito congelado en la venta, y el aislamiento por sede verificado celda por celda. Son decisiones de modelo que los POS baratos no toman y que un ERP da por hechas.
 
@@ -170,6 +197,7 @@ El rango sube a $100.000–$280.000/mes, y la referencia de esfuerzo es la de Wo
 ## 8. Lo que este documento no sabe
 
 - **Los precios de Alegra, Siigo y Loggro cambian con promociones y planes anuales.** Los de arriba son referencias de abril–junio de 2026 y hay que verificarlos antes de fijar un precio.
-- **Qué cobrás hoy por Nodo.** No está en el repo ni en el hilo. La comparación de arriba es contra el mercado, no contra tu precio actual.
+- **Qué cobrás hoy por Nodo.** Verificado con `grep`: **no hay ningún precio en el repo** — ni monto, ni plan, ni tarifa. La comparación de arriba es contra el mercado, no contra tu precio actual.
+  ✅ **Pero sí está la MAQUINARIA de cobro**, y eso el documento no lo decía: `subscription_status`, `SubscriptionBanner` y la Edge Function `aplicar-estado` son el mecanismo para **cortar el acceso por estado de pago**. Falta el precio, no el enforcement — y para decidir cuánto cobrar, eso vale más que su ausencia.
 - **Cuánto pagaría un cliente formal por Nodo sin FE.** La hipótesis es que poco o nada, porque necesita facturar. Es una hipótesis, no una medición — se mide con el primer prospecto constituido.
 - **Si Muscle Pro, cuando se constituya, va a querer que Nodo facture o va a usar otro sistema para eso.** Esa conversación decide si el Bloque A es urgente o es para el segundo cliente.
