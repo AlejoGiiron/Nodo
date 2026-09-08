@@ -172,12 +172,18 @@ export function ProductModal({ product, categories, onClose }: ProductModalProps
         stock_tracking: tracking,
         min_stock: tracking ? (parseInt(minStock, 10) || 0) : 0,
       }
-      // El stock no se edita a mano: al CREAR arranca en 0 (o null sin tracking);
-      // al EDITAR se PRESERVA el valor de BD (se mueve por ventas/ajustes) — no
-      // se reescribe para no pisar un descuento concurrente. Si se apaga el
-      // tracking, se limpia a null.
-      if (!isEditing) payload.stock_qty = tracking ? 0 : null
-      else if (!tracking) payload.stock_qty = null
+      // 🔴 `stock_qty` NO VIAJA EN EL PAYLOAD, ni al crear ni al editar (deuda 78).
+      // La columna dejó de ser escribible por la tabla: solo la mueven las RPC,
+      // y `adjust_stock` exige motivo y deja el movimiento registrado. Al crear
+      // queda null, que todos los consumidores ya leen como cero
+      // (`p.stock_qty ?? 0` en Inventario, `coalesce(stock_qty,0)` en las RPC).
+      //
+      // ⚠️ Y quitar la línea NO es una pérdida: era el defecto de la 78 escondido
+      // dentro de un cambio de configuración. Apagar el seguimiento hacía
+      // `stock_qty = null` y BORRABA la existencia sin un solo movimiento. Ahora
+      // el número sobrevive —invisible, porque Inventario y `stockStatus` filtran
+      // por `stock_tracking`— y reaparece intacto si el seguimiento se reenciende,
+      // en vez de un 0 inventado.
 
       // El producto en sí: si esto falla no hay nada que sincronizar → propaga.
       await saveProduct.mutateAsync(payload)

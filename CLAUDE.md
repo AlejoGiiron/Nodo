@@ -384,6 +384,34 @@ en Vento.
    policies. La constante de TS crece libre; el enum no. Es un contrato compartido **de los
    rígidos**, y el lado caro no está en el repo sino en la base.
 
+10. **🔴 EL ALLOWLIST DE COLUMNAS DE `products` — lado NUEVO, 2026-09-07 (deuda 78).** El
+   `update` de tabla se revocó a `authenticated` y a `anon`, y se concede **columna por
+   columna**. Los lados que nada sincroniza: la lista del `grant` en la migración, el **payload
+   de `ProductModal.tsx`**, `archiveProduct` en `src/lib/supabase-helpers.ts`, y el payload de
+   `scripts/cargar-catalogo.mjs` —que dice de sí mismo *«el payload de `ProductModal.tsx`, campo
+   por campo»* y por eso **se congela cuando el formulario cambia**.
+   ⚠️ Ese cuarto lado **quedó afuera de esta misma nota al escribirla**, y no lo destapó releerla:
+   lo destapó enumerar los `upsert` del repo. Es el conteo en prosa otra vez —por eso ahora dice
+   «los lados» y no un número— y es la razón de que el disparador de abajo esté escrito.
+   🔴 **Cada columna que se agregue a `products` decide si entra o no.**
+   ⚠️ **Y el disparador hay que escribirlo porque el síntoma no se parece a la causa:**
+   olvidarlo falla **CERRADO** —la dirección correcta— pero se manifiesta como *«no puedo
+   editar el campo nuevo»*, y nadie asocia eso con un `grant`. Está escrito acá, en la
+   migración, y en el `comment on column` de las dos columnas excluidas.
+   📋 **Fuera de la lista a propósito:** `cost_price` · `stock_qty` · `created_at` ·
+   `updated_at` *(este último no hace falta: lo asigna el trigger `trg_products_updated_at`
+   sobre `NEW`, y una asignación al registro no pasa por el privilegio de columna)*.
+   ⚠️ El `insert` **no** se tocó: crear un producto con su costo y su existencia inicial no
+   reescribe ninguna historia; cambiarlos después, sí.
+   ✅ **Reconfirmar con `pnpm exec playwright test tests/columnas-protegidas.spec.ts`** — 4 casos,
+   verificado por ejecución el 2026-09-07 (rojo antes del push, verde después).
+   ⚠️ **Y NO con el `select` sobre `information_schema.column_privileges` que esta nota decía
+   primero: no se puede correr desde acá.** El CLI de Supabase no ejecuta SQL suelto y
+   `information_schema` no está expuesto por PostgREST, así que el comando era *código
+   canónico que nadie podía correr* — el defecto que este archivo ya documenta con
+   `git rev-list develop..main`, cometido de nuevo en la nota que lo estrena. El spec mide
+   además lo que el `select` no mide: que el cliente **de verdad** sea rechazado.
+
 9. **Los hooks mismos.** `.claude/settings.json` y `.claude/hooks/sql-checklist.mjs` viven ahora
    en dos repos con la misma lógica y nada que los sincronice. No estaba en el inventario de
    Vento porque allá era un solo lado. Si arreglás el matcheo de permisos en un repo, **no
@@ -1992,6 +2020,98 @@ falla** no se acepta afirmado, ni siquiera de quien conoce los datos. Es *un nú
 una opinión con dígitos* leído sobre el instrumento en vez de sobre el dato — y la forma de
 verificarlo no es recalcularlo igual, es **descomponerlo**: que las partes cierren con el total es
 una segunda medición, recalcular por el mismo camino es la misma.
+
+---
+
+### 🔴 CRITERIO SIN NÚMERO · CERRAR UN CAMINO NO SÓLO TAPA EL HUECO: DESTAPA A LOS QUE LO USABAN — Y LOS MUERTOS SON LOS QUE NADIE ENUMERA
+
+*Segunda aparición, 2026-09-07, cerrando la deuda 78. La primera fue `addOrderItems` antes de la
+RLS; ésta, `updateProductStock` antes del allowlist de columnas.*
+
+> **Al cerrar un camino de escritura, la enumeración de «quién lo usa» tiene que incluir a los que
+> NO lo usan: un escritor directo sin consumidores sigue existiendo, y el día que alguien lo
+> importe va a fallar en runtime sin que nada lo diga.**
+
+**El caso.** `updateProductStock` hacía `update products set stock_qty` por la tabla —sin motivo,
+sin permiso propio y sin `stock_movements`— y tenía **cero consumidores**. Con el allowlist puesto
+habría dejado de funcionar igual; la diferencia es que, vivo, el fallo llega **más tarde y más
+lejos**: en el primer `import`, en runtime, con un mensaje de privilegios que no habla de la deuda.
+
+⚠️ **Por qué se escapa, y las dos veces fue lo mismo:** la pregunta que sale sola al cerrar un
+camino es *«¿a quién le rompo esto?»*, y un archivo sin consumidores **contesta que a nadie**. La
+pregunta correcta es *«¿qué queda apuntando a lo que acabo de cerrar?»* — y ahí el muerto aparece,
+porque sigue escrito.
+
+✅ **Lo accionable, y es el mismo grep que la poda ya usa, corrido con la intención invertida:**
+al cerrar un camino, `grep` de la forma que se cierra (`from('<tabla>').update`, la RPC, la
+columna) y **leer la salida entera**, no filtrar por «los que se rompen». Lo que no sostiene nada
+**se borra en el mismo commit** —es la carga de la prueba invertida cumplida: la demostración de
+que no sostiene peso ya está hecha—, y lo que sostiene algo se migra al camino con rastro.
+
+⚠️ Y el corolario que lo ata al criterio de la poda: **un escritor muerto es peor que una pieza
+muerta cualquiera.** Una pieza muerta no hace nada; un escritor muerto es la ruta más corta al
+hueco que se acaba de cerrar, esperando a que alguien la encuentre porque «ya existe».
+
+---
+
+### 🔴 CRITERIO SIN NÚMERO · LO QUE UNA DEUDA ABIERTA CITA ENTRE COMILLAS SON TRES COSAS DISTINTAS, Y FALLAN EN DIRECCIONES OPUESTAS
+
+*2026-09-07, barrido en busca de otras deudas cerradas que figuraran abiertas. Cuatro direcciones,
+cero hallazgos — y el valor del ejercicio no es el cero: es **por qué ninguna de las cuatro podía
+encontrar nada**.*
+
+La 54 apareció por accidente: figuraba abierta y estaba cerrada. La pregunta razonable era si era
+única, y el método pedido fue el correcto —*enumerar lo que cada deuda ABIERTA afirma y verificarlo
+contra el repo*, en vez de buscar deudas que digan «cerrado»—. Al implementarlo apareció el
+obstáculo:
+
+> **Los identificadores que una deuda cita no son todos de la misma clase.** Son tres, y la
+> **ausencia** de cada uno significa lo contrario que la del anterior.
+
+| clase de cita | ejemplo medido | qué significa que HOY NO EXISTA |
+|---|---|---|
+| **evidencia del defecto** | la 54 citaba `useProductsWithExtras` | 🟢 la deuda podría estar **cerrada** ← la única que contesta la pregunta |
+| **nombre de la solución PROPUESTA** | la 47 propone la columna `dispatched_at`; la 70 propone un `globalTeardown` | 🔴 **nada** — está ausente **por diseño**, la deuda dice que falta |
+| **contexto incidental** | la 71 nombra `funciones_auxiliares.sql`; la 23.1, `11-rls.sql` | 🔴 nada sobre la deuda: **derivó el nombre del archivo** |
+
+🔴 **Y por eso un barrido de identificadores no puede contestar la pregunta en NINGUNA dirección.**
+Las tres clases se escriben idénticas —texto entre comillas invertidas— y las dos últimas producen
+exactamente el mismo síntoma que la primera. De las cuatro «ausencias» que el instrumento reportó,
+**cero eran de la primera clase**.
+
+⚠️ **Y el barrido invertido —*«¿la ausencia que la deuda afirma ya está presente?»*— falla por la
+razón simétrica:** lo que una deuda afirma ausente casi nunca es un token, es una **relación**. La
+77 dice que `register_purchase_return` **no tiene botón**: la RPC existe y está bien que exista. De
+18 candidatas, ninguna.
+
+🔴 **CUARTA APARICIÓN DE «LA COINCIDENCIA VIVE DENTRO DEL COMENTARIO QUE DOCUMENTA LA DEUDA».** Las
+tres únicas coincidencias de ese barrido —`resetPasswordForEmail` (95), `ocultarPlata` (42),
+`protect_profile_self_escalation` (39)— estaban **en el comentario que explica la deuda**, no en
+código que la resuelva. Es el mismo defecto que el `grep -c "facturar\|cupo"` de `LoginPage`, y ya
+no es anécdota: **un documento y su código comparten el mismo archivo, así que todo grep sobre el
+código mide también lo que decimos sobre él.**
+
+🔴 **LO QUE HAY QUE RETENER, Y ES INCÓMODO: A LA 54 NO LA ENCONTRÓ NINGÚN GREP.**
+
+> **La encontró que OTRO DOCUMENTO afirmara lo contrario** —la tabla de `nodo-erp-investigacion.md`
+> decía ✅ donde la deuda decía abierta—. Y eso sólo pasó porque alguien pidió auditar ese
+> documento, que es un accidente afortunado y no un mecanismo.
+
+⚠️ **Por eso el cero de este barrido es un cero DÉBIL, y así hay que citarlo.** No dice *«la 54 era
+única»*: dice *«ninguna de las cuatro sondas mecánicas encuentra esta clase, y sabemos por qué»*.
+Afirmar la unicidad sería exactamente *una verificación que no podía haber salido mal* (corolario de
+R4).
+
+✅ **LO ACCIONABLE, y es de diseño de la deuda, no de barrido:** al escribir una deuda, **marcá qué
+clase es cada cita** — evidencia del defecto, nombre de lo propuesto, o contexto. Cuesta una palabra
+(*«hoy no existe»*, *«se propone»*) y es lo único que vuelve verificable a la primera clase. Sin esa
+marca, la única auditoría posible es leer las 47 contra el código, que es el camino caro y el que
+nadie corre.
+
+⚠️ Y el corolario que ahorra el próximo barrido: **la deriva más probable no está en las deudas
+viejas sino en las que una sesión reciente tocó de paso.** Se cruza barato —los números nombrados en
+los últimos commits contra los que siguen abiertos— y acá dio 15, todas consistentes: eran deudas
+**abiertas** por esos commits, no cerradas por ellos.
 
 ---
 

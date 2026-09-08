@@ -83,8 +83,20 @@ async function costoDeLaLinea(orderId: string): Promise<number | null> {
   return data.unit_cost === null ? null : Number(data.unit_cost)
 }
 
-async function ponerCosto(productId: string, costo: number | null) {
-  const { error } = await db.from('products').update({ cost_price: costo }).eq('id', productId)
+// 🔴 Pasó a `adjust_cost` el 2026-09-07 (deuda 78). Antes hacía
+// `update products set cost_price` POR LA TABLA — y era el único escritor
+// directo de esa columna en todo el repo, o sea la evidencia que la propia
+// deuda citaba: *«lo mide nuestro propio código»*. Ahora la columna no es
+// escribible por la tabla y este camino ya no existiría.
+//
+// ⚠️ Que el arnés usara el hueco es lo que hacía parecer que cerrarlo rompía
+// algo. No rompía nada: el camino con rastro estaba, y el spec no lo usaba.
+async function ponerCosto(productId: string, costo: number) {
+  const { error } = await db.rpc('adjust_cost', {
+    p_product_id: productId,
+    p_new_cost: costo,
+    p_reason: 'costo-congelado.spec: montaje del escenario',
+  })
   if (error) throw error
 }
 

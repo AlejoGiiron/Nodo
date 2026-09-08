@@ -77,8 +77,15 @@ export const upsertProduct = (product: TablesInsert<'products'>) =>
 export const archiveProduct = (productId: string) =>
   supabase.from('products').update({ is_active: false }).eq('id', productId)
 
-export const updateProductStock = (productId: string, stock_qty: number) =>
-  supabase.from('products').update({ stock_qty }).eq('id', productId)
+// 🔴 `updateProductStock` SE BORRÓ el 2026-09-07 con la deuda 78. Escribía
+// `stock_qty` por la tabla —sin motivo, sin permiso propio y sin movimiento— y
+// no tenía UN SOLO consumidor: código muerto que era un arma cargada. Con el
+// allowlist de columnas puesto habría dejado de funcionar igual, en runtime y
+// sin que nada lo dijera. El camino con rastro es la RPC `adjust_stock`.
+//
+// ⚠️ Segunda vez que un escritor directo MUERTO aparece al cerrar un camino: el
+// primero fue `addOrderItems` antes de la RLS. Cerrar un camino no solo tapa el
+// hueco — DESTAPA a los que lo usaban, y los muertos son los que nadie enumera.
 
 // --- Extras (catálogo de subproductos reutilizables) ---
 

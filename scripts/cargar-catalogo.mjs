@@ -348,7 +348,11 @@ for (const p of PRODUCTOS) {
     kind: 'simple',
     stock_tracking: true,
     min_stock: 0,
-    stock_qty: 0,
+    // 🔴 Sin `stock_qty` desde el 2026-09-07 (deuda 78), igual que el formulario.
+    // La columna dejó de ser escribible por la tabla, y este `upsert` la habría
+    // exigido AUNQUE el id sea nuevo: Postgres verifica los privilegios del
+    // `on conflict do update set` al PLANIFICAR, haya conflicto o no. Queda
+    // null, que todos los consumidores leen como cero.
   }).select().single()
   if (error) abortar(`no se pudo crear «${p.nombre}»: ${error.message}`,
     'los productos creados antes de éste QUEDARON. Volvé a correr con --reanudar.')
