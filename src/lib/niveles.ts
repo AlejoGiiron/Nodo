@@ -47,8 +47,18 @@ export type PrecioDeNivel = Pick<Tables<'product_prices'>, 'nivel' | 'precio'>
 export function precioDeNivel(
   precios: PrecioDeNivel[] | null | undefined,
   nivel: number,
+  precioLegado?: number | null,
 ): number | null {
-  if (!precios?.length) return null
+  // 🔴 ETAPA 1 · un producto SIN NINGUNA fila de precio es un producto ANTERIOR
+  //    a las listas, y ahi `products.price` sigue siendo la fuente. NO es el
+  //    fallback que el diseño §7.22 prohibe: aquel es «este NIVEL no tiene
+  //    precio» en un producto que SI tiene listas, y devuelve null a proposito.
+  //    Este es «este producto todavia no tiene listas», que es otro hecho.
+  //    ⚠️ Se descubrio rompiendo `arqueo.spec`: los productos de LAB no tienen
+  //    filas, cada linea nacia sin precio y el cobro no llegaba al paso del
+  //    recibido. El disparador para borrar esta rama es la ETAPA 2, cuando
+  //    `products.price` se retire.
+  if (!precios?.length) return precioLegado ?? null
   const exacto = precios.find((p) => p.nivel === nivel)
   return exacto ? Number(exacto.precio) : null
 }

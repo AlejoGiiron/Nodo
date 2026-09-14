@@ -92,7 +92,7 @@ export const hayLineaSinPrecio = (items: Pick<CartItem, 'price'>[]) => items.som
 /** El precio de catálogo CONTRA EL QUE SE COMPARA esta línea: el de su nivel. */
 export function precioDeLista(item: Pick<CartItem, 'product' | 'nivel'>): number | null {
   if (item.nivel === null) return null
-  return precioDeNivel(item.product.product_prices, item.nivel)
+  return precioDeNivel(item.product.product_prices, item.nivel, item.product.price)
 }
 
 /**
@@ -233,7 +233,7 @@ export const useCartStore = create<CartStore>((set) => ({
         next[idx] = { ...next[idx], qty: next[idx].qty + 1 }
         return { items: next }
       }
-      const precio = precioDeNivel(product.product_prices, nivel ?? -1)
+      const precio = precioDeNivel(product.product_prices, nivel ?? -1, product.price)
       return { items: [...state.items, { id: genId(), product, qty: 1, note: '', extras: [], price: precio, nivel }] }
     }),
 
@@ -257,7 +257,7 @@ export const useCartStore = create<CartStore>((set) => ({
       // 🔴 El precio nace del NIVEL, y si ese nivel NO TIENE PRECIO la línea nace
       //    en `null` — no en 0 (diseño §7.22). Un cero es un precio plausible que
       //    sumaría al total; `null` se pinta `—`, NO suma, y obliga a resolver.
-      const precio = precioDeNivel(product.product_prices, nivel ?? -1)
+      const precio = precioDeNivel(product.product_prices, nivel ?? -1, product.price)
       return { items: [...state.items, { id: genId(), product, qty: 1, note: '', extras, price: precio, nivel }] }
     }),
 
@@ -268,7 +268,7 @@ export const useCartStore = create<CartStore>((set) => ({
       // Cambiar de nivel RE-SIEMBRA el precio: elegir «lista 3» y que el número
       // no se mueva sería un control que no hace nada. Si el nivel nuevo no está
       // configurado, cae a L1 por `precioDeNivel`; si no hay ninguno, queda 0.
-      const precio = precioDeNivel(item.product.product_prices, nivel ?? -1)
+      const precio = precioDeNivel(item.product.product_prices, nivel ?? -1, item.product.price)
       next[index] = { ...item, nivel, price: precio ?? item.price }
       return { items: next }
     }),
