@@ -212,7 +212,22 @@ chk('unidades en existencia', sum(q for q in esp.values() if q > 0),
     sum(p['stock_qty'] for p in prods if (p['stock_qty'] or 0) > 0))
 
 print('\n══ D · LAS JORNADAS ══')
-chk('jornadas', len(DIAS), len(jors))
+# 🔴 DOS BLOQUES, no un filtro: las del HISTORICO se comparan contra los 15 dias
+#    del archivo, y las ADMINISTRATIVAS —dias en que tocamos la sede sin que ella
+#    operara— se cuentan y se nombran aparte. La version anterior tenia un solo
+#    numero y se ponia roja sin decir cual de las dos cosas habia cambiado.
+def diaBogotaPre(ts):
+    from datetime import datetime, timedelta, timezone
+    return datetime.fromisoformat(ts.replace('Z', '+00:00')).astimezone(timezone(timedelta(hours=-5))).date().isoformat()
+delHist = [j for j in jors if diaBogotaPre(j['opened_at']) in DIAS]
+admin   = [j for j in jors if diaBogotaPre(j['opened_at']) not in DIAS]
+if admin:
+    print('  ⚠️ %d jornada(s) ADMINISTRATIVA(S), fuera de los 15 dias del archivo: %s'
+          % (len(admin), ', '.join(sorted(diaBogotaPre(j['opened_at']) for j in admin))))
+    print('     (dias en que tocamos la sede; no son operacion suya y no se suman al historico)')
+chk('jornadas del historico', len(DIAS), len(delHist))
+chk('ninguna quedo ABIERTA (bloquearia la sede entera)', 0, len([j for j in jors if not j['closed_at']]))
+jors = delHist
 chk('todas cerradas', len(DIAS), len([j for j in jors if j['closed_at']]))
 def diaBogota(ts):
     # 🔴 R7: la frontera de dia se calcula en America/Bogota, no sobre el UTC crudo
@@ -241,16 +256,27 @@ chk('HISTORIAL · los bloques por dia van en orden', 0, len(desorden), str(desor
 chk('CATALOGO · productos activos', 62, len([p for p in prods if p['is_active']]))
 chk('CATALOGO · productos con costo (ya no nulo)', len({c['p'] for c in compras}),
     len([p for p in prods if p['cost_price'] is not None]))
-# CARTERA: deriva de las ordenes pendientes menos los abonos
+# ── CARTERA ────────────────────────────────────────────────────────────────
+# 🔴 SE MIDE CON LA CONSULTA DEL PRODUCTO, COPIADA Y SIN FILTROS PROPIOS.
+#    `getDebts` (src/lib/supabase-helpers.ts) filtra exactamente esto. La version
+#    anterior excluia la orden fantasma POR UUID y reportaba «9 ✅» sobre una
+#    pantalla que mostraba 10: verificaba el conjunto que habia elegido, no el
+#    que la clienta ve. Es la leccion de las 30 ventas invisibles INVERTIDA —
+#    alla los datos estaban y no se veian; aca se ve algo que no se contaba.
+cart, _ = rest('orders', ('sede_id=eq.%s&payment_status=in.(pending,partial)'
+                          '&cancelled_at=is.null&select=id,order_number,total,customer_id,'
+                          'debt_payments(amount)') % SEDE)
+saldoCart = sum(float(o['total']) - sum(float(d['amount']) for d in (o.get('debt_payments') or []))
+                for o in cart)
+chk('CARTERA · filas que muestra la pantalla', len(ventas) - len(COBRADAS), len(cart),
+    'numeros: ' + ', '.join(str(o['order_number']) for o in sorted(cart, key=lambda x: x['order_number'] or 0)))
+chk('CARTERA · saldo total', round(CREDITO - ABONOS), round(saldoCart))
+chk('CARTERA · clientes distintos con deuda', 7, len({o['customer_id'] for o in cart}),
+    'los nombres no se imprimen: son PII')
+# y el bloque APARTE, que contesta la OTRA pregunta: «¿se cargo bien?»
 pend = [o for o in ords if o['payment_status'] != 'paid']
-abonado = defaultdict(float)
-for d in dpays: abonado[d['order_id']] += float(d['amount'])
-saldo = sum(float(o['total']) - abonado[o['id']] for o in pend)
-chk('CARTERA · ordenes con saldo', len(ventas) - len(COBRADAS), len(pend))
-chk('CARTERA · saldo total', round(CREDITO - ABONOS), round(saldo))
-chk('CARTERA · clientes distintos con deuda',
-    len({v['f'] + v['tipo'] for v in []}) or len({o['customer_id'] for o in pend}),
-    len({o['customer_id'] for o in pend}), 'los nombres no se imprimen: son PII')
+chk('(la carga, aparte) ordenes del historico con saldo', len(ventas) - len(COBRADAS), len(pend),
+    'este SI excluye lo ajeno: es otra pregunta y va en otra linea')
 # INVENTARIO
 chk('INVENTARIO · referencias con existencia > 0', len([q for q in esp.values() if q > 0]),
     len([p for p in prods if (p['stock_qty'] or 0) > 0]))

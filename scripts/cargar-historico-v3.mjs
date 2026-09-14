@@ -58,19 +58,28 @@
 //    Se declara en vez de escribir una fecha falsa en silencio — misma decision
 //    que tomo la deuda 97 con el cierre de jornada, y el mismo camino si algun
 //    dia molesta: una RPC con fecha explicita y motivo, no aflojar nada.
-//    ⚠️ Y el METODO de los abonos es NUESTRO, no de ella: su archivo escribe
-//    «ABONO 80 MIL» y «ABONO 20 MIL» en la columna de metodo, sin decir como se
-//    pagaron. Se usa `transfer` porque 86 de 101 cobradas lo son. ASUMIDO —
-//    preguntarle, y cuando conteste cambiar la marca conservando el recorrido.
+//    ✅ El METODO de los abonos: TRANSFERENCIA. **Entro asumido, se pregunto, lo
+//    confirmo la clienta el 2026-09-14.** El recorrido se conserva a proposito:
+//    borrarlo convertiria el dato en algo que siempre fue suyo, y eso es una
+//    afirmacion falsa sobre su origen. Su archivo escribe «ABONO 80 MIL» y
+//    «ABONO 20 MIL» en la columna de metodo y NO dice como se pagaron; se
+//    propuso `transfer` porque 86 de 101 cobradas lo son, y ella lo confirmo.
+//    ⚠️ Consecuencia que ella tambien confirmo: la caja de esos dias NO se mueve.
 //
 // ── SU HOJA «Resumen General» NO CIERRA CON SUS PROPIAS LINEAS ──────────────
-// ⚠️ Segunda aparicion de la clase (la primera fue `Control de inventario`):
+// ✅ CONFIRMADO POR ELLA el 2026-09-14: su resumen esta desactualizado y las
+//    lineas son la fuente. Lo cargado es correcto.
 //      ventas acumuladas   ella 7.173.100   ·   sus lineas 7.854.600
 //      compra inventario   ella 13.054.423  ·   sus lineas 13.172.423,29
-//    Se carga por LAS LINEAS, que es la decision ya tomada y confirmada por
-//    ella. ⛔ NO se ajusta nada para que cuadre con su resumen: eso inventaria
-//    un dato sobre lineas reales. Cuando aparezca la diferencia, la respuesta
-//    es esta nota — no un ajuste.
+// 🔴 Y con esto la clase QUEDA CERRADA: es la SEGUNDA hoja suya de resumen que
+//    se contradice con sus propias lineas —la primera fue `Control de
+//    inventario` (v2)— y en las dos ella confirmo que mandan las lineas. Deja de
+//    ser un hallazgo por archivo: **sus hojas de resumen son fotos que no se
+//    recalculan**. Esta anotado en CLAUDE.md, Comportamientos del negocio § 4,
+//    porque es lo que va a explicar cualquier diferencia futura entre lo que
+//    ella mira en Excel y lo que ve en Nodo.
+// ⛔ NO se ajusta nada para que cuadre con su resumen: eso inventaria un dato
+//    sobre lineas reales.
 //
 // ── LAS 15 JORNADAS VAN SIN ARQUEO ──────────────────────────────────────────
 //   `closing_amount`, `expected_amount` y `difference` quedan NULOS, asi que

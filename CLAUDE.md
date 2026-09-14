@@ -204,6 +204,43 @@ está.
 
 ---
 
+---
+
+### 4 · Muscle Pro · SUS HOJAS DE RESUMEN SON FOTOS QUE NO SE RECALCULAN — Y VAN A CONTRADECIR A NODO
+
+*Anotado el 2026-09-14, con la carga del histórico v3. **Confirmado por la clienta las dos veces**:
+las líneas son la fuente. Y son dos casos, en dos archivos distintos, así que deja de ser un
+hallazgo por archivo y pasa a ser una propiedad de la fuente.*
+
+**Lo que va a pasar, y va a pasar cada vez que ella cruce su Excel contra Nodo:** un número suyo no
+va a coincidir con el nuestro, y el suyo va a estar más bajo. Lo va a reportar como un error de
+carga.
+
+**No es un error.** Su archivo tiene **dos capas**: las **líneas** —una fila por compra, por venta,
+por gasto— y unas **hojas de resumen** que alguien escribió mirando las líneas **en un momento** y
+que **no se recalculan cuando las líneas crecen**. Son fotos con fecha, no fórmulas.
+
+| su hoja de resumen | lo que dice ella | lo que dicen sus propias líneas |
+|---|---|---|
+| **`Control de inventario`** *(v2, 2026-09-07)* | Galleta Nutella: ventas **20** · Galleta Oreo: ventas **18** | **23** y **23** |
+| **`Resumen General`** *(v3, 2026-09-14)* | ventas acumuladas **7.173.100** | **7.854.600** |
+| **`Resumen General`** *(v3, 2026-09-14)* | compra de inventario **13.054.423** | **13.172.423,29** |
+
+⛔ **Lo que NO hay que hacer, y es la reacción natural las dos veces:** «ajustar» lo cargado para que
+cuadre con su resumen. Eso **inventa un dato sobre líneas reales** — y la línea es el hecho: tiene
+fecha, producto, cantidad y precio. El resumen es una lectura de las líneas, hecha antes de que
+estuvieran todas.
+
+✅ **Lo que corresponde cuando aparezca la diferencia:** decir **cuál de las dos capas de su archivo**
+está mirando, y que Nodo sale de las líneas. Si quiere que su resumen cuadre, el que se actualiza es
+el resumen.
+
+⚠️ **Y el corolario que hace que esto valga escrito ANTES:** las dos veces el desvío se leyó primero
+como *«el cargador transcribió mal»*, y las dos veces la transcripción estaba bien —verificada línea
+por línea contra la base, con otro parser—. **Si dentro de tres meses alguien va a buscar el defecto
+al cargador, lo va a buscar donde no está.**
+
+
 **No se hereda nada de esta sección de Vento.** Los comportamientos de G-10 y Salchimelo —las
 mesas abiertas usadas como cuenta corriente interna, por ejemplo— son estado de negocio ajeno.
 
@@ -5538,6 +5575,51 @@ Ninguna verificación lo buscaba, así que sin esa impresión accidental el defe
 **Una fila cargada que ninguna pantalla muestra es, para el cliente, una fila que no se cargó.**
 
 ✅ Sumado al cargador: asevera que las 30 tengan número y que no haya duplicados.
+
+---
+
+### 🔴 CRITERIO SIN NÚMERO · UN VERIFICADOR QUE FILTRA POR ID VERIFICA EL CONJUNTO QUE ELIGIÓ, NO EL QUE EL USUARIO VE
+
+*2026-09-14, verificando el histórico v3. **Es la lección de las 30 ventas invisibles INVERTIDA**, y
+por eso va al lado: allá los datos estaban y no se veían; acá **se ve algo que el verificador no
+contaba**.*
+
+**El caso.** La sede traía una orden fantasma —residuo de un cargador nuestro: `pending/partial`,
+total 0, sin líneas ni pagos—. El verificador la excluía por uuid, con buena razón: *no es parte del
+histórico que estoy verificando*. Y con esa exclusión reportó **`CARTERA · órdenes con saldo: 9 ✅`**.
+
+**La pantalla muestra 10.** `getDebts` filtra `payment_status in ('pending','partial')` y
+`cancelled_at is null`, y la fantasma cumple las dos — así que aparece como un deudor más **en la
+pantalla donde la clienta decide a quién cobrarle**.
+
+> **El filtro no estaba mal: estaba midiendo otro conjunto.** Las 9 son correctas y son *las que yo
+> elegí*. El criterio decía «que se vea por los caminos del producto», y el camino del producto no
+> tiene ese filtro.
+
+⚠️ **Por qué se escapa, y no es descuido:** excluir el residuo es exactamente lo que hay que hacer
+para verificar **la carga** —si no, ningún total cierra—. El error no es el filtro: es **usar el
+mismo instrumento para dos preguntas distintas**, *«¿se cargó bien?»* y *«¿qué ve ella?»*, cuando la
+segunda prohíbe justamente el filtro que la primera necesita.
+
+🔴 **Y el par completo, que es lo que lo vuelve regla:**
+
+| | los datos | el verificador | qué produjo |
+|---|---|---|---|
+| **30 ventas invisibles** (2026-09-07) | estaban | los contaba | un ✅ sobre una pantalla **vacía** |
+| **la orden fantasma** (2026-09-14) | estaba de más | **no la contaba** | un ✅ sobre una pantalla con **una fila de más** |
+
+**Los dos dan verde, y los dos mienten sobre lo que la persona ve.** Uno por defecto y otro por
+exceso.
+
+✅ **LO ACCIONABLE, y es una separación, no un cuidado:**
+
+> **Un criterio que incluye «que se vea por los caminos del producto» se mide con LA CONSULTA DEL
+> PRODUCTO, copiada y SIN FILTROS PROPIOS** — ni por id, ni por marca de origen, ni por rango de
+> fechas. Lo que sobre, sobra **en la pantalla**, y eso es justamente lo que hay que descubrir.
+
+⚠️ Y el corolario para cuando hagan falta las dos preguntas: **son dos bloques separados y se dicen
+distinto.** *«La carga escribió 110 órdenes correctas»* y *«Cartera muestra 10 filas»* son las dos
+ciertas al mismo tiempo — y sólo escribiendo las dos aparece que una no es la otra.
 
 ---
 
