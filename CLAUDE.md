@@ -1600,6 +1600,41 @@ nota.
    verificador era falso y habría hecho fallar una carga correcta; acá el verificador era **cierto
    pero no reproducible**, y habría hecho fallar una carga correcta igual.
 
+🔴 **UN CONTEO HECHO SOBRE FILAS TRAÍDAS MIDE LA PÁGINA, NO LA TABLA — Y EL TOPE DE PostgREST
+SON 1000 FILAS.** *Segunda aparición, 2026-09-14. La primera está en `docs/BITACORA.md` como
+evidencia; la regla faltaba acá, que es donde se lee antes de trabajar.*
+
+> **`select(...)` sin paginar devuelve como mucho 1000 filas, sin error y sin aviso.** Lo que se
+> cuente del lado del cliente sobre esas filas no es el tamaño de la tabla: es el tamaño del tope.
+
+| | qué dijo | qué era | qué lo delató |
+|---|---|---|---|
+| **1ª** · sonda de duplicados (deuda 90) | *«products: 1000 filas · 1000 nombres distintos · **0 duplicados***» | el límite, no el catálogo — eran **1.133** | **1000 es un número demasiado redondo** |
+| **2ª** · reparto de productos por sede | **Muscle Pro: 0 productos**, y total **exactamente 1000** | la página cortó antes de llegar a esa sede — son **1.290** | **un cruce**: esa sede ya estaba medida en 42 |
+
+🔴 **Las dos veces el número redondo estaba a la vista, y sólo una vez alcanzó.** En la primera, el
+1000 era *toda* la señal. En la segunda el 1000 también estaba —y no lo vi— : lo que lo destapó fue
+que **un cero contradijo un 42 que ya conocía**. O sea que la redondez es una señal **débil**: se
+nota cuando uno la busca, y uno la busca cuando ya sospecha.
+
+⚠️ **Y la dirección del error es la peor: el truncamiento SIEMPRE devuelve de menos**, así que
+produce ceros y ausencias — *«no hay duplicados»*, *«esa sede no tiene productos»*—, que son
+exactamente las conclusiones que nadie investiga. Un instrumento que falla hacia *«no hay nada»* no
+levanta la mano.
+
+✅ **LO ACCIONABLE, y son dos, en este orden:**
+
+1. **Contar en el SERVIDOR, no del lado del cliente.** `select('*', { count: 'exact', head: true })`
+   no trae filas y no tiene tope. Si hace falta el contenido, **paginar con `range()`** y cruzar el
+   total contra ese `count`.
+2. **Y el cruce de siempre:** que la suma de las partes dé el total contado de una sola vez. Acá:
+   `1206 + 42 + 42 = 1290`, y `count` sin agrupar = **1290**. Cuesta una línea y es lo único que
+   separa un conteo de una página.
+
+⚠️ Corolario para cualquier sonda de lectura: si un resultado contiene un **0 sobre algo que ya
+sabías que existía**, la primera hipótesis no es *«se borró»* — es *«no llegué hasta ahí»*.
+
+
 🔴 **LA UNDÉCIMA ES DE OTRO EJE: NO MIDIÓ MAL, MIDIÓ OTRA COSA — UN INSTRUMENTO DE FECHADO.**
 *2026-09-03, comparando el bundle desplegado contra el local.*
 
@@ -1942,6 +1977,32 @@ de +100%; con +65,6% medido, +100% deja 34 puntos de margen.
 opinión con dígitos* — **incluido el número que uno deduce de un dato que tiene delante**. Si la
 afirmación es una razón (*«el doble»*, *«la mitad»*, *«el triple»*), hay una división, y la división
 se hace.
+
+🔴 **LA NOVENA ES UNA SUMA — DOS CIFRAS CIERTAS DE COSAS DISTINTAS, SUMADAS.** *2026-09-14, al
+abrir las listas de precios.*
+
+> *«62 productos con un solo precio»*. Medido contra la base: **42 productos activos en Muscle Pro**
+> y **20 clientes activos**. **42 + 20 = 62.**
+
+Las ocho anteriores eran un estado afirmado, una inferencia sobre datos a la vista, o una etiqueta
+leída como estado. Ésta es **aritmética**: dos números que cada uno era correcto, sumados entre sí
+sin que la suma signifique nada.
+
+🔴 **Y lo que la distingue de las ocho: es la primera que habría decidido el ALCANCE DE UNA
+MIGRACIÓN DE DATOS.** No iba a un reporte ni a un mensaje: iba a *«cuántas filas hay que crear»*.
+Con 62 se habrían escrito veinte filas de precio para productos que no existen —o se habría buscado
+el error en el cargador, que es lo caro— y el desvío habría aparecido **después** de la migración,
+cuando ya no se puede deshacer porque ninguna tabla tiene policy de DELETE.
+
+⚠️ **Por qué una suma se revisa menos que una afirmación:** un número solo invita a preguntar *«¿de
+dónde salió?»*. Un número que es una **cuenta** ya trae su respuesta adentro —*salió de sumar*— y la
+pregunta que haría falta es otra y más incómoda: *«¿sumaste cosas de la misma clase?»*. Nadie la
+hace, empezando por quien sumó.
+
+✅ **Lo que la cazó fue contar por sede en vez de aceptar el total**, y el desvío saltó solo: 42 y
+20 son las dos mitades, visibles al lado. **Un total no muestra de qué está hecho; una desagregación
+sí** — que es *enumerar, no contar* aplicado a un número que ya venía sumado.
+
 
 🔴 **LA OCTAVA ES LA PRIMERA SOBRE TRABAJO AJENO, Y SE INFIRIÓ DESDE UNA ETIQUETA.**
 *2026-09-07, al cerrar la primera tanda de la deuda 41.*
