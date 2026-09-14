@@ -2203,6 +2203,39 @@ una segunda medición, recalcular por el mismo camino es la misma.
 
 ---
 
+### ⚠️ CRITERIO SIN NÚMERO · UNA CONDICIÓN IMPOSIBLE SE CORRIGE ENUNCIÁNDOLA, NO CUMPLIÉNDOLA A MEDIAS
+
+*2026-09-14, al escribir `cerrar_jornada_con_fecha`. La condición era **«el
+trigger NO se toca»**, y era imposible por construcción.*
+
+El trigger del sello fuerza `new.closed_at := now()` en **toda** transición de
+cierre. Una RPC que escriba una fecha distinta **no puede existir** sin que el
+trigger la reconozca: no hay forma de cumplir la condición y el encargo a la vez.
+
+🔴 **Las dos salidas malas, y las dos se ven como obediencia:**
+· **Cumplirla al pie** → la RPC no funciona, y el rojo aparece lejos, en el
+  cargador, sin nombrar la condición que lo causó.
+· **Tocarla y no decirlo** → el trigger cambia en silencio y quien puso la
+  condición cree que sigue intacto. Es *una garantía falsa donde se decide*, y
+  esta vez creada al obedecer.
+
+✅ **Lo que corresponde es enunciar la imposibilidad y proponer qué SÍ se
+preserva.** Acá: el trigger gana **una** condición —reconocer la marca de la RPC—
+y **conserva entero lo que rechaza**: el `update` directo, la reapertura y mover
+`opened_at`. Eso último era lo que la condición quería proteger; el *«no se
+toca»* era una forma aproximada de decirlo.
+
+> **Una condición mal enunciada no es una condición equivocada.** Nombra bien el
+> objetivo y mal el mecanismo, y el trabajo es separar los dos — no elegir entre
+> desobedecer y romper.
+
+⚠️ Y el corolario que lo hace verificable: cuando una condición se reformula,
+**el caso que la asevera se escribe sobre el objetivo, no sobre el mecanismo**.
+Acá el spec no asevera «el trigger no cambió» —que sería falso— sino **«el update
+directo sigue rechazado»**, que es lo que se quería.
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · UNA DECISIÓN CORRECTA SOBRE UNA PREMISA FALSA — Y LA PREMISA FALSA NO ERA UN ERROR NUESTRO
 
 *2026-09-14, revisión de la decisión A de la deuda 41. **Primera decisión del proyecto que se revierte
@@ -4447,6 +4480,54 @@ pantalla nueva**.
 - Tests deterministas e idempotentes (aprendizaje: verificar con datos limpios).
 - Los tests corren en serie (`workers: 1`) por compartir backend.
 - Leer R8, R9 y R10 antes de interpretar cualquier resultado de suite.
+
+### 🔴 CRITERIO SIN NÚMERO · UNA LIMPIEZA QUE DEPENDE DEL SUJETO NO PUEDE LIMPIAR CUANDO EL SUJETO ESTÁ ROTO — QUE ES CUANDO HACE FALTA
+
+*2026-09-14, escribiendo el rojo de `cerrar_jornada_con_fecha`. Tercera de la
+familia «el arnés interfiere con lo que mide», y la primera donde el arnés usa
+**el sujeto como herramienta**.*
+
+**El caso.** El `afterEach` cerraba la jornada de cada caso llamando a la RPC que
+el archivo venía a probar. Con la migración sin aplicar, la RPC no existe: la
+limpieza no limpió, la jornada quedó abierta, y como sólo puede haber **una
+abierta por sede**, el guard del `beforeAll` abortó todo lo demás.
+
+```
+antes del arreglo:   1 failed ·  7 did not run
+después:             7 failed ·  1 passed ·  0 did not run
+```
+
+🔴 **Y el daño no es que la limpieza fallara: es QUÉ hizo con el rojo.** De los
+ocho casos, **cinco quedaron sin correr**, y los dos que hablaron lo hicieron del
+guard de la fixture, no de su sujeto. El rojo de un turno entero no dijo nada
+sobre la regla que se estaba escribiendo.
+
+⚠️ **Por qué se escapa, y es el mismo movimiento que en las otras dos de la
+familia:** usar la RPC para limpiar se siente *más correcto* que el `update`
+directo — es el camino con rastro, el que la deuda acaba de construir, el que
+uno quiere que se use. La limpieza copia la buena práctica del producto y por eso
+nadie la mira dos veces.
+
+> **El arnés no puede compartir la pieza que mide.** Limpieza, fixture y sonda
+> van por el camino **más tonto que funcione**, no por el mejor: su trabajo es
+> existir cuando lo demás no.
+
+✅ **Lo accionable, y es una pregunta al escribir un `afterEach`, un `beforeAll`
+o cualquier andamio:** *si el sujeto estuviera roto o ausente, ¿esto seguiría
+funcionando?* Si la respuesta es no, el andamio va por otro camino — acá, un
+`update` directo que el trigger estampa con `now()`, que para cerrar una jornada
+de laboratorio alcanza y sobra.
+
+⚠️ **Y la cuenta de la familia, que conviene junta porque el síntoma es distinto
+cada vez:**
+
+| | el arnés | qué produjo |
+|---|---|---|
+| `aria-disabled` | Playwright honra el atributo y no despacha el evento | un **verde** que medía al framework |
+| `signOut()` global | la API cierra TODAS las sesiones, no la suya | un **rojo mudo**: ni error ni éxito en pantalla |
+| **la limpieza con la RPC** | el andamio usa el sujeto | **casos que no corren**, y un rojo que habla de otra cosa |
+
+---
 
 ### 🔴 CRITERIO SIN NÚMERO · EL FRAMEWORK DE PRUEBAS PUEDE SATISFACER UNA ASERCIÓN POR SU CUENTA
 

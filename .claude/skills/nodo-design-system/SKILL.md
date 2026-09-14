@@ -716,6 +716,11 @@ Nota sobre `requiere_conciliacion`: el abono quedó registrado contra el saldo d
 
 22. **Un nivel puede no tener precio.** Se muestra `—`, no cero. En el catálogo el producto simplemente no se ofrece en ese nivel; en el carrito la línea no suma hasta que se elija otro nivel o se escriba el precio a mano. L0 hoy está vacía en todo el catálogo y se parametriza después.
 
+
+    ⚠️ **NO CONFUNDIR CON «ESTE PRODUCTO NO TIENE LISTAS», que es otro hecho y cae a `products.price`.** Son dos casos distintos y sólo el primero es esta regla:
+    · **Nivel sin precio** en un producto que **sí** tiene listas → `—`, la línea no suma. Es lo que dice esta regla y no tiene fallback: caer a otro nivel cotizaría la línea a un nivel que no es el pedido, y sin decirlo.
+    · **Producto sin NINGUNA lista** → es un producto **anterior a la migración**, y ahí `products.price` sigue siendo la fuente. Eso es la **etapa 1** de un retiro en dos etapas, no una violación de esta regla.
+    🔴 **Su disparador: la rama se borra en la ETAPA 2**, cuando `products.price` se retire. Hasta entonces existe, y está escrita acá para que nadie la lea como un incumplimiento del §7.22 y la saque — sacarla deja **toda línea de un producto sin listas sin precio**, que fue exactamente el rojo de `arqueo.spec` el 2026-09-14.
 23. **Los niveles se nombran L0–L4.** No llevan nombre comercial ("Mayorista") porque no es vocabulario de la dueña. El prop `nombresNivel` existe para comparar; si algún día se nombran, es una etiqueta por organización, no del sistema.
 
 24. **Cinco precios sin muro.** El formulario de producto los presenta en una sola fila de cinco campos estrechos con el nivel encima, alineados a la derecha; los vacíos van en `--surface-2` con placeholder `—`. Un botón "Copiar L1 a los vacíos" evita teclear 62 × 5 veces. El margen del catálogo se calcula sobre L1.
