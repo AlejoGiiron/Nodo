@@ -2080,6 +2080,35 @@ afirmaciones sobre el futuro no se verifican mirando el esquema. Se verifican pr
 poder hacer alguien el día después de levantarlo.
 
 
+🔴 **LA DUODÉCIMA: EL DATO ERA CORRECTO Y EL SUJETO EQUIVOCADO.** *2026-09-14, al volcar el diseño
+a la skill.*
+
+> Dije: *«§8.15 y la deuda 75 nunca llegaron a la skill»*. **§8.15 estaba en la skill, en seis
+> lugares.** Lo que faltaba era sólo la deuda 75 — y en **los dos** documentos.
+
+**De dónde salió, y es lo que la separa de las once anteriores:** el `LEEME` del paquete de Design
+dice, textual, *«el cobro en modal y la deuda 75 se mencionaron en el pedido pero no están en
+`nodo-design-system.md`»*. **Esa frase es cierta.** Habla de **el documento de Design**. Yo la repetí
+como si hablara del nuestro.
+
+> **No afirmé sobre un estado que no miré: repetí una afirmación verdadera cambiándole el sujeto.**
+> Las once anteriores fallaban en el dato; ésta falla en **de quién se predica**.
+
+⚠️ **Por qué es más difícil de atajar que las otras:** una afirmación sin medir invita a medirla. Una
+**cita** invita a confiar — ya viene con su fuente, y la fuente es real. El paso que faltaba no era
+verificar el dato (era correcto) sino preguntar **sobre qué objeto** lo decía, y esa pregunta no sale
+sola cuando los dos objetos se llaman igual: *«nodo-design-system.md»* es el nombre del archivo de
+Design **y** el contenido de nuestra skill.
+
+✅ **Lo que la cazó:** un `grep` de `8.15` sobre la skill, corrido **antes** de escribir lo que iba a
+volcar. Dio seis coincidencias donde yo esperaba cero.
+
+**Lo accionable, y es corto:** cuando repitas una cita sobre el estado de algo, **nombrá el objeto
+con su ruta**, no con su título. *«No está en `docs/reskin-listas/nodo-design-system.md`»* y *«no
+está en `.claude/skills/nodo-design-system/SKILL.md`»* son dos afirmaciones distintas, y escritas con
+la ruta no se pueden confundir.
+
+
 🔴 **LA SEXTA ES LA MÁS GRAVE, Y POR UNA RAZÓN QUE INVIERTE EL CRITERIO: LO AFIRMADO NO ERA UN
 ESTADO, ERA EL INSTRUMENTO.** *2026-09-06, la carga v2 del catálogo de Muscle Pro.*
 
@@ -2168,6 +2197,45 @@ convención de este archivo—, **pero conserva la razón vieja marcada como lo 
 revertida por datos nuevos no es una decisión equivocada, y el próximo que la lea tiene que poder
 distinguir las dos cosas: si parece un error nuestro, va a desconfiar del método que la produjo, y el
 método estaba bien.
+
+---
+
+### 🔴 CRITERIO SIN NÚMERO · DOS DOCUMENTOS QUE NUMERAN LA MISMA LISTA SON UN CONTRATO DE R1 — Y EL SÍNTOMA ES QUE UNA CITA APUNTA A OTRA REGLA
+
+*2026-09-14, al reconciliar la skill con la Entrega 2 de Design. La divergencia estaba **medida**, no
+sospechada.*
+
+| | skill | documento de Design |
+|---|---|---|
+| reglas de §7 | **16** | **24** |
+| «Vocabulario neutro» | regla **15** | regla **17** |
+
+> **La numeración estaba corrida por dos.** Citar *«regla 21»* significaba cosas distintas según cuál
+> de los dos se leyera — y la cita estaba en el `LEEME`, en **los nombres de los PNG** y en los
+> comentarios del código.
+
+🔴 **ES R1 EXACTA, Y EL VALOR COMPARTIDO ES EL ÍNDICE.** Nadie piensa en un número de lista como un
+dato: se lee como una viñeta, como formato. Pero **en cuanto alguien lo CITA, el índice pasa a ser
+una clave** — y hay dos documentos asignándola sin nada que los sincronice, que es la definición
+literal de la regla.
+
+⚠️ **Y el modo de fallo es el peor de la familia: no rompe, REDIRIGE.** Una clave que falta da un
+error; **un índice corrido da otra regla**, que también existe, también se lee bien y también parece
+la correcta. El que sigue la cita llega a un texto coherente y no tiene forma de saber que llegó al
+equivocado.
+
+✅ **CÓMO SE RESOLVIÓ, y el criterio es el mismo de siempre:** no se inventa una tercera numeración.
+Se adopta **la del documento que ya está citado afuera** —el `LEEME`, los PNG, el código— y se
+incorpora al otro lo que le falte, hasta que los dos coincidan **regla por regla**. Acá la skill era
+un subconjunto: le faltaban ocho, y al agregarlas los números se alinearon solos.
+
+📋 **El control que lo cierra, y es el que hay que correr:** no *«cuántas reglas tiene cada uno»*
+—dos documentos pueden tener 24 y no coincidir— sino **cuántos números apuntan a reglas distintas**.
+Acá dio **cero**, y ése es el único número que prueba la reconciliación.
+
+⚠️ Corolario para cualquier lista citable —reglas, criterios, deudas, pasos de un runbook—: **si
+existe en dos lados, o uno es el generado del otro, o la cita tiene que llevar el documento.**
+*«§7.21 del design system»* no alcanza; *«§7.21 de la skill»* sí.
 
 ---
 
