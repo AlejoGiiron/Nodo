@@ -5760,6 +5760,53 @@ que hay que acordarse de leer.**
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · LIMPIAR RESIDUO PRODUJO RESIDUO — EN UN SISTEMA SIN `DELETE`, LIMPIAR TIENE UN COSTO QUE SE MIDE ANTES
+
+*2026-09-14. Es el complemento de la regla de abajo —*«una sonda que escribe necesita su limpieza en
+el mismo turno»*—, y sale de que **cumplirla un turno tarde costó más que el residuo original**.*
+
+**El caso.** La sede tenía una orden fantasma: residuo de un cargador nuestro, `pending/partial`,
+total 0, sin líneas ni pagos. Aparecía en Cartera, la pantalla donde la clienta decide a quién
+cobrarle, así que había que sacarla. `register_sale_void` **exige jornada abierta**, y la carga del
+histórico había cerrado las quince. Se abrió una decimosexta; la RPC rechazó igual —*«esta venta
+pertenece a una jornada cerrada»*, un guard correcto—; la jornada se cerró vacía.
+
+> **Resultado del intento de limpieza: una jornada más, fechada hoy, vacía, cerrada, y tan imposible
+> de borrar como la fila que venía a sacar.**
+
+🔴 **Y la ironía, sin adorno: la jornada 16 es MÁS DIFÍCIL DE EXPLICAR que la fila que íbamos a
+sacar.** La fila tenía un motivo escribible en una frase. La jornada es un día de operación que no
+existió, en el historial de turnos de alguien que sí trabajó los otros quince.
+
+⚠️ **Por qué se escapa, y no es descuido:** *«limpiar»* se piensa como una resta. En este sistema
+**ninguna tabla tiene policy de `DELETE`** —por diseño, y es la decisión correcta— así que **toda
+limpieza es en realidad una escritura**: anular escribe `cancelled_at`, y el camino para poder
+anular puede escribir todavía más. La palabra esconde el signo de la operación.
+
+> **Antes de limpiar, enumerá qué ESCRIBE el camino de limpieza. Si escribe más de lo que borra, el
+> residuo crece.**
+
+📋 **Cómo se enumera, y es el mismo trabajo que la poda ya hace al revés:** abrir la RPC o el flujo
+que se va a usar y listar sus escrituras **y sus precondiciones** —que también escriben—. Acá la
+cuenta, hecha después y no antes, da:
+
+| lo que el camino de limpieza escribe | |
+|---|---|
+| `cancelled_at` + motivo en 1 fila | lo que se quería |
+| 🔴 **1 jornada** (precondición de la RPC) | lo que no se contó |
+
+✅ **Y lo que resolvió el caso confirma la regla en vez de contradecirla:** el `update` directo —una
+fila, por UUID, con el motivo diciendo por qué no se usó la RPC— **escribe exactamente lo que se
+quería y nada más**. Era el camino de menor escritura desde el principio; se llegó a él después de
+pagar la jornada.
+
+⚠️ Corolario para el que lea esto con una limpieza por delante: **el costo de limpiar se compara
+contra el costo de NO limpiar, y las dos veces en escrituras, no en intención.** Dejar la fila costaba
+una fila de más en una pantalla; sacarla costó una fila menos y una jornada de más. La cuenta se puede
+hacer antes — es la misma enumeración, corrida en el otro sentido.
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · UNA SONDA QUE ESCRIBE NECESITA SU LIMPIEZA EN EL MISMO TURNO
 
 *Segunda vez que una medición de enumeración deja algo vivo en el lab. La primera fueron tres
