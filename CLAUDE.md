@@ -2827,6 +2827,53 @@ lee, al mes, como si todos tuvieran la misma razón.
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · MIGRAR UNA ASIGNACIÓN Y OTORGARLA SE ESCRIBEN CASI IGUAL — UN `where` DE MÁS — Y LA DIFERENCIA ES QUIÉN QUEDA CON ACCESO A QUÉ
+
+*2026-09-14, retirando la sede vieja de Muscle Pro. Cazado releyendo antes de aplicar, no después.*
+
+**El caso.** Retirar la sede vieja exigía mover la asignación de `user_stores` a la nueva. Lo
+escrito era esto:
+
+```sql
+-- ⛔ REPARTE: le da la sede nueva a TODOS los perfiles de la organización
+insert into public.user_stores (user_id, sede_id)
+select p.id, c_nueva from public.profiles p
+ where p.organization_id = v_org ...
+
+-- ✅ MUEVE: sólo a quienes YA tenían la vieja
+insert into public.user_stores (user_id, sede_id)
+select u.user_id, c_nueva from public.user_stores u
+ where u.sede_id = c_vieja ...
+```
+
+> **La diferencia es de qué tabla sale el `select`, y el resultado es OTRA COSA: el primero CONCEDE
+> acceso a gente que no lo tenía.** No es un bug de la migración — es un cambio de autorización que
+> nadie pidió, escrito con la misma forma que el cambio que sí se pidió.
+
+⚠️ **Por qué se escapa, y no es descuido:** *«que todos vean la sede nueva»* suena a lo correcto
+—es la sede que queda, todos operan ahí— y en una organización de una persona **los dos `select`
+devuelven lo mismo**. La divergencia aparece con el segundo empleado, meses después, y no produce
+error: produce a alguien viendo una sede que nunca le asignaron.
+
+🔴 **Y es de la familia que este archivo más teme: lo que aparece al pasar de N=1 a N=2 son
+AUTORIZACIONES.** Ya está medido dos veces —las deudas 61 y 92 estuvieron dormidas hasta que LAB
+tuvo dos sedes—. Ésta habría entrado por la puerta contraria: no un guard sin ejercer, sino un
+`insert` que reparte, invisible mientras haya un solo perfil.
+
+✅ **LO ACCIONABLE, y es una pregunta antes de escribir cualquier `insert ... select` sobre una tabla
+de asignación o de permisos:**
+
+> **¿De qué tabla sale el `select`?** Si sale de la tabla del RECURSO (`profiles`, `users`,
+> `roles`), estás **repartiendo**. Si sale de la tabla de la ASIGNACIÓN vieja (`user_stores`), estás
+> **moviendo**. Migrar es siempre lo segundo.
+
+⚠️ Y el corolario sobre el orden, que además hace la migración auditable: **primero se inserta la
+asignación nueva y después se borra la vieja**, sobre el mismo conjunto y con las dos cuentas
+impresas. Al revés —borrar primero— se pierde la lista de a quién había que mover, y si algo falla
+en el medio queda gente sin ninguna sede.
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · UNA LISTA ESCRITA DE MEMORIA ES UNA HIPÓTESIS — LAS LISTAS SE DERIVAN
 
 *Cuatro casos el 2026-09-04, en una sola tanda, y los cuatro tienen la misma forma. Es el hermano de
@@ -3916,6 +3963,46 @@ los datos de LAB ya no sean descartables.
 Mismo criterio que el resto del proyecto: *la historia no se reescribe, se le agrega*. Retirar es
 dejar de usarla y dejar de apuntarle la suite; borrarla destruiría la única referencia de qué había
 cuando se tomaron las decisiones de estos meses.
+
+### 🔴 ENTRE DOS CAMINOS AL MISMO RESULTADO, GANA EL QUE NO SUMA UNA CREDENCIAL — AUNQUE SEA MÁS LARGO
+
+*2026-09-14, al cerrar la transición de Muscle Pro sin credencial de usuario viva.*
+
+**La situación.** Había que cambiar **tres nombres** y mover dos filas de asignación en el tenant de
+la clienta. La credencial de usuario estaba rotada —a propósito, al terminar la carga— y el link de
+restablecimiento no funcionaba. Con un token de Management vivo, la salida obvia era pedir la
+`service_role` key del proyecto y hacerlo por la Admin API.
+
+> **Se estaba por autorizar PODER TOTAL SOBRE EL PROYECTO ENTERO —LAB y el tenant de la clienta
+> incluidos— para cambiar tres nombres.** Y no por descuido: por prisa, que es cuando esta decisión
+> se toma de verdad.
+
+**La alternativa, que era más larga de escribir y estrictamente mejor en los tres ejes:**
+
+| | `service_role` por la Admin API | una migración de datos |
+|---|---|---|
+| credenciales que suma a la sesión | 🔴 una, con poder sobre todo el proyecto | **ninguna** |
+| camino | uno nuevo, sin autorización previa | **`db push`, ya autorizado y con su confirmación** |
+| rastro | un comando en un historial que se pierde | **un archivo en git, para siempre** |
+| verificación | un chequeo posterior, si alguien lo corre | **aserciones adentro, que revierten** |
+
+⚠️ **Y la objeción razonable —*«una migración es para esquema, no para datos de un tenant»*— es
+cierta y no alcanza.** Se compensa acotando: **fijada por UUID**, con guards que comprueban que cada
+UUID tenga hoy el nombre esperado, y un camino de no-op ruidoso si las filas no existen (una base
+local, un reset). Una migración de datos mal escrita es peligrosa; una credencial de proyecto en una
+sesión lo es **sin escribir nada**.
+
+✅ **LO ACCIONABLE, y es una pregunta antes de pedir una credencial más fuerte:**
+
+> **¿Existe un camino que use lo que YA está autorizado?** Si existe, gana aunque cueste más
+> escribirlo — porque el costo de la credencial no se paga al usarla: se paga mientras exista.
+
+⚠️ Corolario, y es el que hace que la pregunta se haga: **la prisa es el argumento que siempre
+acompaña al camino con más poder.** *«No nos frenemos en cosas básicas»* es una razón legítima para
+apurar el trabajo y **nunca** para ampliar el alcance de un secreto. Las dos cosas se sienten igual
+de urgentes y sólo una es reversible.
+
+---
 
 ### El token no vive en ningún archivo
 
@@ -5603,6 +5690,49 @@ Ninguna verificación lo buscaba, así que sin esa impresión accidental el defe
 **Una fila cargada que ninguna pantalla muestra es, para el cliente, una fila que no se cargó.**
 
 ✅ Sumado al cargador: asevera que las 30 tengan número y que no haya duplicados.
+
+---
+
+### 🔴 CRITERIO SIN NÚMERO · UN NÚMERO MEDIDO Y CITADO TRANQUILIZA; UNO QUE CORRE DENTRO DE LA TRANSACCIÓN Y PUEDE ABORTARLA DECIDE
+
+*2026-09-14, cerrando la transición de Muscle Pro. **Es el argumento del hook contra el
+recordatorio, aplicado a una VERIFICACIÓN en vez de a una regla.***
+
+**El caso.** La condición era exacta y buena: *«contá las homónimas de HOY —no cites la medición
+vieja— después de renombrar la sede vieja y antes de renombrar la nueva; ahí es cuando el índice
+tiene que aplicar»*. Escrita así, se cumple **midiendo y citando**: se corre un `select`, se mira el
+cero, se escribe en el registro, y después se ejecutan los renombres.
+
+**Lo que se hizo en su lugar:** el conteo entró **adentro de la misma transacción**, entre los dos
+`update`, con un `raise exception` si no daba cero — así que **si no daba, los renombres se
+deshacían solos**.
+
+| | qué produce | qué pasa si el número está mal |
+|---|---|---|
+| **medido y citado** | una línea en el registro: *«0 grupos homónimos ✅»* | **nada**: el trabajo siguió, y el número queda como prueba de que estaba bien |
+| 🔴 **dentro de la transacción** | el mismo cero, en el mismo punto | **aborta y revierte todo lo ya escrito** |
+
+> **Los dos se ven idénticos en un reporte. Sólo el segundo protege.**
+
+⚠️ **Y la distancia que los separa es la de siempre:** entre la medición y la decisión. Un número
+citado se mide **antes**, y entre ese instante y la escritura hay un hueco donde el mundo puede
+cambiar —otra sesión, otro script, un renombre a medias— y donde nadie vuelve a mirar. Un número que
+corre **dentro** no tiene hueco: mide y decide en el mismo lugar, sobre el mismo estado, atómicamente.
+
+🔴 **Es el argumento del hook contra el recordatorio, movido de las reglas a las verificaciones.**
+Aquél dice: *un recordatorio que se puede leer sin contestar se salta en silencio; uno que exige
+respuesta deja la omisión visible*. Éste dice lo mismo de un número: **una medición que se puede
+leer sin que nada dependa de ella se cita igual esté bien o mal**; una que puede tumbar la
+transacción no se puede ignorar.
+
+✅ **LO ACCIONABLE, y es una pregunta al diseñar la verificación:** *si este número diera mal,
+¿algo se detiene solo?* Si la respuesta es *«lo vería y pararía»*, es una medición citada — y
+depende de que alguien mire en el momento correcto, que es lo que este archivo viene midiendo que
+falla. **Cuando la escritura lo permita, el chequeo va adentro y con `raise`.**
+
+⚠️ Corolario para escribir el registro: una verificación embebida **es más fuerte que un post-mortem
+y hay que decir cuál se hizo**. *«Conté y dio cero»* y *«el conteo corrió dentro y habría abortado»*
+son dos afirmaciones distintas sobre el mismo cero.
 
 ---
 
