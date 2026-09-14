@@ -2292,6 +2292,52 @@ existe en dos lados, o uno es el generado del otro, o la cita tiene que llevar e
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · QUE LA FUENTE ESCRIBA EL MISMO VALOR DE VARIAS FORMAS ES UNA PROPIEDAD CONOCIDA, NO UN HALLAZGO NUEVO CADA VEZ
+
+*Tercera aparición al 2026-09-14, en tres dimensiones distintas del mismo
+archivo. Se escribe cuando deja de ser anécdota y pasa a ser algo que se asume
+de entrada.*
+
+| dimensión | las dos formas | qué habría producido |
+|---|---|---|
+| **categorías** | `Proteina` / `proteina` · `Farmacologia` contra el `Farmacología` del producto | **dos categorías** donde hay una |
+| **proveedores** | `VENOM` (7 filas) / `Venom` (14) | **dos proveedores**, y todo reporte por proveedor partido en dos |
+| **productos, entre hojas** | `EAA PROSCIENCE` en una hoja, `AMINOACIDOS EAA PROSCIENCE` en la otra | un producto **duplicado** o uno **perdido** en el cruce |
+
+> **El archivo de un negocio real no es una base de datos: es texto tecleado por
+> una persona en momentos distintos.** Escribir el mismo valor de varias formas
+> no es un error suyo — es cómo se ve un dato que nunca tuvo una restricción
+> detrás.
+
+🔴 **LO QUE CAMBIA AL ACEPTARLO COMO PROPIEDAD: la normalización deja de ser una
+reacción y pasa a ser parte del diseño del cargador.** Las tres veces el arreglo
+fue el mismo —normalizar antes de agrupar— y las tres veces se descubrió
+*después*, mirando una lista que tenía un elemento de más. El cuarto caso se
+ataja escribiendo el cargador con la normalización puesta de entrada, y
+**enumerando por dimensión** en vez de esperar a que una cuenta no cierre.
+
+✅ **Lo accionable, y es un paso del método, no una advertencia:** antes de
+cargar, **para cada dimensión con nombre —categoría, proveedor, cliente,
+producto, subcategoría de gasto— contar los distintos ANTES y DESPUÉS de
+normalizar.** Si los dos números difieren, ahí hay una colisión, y se resuelve
+eligiendo la forma canónica **una sola vez**.
+
+```
+distintos tal cual: 9   ·   normalizados: 8   ->  hay una colision
+```
+
+⚠️ **Y qué normalizar en cada caso, porque no es lo mismo:** espacios y
+mayúsculas **siempre**; tildes **sólo para CRUZAR** contra lo que ya existe —el
+índice único del esquema normaliza espacios y mayúsculas pero **no** tildes, así
+que el nombre que se ESCRIBE es el canónico con su ortografía correcta, no el
+normalizado.
+
+⚠️ Corolario para el registro: la próxima vez que aparezca **no se anota como
+hallazgo**. Se anota qué dimensión era y cómo se normalizó — el hallazgo ya está
+hecho.
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · «EL MÁS CERCANO» SOBRE UN RANGO ACOTADO NO CLASIFICA: LOS EXTREMOS ABSORBEN TODO LO QUE SE SALE
 
 *2026-09-14, intentando derivar la lista de precios de cada cliente desde lo que
