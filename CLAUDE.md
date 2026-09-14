@@ -2561,6 +2561,57 @@ día deja **0 de 110** líneas sin costo; el orden contrario, **39 de 110 y el 4
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · EL ATAJO NO PUEDE LO QUE EL CLIC NO PUEDE — Y EL REMEDIO NO ES ESCRIBIR LA REGLA DOS VECES, ES QUE LOS DOS CAMINOS LLAMEN AL MISMO LUGAR
+
+*2026-09-14, cableando Alt+0–4 sobre el nivel de la línea. **Es R1 aplicada a una VALIDACIÓN**, y
+por eso no estaba cubierto: el inventario de R1 habla de valores, no de reglas.*
+
+**El caso.** La misma decisión —*¿se puede elegir este nivel para este producto?*— la toman dos
+caminos: el desplegable del chip y el atajo de teclado. Los dos la tenían, correctamente, y **cada
+uno con su propia expresión**:
+
+```ts
+// en el desplegable
+const vacio = precioDeNivel(precios, n, precioLegado) === null
+// en el atajo
+if (!nivelEstaPuesto(product.product_prices, n) && (product.product_prices?.length ?? 0) > 0)
+```
+
+> **Daban lo mismo por casualidad, no por construcción.** Dos expresiones distintas de la misma
+> regla, sin nada que las sincronice — que es la definición literal de R1.
+
+🔴 **Y EL LADO QUE SE CONGELA ES EL DEL CAMINO MENOS USADO.** No es simétrico: el desplegable lo
+toca todo el mundo y cualquier divergencia se ve; **el atajo lo usa quien ya sabe que existe**, casi
+nunca se prueba a mano, y su spec —si existe— lo escribió quien lo cableó. Así que la regla que
+queda vieja es **la que nadie mira**, y el día que divergen, el teclado deja hacer lo que la
+pantalla no deja.
+
+⚠️ **Por qué «poner la misma regla en los dos» no alcanza, y es la parte contraintuitiva:** eso es
+exactamente lo que ya había. Dos copias correctas hoy son dos copias que mañana no lo son — y la
+segunda no se actualiza porque **quien cambia la regla está mirando la pantalla**, no el atajo.
+
+✅ **LO ACCIONABLE:**
+
+> **Cuando dos caminos lleven a la misma decisión, la decisión vive en UNA función y los dos la
+> LLAMAN.** No «la misma regla escrita dos veces»: el mismo lugar.
+
+Acá quedó `nivelElegible(precios, nivel, precioLegado)`, y el comentario que la acompaña dice por
+qué existe — porque una función de una línea, sin su razón al lado, se inlinea de vuelta en el
+primer refactor que busque «simplificar».
+
+⚠️ **Y la distinción que hay que conservar al extraerla: la REGLA se comparte, la PRESENTACIÓN no.**
+Que el desplegable pinte `—` cuando no hay número no es la regla otra vez: es pintar un valor. Si se
+fuerza también eso a pasar por la función compartida, se termina metiendo lógica de UI adentro de la
+decisión, que es el error contrario.
+
+📋 **Dónde más aplica hoy, para que no quede como el arreglo de un caso:** todo par
+teclado/pantalla del mostrador —cobrar, descuento, cambiar cliente, poner en espera— y todo par
+UI/RPC donde la RPC valida y la pantalla decide si ofrece el botón. En el segundo, «el mismo lugar»
+no es una función compartida sino que **la pantalla pregunte por el resultado de la RPC** en vez de
+re-derivar la condición.
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · CUANDO UNA FUNCIÓN DEJA DE CAER A UN DEFAULT, EL DEFAULT REAPARECE EN SUS LLAMADORES — NO SE PROPAGA POR COPIA, SE REINVENTA
 
 *2026-09-14, primer corte de la UI de la deuda 101. **Y no es «entender la clase no la barre»: la

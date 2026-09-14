@@ -63,6 +63,26 @@ export function precioDeNivel(
   return exacto ? Number(exacto.precio) : null
 }
 
+/**
+ * ¿Se puede ELEGIR este nivel para este producto?
+ *
+ * 🔴 UN SOLO LUGAR, Y ESA ES LA RAZON DE QUE EXISTA. La misma decision la toman
+ *    DOS caminos —el desplegable de `PriceLevel` y el atajo Alt+0-4— y cada uno
+ *    la tenia escrita con su propia expresion: `precioDeNivel(...) === null` en
+ *    uno, `!nivelEstaPuesto(...) && length > 0` en el otro. **Daban lo mismo por
+ *    casualidad**, no por construccion.
+ *
+ * ⚠️ Dos caminos a la misma decision con la regla escrita dos veces es R1 sobre
+ *    una VALIDACION, y el lado que se congela es el del camino MENOS USADO — o
+ *    sea el atajo, que nadie prueba a mano. El remedio no es que los dos tengan
+ *    la misma regla escrita: es que los dos LLAMEN AL MISMO LUGAR.
+ */
+export const nivelElegible = (
+  precios: PrecioDeNivel[] | null | undefined,
+  nivel: number,
+  precioLegado?: number | null,
+): boolean => precioDeNivel(precios, nivel, precioLegado) !== null
+
 /** ¿Este producto tiene puesto ESTE nivel, o lo que se muestra es el de L1? */
 export const nivelEstaPuesto = (precios: PrecioDeNivel[] | null | undefined, nivel: number) =>
   !!precios?.some((p) => p.nivel === nivel)

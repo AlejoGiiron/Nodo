@@ -195,6 +195,8 @@ interface CartStore {
   addItem: (product: ProductWithCategory, extras: CartExtra[], nivel: number | null) => void
   /** Cambia el nivel de UNA línea y le re-siembra el precio de ese nivel. */
   setNivel: (index: number, nivel: number | null) => void
+  /** Re-aplica un nivel a las lineas INTACTAS. Devuelve cuantas cambio. */
+  reaplicarNivel: (nivel: number) => number
   setQty: (index: number, qty: number) => void
   setPrice: (index: number, price: number) => void
   setNote: (index: number, note: string) => void
@@ -260,6 +262,40 @@ export const useCartStore = create<CartStore>((set) => ({
       const precio = precioDeNivel(product.product_prices, nivel ?? -1, product.price)
       return { items: [...state.items, { id: genId(), product, qty: 1, note: '', extras, price: precio, nivel }] }
     }),
+
+  // ── RE-APLICADO AL CAMBIAR DE CLIENTE ─────────────────────────────────────
+  // 🔴 SOLO LAS LINEAS INTACTAS. Una linea cuyo precio la cajera YA tecleo es un
+  //    acuerdo con una persona; pisarlo porque cambio el cliente seria reescribir
+  //    una decision suya sin avisar. La venta normal —donde nadie toco nada— si
+  //    se re-cotiza entera, que es lo que hace util el cambio de cliente.
+  //
+  // 🔴 «INTACTA» SE DERIVA, NO SE GUARDA: es `price === precioDeNivel(su nivel)`.
+  //    Un flag `tocadaAMano` seria estado nuevo que hay que mantener en cada
+  //    camino que escribe el precio —setPrice, setNivel, add, addItem, y el que
+  //    venga— y el primero que se olvide deja lineas que nadie vuelve a cotizar.
+  //    Derivarlo no se puede desincronizar.
+  //
+  // ⚠️ EL CASO DE BORDE, dicho para que nadie lo «arregle»: si ella tecleo a mano
+  //    EXACTAMENTE el precio del nivel, la linea cuenta como intacta y se
+  //    re-aplica. Es un no-op cuando el nivel no cambia, y cuando cambia mueve
+  //    una linea cuyo precio coincidia con la lista — que es indistinguible de
+  //    una que nunca se toco, porque en los datos SON lo mismo. Distinguirlas
+  //    exige justamente el flag que decidimos no tener.
+  reaplicarNivel: (nivel) => {
+    let cambiadas = 0
+    set((state) => {
+      const next = state.items.map((item) => {
+        const actual = precioDeNivel(item.product.product_prices, item.nivel ?? -1, item.product.price)
+        if (item.price !== actual) return item              // tocada a mano: no se pisa
+        const nuevo = precioDeNivel(item.product.product_prices, nivel, item.product.price)
+        if (item.nivel === nivel && item.price === nuevo) return item
+        cambiadas++
+        return { ...item, nivel, price: nuevo }
+      })
+      return { items: next }
+    })
+    return cambiadas
+  },
 
   setNivel: (index, nivel) =>
     set((state) => {

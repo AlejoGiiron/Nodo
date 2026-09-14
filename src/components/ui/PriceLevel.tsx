@@ -1,4 +1,4 @@
-import { NIVELES, etiquetaDeNivel, precioDeNivel, type PrecioDeNivel } from '@/lib/niveles'
+import { NIVELES, etiquetaDeNivel, precioDeNivel, nivelElegible, type PrecioDeNivel } from '@/lib/niveles'
 import { formatoCOP } from '@/lib/formato'
 
 /**
@@ -119,7 +119,10 @@ export function PriceLevel({
         >
           {NIVELES.map((n) => {
             const p = precioDeNivel(precios, n, precioLegado)
-            const vacio = p === null
+            // 🔴 La elegibilidad sale de `nivelElegible`, el MISMO lugar que
+            //    consulta el atajo Alt+0-4. Escribirla aca otra vez daria dos
+            //    reglas para la misma decision, y la del atajo no la ve nadie.
+            const vacio = !nivelElegible(precios, n, precioLegado)
             const activo = n === nivel
             return (
               <button
@@ -157,7 +160,7 @@ export function PriceLevel({
                   {n === nivelDelCliente ? ' · cliente' : ''}
                 </span>
                 <span style={{ fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>
-                  {vacio ? '—' : formatoCOP(p)}
+                  {p === null ? '—' : formatoCOP(p)}
                 </span>
               </button>
             )

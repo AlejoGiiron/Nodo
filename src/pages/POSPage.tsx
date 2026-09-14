@@ -4,7 +4,7 @@ import {
   ChevronRight, Store, MessageCircle,
   Phone, StickyNote,
   Banknote, CreditCard, Smartphone, Check, Building2, Printer,
-  Pause, Play, Clock, AlertTriangle, HandCoins, SplitSquareHorizontal,
+  Pause, Play, Clock, AlertTriangle, HandCoins, SplitSquareHorizontal, UserRound,
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import {
@@ -16,7 +16,7 @@ import { useProductsWithExtras } from '@/hooks/useProductsWithExtras'
 import { useAuth } from '@/hooks/useAuth'
 import { usePermissions } from '@/hooks/usePermissions'
 import { useSedeConfig } from '@/hooks/useSedeConfig'
-import { nivelInicial, nivelEstaPuesto } from '@/lib/niveles'
+import { nivelInicial, nivelElegible } from '@/lib/niveles'
 import { useCashShift } from '@/hooks/useCashShift'
 import { OpenShiftModal } from '@/components/shift/OpenShiftModal'
 import { ItemConfigModal } from '@/components/pos/ItemConfigModal'
@@ -634,11 +634,18 @@ function CartPanel({
   productsWithExtras,
   onEditExtras,
   nivelDelCliente,
+  customerId,
+  onElegirCliente,
+  ventaEnCurso,
 }: {
-  /** Nivel de lista contra el que se COMPARA cada linea (§7.21). Hoy es el de
-   *  la sede: el cliente todavia vive dentro del modal de cobro y baja al
-   *  carrito en el corte 3 de esta tanda. */
+  /** Nivel de lista contra el que se COMPARA cada linea (§7.21): el del cliente
+   *  elegido, y si no hay cliente, el de la sede. */
   nivelDelCliente: number | null
+  customerId: string | null
+  /** Elegir cliente RE-APLICA el nivel a las lineas intactas (corte 3). */
+  onElegirCliente: (id: string, name: string) => void
+  /** El total de esta venta, para proyectar el cupo ANTES de comprometerlo. */
+  ventaEnCurso: number
   subtotal: number
   discountAmt: number
   total: number
@@ -693,8 +700,7 @@ function CartPanel({
       // 🔴 Un nivel SIN PRECIO no se puede elegir — igual que en el desplegable
       //    (§4). Si el atajo pudiera lo que el clic no puede, serian dos reglas
       //    distintas para la misma decision, y la del teclado no la ve nadie.
-      if (!nivelEstaPuesto(item.product.product_prices, n)
-          && (item.product.product_prices?.length ?? 0) > 0) {
+      if (!nivelElegible(item.product.product_prices, n, item.product.price)) {
         toast.error(`${item.product.name} no tiene precio en L${n}.`)
         return
       }
@@ -802,7 +808,36 @@ function CartPanel({
           y se conserva igual porque la clase de defecto que ataja no depende
           de donde vive el cobro. */}
       <div style={{ flex: 1, overflow: 'auto', minHeight: ALTO_MINIMO_LISTA }}>
-        {items.length === 0 ? (
+              {/* ── EL CLIENTE, EN EL CARRITO ──────────────────────────────────────
+          🔴 BAJO DEL MODAL (corte 3, deuda 101). No es una mudanza estetica: el
+          NIVEL con el que se cotiza cada linea sale del cliente, y las lineas se
+          arman ANTES de abrir el cobro. Con el cliente en el modal, el mostrador
+          cotizaba la venta entera al nivel de la sede y el correcto aparecia
+          recien al cobrar — o sea que el numero que ella le dice al cliente en
+          voz alta era el equivocado. */}
+      <div
+        data-testid="cart-cliente"
+        style={{ padding: '10px 22px', borderBottom: '1px solid var(--surface-2)' }}
+      >
+        <CustomerPicker prefijo="cart-customer" value={customerId} onChange={onElegirCliente} />
+
+        {/* 🔴 EL CUPO SE PROYECTA CON LA VENTA EN CURSO, ANTES DE COMPROMETERLA
+            (§7.1). ⚠️ Su comentario anterior decia «cambia DONDE, no cuando», y
+            era cierto MIENTRAS el cliente vivia en el modal: el cupo se veia al
+            cobrar, que sigue siendo antes de confirmar. Con el cliente en el
+            carrito cambian LAS DOS: ahora se ve mientras se arma la venta, o sea
+            cuando todavia se puede sacar un producto en vez de cuando ya hay que
+            explicarle al cliente por que no se puede.
+            ⚠️ Sigue en `sin dato`: el cupo no existe en el esquema (deuda 40).
+            El componente dice que falta y donde asignarlo, en vez de inventarlo. */}
+        {customerId && (
+          <div style={{ marginTop: 10 }}>
+            <CupoMeter asignado={null} consumido={0} ventaEnCurso={ventaEnCurso} />
+          </div>
+        )}
+      </div>
+
+      {items.length === 0 ? (
           <div style={{ padding: 50, textAlign: 'center', color: 'var(--ink-4)', fontSize: 13.5 }}>
             <div style={{
               width: 56, height: 56, borderRadius: '50%', background: 'var(--border-2)',
@@ -1057,6 +1092,8 @@ function CheckoutModal({
   discountType,
   discountReason,
   canal,
+  customerId,
+  customerName,
   onClose,
   onComplete,
 }: {
@@ -1068,6 +1105,9 @@ function CheckoutModal({
   discountType: DiscountType
   discountReason: string
   canal: Canal
+  /** Elegido en el CARRITO. El modal lo lee y no lo escribe (corte 3). */
+  customerId: string | null
+  customerName: string
   onClose: () => void
   onComplete: () => void
 }) {
@@ -1086,16 +1126,31 @@ function CheckoutModal({
   const [numeroReservado, setNumeroReservado] = useState<number | null>(null)
   const [reintentandoNumero, setReintentandoNumero] = useState(false)
   // Fiado: cliente seleccionado (solo aplica si method === 'fiado').
-  const [customerId, setCustomerId] = useState<string | null>(null)
+  // 🔴 EL CLIENTE YA NO VIVE ACA — corte 3 de la deuda 101. Bajo al carrito,
+  //    porque el NIVEL DE LA LINEA depende de el y las lineas se arman ANTES de
+  //    abrir el cobro. Con el cliente en el modal, el mostrador cotizaba toda la
+  //    venta al nivel de la sede y recien al cobrar aparecia el correcto.
+  //    ⚠️ Se movio en UN solo cambio, no en dos: dejar el picker vivo en los dos
+  //    lados aunque fuera un commit da DOS lugares para elegir cliente, y el
+  //    segundo queda con el estado viejo.
   // 🔴 Deuda 46. El plazo se PRECARGA del cliente y queda editable: se pacta por
   //    venta. Lo que se manda a `orders` es este valor, no el del cliente — si
   //    la venta leyera el plazo del cliente al mostrarse en cartera,
   //    renegociarlo movería el vencimiento de todas sus ventas viejas.
   const [plazoDias, setPlazoDias] = useState<number | null>(null)
+
   const { customers } = useCustomers()
   const plazosSede = sedeConfig.plazos_credito ?? DEFAULT_PLAZOS_CREDITO
   const plazoDefaultSede = sedeConfig.plazo_credito_default ?? DEFAULT_PLAZO_CREDITO
-  const [customerName, setCustomerName] = useState<string>('')
+
+  // El plazo se precarga del cliente elegido en el carrito. Sigue editable acá:
+  // es un dato DE LA VENTA (deuda 46), no del cliente.
+  useEffect(() => {
+    if (!customerId) { setPlazoDias(null); return }
+    const c = customers.find((x) => x.id === customerId)
+    setPlazoDias(c?.plazo_dias ?? plazoDefaultSede)
+  }, [customerId, customers, plazoDefaultSede])
+
   // Pago dividido (mixto): activo bajo demanda vía "Dividir pago".
   const [split, setSplit] = useState(false)
   const [splitParts, setSplitParts] = useState<SalePaymentPart[]>([])
@@ -1355,17 +1410,42 @@ function CheckoutModal({
                   <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink-2)', marginBottom: 6 }}>
                     Cliente <span style={{ color: 'var(--danger)' }}>*</span>
                   </div>
-                  <CustomerPicker
-                    value={customerId}
-                    onChange={(id, name) => {
-                      setCustomerId(id)
-                      setCustomerName(name)
-                      // Precarga del plazo pactado con ese cliente; si no tiene,
-                      // el default de la sede. Queda editable.
-                      const c = customers.find((x) => x.id === id)
-                      setPlazoDias(c?.plazo_dias ?? plazoDefaultSede)
-                    }}
-                  />
+                  {/* 🔴 EL PICKER SE RETIRO DE ACA (corte 3). El cliente se
+                      elige en el CARRITO, porque de el sale el nivel con el que
+                      se cotiza cada linea — y las lineas se arman antes.
+
+                      ⚠️ EL MENSAJE NOMBRA DONDE ESTA EL CONTROL AHORA, y no es
+                      cortesia: el fiado es el 31% de sus ventas, asi que va a
+                      chocar con este bloqueo seguido hasta acostumbrarse. Un
+                      «elegi un cliente» a secas la deja buscando el control que
+                      acabamos de mover. Decir DONDE es lo unico que hace que el
+                      choque enseñe en vez de frustrar. */}
+                  {customerId ? (
+                    <div
+                      data-testid="pos-cliente-elegido"
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 8, padding: '9px 11px',
+                        borderRadius: 'var(--r-2)', background: 'var(--surface-2)',
+                        border: '1px solid var(--border)', fontSize: 13, color: 'var(--ink)',
+                      }}
+                    >
+                      <UserRound size={14} style={{ color: 'var(--ink-3)' }} />
+                      <span style={{ fontWeight: 600 }}>{customerName}</span>
+                    </div>
+                  ) : (
+                    <div
+                      data-testid="pos-falta-cliente"
+                      style={{
+                        padding: '9px 11px', borderRadius: 'var(--r-2)',
+                        background: 'var(--warning-soft)', color: 'var(--warning-on-soft)',
+                        fontSize: 12, lineHeight: 1.45,
+                      }}
+                    >
+                      Para vender a fiado hace falta un cliente.{' '}
+                      <strong>Elegilo en el carrito</strong>, arriba de la lista de
+                      productos, y volvé a cobrar.
+                    </div>
+                  )}
 
                   {/* 🔴 PLAZO DE LA VENTA — deuda 46. Desplegable y no número
                       libre: el typo de 3 por 30 no lo detecta nada, y una venta
@@ -1895,6 +1975,44 @@ export function POSPage() {
   //    pisaría líneas que ella ya pudo haber acordado a mano.
   const { config: sedeConfigPos } = useSedeConfig()
   const nivelDeLaSede = useMemo(() => nivelInicial(null, sedeConfigPos), [sedeConfigPos])
+
+  // ── EL CLIENTE DE LA VENTA (corte 3, deuda 101) ──────────────────────────
+  // Vive acá y baja a las DOS superficies: el carrito lo elige, el modal lo lee.
+  // Un solo lugar, o sea un solo estado — que es la condición de haberlo movido.
+  const [customerId, setCustomerId] = useState<string | null>(null)
+  const [customerName, setCustomerName] = useState<string>('')
+  const { customers: clientesPos } = useCustomers()
+
+  // El nivel del cliente: suyo → de la sede → L1 (`nivelInicial`).
+  const nivelDelCliente = useMemo(
+    () => nivelInicial(clientesPos.find((c) => c.id === customerId), sedeConfigPos),
+    [clientesPos, customerId, sedeConfigPos],
+  )
+
+  const reaplicarNivel = useCartStore((s) => s.reaplicarNivel)
+
+  // ── ELEGIR CLIENTE RE-APLICA EL NIVEL, Y LO ANUNCIA ──────────────────────
+  // 🔴 EL ANUNCIO NO ES CORTESIA: re-cotizar en silencio cambia números que ella
+  //    quizá ya dijo en voz alta. El aviso dice CUANTAS líneas y A QUE nivel —
+  //    sin el número, «se actualizaron los precios» no se puede contrastar con
+  //    lo que hay en pantalla.
+  //
+  // ⚠️ Solo se re-aplican las líneas INTACTAS. La regla y su caso de borde viven
+  //    en `reaplicarNivel` (cartStore), no acá: dos lugares con la misma regla es
+  //    lo que el criterio del atajo y el clic acaba de prohibir.
+  const elegirCliente = (id: string, name: string) => {
+    setCustomerId(id)
+    setCustomerName(name)
+    const c = clientesPos.find((x) => x.id === id)
+    const nivel = nivelInicial(c, sedeConfigPos)
+    const n = reaplicarNivel(nivel)
+    if (n > 0) {
+      toast.success(
+        `${n} ${n === 1 ? 'línea re-cotizada' : 'líneas re-cotizadas'} a L${nivel} (lista de ${name}).`,
+      )
+    }
+  }
+
   const [editingItem, setEditingItem] = useState<CartItem | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
   const { isOpen: isShiftOpen } = useCashShift()
@@ -2278,7 +2396,10 @@ export function POSPage() {
 
       {/* ─── RIGHT: Cart 40% ─── */}
       <CartPanel
-        nivelDelCliente={nivelDeLaSede}
+        nivelDelCliente={nivelDelCliente}
+        customerId={customerId}
+        onElegirCliente={elegirCliente}
+        ventaEnCurso={total}
         subtotal={subtotal}
         discountAmt={discountAmt}
         total={total}
@@ -2356,6 +2477,8 @@ export function POSPage() {
           discountType={discountType}
           discountReason={discountReason}
           canal={canal}
+          customerId={customerId}
+          customerName={customerName}
           onClose={() => setCheckout(false)}
           // El canal vuelve al default tras CUALQUIER venta. `canal` es estado local
           // de la página y `clear()` (del cartStore) no lo tocaba, así que quedaba
@@ -2366,7 +2489,11 @@ export function POSPage() {
           // ⚠️ Con TRES canales el ciclo ya no es "exactamente un clic" como cuando
           //    eran dos. Si el reset molesta en uso real, la respuesta NO es sacarlo:
           //    es que el selector deje de ser cíclico.
-          onComplete={() => { setCheckout(false); clear(); setCanal(DEFAULT_CANAL) }}
+          onComplete={() => { setCheckout(false); clear(); setCanal(DEFAULT_CANAL)
+            // 🔴 El cliente se limpia CON la venta. Si sobreviviera, la
+            //    siguiente venta nacería cotizada a la lista del cliente
+            //    anterior y sin que nada lo diga en pantalla.
+            setCustomerId(null); setCustomerName('') }}
         />
       )}
     </div>
