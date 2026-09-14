@@ -2292,6 +2292,64 @@ existe en dos lados, o uno es el generado del otro, o la cita tiene que llevar e
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · «EL MÁS CERCANO» SOBRE UN RANGO ACOTADO NO CLASIFICA: LOS EXTREMOS ABSORBEN TODO LO QUE SE SALE
+
+*2026-09-14, intentando derivar la lista de precios de cada cliente desde lo que
+le cobró. La clienta autorizó el método —«la que más se repita»— y el método
+resultó no medir lo que dice.*
+
+**El caso.** Cada producto tiene cinco niveles (L0..L4). Para atribuirle un nivel
+a cada venta se tomó **el nivel más cercano al precio cobrado**. Parece neutral.
+No lo es:
+
+```
+49 de 110 ventas caen FUERA de la banda [L0, L4]   ·   30 por debajo de L0, 19 por encima de L4
+```
+
+| nivel asignado | veces | de ellas, DENTRO de la banda |
+|---|---|---|
+| **L0** | 35 | **5** |
+| L1 · L2 · L3 | 20 · 13 · 17 | todas |
+| **L4** | 25 | **6** |
+
+> **Un precio fuera del rango sólo puede caer en un extremo, por lejos que
+> esté.** Así que L0 y L4 dejan de significar «usa esa lista» y pasan a
+> significar **«vendió por debajo de todo»** y **«vendió por encima de todo»** —
+> que es otra pregunta, y una que este proyecto ya tenía medida: su precio de
+> catálogo es un **piso**, no un precio, y negocia en las dos direcciones.
+
+⚠️ **Por qué engaña:** «el más cercano» se lee como una asignación neutral, y lo
+es **dentro** del rango. Afuera deja de ser una clasificación y se convierte en
+un **recorte**: todo lo que se sale se apila contra el borde. El resultado se ve
+como una distribución legítima —cinco categorías con sus cuentas— y **las dos de
+los bordes están infladas con casos que no pertenecen a ninguna**.
+
+✅ **EL DISCRIMINADOR, y cuesta una comparación: mirar cómo cambia la
+DISTRIBUCIÓN al excluir lo que está fuera de rango.**
+
+| | L0 | L1 | L2 | L3 | L4 |
+|---|---|---|---|---|---|
+| «más cercano» a secas | **5** | 3 | 4 | 4 | **12** |
+| sólo dentro de la banda y a ≤5% | **0** | 7 | 5 | 6 | 1 |
+
+Si la distribución **se mueve de los extremos al centro**, el método estaba
+absorbiendo. Si no se mueve, los extremos eran reales. Acá se movió entera, y L0
+desapareció sola — lo cual además coincide con que el diseño dé L0 por no
+parametrizada.
+
+🔴 **Y lo que hay que retener: el filtro correcto no es «los más cercanos», es
+«los que están DENTRO».** Estar fuera del rango no es estar lejos de un nivel:
+es **no pertenecer a la escala**, y lo honesto es no atribuir nada.
+
+⚠️ **Corolario sobre la autorización, que es la parte incómoda:** la clienta
+autorizó **el método**, no el valor — y el método, aplicado literal, le habría
+puesto «lista 4» a doce clientes por haberles vendido caro una vez. Una
+autorización a inferir **no exime de comprobar que la inferencia mida lo que
+dice**; al contrario, es cuando más hace falta, porque ya nadie más va a
+revisarla.
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · UN FALLBACK QUE SE SIENTE PRUDENTE PUEDE SER ROBUSTEZ QUE MIENTE
 
 *2026-09-14, escribiendo la resolución de las listas de precios (deuda 101). Lo corrigió el diseño,

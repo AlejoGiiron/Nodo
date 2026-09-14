@@ -22,6 +22,14 @@
 //    lee el MISMO archivo con `openpyxl` (Python). Comparar la base contra la
 //    tabla que este script leyo verificaria la base **contra su propio typo**.
 //
+// 🔴 LAS 8 ORDENES DE LA FASE 5 **NO SON EL HISTORICO**. Son el SALDO ABIERTO:
+//    las unicas ventas que la clienta todavia no cobro. **Faltan 101 ventas** y
+//    las 79 compras, asi que **cualquier reporte por periodo sobre esta sede
+//    esta INCOMPLETO** hasta que el historico entre.
+//    Se dice aca CON EL NUMERO porque la proxima sesion que vea ocho ordenes de
+//    agosto y septiembre en una sede recien creada va a suponer que el historico
+//    se cargo — y los totales le van a cerrar entre si, que es lo peor.
+//
 // ⛔ LO QUE ESTE SCRIPT **NO** CARGA, dicho para que no se lea como olvido:
 //    · El inventario inicial. Las existencias son un hecho con fecha y entran
 //      por `adjust_stock`, que exige motivo. Queda pendiente.
@@ -34,7 +42,7 @@
 //
 // USO:
 //   MPE=<correo> MPP=<clave> node scripts/cargar-muscle-pro-v3.mjs \
-//     --sede-id <uuid> [--dry-run] [--fase 1,2,3,4]
+//     --sede-id <uuid> [--dry-run] [--fase 1,2,3,4,5]
 // ============================================================================
 import { createClient } from '@supabase/supabase-js'
 import { readFileSync } from 'node:fs'
@@ -50,7 +58,7 @@ for (let i = 2; i < process.argv.length; i++) {
 }
 const SEDE_ID = args.get('sede-id')
 const DRY = args.has('dry-run')
-const FASES = new Set(String(args.get('fase') ?? '1,2,3,4').split(',').map((x) => x.trim()))
+const FASES = new Set(String(args.get('fase') ?? '1,2,3,4,5').split(',').map((x) => x.trim()))
 
 function abortar(que, queHacer) {
   console.error('\n🔴 ABORTA: ' + que)
@@ -181,12 +189,21 @@ console.log('\nsesion ok · sede activa = la pedida  ✅')
 
 // 🔴 GUARD FAIL-CLOSED: la sede tiene que estar VACIA. Cargar sobre una sede con
 //    datos duplicaria el catalogo sin error, y no hay policy de DELETE.
-for (const t of ['products', 'categories', 'customers', 'orders']) {
+// ⚠️ EL GUARD SE ACOTA A LAS TABLAS QUE LAS FASES PEDIDAS ESCRIBEN, y la
+//    correccion salio de que el guard se disparara bien por la razon equivocada:
+//    con `--fase 5` chequeaba `products`, encontraba los 62 ya cargados y
+//    abortaba. Fallaba CERRADO —que es la direccion correcta— pero medía de mas:
+//    una fase que escribe `orders` no tiene nada que decir sobre `products`.
+const TABLA_DE_FASE = { '1': 'categories', '2': 'products', '3': 'product_prices', '4': 'customers', '5': 'orders' }
+for (const f of FASES) {
+  const t = TABLA_DE_FASE[f]
+  if (!t) abortar('fase desconocida: ' + f, 'las fases son 1..5')
   const { count } = await db.from(t).select('*', { count: 'exact', head: true }).eq('sede_id', SEDE_ID)
-  if (count !== 0) abortar('la sede NO esta vacia: ' + t + ' tiene ' + count + ' filas',
-    'este script solo carga sedes nuevas. Ninguna tabla tiene policy de DELETE: lo cargado no se puede deshacer.')
+  if (count !== 0) abortar('la fase ' + f + ' escribe `' + t + '` y esa tabla YA tiene ' + count + ' filas',
+    'este script solo carga en vacio. Ninguna tabla tiene policy de DELETE: lo cargado no se puede deshacer, ' +
+    'asi que correr dos veces DUPLICA en vez de fallar.')
 }
-console.log('la sede esta vacia  ✅')
+console.log('las tablas de las fases pedidas estan vacias  ✅  (' + [...FASES].map((f) => TABLA_DE_FASE[f]).join(', ') + ')')
 
 // ── FASE 1 · categorias ─────────────────────────────────────────────────────
 const idCat = new Map()
@@ -268,6 +285,92 @@ if (FASES.has('4')) {
   }
   console.log('  ' + filas.length + ' clientes  (nivel_default NULL, a proposito)')
 }
+// ── FASE 5 · la cartera abierta ─────────────────────────────────────────────
+// 🔴 NO se insertan ordenes SIN LINEAS. Una orden con total y sin lineas seria
+//    otra de las 18 divergentes que midio la deuda 80 —y esta vez en el tenant
+//    de la clienta—. Con sus lineas reales el total lo DERIVAN los triggers
+//    `trg_orders_total_desde_items`, y la invariante se mantiene.
+// ⚠️ `unit_cost` queda NULO: no hay compras cargadas, y eso es informacion, no
+//    un hueco. `nivel_aplicado` tambien queda nulo: son ventas ANTERIORES a las
+//    listas, y ese null significa «esta linea no salio de una lista».
+// 🔴 Y llevan `order_number`: sin el son INVISIBLES en el Historial, que ordena
+//    por numero. Es la leccion de las 30 ventas del historico anterior.
+if (FASES.has('5')) {
+  console.log('\nFASE 5 · cartera abierta (NO es el historico)')
+  const { data: cli } = await db.from('customers').select('id, name').eq('sede_id', SEDE_ID)
+  const idCli = new Map((cli ?? []).map((c) => [clave(c.name), c.id]))
+  const { data: pro } = await db.from('products').select('id, name').eq('sede_id', SEDE_ID)
+  const idPro = new Map((pro ?? []).map((p) => [clave(p.name), p.id]))
+
+  const cVF = V.col('fecha'), cVP = V.col('producto'), cVQ = V.col('cantidad vendida')
+  const cVT = V.col('tipo de pago'), cVR = V.col('precio real'), cVM = V.col('metodo de pago')
+  const grupos = new Map()
+  V.ws.eachRow((row, r) => {
+    if (r === 1) return
+    if (String(txt(row.getCell(cVT).value) ?? '').toUpperCase() !== 'CREDITO') return
+    const f = valor(row.getCell(cVF).value)
+    const fecha = f instanceof Date ? f.toISOString().slice(0, 10) : null
+    const cl = txt(row.getCell(cVC).value)
+    if (!fecha || !cl) return
+    const k = fecha + '|' + clave(cl)
+    if (!grupos.has(k)) grupos.set(k, { fecha, cliente: cl, lineas: [], nota: null })
+    const g = grupos.get(k)
+    g.lineas.push({ producto: txt(row.getCell(cVP).value), qty: num(row.getCell(cVQ).value), precio: num(row.getCell(cVR).value) })
+    const m = txt(row.getCell(cVM).value)
+    if (m && /ABONO/i.test(m)) g.nota = m
+  })
+  console.log('  ordenes a crear: ' + grupos.size)
+
+  let vendido = 0, abonado = 0
+  for (const g of [...grupos.values()].sort((a, b) => a.fecha.localeCompare(b.fecha))) {
+    const cid = idCli.get(clave(g.cliente))
+    if (!cid) abortar('cliente sin id en la base: ' + g.cliente)
+    const { data: numero, error: eN } = await db.rpc('next_order_number', { p_sede_id: SEDE_ID })
+    if (eN || typeof numero !== 'number') abortar('next_order_number: ' + (eN?.message ?? numero))
+    const suma = g.lineas.reduce((a, l) => a + l.qty * l.precio, 0)
+    const m = g.nota ? g.nota.match(/(\d+)\s*MIL/i) : null
+    const abono = m ? Number(m[1]) * 1000 : 0
+    const { data: ord, error: eO } = await db.from('orders').insert({
+      sede_id: SEDE_ID, customer_id: cid, customer_name: g.cliente,
+      order_number: numero,
+      created_at: g.fecha + 'T17:00:00-05:00',
+      payment_status: abono > 0 ? 'partial' : 'pending',
+      // 🔴 VALOR ASUMIDO, y va marcado como tal: su archivo NO dice por donde
+      //    entro cada venta. `orders.canal` es `not null` y SIN DEFAULT a
+      //    proposito —un default etiquetaria como «mostrador» lo que entro por
+      //    otro lado—, asi que hay que poner algo y lo honesto es decir que se
+      //    asumio. Es el mismo trato que `unidad`: entra inferido, se pregunta,
+      //    y si ella contesta se cambia la marca, no el recorrido.
+      canal: 'mostrador',
+      plazo_dias: 15,                    // confirmado por la clienta
+      created_by: UID,
+    }).select('id').single()
+    if (eO) abortar('orden de ' + g.fecha + ': ' + eO.message, 'las creadas antes QUEDARON.')
+    const items = g.lineas.map((l) => {
+      const pid = idPro.get(clave(l.producto))
+      if (!pid) abortar('producto sin id: ' + l.producto)
+      return { order_id: ord.id, product_id: pid, qty: l.qty, unit_price: l.precio }
+    })
+    const { error: eI } = await db.from('order_items').insert(items)
+    if (eI) abortar('lineas de ' + g.fecha + ': ' + eI.message)
+    vendido += suma
+    if (abono > 0) {
+      const { error: eA } = await db.rpc('register_debt_payment', {
+        p_order_id: ord.id, p_amount: abono, p_payment_method: 'transfer',
+      })
+      if (eA) abortar('abono de ' + g.fecha + ': ' + eA.message,
+        'la orden QUEDO sin su abono: el saldo saldria MAS ALTO que el real.')
+      abonado += abono
+    }
+    console.log('  #' + String(numero).padStart(3) + '  ' + g.fecha + '  ' + g.lineas.length
+      + ' linea(s)  ' + suma.toLocaleString('es-CO') + (abono ? '   abono ' + abono.toLocaleString('es-CO') : ''))
+  }
+  console.log('  vendido a credito: ' + vendido.toLocaleString('es-CO')
+    + '  |  abonado: ' + abonado.toLocaleString('es-CO')
+    + '  |  SALDO ABIERTO: ' + (vendido - abonado).toLocaleString('es-CO'))
+}
+
+
 
 console.log('\n✅ ESCRITO. La verificacion va APARTE, con otro parser:')
 console.log('   python scripts/verificar-carga-v3.py --sede-id ' + SEDE_ID)
