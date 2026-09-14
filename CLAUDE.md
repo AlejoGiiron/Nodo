@@ -2190,6 +2190,34 @@ que no se había medido: *«sin listas vuelve al Excel el primer día»*.
 afirmaciones sobre el futuro no se verifican mirando el esquema. Se verifican preguntando qué va a
 poder hacer alguien el día después de levantarlo.
 
+🔴 **Y SU HERMANA, LA MISMA FORMA CON LA FLECHA AL REVÉS: ASUMIR UNA CONSECUENCIA SIN VERIFICAR EL
+MECANISMO.** *2026-09-14, al fijar el orden para cerrar la transición de Muscle Pro.*
+
+| | la flecha | el error |
+|---|---|---|
+| la undécima | *«X **bloquea** a Y»* | se afirmó que quitar X **habilitaba** algo, y no habilitaba nada |
+| **ésta** | *«retirar la sede **libera** el nombre»* | se afirmó una **consecuencia** de una operación cuyo mecanismo nadie abrió |
+
+**El caso.** El plan fijaba: ① retirar la sede vieja · ② poner el índice único · ③ renombrar la
+nueva a «Muscle Pro». **El paso ③ era imposible**: `sedes` no tiene columna de estado, así que
+«retirar» sólo puede ser sacarla de `user_stores` — y eso **no cambia su nombre**. Con el índice
+puesto, el renombre queda rechazado mientras la vieja siga llamándose igual.
+
+> **Las dos son una relación entre dos hechos, afirmada sin abrir el mecanismo que la uniría.** Y las
+> dos se leen como diagnóstico, no como hipótesis, porque describen algo que *suena a cómo funcionan
+> las cosas*: retirar algo debería liberar su nombre. En este esquema no.
+
+⚠️ **Lo que las hace caras es lo mismo: no producen un dato equivocado, producen un PLAN
+equivocado** — y un plan no tiene cómo ponerse rojo. Acá el rojo habría llegado en el paso ③, con
+los dos primeros ya ejecutados e irreversibles.
+
+✅ **Lo accionable suma a la pregunta de la undécima:** ante *«hacer X consigue Y»*, **abrí el
+mecanismo que va de X a Y y nombralo**. Si no podés nombrar la columna, la fila o la línea que
+cambia, no hay mecanismo — hay una analogía. Acá la pregunta era de una línea: *«¿qué columna de
+`sedes` cambia al retirarla?»*, y la respuesta es **ninguna**.
+
+
+
 
 🔴 **LA DUODÉCIMA: EL DATO ERA CORRECTO Y EL SUJETO EQUIVOCADO.** *2026-09-14, al volcar el diseño
 a la skill.*
@@ -5780,7 +5808,30 @@ leído en un `grep`.** El `diff` contra el original mostró qué se había perdi
 | el `comment on function`, el delimitador `$fn$`, el `commit;` | y las razones escritas de cada `revoke` |
 
 🔴 **Lo que hace a este caso distinto de «me olvidé»: la versión re-derivada COMPILA, se ve
-completa, y dice de sí misma que se copió.** No hay ningún síntoma. Un guard que falta no da error:
+completa, y dice de sí misma que se copió.**
+
+🔴 **Y LO QUE LA SEPARA DE TODAS LAS DEMÁS AFIRMACIONES FALSAS DE ESTE ARCHIVO: no describe un
+ESTADO DEL MUNDO — describe EL MÉTODO con el que se produjo lo que está debajo.**
+
+| | qué afirma | cómo se verifica |
+|---|---|---|
+| una nota de estado | *«28 migraciones aplicadas»* · *«el índice existe»* | un comando: `migration list`, un `select` |
+| una garantía | *«ninguna DEFINER deja entrar a anon»* | un comando sobre el catálogo |
+| 🔴 **una afirmación de MÉTODO** | *«el cuerpo se copió verbatim»* · *«esto está barrido»* · *«medido contra la base»* | **rehaciendo el trabajo** |
+
+> **Un método afirmado es lo último que alguien verifica, porque verificarlo ES REHACER EL TRABAJO.**
+
+Ahí está la asimetría: comprobar *«¿el índice existe?»* cuesta un `select`; comprobar *«¿esto se
+copió o se reescribió?»* cuesta volver a extraer el original, y quien lee una migración no va a
+hacerlo. **La afirmación de método viene con su propia coartada** — dice que el paso caro ya se dio,
+y desalienta exactamente la comprobación que la desmentiría.
+
+⚠️ Y el corolario incómodo: **este archivo está lleno de afirmaciones de método** —*«barrido en la
+misma pasada (R3)»*, *«enumerado, no contado»*, *«verificado por ejecución»*—. Las que traen su
+comando al lado son verificables; **las que no, son exactamente esta clase**, y no hay forma de
+distinguirlas leyendo.
+
+ No hay ningún síntoma. Un guard que falta no da error:
 da un `select` que devuelve una fila al azar, y una clave de `jsonb` que falta no rompe — cambia de
 rama.
 
