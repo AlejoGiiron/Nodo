@@ -1585,6 +1585,44 @@ nota.
    debe dar** — un conteo, un total del día — aunque no la necesites para la pregunta. Es el
    control negativo de los números.
 
+   🔴 **Y LA CUARTA TÉCNICA, QUE ES MÁS FUERTE QUE LAS TRES CUANDO EL CONJUNTO TIENE UNA
+   RELACIÓN INTERNA CONOCIDA: VERIFICAR LA PROPORCIÓN, NO LOS TOTALES.**
+   *2026-09-14, verificando la carga del catálogo v3.*
+
+   > **Un total mal calculado de los dos lados coincide. Una proporción rota, no.**
+
+   **El caso.** Los 62 productos se cargaron con sus cinco niveles, y los cinco niveles son
+   cinco márgenes sobre el mismo costo —L0 ×1,10 · L1 ×1,15 · L2 ×1,20 · L3 ×1,30 · L4 ×1,40—.
+   Eso significa que las **sumas por nivel** tienen que guardar entre sí exactamente esas
+   proporciones:
+
+   ```
+   Σ L1 / Σ L0  =  1,15 / 1,10  =  1,04545…      medido: 5.266.463 / 5.037.486 = 1,04546
+   ```
+
+   Las cuatro razones coinciden hasta el quinto decimal; lo que sobra es redondeo a peso.
+
+   ✅ **POR QUÉ ES MÁS FUERTE QUE COMPARAR LAS SUMAS:**
+   · **No depende de que las dos partes sumen igual.** Una suma de control exige que quien
+     verifica reproduzca la misma operación; si los dos suman mal del mismo modo —o si el
+     número lo afirmó una persona (ya pasó, la sexta)— coinciden y no prueban nada.
+   · **Localiza el defecto.** Si una fila se cargara con el precio de OTRO nivel, la razón de
+     esa pareja se desvía y **las otras tres no**. Un total sólo dice «algo no cierra»; una
+     proporción rota dice **entre qué dos conjuntos** está el problema.
+   · **Es interna al dato.** No necesita el archivo de origen: se puede correr contra la base
+     sola, meses después, sin tener la fuente delante.
+
+   ⚠️ **Y su límite, dicho antes de que alguien la use de más:** sólo aplica cuando la relación
+   está **medida**, no supuesta. Acá se midió —79 de 79 filas de compra con un solo factor por
+   nivel— antes de usarla como verificador. Una proporción que uno espera pero no comprobó es
+   una hipótesis, y verificar contra una hipótesis es la tautología del corolario de R4.
+
+   📋 **Dónde más aplica, para que no quede como un truco de este caso:** cualquier conjunto con
+   una relación conocida entre sus partes — un IVA sobre una base, un descuento sobre un
+   subtotal, un costo contra un precio con margen fijo, una conversión de unidad de compra a
+   unidad de venta. En todos, **la razón entre los dos conjuntos es un verificador que no
+   necesita un segundo sumador.**
+
    🔴 **PERO EL CONTROL CRUZADO TIENE UNA CONDICIÓN, Y NO ES «QUE VENGA DE OTRO CAMINO».**
    *Medido el 2026-09-07, en el ensayo del histórico de Muscle Pro.*
 
