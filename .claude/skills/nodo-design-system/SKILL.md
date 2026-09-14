@@ -8,6 +8,15 @@ description: Fuente de verdad visual de Nodo (de Giiron). Usar SIEMPRE antes de 
 Fuente de verdad visual del producto. Nodo, de Giiron.
 Cerrada el 2026-09-01. Implementación: app Vite única, CSS variables en `:root`, sin capa de tema para React Native.
 
+> 🔴 **RECONCILIADA CON LA ENTREGA 2 el 2026-09-14, y la divergencia estaba MEDIDA:** §7 de
+> esta skill tenía **16 reglas** y el documento de Design **24** — le faltaban las dos de
+> costeo/utilidades y las seis de listas de precios—, así que la numeración estaba **corrida
+> por dos**: «Vocabulario neutro» era la 15 acá y la 17 allá. Citar *«regla 21»* significaba
+> cosas distintas según cuál se leyera, y el `LEEME` cita las listas como **§7.19–24**.
+> Se adoptó **la numeración de Design** —la que citan el LEEME, los nombres de los PNG y los
+> comentarios del código— y se incorporaron las ocho que faltaban. Los dos documentos
+> coinciden ahora regla por regla, más la **25**, que no estaba en ninguno.
+>
 > **Jerarquía de fuentes (R1).** Desde esta captura, **esta skill es la fuente de verdad**; el
 > archivo de Claude Design (`Nodo.dc.html`) es la maqueta. Si divergen, gana la skill y se
 > corrige la maqueta. Todo cambio visual se hace ACÁ primero y se propaga — nunca en dos lados
@@ -388,6 +397,18 @@ Título 15–16px/600, cuerpo 13–14px en `--ink-3`, y **siempre** al menos un 
 ### Dialog
 Ancho 392–404px, radio `--r-3`, `--shadow-1`, fondo del velo `--overlay`. Cabecera con título y contexto, cuerpo, pie con secundario + primario alineados a la derecha.
 
+### PriceLevel (nivel de lista en línea de venta)
+Estados: **igual al del cliente · distinto al del cliente · abierto · sin precio en el nivel**.
+- Igual al del cliente: texto 11px/600 en `--ink-4`, sin borde. Está pero no llama.
+- Distinto: chip 20px de alto, radio `--r-1`, fondo `--surface-2`, borde `--border`, texto `--ink`. Es la única señal de que esa línea se apartó del cliente.
+- Abierto: el chip se marca como distinto y debajo de la línea se despliega la fila de cinco opciones (L0–L4), cada una con su precio en `tabular-nums`; la del cliente lleva la nota "cliente". Opción activa: borde `--action`, fondo `--action-soft`. Nivel sin precio: `—`, `--ink-4`, opacidad .6, no se puede elegir.
+- Sin precio en el nivel: la fila toma `--attention`, el precio y el total muestran `—` en `--warning-on-soft`, y un Alert de advertencia debajo del carrito dice qué hacer. La línea **no suma al total** hasta resolverse.
+
+> **Los cinco niveles son una escala, no cinco estados.** No se pintan con la paleta de rol. `--action-soft` aparece solo en la opción elegida del desplegable, porque ahí sí es una selección.
+
+### ListSelector (lista por defecto del cliente)
+Segmentado de cinco celdas de 30px, radio `--r-2`, borde `--border`. Activa: fondo `--action-soft`, texto `--action-on-soft`, `inset 0 -2px 0 var(--action)`. L0 deshabilitada mientras no tenga precios (texto `--ink-4`, `cursor:not-allowed`). Sin lista asignada: ninguna celda activa y nota en `--warning-on-soft` que dice a qué nivel se vende mientras tanto.
+
 ### Tabs / Chips de filtro
 Estados: **normal · activo**. Activo: borde `--action`, fondo `--action-soft`, texto `--action-on-soft`.
 
@@ -674,13 +695,48 @@ Nota sobre `requiere_conciliacion`: el abono quedó registrado contra el saldo d
 9. **Las cifras de plata se alinean por dígito.** Columnas alineadas a la derecha con `tabular-nums`. Se comparan de un vistazo.
 10. **El efecto de una compra se muestra antes de aplicarla:** costo antes → después y entrada al inventario por producto. Una compra aplicada no se edita: se anula.
 11. **Cobra quien entrega.** El flujo de cobro sale del mostrador, no de una caja separada.
-12. **Todo ajuste manual de inventario exige motivo** (avería, vencido, consumo interno, error de conteo, faltante). Una salida sin motivo no se guarda.
-13. **Ningún total de Utilidades existe sin su detalle.** Cada fila de la cascada se abre. **[AGREGADO en captura]** Y la pantalla **declara qué mide**: las vistas del esquema miden **cobrado, no vendido**. Con cartera en el alcance, "ventas del día" leído como facturado deja afuera plata real — la pantalla dice cuál de los dos muestra, y probablemente los dos.
-14. **Iconografía neutra.** Trazo 1.5px, 15×15 en filas y navegación, 16×16 máximo. Ningún icono puede delatar un vertical: ni frascos, ni llaves inglesas, ni botellas.
-15. **Vocabulario neutro.** "Productos", "clientes", "pedidos". El contenido de ejemplo mezcla tornillos, jabón y gaseosa a propósito: si una pantalla se ve rara con esa mezcla, el diseño está asumiendo un vertical.
-16. **Los errores no piden disculpas y nunca son vagos.** El botón que dice "Cobrar" produce un mensaje que dice "Cobrado". Y una advertencia solo se muestra si su condición viene de la fuente que decidió — un mensaje de degradación no se re-deriva en el cliente.
+12. **Costeo: promedio ponderado móvil, con el costo congelado en la línea de venta.** Decidido el 2026-08-31. El costo que entra a la línea es el vigente al momento de vender y no se recalcula después: una compra posterior mueve el costo del producto, nunca el de una venta ya registrada. Utilidades rotula el método en pantalla.
+13. **Utilidades declara si mide cobrado o vendido.** Con cartera en el alcance las dos cifras difieren, y la pantalla no puede dejarlo implícito: el período lleva el rótulo visible de cuál base está mostrando, y la base elegida se aplica igual a ventas, costo de lo vendido y margen. Una cascada que mezcla ventas facturadas con recaudo cobrado no cuadra y nadie puede auditarla.
+14. **Todo ajuste manual de inventario exige motivo** (avería, vencido, consumo interno, error de conteo, faltante). Una salida sin motivo no se guarda.
+15. **Ningún total de Utilidades existe sin su detalle.** Cada fila de la cascada se abre. **[AGREGADO en captura]** Y la pantalla **declara qué mide**: las vistas del esquema miden **cobrado, no vendido**. Con cartera en el alcance, "ventas del día" leído como facturado deja afuera plata real — la pantalla dice cuál de los dos muestra, y probablemente los dos.
+16. **Iconografía neutra.** Trazo 1.5px, 15×15 en filas y navegación, 16×16 máximo. Ningún icono puede delatar un vertical: ni frascos, ni llaves inglesas, ni botellas.
+17. **Vocabulario neutro.** "Productos", "clientes", "pedidos". El contenido de ejemplo mezcla tornillos, jabón y gaseosa a propósito: si una pantalla se ve rara con esa mezcla, el diseño está asumiendo un vertical.
+18. **Los errores no piden disculpas y nunca son vagos.** El botón que dice "Cobrar" produce un mensaje que dice "Cobrado". Y una advertencia solo se muestra si su condición viene de la fuente que decidió — un mensaje de degradación no se re-deriva en el cliente.
 
 ---
+
+
+### Listas de precios (Entrega 2, 2026-09-14)
+
+19. **La lista es de la línea, no del cliente.** Cada producto tiene cinco precios (L0–L4). El cliente tiene una lista por defecto; cada línea arranca ahí y se puede cambiar por producto sin tocar al cliente. El precio manual sigue existiendo por encima de cualquier lista.
+
+20. **Cambiar de nivel es posible, no obligatorio.** La venta normal no gana ningún paso: la línea entra al nivel del cliente y el cajero no toca nada. El nivel se cambia desde el chip de la línea o con Alt + 0–4 sobre la línea activa.
+
+21. **El nivel de cada línea está siempre visible, y solo llama cuando difiere.** Igual al cliente: texto apagado. Distinto: chip con borde. Se decidió mostrar siempre y no solo cuando difiere: ocultar el nivel esconde información que el cajero necesita para responder "¿a cuánto se lo estás dando?" sin abrir nada. (El prop `nivelSoloSiDifiere` existe para comparar y descartar.)
+
+22. **Un nivel puede no tener precio.** Se muestra `—`, no cero. En el catálogo el producto simplemente no se ofrece en ese nivel; en el carrito la línea no suma hasta que se elija otro nivel o se escriba el precio a mano. L0 hoy está vacía en todo el catálogo y se parametriza después.
+
+23. **Los niveles se nombran L0–L4.** No llevan nombre comercial ("Mayorista") porque no es vocabulario de la dueña. El prop `nombresNivel` existe para comparar; si algún día se nombran, es una etiqueta por organización, no del sistema.
+
+24. **Cinco precios sin muro.** El formulario de producto los presenta en una sola fila de cinco campos estrechos con el nivel encima, alineados a la derecha; los vacíos van en `--surface-2` con placeholder `—`. Un botón "Copiar L1 a los vacíos" evita teclear 62 × 5 veces. El margen del catálogo se calcula sobre L1.
+
+---
+
+25. **El precio de una línea se puede editar a mano, y por encima de cualquier lista.** Es la
+    forma en que este negocio vende: su precio de catálogo es un **piso**, no un precio, y de 55
+    ventas medidas **ninguna** salió al número del catálogo. El campo de precio de la línea es
+    editable siempre, sin permiso aparte.
+    🔴 **Y lleva la única red que existe: una confirmación cuando el precio se aleja demasiado del
+    de su nivel — `+100%` hacia arriba, `−35%` hacia abajo.** El umbral es **asimétrico a
+    propósito y no hay que "corregirlo" por consistencia**: hacia arriba es el negocio (la venta
+    real más alta del histórico fue **+65,6%**), hacia abajo vive el typo caro (la más baja fue
+    **−13,0%**). Con ±100/−35 no salta en ninguna de las 55 ventas reales y caza los 151 typos
+    simulados; el simétrico ±75% pierde 5.
+    ⚠️ **El servidor no compara nada**: `add_order_items_with_extras` toma `unit_price` del payload
+    y lo único que hay es `check (unit_price >= 0)`. Si esta confirmación no está en la pantalla,
+    no está en ningún lado.
+    📋 *Deuda 75, re-medida en la 94. No estaba en el documento de Design —su `LEEME` lo dice— así
+    que se escribe acá, que es la fuente.*
 
 ## 8. Lo que NO está decidido
 
