@@ -5760,6 +5760,55 @@ que hay que acordarse de leer.**
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · «COPIADO VERBATIM» ES UNA AFIRMACIÓN, Y SE VERIFICA CON UN `diff` — NO ESCRIBIENDO QUE SE COPIÓ
+
+*2026-09-14, deuda 102. **Escribí la advertencia y la incumplí en el mismo archivo**, y lo que lo
+cazó no fue releer: fue diffear.*
+
+Cuando hay que redefinir una función para cambiarle **una parte**, la regla ya escrita en este
+proyecto es copiar el cuerpo del archivo y tocar sólo lo que cambia — *«re-derivarlo sería escribir
+una función nueva con el mismo nombre, que es como se pierden guards sin que nadie lo note»*.
+
+**Escribí esa frase en la cabecera de la migración, y abajo re-deriví el cuerpo desde lo que había
+leído en un `grep`.** El `diff` contra el original mostró qué se había perdido:
+
+| lo perdido | qué era |
+|---|---|
+| el guard del rol `owner` | un `if … is null then raise` **fail-closed** entero, borrado |
+| el significado de `v_owner` | pasó de leer `public.roles` (id del ROL) a `public.profiles` (id del USUARIO) |
+| **las cuatro claves del `jsonb`** | renombradas — **R1 punto 5b literal**: el consumidor lee `undefined`, que es falsy, y **elige una rama** |
+| el `comment on function`, el delimitador `$fn$`, el `commit;` | y las razones escritas de cada `revoke` |
+
+🔴 **Lo que hace a este caso distinto de «me olvidé»: la versión re-derivada COMPILA, se ve
+completa, y dice de sí misma que se copió.** No hay ningún síntoma. Un guard que falta no da error:
+da un `select` que devuelve una fila al azar, y una clave de `jsonb` que falta no rompe — cambia de
+rama.
+
+⚠️ Y el agravante de siempre en esta familia: **la advertencia estaba a diez líneas**, escrita por
+mí, en el mismo commit. Es *«la distancia que importa es entre la carga y la decisión»* otra vez —
+escribir la regla no la aplica; **correr algo que pueda contestarla que no**, sí.
+
+✅ **LO ACCIONABLE, y son dos comandos:**
+
+```bash
+# 1 · extraer los dos cuerpos del ARCHIVO y diffearlos: la diferencia tiene que
+#     ser EXACTAMENTE lo que se quiso cambiar, y nada más
+sed -n '/create or replace function public.<fn>/,/to service_role;/p' <vieja>.sql > /tmp/a.sql
+sed -n '/create or replace function public.<fn>/,/to service_role;/p' <nueva>.sql > /tmp/b.sql
+diff /tmp/a.sql /tmp/b.sql
+```
+
+2. 🔴 **Y una lista de IMPRESCINDIBLES verificada por ejecución** — los guards, los mensajes de
+   `raise` y **las claves del `jsonb` de retorno**, aseverados como cadenas dentro del script que
+   arma la migración, que aborta si falta alguna. El `diff` muestra lo que cambió; la lista prueba
+   que lo que **no** debía cambiar sigue ahí. Las dos cosas, porque un diff largo se lee por encima.
+
+⚠️ Corolario para escribir: **la afirmación «copiado verbatim» no va en un comentario, va en el
+resultado del `diff`.** Si el comentario la afirma y nadie corrió el diff, es una garantía falsa en
+el punto donde se decide — y ésta vivía dentro de una migración, que R5 congela.
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · LIMPIAR RESIDUO PRODUJO RESIDUO — EN UN SISTEMA SIN `DELETE`, LIMPIAR TIENE UN COSTO QUE SE MIDE ANTES
 
 *2026-09-14. Es el complemento de la regla de abajo —*«una sonda que escribe necesita su limpieza en
