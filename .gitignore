@@ -60,10 +60,21 @@ design_handoff_*/
 vite.config.ts.timestamp-*.mjs
 
 # ── Datos del cliente y planes de sesión: NO viajan al repo ──────────────
-# `Control Mp.xlsx` nombra a 11 clientes reales de Muscle Pro (PII de terceros).
-# Una vez en el historial de GitHub no se saca sin reescribir todos los commits.
-docs/Control Mp.xlsx
-# `Control Mp 2.xlsx` (2026-09-06) nombra a 20 clientes reales: MAS PII que el
-# primero, no menos. Mismo trato, y por la misma razon irreversible.
-docs/Control Mp 2.xlsx
+# Los archivos del cliente nombran a sus CLIENTES REALES: 11 en el primero, 20
+# en el segundo. Una vez en el historial de GitHub no se sacan sin reescribir
+# todos los commits.
+#
+# 🔴 LA REGLA ES POR FORMA, NO POR NOMBRE — y es un arreglo, no un estilo.
+#    Hasta el 2026-09-14 esto enumeraba archivos uno por uno: una DENY-LIST, y
+#    lo que nadie se acordo de escribir pasa. Y paso -- `Control Mp 3.xlsx`
+#    llego al repo sin quedar cubierto, y lo unico que lo salvo fue que nadie
+#    corrio un `git add -A` en el medio. R2 literal.
+#    Modo de fallo de la version vieja: cada archivo nuevo del cliente nacia
+#    RASTREABLE, y el sintoma aparece UNA sola vez, cuando ya esta publicado.
+docs/*.xlsx
+docs/*.xls
+docs/*.csv
+#    Si alguna vez hace falta versionar una planilla: `git add -f`, y despues
+#    de mirarla entera. La excepcion se decide por archivo, que es la
+#    direccion correcta -- el olvido deja el archivo AFUERA, no adentro.
 docs/PLAN-2026-09-02.md

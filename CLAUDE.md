@@ -2084,6 +2084,44 @@ una segunda medición, recalcular por el mismo camino es la misma.
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · UNA MEDICIÓN REAL CUYA EVIDENCIA NO PUEDE ENTRAR AL REPO — SE ESCRIBE CON SU PROCEDENCIA **Y** CON CÓMO REFUTARLA
+
+*2026-09-14, con los factores de las listas de precios. Clase propia: **no es una afirmación sin
+medir** —ésas ya tienen su criterio y van por nueve— **es una medición real cuya evidencia está
+fuera por diseño**.*
+
+> **`Control_Mp_3.xlsx` nombra a los clientes reales de la clienta, así que está en `.gitignore` y
+> no puede entrar.** La medición sobre él es tan buena como cualquiera; lo que no viaja es **la
+> posibilidad de reproducirla desde donde se lee la conclusión.**
+
+⚠️ **Por qué no alcanza con decir «medido»:** en el repo, *«medido»* y *«afirmado»* se escriben
+igual y se leen igual. El que lee dentro de seis meses no puede distinguir una medición seria sobre
+un archivo ausente de un número que alguien recordó — y **no tiene ningún comando que corra para
+averiguarlo**. La conclusión queda con la autoridad de un dato y la verificabilidad de una opinión.
+
+⛔ **Y las dos salidas cómodas están las dos mal.** *Meter el archivo* filtra PII de terceros, que es
+irreversible en el historial de GitHub. *No escribir el hallazgo* tira una medición buena.
+
+✅ **LO ACCIONABLE, y son tres cosas en la misma frase:**
+
+> **Se escribe (a) la conclusión, (b) el archivo y la hoja exactos, y (c) los NÚMEROS INTERMEDIOS
+> que permiten refutarla — para que el día que alguien tenga el archivo, la refute en un comando.**
+
+Sin (c) el hallazgo no es falsable: *«la fórmula da en todos»* no se puede contradecir sin rehacer
+el análisis entero. Con (c) —los factores, la hoja, el conteo— basta abrir el archivo y comparar.
+
+**Ejemplo, el de este caso:** *«`L2/L1 = 1,0435` · `L3/L1 = 1,1304` · `L4/L1 = 1,2174`, exactos en
+las 44 filas de la hoja `LISTA DE PRECIOS` de `Control_Mp_3.xlsx`, histograma de un solo valor por
+factor y control negativo en cero»*. Eso se refuta —o se confirma— con el archivo delante y un
+`openpyxl` de diez líneas.
+
+⚠️ **Y el corolario que lo separa de «citar la fuente»:** citar la fuente dice de dónde salió.
+**Esto dice cómo tumbarlo.** Es el corolario de R4 llevado al caso en que la cosa real no está a
+mano: si no podés dejar la evidencia, dejá **el procedimiento y los valores**, que es lo más cerca
+del comando que se puede llegar.
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · UN ARCHIVO QUE SE DECLARA COPIA DE OTRO ES UN LADO DEL CONTRATO — Y SU AUTODESCRIPCIÓN ES LO QUE LO ESCONDE
 
 *2026-09-07, cerrando la deuda 78. El lado que faltaba quedó afuera de la nota de R1 que lo
