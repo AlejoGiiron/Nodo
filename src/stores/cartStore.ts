@@ -266,10 +266,25 @@ export const useCartStore = create<CartStore>((set) => ({
       const next = [...state.items]
       const item = next[index]
       // Cambiar de nivel RE-SIEMBRA el precio: elegir «lista 3» y que el número
-      // no se mueva sería un control que no hace nada. Si el nivel nuevo no está
-      // configurado, cae a L1 por `precioDeNivel`; si no hay ninguno, queda 0.
+      // no se mueva sería un control que no hace nada.
+      //
+      // 🔴 Y SI EL NIVEL ELEGIDO NO TIENE PRECIO, LA LÍNEA QUEDA EN `null` — NO
+      //    conserva el anterior. Acá vivía `precio ?? item.price`, que es
+      //    EXACTAMENTE el fallback que `precioDeNivel` había dejado de hacer:
+      //    se corrigió en `niveles.ts` y reapareció UNA CAPA MÁS ARRIBA, en el
+      //    llamador. Arreglar la instancia y no barrer la clase, en dos archivos.
+      //
+      //    Lo que producía: elegir «L3» sobre un producto sin L3 dejaba el
+      //    número de L1 en pantalla, sin decirlo. El diseño §7.22 dice `—`, la
+      //    línea no suma, y el cobro se bloquea hasta resolverlo — y nada de eso
+      //    puede ocurrir si el precio nunca llega a ser nulo.
+      //
+      // ⚠️ El comentario que estaba acá afirmaba «cae a L1 por `precioDeNivel`»
+      //    y era FALSO desde que esa función dejó de caer. Una razón caduca al
+      //    lado de un código que la contradice es la que alguien cita para
+      //    «restaurar» el fallback.
       const precio = precioDeNivel(item.product.product_prices, nivel ?? -1, item.product.price)
-      next[index] = { ...item, nivel, price: precio ?? item.price }
+      next[index] = { ...item, nivel, price: precio }
       return { items: next }
     }),
 

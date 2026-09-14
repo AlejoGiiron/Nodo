@@ -8,6 +8,7 @@ import {
   uploadProductImage,
   deleteProductImage,
 } from '@/lib/supabase-helpers'
+import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import type { Tables, TablesInsert } from '@/types/database.types'
 import type { SentryArea } from '@/lib/sentry'
@@ -25,6 +26,44 @@ export function useProductMutations() {
     mutationFn: async (data: TablesInsert<'products'>) => {
       const { data: result, error } = await upsertProduct(data)
       if (error) throw error
+
+      // ── L1, deuda 101 ──────────────────────────────────────────────────────
+      // 🔴 EL CAMPO ÚNICO DEL FORMULARIO ES L1. `products.price` y el nivel 1
+      //    son EL MISMO NÚMERO mientras el formulario de cinco campos no exista
+      //    (§7.24, fuera de esta tanda por decisión). Sin esta escritura, un
+      //    producto nuevo nace con `price` y SIN NINGUNA FILA de `product_prices`
+      //    — o sea cae a la rama de ETAPA 1 de `precioDeNivel` y se comporta
+      //    como un producto anterior a las listas. Funciona, y es mentira: el
+      //    producto SÍ es de la era de las listas.
+      //
+      // ⚠️ NO ES UN `upsert`, y no es estilo: `product_prices` tiene
+      //    `revoke update` de tabla y `grant update (precio)` — sólo esa columna
+      //    (allowlist de la deuda 78 aplicada a esta tabla). Y **`ON CONFLICT DO
+      //    UPDATE` verifica los privilegios EN TIEMPO DE PLAN**, sobre TODAS las
+      //    columnas del `set`, aunque en ejecución sólo cambiara `precio`. Un
+      //    `.upsert()` de supabase-js arma exactamente eso y sería rechazado.
+      //    Por eso: UPDATE de `precio` y, si no tocó ninguna fila, INSERT.
+      //
+      // ⚠️ Y `nivel` va literal en 1, no `NIVEL_PRECIO_DEFAULT`: esa constante
+      //    dice *a qué nivel se le vende a un cliente sin lista* (§8.19, sin
+      //    decidir), que es otra pregunta. Atarlas haría que cambiar la primera
+      //    moviera dónde se guarda el precio del formulario.
+      const precio = data.price
+      if (result?.id && typeof precio === 'number') {
+        const { data: tocadas, error: eUpd } = await supabase
+          .from('product_prices')
+          .update({ precio })
+          .eq('product_id', result.id)
+          .eq('nivel', 1)
+          .select('product_id')
+        if (eUpd) throw eUpd
+        if (!tocadas || tocadas.length === 0) {
+          const { error: eIns } = await supabase
+            .from('product_prices')
+            .insert({ product_id: result.id, sede_id: result.sede_id, nivel: 1, precio })
+          if (eIns) throw eIns
+        }
+      }
       return result!
     },
     onSuccess: () => { invalidate(); toast.success('Producto guardado') },
