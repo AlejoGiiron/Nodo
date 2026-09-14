@@ -9,13 +9,14 @@ import {
 import { toast } from 'react-hot-toast'
 import {
   useCartStore, cartItemTotal, precioLejosDelCatalogo, desvioDelCatalogo,
+  lineaSinPrecio,
 } from '@/stores/cartStore'
 import { useProducts } from '@/hooks/useProducts'
 import { useProductsWithExtras } from '@/hooks/useProductsWithExtras'
 import { useAuth } from '@/hooks/useAuth'
 import { usePermissions } from '@/hooks/usePermissions'
 import { useSedeConfig } from '@/hooks/useSedeConfig'
-import { nivelInicial } from '@/lib/niveles'
+import { nivelInicial, nivelEstaPuesto } from '@/lib/niveles'
 import { useCashShift } from '@/hooks/useCashShift'
 import { OpenShiftModal } from '@/components/shift/OpenShiftModal'
 import { ItemConfigModal } from '@/components/pos/ItemConfigModal'
@@ -36,6 +37,7 @@ import { TenderSelector } from '@/components/ui/TenderSelector'
 import { useCobro } from '@/hooks/useCobro'
 import { ATAJOS, ATRIBUTO_LETRAS_INERTES, elFocoEstaEscribiendo, teclaDe } from '@/lib/atajos'
 import { CupoMeter } from '@/components/ui/CupoMeter'
+import { PriceLevel } from '@/components/ui/PriceLevel'
 
 // Canal: por donde ENTRO el pedido. Espeja el CHECK de orders.canal — si acá
 // se agrega un valor sin ampliar el CHECK, el insert falla RUIDOSO, que es lo
@@ -367,12 +369,19 @@ function ProductRow({ product, onAdd, inerte = false }: {
 }
 
 // ─── Cart line item ──────────────────────────────────────────────
-function CartLine({ item, index, noting, onToggleNote, hasExtras, onEditExtras }: {
+function CartLine({ item, index, noting, onToggleNote, hasExtras, onEditExtras,
+                   nivelDelCliente, abiertoNivel, onToggleNivel }: {
+  /** El nivel por defecto del CLIENTE. Sólo para comparar (§7.19): el nivel es
+   *  de la LÍNEA, y cambiarlo no toca al cliente. */
+  nivelDelCliente: number | null
+  abiertoNivel: boolean
+  onToggleNivel: () => void
   item: CartItem; index: number; noting: boolean; onToggleNote: () => void
   hasExtras: boolean; onEditExtras: () => void
 }) {
   const setQty = useCartStore((s) => s.setQty)
   const setPrice = useCartStore((s) => s.setPrice)
+  const setNivel = useCartStore((s) => s.setNivel)
   const setNote = useCartStore((s) => s.setNote)
   const remove = useCartStore((s) => s.remove)
   const color = item.product.categories?.color ?? 'var(--ink-4)'
@@ -391,10 +400,27 @@ function CartLine({ item, index, noting, onToggleNote, hasExtras, onEditExtras }
           }}>
             {item.product.name}
           </div>
-          <MoneyCell
-            value={cartItemTotal(item)}
-            style={{ fontSize: 14, fontWeight: 700, flexShrink: 0 }}
-          />
+          {/* 🔴 SIN PRECIO SE PINTA `—`, NO EL 0 QUE `cartItemTotal` DEVUELVE
+              (§7.22). Ese 0 es *lo que la línea aporta al total*, no lo que
+              vale, y mostrarlo como cifra sería un precio plausible: la venta
+              se vería completa con una línea sin cotizar. El hueco visible es
+              lo que obliga a resolverla. */}
+          {lineaSinPrecio(item) ? (
+            <span
+              data-testid="cart-item-total-sin-precio"
+              style={{
+                fontSize: 14, fontWeight: 700, flexShrink: 0,
+                color: 'var(--warning-on-soft)', fontVariantNumeric: 'tabular-nums',
+              }}
+            >
+              —
+            </span>
+          ) : (
+            <MoneyCell
+              value={cartItemTotal(item)}
+              style={{ fontSize: 14, fontWeight: 700, flexShrink: 0 }}
+            />
+          )}
         </div>
         {/* 🔴 PRECIO EDITABLE EN LA LÍNEA — deuda 75. El del catálogo pasa a
             ser una SUGERENCIA: el cliente negocia el mismo producto a 109.000,
@@ -421,6 +447,23 @@ function CartLine({ item, index, noting, onToggleNote, hasExtras, onEditExtras }
               lista {formatCOP(item.product.price)}
             </span>
           )}
+        </div>
+
+        {/* 🔴 EL NIVEL DE LA LÍNEA (§7.19-21). Va SIEMPRE, no sólo cuando
+            difiere: ocultarlo esconde lo que el cajero necesita para contestar
+            «¿a cuánto se lo estás dando?» sin abrir nada. Cuando coincide con el
+            del cliente es texto apagado; cuando difiere, un chip con borde. */}
+        <div style={{ marginTop: 4 }}>
+          <PriceLevel
+            testid={`cart-item-nivel-${index}`}
+            nivel={item.nivel}
+            nivelDelCliente={nivelDelCliente}
+            precios={item.product.product_prices}
+            precioLegado={item.product.price}
+            abierto={abiertoNivel}
+            onToggle={onToggleNivel}
+            onElegir={(n) => { setNivel(index, n); onToggleNivel() }}
+          />
         </div>
 
         {/* 🔴 LA ÚNICA RED QUE VA A EXISTIR. El servidor NUNCA compara
@@ -590,7 +633,12 @@ function CartPanel({
   onShowHeld,
   productsWithExtras,
   onEditExtras,
+  nivelDelCliente,
 }: {
+  /** Nivel de lista contra el que se COMPARA cada linea (§7.21). Hoy es el de
+   *  la sede: el cliente todavia vive dentro del modal de cobro y baja al
+   *  carrito en el corte 3 de esta tanda. */
+  nivelDelCliente: number | null
   subtotal: number
   discountAmt: number
   total: number
@@ -606,6 +654,58 @@ function CartPanel({
   onEditExtras: (item: CartItem) => void
 }) {
   const items = useCartStore((s) => s.items)
+
+  // 🔴 UNA sola fila con el desplegable abierto a la vez. Dos abiertos
+  //    convierten la escala en un formulario: el diseño lo despliega DEBAJO
+  //    de la línea activa, no como panel permanente.
+  const [nivelAbierto, setNivelAbierto] = useState<number | null>(null)
+
+  // ── Alt + 0–4 · el nivel de la LINEA ACTIVA (§7.20) ─────────────────────
+  // 🔴 «Cambiar de nivel es POSIBLE, NO OBLIGATORIO»: la venta normal no gana
+  //    ningun paso. Este atajo existe para la vez que si hace falta, y por eso
+  //    no abre nada — aplica y listo.
+  //
+  // ⚠️ QUE ES «LA LINEA ACTIVA», declarado porque el diseño no lo define y lo
+  //    estamos eligiendo nosotros: **la que tiene el desplegable abierto y, si
+  //    no hay ninguno, la ULTIMA agregada**. Es lo que el cajero acaba de tocar
+  //    en los dos casos. La alternativa —exigir abrir el chip primero— haria
+  //    que el atajo costara mas que el clic que reemplaza.
+  //
+  // 🔴 ALT SE ELIGIO PORQUE LOS DIGITOS PELADOS YA TIENEN DUEÑO: el campo de
+  //    precio de la linea consume cifras, y §5 reserva las teclas de funcion
+  //    para navegar. Un atajo que pelea con el teclado numerico del mostrador
+  //    no se usa.
+  const setNivelStore = useCartStore((s) => s.setNivel)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!e.altKey || e.ctrlKey || e.metaKey) return
+      const n = Number(e.key)
+      if (!Number.isInteger(n) || n < 0 || n > 4) return
+      if (items.length === 0) return
+
+      // ⚠️ El indice se resuelve ACA y no en el render: leerlo de una variable
+      //    capturada dejaria el atajo apuntando a la linea que habia cuando se
+      //    monto el efecto.
+      const idx = nivelAbierto ?? items.length - 1
+      const item = items[idx]
+      if (!item) return
+
+      // 🔴 Un nivel SIN PRECIO no se puede elegir — igual que en el desplegable
+      //    (§4). Si el atajo pudiera lo que el clic no puede, serian dos reglas
+      //    distintas para la misma decision, y la del teclado no la ve nadie.
+      if (!nivelEstaPuesto(item.product.product_prices, n)
+          && (item.product.product_prices?.length ?? 0) > 0) {
+        toast.error(`${item.product.name} no tiene precio en L${n}.`)
+        return
+      }
+      e.preventDefault()
+      setNivelStore(idx, n)
+      setNivelAbierto(null)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [items, nivelAbierto, setNivelStore])
+
   const discount = useCartStore((s) => s.discount)
   const discountType = useCartStore((s) => s.discountType)
   const discountReason = useCartStore((s) => s.discountReason)
@@ -723,6 +823,9 @@ function CartPanel({
               onToggleNote={() => setNotingIdx(notingIdx === idx ? null : idx)}
               hasExtras={productsWithExtras.has(item.product.id)}
               onEditExtras={() => onEditExtras(item)}
+              nivelDelCliente={nivelDelCliente}
+              abiertoNivel={nivelAbierto === idx}
+              onToggleNivel={() => setNivelAbierto(nivelAbierto === idx ? null : idx)}
             />
           ))
         )}
@@ -2175,6 +2278,7 @@ export function POSPage() {
 
       {/* ─── RIGHT: Cart 40% ─── */}
       <CartPanel
+        nivelDelCliente={nivelDeLaSede}
         subtotal={subtotal}
         discountAmt={discountAmt}
         total={total}

@@ -2561,6 +2561,56 @@ día deja **0 de 110** líneas sin costo; el orden contrario, **39 de 110 y el 4
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · CUANDO UNA FUNCIÓN DEJA DE CAER A UN DEFAULT, EL DEFAULT REAPARECE EN SUS LLAMADORES — NO SE PROPAGA POR COPIA, SE REINVENTA
+
+*2026-09-14, primer corte de la UI de la deuda 101. **Y no es «entender la clase no la barre»: la
+clase se entendió, se escribió y se corrigió.** Esto es otra cosa.*
+
+**El caso.** `precioDeNivel` caía a L1 cuando el nivel pedido no tenía precio. Se corrigió —con su
+comentario explicando que caer a L1 *cotiza la línea a un nivel que no es el pedido y no lo dice*— y
+quedó devolviendo `null`. Días después, en el store:
+
+```ts
+const precio = precioDeNivel(item.product.product_prices, nivel ?? -1, item.product.price)
+next[index] = { ...item, nivel, price: precio ?? item.price }   // ⛔ el mismo fallback, afuera
+```
+
+> **El `null` que la función empezó a devolver a propósito lo tapó el llamador en la línea
+> siguiente.** El comportamiento volvió a ser el que se había quitado, y el archivo donde vivía la
+> corrección seguía impecable.
+
+🔴 **LO QUE LA DISTINGUE DE UNA CLASE NO BARRIDA: no hay copia.** Nadie miró `niveles.ts` y lo
+replicó. `?? item.price` **se lee como defensivo y razonable por sí solo** — *«si no hay valor, usá
+el anterior»* es lo que uno escribe sin pensar, y quien lo escribe no está pensando en
+`precioDeNivel` ni sabe que ahí se tomó una decisión.
+
+> **Un fallback no se propaga: se REINVENTA.** Por eso un barrido de la forma original no lo
+> encuentra: la instancia nueva no se parece a la vieja, se parece a «código prudente».
+
+⚠️ **Y por eso quitar un default es un cambio de CONTRATO, no una corrección local.** La función
+pasó a decir algo nuevo —*«este nivel no tiene precio»*— y ese mensaje sólo llega si **todos** los
+llamadores lo dejan pasar. Uno solo que lo tape restaura el comportamiento viejo para el producto
+entero, y el rojo aparece lejos: acá desarmaba el estado «sin precio» del chip, el aviso del carrito
+y el bloqueo del cobro, tres capas más arriba.
+
+✅ **LO ACCIONABLE, y NO es grepear `??`** —hay cientos, y la mayoría son correctos—:
+
+> **Cuando una función deja de caer a un default, enumerá sus LLAMADORES en la misma pasada.** El
+> default que se sacó de adentro vuelve a aparecer afuera, y el único momento en que alguien sabe
+> que hay que buscarlo es el commit que lo saca.
+
+```bash
+grep -rn "<nombreDeLaFuncion>(" src/ | grep -v "<su propio archivo>"
+```
+
+Y en cada llamador la pregunta es una: **¿qué hace con el `null`?** Si lo tapa, el cambio no llegó.
+
+⚠️ Corolario para escribir el cambio: **el comentario que explica por qué la función ya no cae tiene
+que vivir también donde el `null` se consume**, no sólo donde se produce. El de `niveles.ts` estaba
+perfecto y no se leía desde el store — que es donde se reinventó el fallback.
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · UN FALLBACK QUE SE SIENTE PRUDENTE PUEDE SER ROBUSTEZ QUE MIENTE
 
 *2026-09-14, escribiendo la resolución de las listas de precios (deuda 101). Lo corrigió el diseño,
