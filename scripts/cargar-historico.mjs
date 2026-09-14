@@ -444,13 +444,41 @@ for (const dia of DIAS) {
   const { error: eC } = await db.from('jornadas')
     .update({ closed_at: AT(dia, H_CIERRA), closed_by: perfil.id }).eq('id', jor.id)
   if (eC) abortar(`no se pudo cerrar la jornada de ${dia}: ${eC.message}`)
-  // 7 · corregir la fecha de cierre — el trigger la forzó a hoy (deuda 97)
+  // 7 · ⛔ ESTE PASO YA NO EXISTE — LA DEUDA 97 SE CERRÓ EL 2026-09-14.
+  //
+  //     Lo que había acá era «cerrar y después corregir»: un segundo `update`
+  //     que movía `closed_at` al día real, aprovechando que el trigger sólo
+  //     miraba la transición de nulo a no nulo. **Eso era el agujero**, no una
+  //     función — y el propio enunciado de la deuda 97 lo decía así.
+  //
+  //     Hoy `set_jornada_closed_at` VALIDA en vez de forzar: `closed_at` es
+  //     inmutable después del cierre y `opened_at` lo es siempre. El segundo
+  //     `update` ahora levanta excepción, que es el comportamiento correcto.
+  //
+  //     🔴 CONSECUENCIA, dicha entera: este cargador **ya no puede fechar el
+  //     cierre de una jornada**. La apertura sí —el INSERT no se tocó, a
+  //     propósito— pero el cierre queda estampado por el servidor en el momento
+  //     de correr. Se para acá en vez de escribir una fecha falsa en silencio.
+  //
+  //     ✅ QUÉ HARÍA FALTA PARA VOLVER A RECONSTRUIR: una RPC de cierre con
+  //     fecha EXPLÍCITA y motivo, que deje rastro — la misma forma que
+  //     `adjust_cost`. Aflojar el trigger no es el camino: lo abriría todos los
+  //     días para ganar un caso que ocurre una vez por cliente.
+  //
+  //     📋 Y el estado que hace que esto no bloquee nada hoy: el histórico de
+  //     Muscle Pro YA ESTÁ CARGADO. Verificado contra la base el 2026-09-14 —
+  //     9 jornadas, las 9 cerradas, las 9 con `closed_at` en su propio día.
   const { data: jc, error: eF } = await db.from('jornadas')
-    .update({ closed_at: AT(dia, H_CIERRA) }).eq('id', jor.id).select('closed_at').single()
-  if (eF) abortar(`no se pudo corregir el cierre de ${dia}: ${eF.message}`)
+    .select('closed_at').eq('id', jor.id).single()
+  if (eF) abortar(`no se pudo leer el cierre de ${dia}: ${eF.message}`)
   const ok = jc.closed_at.slice(0, 10) === dia
   console.log('  jornada cerrada %s %s', jc.closed_at, ok ? '✅' : '🔴 la fecha NO quedó en el día')
-  if (!ok) abortar('el cierre no quedó con la fecha del día', 'la deuda 97 puede haberse arreglado: sin ese camino, el histórico no puede fechar jornadas.')
+  if (!ok) abortar(
+    `el cierre de ${dia} quedó fechado ${jc.closed_at.slice(0, 10)}, no ${dia}`,
+    'LA DEUDA 97 ESTÁ CERRADA (2026-09-14): `closed_at` ya no se puede corregir después ' +
+    'del cierre, así que este cargador no puede fechar jornadas. Hace falta una RPC de ' +
+    'cierre con fecha explícita y motivo ANTES de volver a reconstruir un histórico. ' +
+    'Las ventas, compras, gastos y abonos de este día SÍ quedaron con su fecha.')
 }
 
 console.log('\nESCRITO: %d facturas · %d tickets · %d gastos · %d abonos · %d jornadas',

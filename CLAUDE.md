@@ -2023,6 +2023,54 @@ una segunda medición, recalcular por el mismo camino es la misma.
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · UN ARCHIVO QUE SE DECLARA COPIA DE OTRO ES UN LADO DEL CONTRATO — Y SU AUTODESCRIPCIÓN ES LO QUE LO ESCONDE
+
+*2026-09-07, cerrando la deuda 78. El lado que faltaba quedó afuera de la nota de R1 que lo
+inventariaba, escrita minutos antes.*
+
+`scripts/cargar-catalogo.mjs` mandaba `stock_qty` en su `upsert`, así que el allowlist de columnas
+lo habría roto. Es un lado del contrato igual que el formulario. **Y no entró al inventario.**
+
+> **Lo que lo escondió fue su propio comentario:** *«el payload de `ProductModal.tsx`, campo por
+> campo»*. Un archivo que **se declara copia** se lee como derivado de otro — y un derivado no se
+> cuenta como lado, se cuenta como consecuencia.
+
+🔴 **Pero nada deriva nada: la copia se hizo a mano, una vez, y desde entonces son dos textos
+independientes.** La frase describe **el origen**, no un mecanismo — exactamente lo que R1 define
+como contrato: *un valor en más de un archivo sin nada que los sincronice*. La autodescripción
+**afirma la sincronización que no existe**, y por eso es peor que no tener comentario: tranquiliza.
+
+⚠️ **Y es la forma que menos se parece a un contrato al leerla.** Los lados que uno enumera son los
+que se **parecen entre sí** —dos constantes, dos listas, dos CHECK—. Un script de carga y un
+componente de React no se parecen en nada; lo único que los une es una frase en un comentario, y esa
+frase se lee como **procedencia**, no como dependencia viva.
+
+✅ **Lo accionable, y es un grep, no atención:** al enumerar los lados de un contrato, buscá también
+**quién dice copiar al lado que estás tocando**.
+
+```bash
+grep -rn "campo por campo\|copiado de\|réplica de\|espejo de" src/ scripts/ tests/
+```
+
+✅ **Verificado por ejecución el 2026-09-07, y el primer patrón MEDÍA DE MÁS:** llevaba
+`igual que` y `el payload de`, que devolvían **25 líneas de prosa** —comentarios que comparan
+comportamientos, y un *«el payload de PII»* de `sentry.ts`—. Un comando canónico que ahoga su señal
+en ruido se deja de correr, que es la otra forma de no tenerlo. El acotado devuelve **dos**, y las
+dos son el caso: `cargar-catalogo.mjs` se declara copia de `ProductModal` **y** de `CategoryModal`.
+
+⚠️ **Ese segundo lado apareció en la misma corrida y está SANO hoy** —`categories` no tiene
+allowlist de columnas, así que su `upsert` no se rompe—. Se anota igual: es el mismo contrato
+esperando el día que alguien acote esa tabla, y encontrarlo costó leer la salida entera en vez de
+buscar el archivo que ya sabía que estaba mal.
+
+⚠️ **Y el dato que decide dónde poner el esfuerzo: no lo destapó releer la nota.** La nota estaba
+recién escrita, por mí, y decía *«los lados son tres»*. Lo destapó **enumerar los `upsert` del
+repo** — o sea una medición mecánica sobre la forma que se estaba cerrando, no una relectura. Es el
+argumento del hook contra el recordatorio otra vez: releer confirma lo que uno ya escribió; enumerar
+encuentra lo que uno no sabía que estaba.
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · CERRAR UN CAMINO NO SÓLO TAPA EL HUECO: DESTAPA A LOS QUE LO USABAN — Y LOS MUERTOS SON LOS QUE NADIE ENUMERA
 
 *Segunda aparición, 2026-09-07, cerrando la deuda 78. La primera fue `addOrderItems` antes de la
@@ -2331,6 +2379,44 @@ estaba citando este criterio**, en un documento que dice que el conteo no se esc
 justamente para que no se desincronice. La versión que quedó se verificó ejecutándola desde el
 archivo, y discrimina en las dos direcciones: **29 productos · 8 categorías · 0 sobre otro seed**.
 
+
+🔴 **Y EL CASO QUE CIERRA LA SERIE, 2026-09-07: UN COMANDO IRREPRODUCIBLE ESCRITO EN LA NOTA QUE
+ESTRENA LA REGLA — Y EL PRIMERO COMETIDO MIENTRAS SE ESCRIBÍA LA REGLA QUE LO PROHÍBE.**
+
+Los comandos canónicos que este proyecto encontró **imposibles de correr** son tres, y los tres
+están nombrados en este archivo: `git rev-list --count develop..main` —que era **el ejemplo con el
+que la convención se enseña**—, `supabase migration list --linked` mientras el token estuvo rotado,
+y éste.
+
+**El caso.** Al cerrar la deuda 78 escribí, como reconfirmación del allowlist de columnas:
+
+```
+⛔ NO CORRER — no se puede desde acá:
+select column_name from information_schema.column_privileges
+ where table_name='products' and grantee='authenticated' and privilege_type='UPDATE'
+```
+
+**El CLI de Supabase no ejecuta SQL suelto y `information_schema` no está expuesto por PostgREST.**
+Lo escribí en el mismo turno en que estaba redactando el punto 10 de R1 y citando este criterio.
+
+✅ **Y LO QUE HACE MEJOR A LA CORRECCIÓN NO ES QUE SE PUEDA CORRER — ES QUE MIDE OTRA COSA, Y ES LA
+QUE IMPORTA:**
+
+| | qué contesta |
+|---|---|
+| ⛔ el `select` sobre `column_privileges` | **que los privilegios DIGAN que el cliente debería ser rechazado** |
+| ✅ `playwright test tests/columnas-protegidas.spec.ts` | **que el cliente sea rechazado** |
+
+> **Un privilegio correcto y un rechazo efectivo no son lo mismo.** Entre el catálogo del motor y el
+> cliente real hay una policy de RLS, un `SECURITY DEFINER`, un PostgREST, un rol que se asume y una
+> conexión que se reusa. **Lo que el guard promete es el segundo**, y el primero es su declaración —
+> que es exactamente la distinción del corolario de R4: *ninguna declaración ejecuta*.
+
+⚠️ Y por eso el reemplazo no fue una concesión por falta de herramienta: el `select`, **aun pudiendo
+correrse**, seguiría siendo un proxy. La versión que quedó agrega además el control que el catálogo
+no puede dar — que editar `name` **sí** funciona—, o sea que distingue *«cerrado»* de *«roto»*.
+
+---
 
 #### 📋 INVENTARIO DE LOS COMANDOS CANÓNICOS — verificados por ejecución el 2026-09-03
 
