@@ -26,6 +26,19 @@ export interface SedeConfig {
   plazos_credito?: number[]
   /** El que se ofrece cuando el cliente no tiene plazo pactado. */
   plazo_credito_default?: number
+
+  /**
+   * 🔴 NIVEL DE PRECIO POR DEFECTO DE LA SEDE — deuda 101. Segundo eslabon de la
+   * cadena **linea → cliente → sede → L1**: se usa cuando la venta no tiene
+   * cliente (`orders.customer_id` es nullable y la mayoria de las ventas de
+   * mostrador no lo tienen) o cuando el cliente no tiene nivel pactado.
+   *
+   * ⚠️ NO es fail-closed a proposito: bloquear la venta por falta de lista
+   * romperia el mostrador, que es el mismo intercambio que ya se rechazo con
+   * `handle_new_user` — un guard que estorba el camino de todos por un caso de
+   * borde no se relaja, se le da su propio camino.
+   */
+  nivel_precio_default?: number
   payment_methods?: PaymentMethod[]
   nequi_qr_url?: string | null
 }
@@ -43,6 +56,24 @@ export const DEFAULT_EXPENSE_SUBCATEGORIES = ['Publicidad', 'Adecuación', 'Acti
 /** Sembrados con los que el cliente confirmó que maneja. Editables por sede. */
 export const DEFAULT_PLAZOS_CREDITO = [8, 15, 30]
 export const DEFAULT_PLAZO_CREDITO = 30
+
+/**
+ * 🔴 EL ULTIMO ESLABON DE LA CADENA DE NIVELES, Y EL UNICO LITERAL — deuda 101.
+ * `linea → cliente → sede → L1`. Los tres primeros son datos; este es el piso.
+ *
+ * **L1 no es un nivel inventado: es el que la clienta ya usaba.** El campo unico
+ * de precio del formulario de producto lo tecleaba como su PRECIO BASE, y su
+ * precio base ES L1 — verificado, 22 de 22 coinciden. Por eso el formulario
+ * sigue teniendo un campo y ese campo escribe L1.
+ *
+ * ⚠️ R1 ANTICIPADA — se escribe ANTES de que exista el segundo lado, que es la
+ * primera vez que lo hacemos: **hoy este literal tiene UN SOLO LADO**, porque la
+ * resolucion del nivel es 100% del cliente. **El dia que un reporte agrupe por
+ * nivel EN EL SERVIDOR, va a necesitar este mismo numero y seran dos lados sin
+ * nada que los sincronice.** Ese dia, o el servidor lo recibe como parametro, o
+ * este valor baja a `sedes.config` y deja de ser literal.
+ */
+export const NIVEL_PRECIO_DEFAULT = 1
 
 /**
  * Un activo no se consume en el mes. Se dice DONDE SE ELIGE, no en un

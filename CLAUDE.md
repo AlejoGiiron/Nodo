@@ -2171,6 +2171,54 @@ método estaba bien.
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · UN FALLBACK QUE SE SIENTE PRUDENTE PUEDE SER ROBUSTEZ QUE MIENTE
+
+*2026-09-14, escribiendo la resolución de las listas de precios (deuda 101). Lo corrigió el diseño,
+y yo no tenía razón medida para sostener lo mío — que es exactamente el criterio con el que se
+resuelve una divergencia.*
+
+**El caso.** `precioDeNivel(producto, nivel)` devolvía el precio de ese nivel y, **si el nivel no
+estaba configurado, caía a L1**. Se lee como robustez: *«si no hay precio, usá el base»*. El diseño
+dice lo contrario (§7.22): *«se muestra `—`, no cero; en el carrito la línea no suma hasta que se
+elija otro nivel o se escriba el precio a mano»*.
+
+> **El fallback cotiza la línea a un nivel QUE NO ES EL PEDIDO, y no lo dice.** Ella elige «lista 3»,
+> el sistema cobra L1, y la pantalla no distingue ese caso de uno donde L3 sí estaba puesta.
+
+🔴 **ES LA MISMA FAMILIA QUE YA TIENE DOS CASOS EN ESTE REPO, y conviene verlos juntos:**
+
+| caso | lo cómodo | lo que se hizo |
+|---|---|---|
+| `order_items.unit_cost` de un producto nunca comprado | inventar un costo | **nulo** — *«eso es información, no un hueco»* |
+| el vuelto cuando lo recibido no alcanza | mostrar una cifra | **`—`**, nunca un número plausible (diseño §7.5) |
+| **el precio de un nivel sin configurar** | **caer a L1** | **`null`**, la línea no suma y el cobro se bloquea |
+
+**Un número plausible es peor que un hueco visible**, y las tres veces la versión plausible se
+presentó como la considerada.
+
+⚠️ **LO QUE DISTINGUE A ÉSTA DE LAS OTRAS DOS, y es lo que la hace registrable: las otras dos eran
+AUSENCIAS DE DATO y ésta era una SUSTITUCIÓN.** Nadie propone inventar un costo —se nota que es
+inventarlo—. Un fallback, en cambio, **usa un dato real**: L1 existe, es correcto, es de ese mismo
+producto. Por eso no se siente como inventar, y el resultado es idéntico: una cifra que el sistema
+afirma y que no corresponde a lo que se pidió.
+
+> **La palabra «fallback» es la que hace el trabajo de disfraz.** «Si no hay X, usá Y» se lee como
+> defensa contra un fallo; y lo que produce es **una respuesta distinta de la pregunta, sin marca**.
+
+✅ **LO ACCIONABLE, y es una pregunta antes de escribir cualquier `??`:**
+
+> **¿El valor de repuesto contesta LA MISMA PREGUNTA que el que falta?** Si contesta otra —el precio
+> de otro nivel, el costo de otra compra, la fecha de otro hecho— no es un fallback: es una
+> sustitución silenciosa, y lo correcto es el hueco.
+
+⚠️ Y el corolario sobre cómo se resolvió, que vale aparte: **la divergencia contra el diseño se
+decide por medición, no por autoría.** Lo mío era una decisión de escritorio; lo del diseño estaba
+dibujado con su estado, su color y su Alert. Sin una razón medida del lado del código, gana el
+diseño — y si la hubiera, no va al código: va a §8 de la skill, que es donde se anotan las cosas que
+el diseño dejó sin decidir.
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · UNA MEDICIÓN REAL CUYA EVIDENCIA NO PUEDE ENTRAR AL REPO — SE ESCRIBE CON SU PROCEDENCIA **Y** CON CÓMO REFUTARLA
 
 *2026-09-14, con los factores de las listas de precios. Clase propia: **no es una afirmación sin

@@ -74,6 +74,11 @@ vite.config.ts.timestamp-*.mjs
 docs/*.xlsx
 docs/*.xls
 docs/*.csv
+#    Y los .zip: un paquete de Design se VERSIONA EXTRAIDO, no comprimido.
+#    Los archivos se diffean, se grepean y se leen desde el repo; un zip hay
+#    que bajarlo para saber que cambio, y la version siguiente no mostraria
+#    que se movio. Mismo criterio que docs/reskin-referencia/.
+docs/*.zip
 #    Si alguna vez hace falta versionar una planilla: `git add -f`, y despues
 #    de mirarla entera. La excepcion se decide por archivo, que es la
 #    direccion correcta -- el olvido deja el archivo AFUERA, no adentro.

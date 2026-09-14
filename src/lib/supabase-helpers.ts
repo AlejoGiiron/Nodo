@@ -60,10 +60,15 @@ export const countActiveProductsByCategory = (categoryId: string) =>
 
 // --- Products ---
 
+// 🔴 `product_prices` viaja CON el producto (deuda 101). El catálogo ya se trae
+//    entero para el Mostrador —la búsqueda filtra en memoria—, así que los cinco
+//    niveles llegan en la misma consulta y la resolución del precio no necesita
+//    ningún viaje extra. Un producto sin filas es «sin nivel configurado», que es
+//    un estado válido y no un hueco: ver `src/lib/niveles.ts`.
 export const getProducts = (sedeId: string, categoryId?: string) => {
   const base = supabase
     .from('products')
-    .select('*, categories(id, name, color)')
+    .select('*, categories(id, name, color), product_prices(nivel, precio)')
     .eq('sede_id', sedeId)
     .eq('is_active', true)
     .order('name')

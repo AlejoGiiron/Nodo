@@ -135,7 +135,14 @@ export function useCobro() {
           qty: item.qty,
           // 🔴 El precio PACTADO. `products.price` quedó como sugerencia y no
           //    se persiste en ningún lado (deuda 75).
-          unit_price: item.price,
+          // ⚠️ `?? 0` NO es un default: una línea sin precio BLOQUEA el cobro
+          //    (diseño §7.22), así que acá nunca llega un nulo. Está para que
+          //    el tipo cierre sin apagar el guard de arriba — si algún día
+          //    llegara, el 0 lo rechaza `check (unit_price >= 0)`… y no: lo
+          //    aceptaría. Por eso el guard vive en el botón, no acá.
+          unit_price: item.price ?? 0,
+          // El NIVEL con el que se cotizó, congelado en la línea (deuda 101).
+          nivel_aplicado: item.nivel,
           notes: item.note || null,
           extras: item.extras.map((ex) => ({ extra_id: ex.extra_id, qty: ex.qty })),
         })),

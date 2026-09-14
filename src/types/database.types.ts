@@ -157,6 +157,7 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          nivel_default: number | null
           notes: string | null
           phone: string | null
           plazo_dias: number | null
@@ -169,6 +170,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
+          nivel_default?: number | null
           notes?: string | null
           phone?: string | null
           plazo_dias?: number | null
@@ -181,6 +183,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          nivel_default?: number | null
           notes?: string | null
           phone?: string | null
           plazo_dias?: number | null
@@ -427,6 +430,7 @@ export type Database = {
           created_at: string
           id: string
           modifiers: Json
+          nivel_aplicado: number | null
           notes: string | null
           order_id: string
           product_id: string
@@ -439,6 +443,7 @@ export type Database = {
           created_at?: string
           id?: string
           modifiers?: Json
+          nivel_aplicado?: number | null
           notes?: string | null
           order_id: string
           product_id: string
@@ -451,6 +456,7 @@ export type Database = {
           created_at?: string
           id?: string
           modifiers?: Json
+          nivel_aplicado?: number | null
           notes?: string | null
           order_id?: string
           product_id?: string
@@ -792,6 +798,41 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "products"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_prices: {
+        Row: {
+          created_at: string
+          nivel: number
+          precio: number
+          product_id: string
+          sede_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          nivel: number
+          precio: number
+          product_id: string
+          sede_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          nivel?: number
+          precio?: number
+          product_id?: string
+          sede_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_prices_producto_de_su_sede"
+            columns: ["product_id", "sede_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id", "sede_id"]
           },
         ]
       }

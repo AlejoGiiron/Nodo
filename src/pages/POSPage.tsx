@@ -15,6 +15,7 @@ import { useProductsWithExtras } from '@/hooks/useProductsWithExtras'
 import { useAuth } from '@/hooks/useAuth'
 import { usePermissions } from '@/hooks/usePermissions'
 import { useSedeConfig } from '@/hooks/useSedeConfig'
+import { nivelInicial } from '@/lib/niveles'
 import { useCashShift } from '@/hooks/useCashShift'
 import { OpenShiftModal } from '@/components/shift/OpenShiftModal'
 import { ItemConfigModal } from '@/components/pos/ItemConfigModal'
@@ -164,7 +165,7 @@ function PrintTicket({
             <span style={{ fontWeight: 600 }}>{item.qty}x {item.product.name}</span>
             {/* El precio PACTADO, no el de lista (deuda 75): el ticket es
                 lo que el cliente se lleva y tiene que decir lo que pagó. */}
-            <span>{formatCOP(item.price * item.qty)}</span>
+            <span>{item.price === null ? '—' : formatCOP(item.price * item.qty)}</span>
           </div>
           {item.extras.map((ex) => (
             <div key={ex.extra_id} style={{ display: 'flex', justifyContent: 'space-between', paddingLeft: 14, fontSize: 10 }}>
@@ -1780,6 +1781,17 @@ export function POSPage() {
   const [resumeTarget, setResumeTarget] = useState<string | null>(null)
   // Configuración de extras: producto a agregar, o ítem del carrito a editar.
   const [configProduct, setConfigProduct] = useState<ProductWithCategory | null>(null)
+
+  // 🔴 EL NIVEL CON EL QUE ARRANCA CADA LÍNEA — deuda 101.
+  //    La cadena completa es `línea → cliente → sede → L1`, y acá sólo pueden
+  //    entrar los dos últimos: **el cliente se elige en el COBRO**, o sea
+  //    DESPUÉS de armar el carrito, así que al agregar un producto el sistema
+  //    todavía no sabe a quién le vende.
+  //    ⚠️ El eslabón del cliente está PENDIENTE de una decisión de flujo, no
+  //    olvidado: re-sembrar los precios cuando se elige el cliente al cobrar
+  //    pisaría líneas que ella ya pudo haber acordado a mano.
+  const { config: sedeConfigPos } = useSedeConfig()
+  const nivelDeLaSede = useMemo(() => nivelInicial(null, sedeConfigPos), [sedeConfigPos])
   const [editingItem, setEditingItem] = useState<CartItem | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
   const { isOpen: isShiftOpen } = useCashShift()
@@ -1945,7 +1957,7 @@ export function POSPage() {
   const handleAddProduct = (product: ProductWithCategory) => {
     if (!extrasListos) return
     if (conExtras.has(product.id)) setConfigProduct(product)
-    else add(product)
+    else add(product, nivelDeLaSede)
   }
 
   const subtotal = useMemo(
@@ -2182,7 +2194,7 @@ export function POSPage() {
       {configProduct && (
         <ItemConfigModal
           product={configProduct}
-          onConfirm={(extras) => { addItem(configProduct, extras); setConfigProduct(null) }}
+          onConfirm={(extras) => { addItem(configProduct, extras, nivelDeLaSede); setConfigProduct(null) }}
           onClose={() => setConfigProduct(null)}
         />
       )}

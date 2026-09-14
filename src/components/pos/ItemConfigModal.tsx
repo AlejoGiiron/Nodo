@@ -37,7 +37,7 @@ export function ItemConfigModal({
    * lugar, la fila del carrito. Dos puntos de edición del mismo valor serían
    * dos lados sin nada que los sincronice.
    */
-  precioUnitario?: number
+  precioUnitario?: number | null
   onClose: () => void
 }) {
   const { productExtras, isLoading } = useProductExtras(product.id)
@@ -62,7 +62,10 @@ export function ItemConfigModal({
     setQtys((prev) => ({ ...prev, [id]: Math.max(0, qty) }))
 
   const extrasUnit = available.reduce((a, e) => a + Number(e.price) * (qtys[e.id] ?? 0), 0)
-  const precio = precioUnitario ?? product.price
+  // 🔴 Sin precio de lista para el nivel de la línea, el modal NO inventa un
+  //    número: muestra 0 en el subtotal de extras y el precio del producto se
+  //    resuelve en el carrito, que es donde vive el bloqueo del cobro (§7.22).
+  const precio = precioUnitario ?? 0
   const unitSubtotal = precio + extrasUnit
 
   const handleConfirm = () => {

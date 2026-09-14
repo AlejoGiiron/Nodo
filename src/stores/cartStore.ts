@@ -1,8 +1,17 @@
 import { create } from 'zustand'
 import type { Tables } from '@/types/database.types'
+import { precioDeNivel, type PrecioDeNivel } from '@/lib/niveles'
 
 export type ProductWithCategory = Tables<'products'> & {
   categories: Pick<Tables<'categories'>, 'id' | 'name' | 'color'> | null
+  /**
+   * Los niveles de precio del producto (deuda 101). Puede venir vacío: eso
+   * significa «sin nivel configurado», no «precio cero».
+   * ⚠️ Opcional en el tipo porque hay fixtures y caminos que arman un producto
+   * sin pasar por `getProducts`; los consumidores resuelven con `precioDeNivel`,
+   * que ya trata `undefined` como «no hay».
+   */
+  product_prices?: PrecioDeNivel[] | null
 }
 
 /**
@@ -34,7 +43,18 @@ export interface CartItem {
    * viaja como `unit_price` a la RPC — el precio del catálogo ya no se persiste
    * en ningún lado.
    */
-  price: number
+  price: number | null
+  /**
+   * 🔴 EL NIVEL CON EL QUE SE COTIZÓ ESTA LÍNEA — deuda 101. Nace del cliente
+   * (o de la sede, o L1) y **se puede cambiar por producto**: eso es la
+   * funcionalidad entera, no un refinamiento.
+   *
+   * ⚠️ `null` = la línea no salió de una lista. Viaja a la RPC como
+   * `nivel_aplicado` y se CONGELA en `order_items`: `unit_price` dice cuánto y
+   * esto dice por qué, y no es derivable —el precio se edita a mano (deuda 75)
+   * y dos niveles pueden coincidir en el número—.
+   */
+  nivel: number | null
 }
 
 export type DiscountType = 'pct' | 'fixed'
@@ -51,17 +71,43 @@ export function cartItemExtrasUnit(item: Pick<CartItem, 'extras'>): number {
  * sugerencia con la que nació la línea; el de la línea es lo acordado.
  */
 export function cartItemTotal(item: Pick<CartItem, 'price' | 'qty' | 'extras'>): number {
+  if (item.price === null) return 0
   return (item.price + cartItemExtrasUnit(item)) * item.qty
 }
 
 /**
- * Cuánto se aleja el precio pactado del catálogo, en tanto por uno con signo.
- * `null` cuando el catálogo es 0: no hay contra qué comparar, y devolver 0
- * afirmaría que coincide.
+ * 🔴 LA LÍNEA NO TIENE PRECIO — diseño §7.22. Su nivel no está configurado para
+ *    este producto, así que se pinta `—` y **NO suma al total**.
+ *
+ * ⚠️ Por eso `cartItemTotal` devuelve 0 y NO es una contradicción: 0 es lo que
+ *    aporta al total, no lo que vale. Lo que impide que ese 0 se lea como un
+ *    precio es que el cobro esté BLOQUEADO mientras exista una línea así — un
+ *    total que ignora una línea en silencio sería una confirmación falsa.
  */
-export function desvioDelCatalogo(item: Pick<CartItem, 'price' | 'product'>): number | null {
-  const lista = item.product.price
-  if (!lista) return null
+export const lineaSinPrecio = (item: Pick<CartItem, 'price'>) => item.price === null
+
+/** ¿Hay alguna línea sin precio? Bloquea el cobro (diseño §7.22). */
+export const hayLineaSinPrecio = (items: Pick<CartItem, 'price'>[]) => items.some(lineaSinPrecio)
+
+/** El precio de catálogo CONTRA EL QUE SE COMPARA esta línea: el de su nivel. */
+export function precioDeLista(item: Pick<CartItem, 'product' | 'nivel'>): number | null {
+  if (item.nivel === null) return null
+  return precioDeNivel(item.product.product_prices, item.nivel)
+}
+
+/**
+ * Cuánto se aleja el precio pactado del catálogo, en tanto por uno con signo.
+ * `null` cuando no hay contra qué comparar —catálogo en 0, o la línea sin nivel—
+ * porque devolver 0 afirmaría que coincide.
+ *
+ * 🔴 CAMBIÓ DE FUENTE con la deuda 101: compara contra **el precio del NIVEL de
+ *    la línea**, no contra `products.price`. Si comparara contra el precio único,
+ *    vender a L3 dispararía el cartel en cada venta por el solo hecho de usar
+ *    otra lista — el guard pasaría de cazar typos a cazar el uso normal.
+ */
+export function desvioDelCatalogo(item: Pick<CartItem, 'price' | 'product' | 'nivel'>): number | null {
+  const lista = precioDeLista(item)
+  if (!lista || item.price === null) return null
   return (item.price - lista) / lista
 }
 
@@ -104,7 +150,7 @@ export function desvioDelCatalogo(item: Pick<CartItem, 'price' | 'product'>): nu
 export const UMBRAL_PRECIO_ARRIBA = 1.00
 export const UMBRAL_PRECIO_ABAJO = 0.35
 
-export function precioLejosDelCatalogo(item: Pick<CartItem, 'price' | 'product'>): boolean {
+export function precioLejosDelCatalogo(item: Pick<CartItem, 'price' | 'product' | 'nivel'>): boolean {
   const d = desvioDelCatalogo(item)
   if (d === null) return false
   return d > UMBRAL_PRECIO_ARRIBA || d < -UMBRAL_PRECIO_ABAJO
@@ -145,8 +191,10 @@ interface CartStore {
   discountType: DiscountType
   discountReason: string
   heldOrders: HeldOrder[]
-  add: (product: ProductWithCategory) => void
-  addItem: (product: ProductWithCategory, extras: CartExtra[]) => void
+  add: (product: ProductWithCategory, nivel: number | null) => void
+  addItem: (product: ProductWithCategory, extras: CartExtra[], nivel: number | null) => void
+  /** Cambia el nivel de UNA línea y le re-siembra el precio de ese nivel. */
+  setNivel: (index: number, nivel: number | null) => void
   setQty: (index: number, qty: number) => void
   setPrice: (index: number, price: number) => void
   setNote: (index: number, note: string) => void
@@ -173,26 +221,32 @@ export const useCartStore = create<CartStore>((set) => ({
 
   // Alta rápida sin extras: fusiona con una línea existente del mismo producto
   // que no tenga nota NI extras (comportamiento original).
-  add: (product) =>
+  // ⚠️ Lleva NIVEL igual que `addItem` (deuda 101), y fusiona sólo si coincide:
+  //    dos líneas del mismo producto a niveles distintos son dos hechos.
+  add: (product, nivel) =>
     set((state) => {
       const idx = state.items.findIndex(
-        (x) => x.product.id === product.id && !x.note && x.extras.length === 0,
+        (x) => x.product.id === product.id && !x.note && x.extras.length === 0 && x.nivel === nivel,
       )
       if (idx >= 0) {
         const next = [...state.items]
         next[idx] = { ...next[idx], qty: next[idx].qty + 1 }
         return { items: next }
       }
-      return { items: [...state.items, { id: genId(), product, qty: 1, note: '', extras: [], price: product.price }] }
+      const precio = precioDeNivel(product.product_prices, nivel ?? -1)
+      return { items: [...state.items, { id: genId(), product, qty: 1, note: '', extras: [], price: precio, nivel }] }
     }),
 
   // Alta con extras: siempre crea una línea nueva (no fusiona) para no mezclar
   // configuraciones distintas del mismo producto.
-  addItem: (product, extras) =>
+  addItem: (product, extras, nivel) =>
     set((state) => {
       if (extras.length === 0) {
+        // ⚠️ Fusiona sólo si el NIVEL también coincide: dos líneas del mismo
+        //    producto a niveles distintos son dos hechos distintos, y juntarlas
+        //    perdería con cuál se cotizó cada una.
         const idx = state.items.findIndex(
-          (x) => x.product.id === product.id && !x.note && x.extras.length === 0,
+          (x) => x.product.id === product.id && !x.note && x.extras.length === 0 && x.nivel === nivel,
         )
         if (idx >= 0) {
           const next = [...state.items]
@@ -200,7 +254,23 @@ export const useCartStore = create<CartStore>((set) => ({
           return { items: next }
         }
       }
-      return { items: [...state.items, { id: genId(), product, qty: 1, note: '', extras, price: product.price }] }
+      // 🔴 El precio nace del NIVEL, y si ese nivel NO TIENE PRECIO la línea nace
+      //    en `null` — no en 0 (diseño §7.22). Un cero es un precio plausible que
+      //    sumaría al total; `null` se pinta `—`, NO suma, y obliga a resolver.
+      const precio = precioDeNivel(product.product_prices, nivel ?? -1)
+      return { items: [...state.items, { id: genId(), product, qty: 1, note: '', extras, price: precio, nivel }] }
+    }),
+
+  setNivel: (index, nivel) =>
+    set((state) => {
+      const next = [...state.items]
+      const item = next[index]
+      // Cambiar de nivel RE-SIEMBRA el precio: elegir «lista 3» y que el número
+      // no se mueva sería un control que no hace nada. Si el nivel nuevo no está
+      // configurado, cae a L1 por `precioDeNivel`; si no hay ninguno, queda 0.
+      const precio = precioDeNivel(item.product.product_prices, nivel ?? -1)
+      next[index] = { ...item, nivel, price: precio ?? item.price }
+      return { items: next }
     }),
 
   setQty: (index, qty) =>
@@ -221,6 +291,10 @@ export const useCartStore = create<CartStore>((set) => ({
       next[index] = { ...next[index], price: Math.max(0, Math.round(price)) }
       return { items: next }
     }),
+
+  /** ¿La línea sigue en el precio con el que la sembró su nivel? Deriva el
+   *  «no la tocó» sin guardar estado: si tecleó el mismo número, re-aplicar es
+   *  un no-op y el borde es inofensivo. */
 
   setNote: (index, note) =>
     set((state) => {
