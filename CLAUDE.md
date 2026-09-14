@@ -1545,6 +1545,27 @@ estábamos contando.*
 | el **mismo** script, ya "arreglado" | ídem | ídem: `Cartera` es **título de grupo Y ítem de navegación**, y el primero en orden de DOM es el grupo, que no navega | **mirando la captura**: el par de Cartera mostraba el Mostrador |
 | una marca en `window` + apretar **F5**, para medir `preventDefault` | que el atajo le gana al navegador | **nada**: Chromium bajo automatización **no ejecuta la acción de navegador** de las teclas de función, así que la página no se recargaba de ninguna forma y la marca sobrevivía siempre | **el mutante**: quitado el `preventDefault`, el caso siguió VERDE |
 | `grep -cE '^  ok  [0-9]+'` sobre la salida de la suite | cuántos tests pasaron | asumía **dos espacios fijos**; el reporter **alinea el número por ancho**, así que `ok 1`, `ok  99` y `ok 219` no coinciden con el patrón. Contó **89 de 202** | **cruzando**: 89 no cerraba con las 202 del resumen. Con `^  ok +[0-9]+`: 202 + 17 skipped = **219**, el último número de test emitido |
+| `console.log('%-32s', x)` en un cargador | alinear una columna del informe | **nada**: Node soporta `%s %d %i %f %j %o %O %c` y **NO anchos** — imprimió `%-32s` LITERAL y corrió el resto de los campos | **mirando la salida** en el `--dry-run`, antes de correr contra la base |
+
+🔴 **CUARTA VEZ QUE UN INSTRUMENTO MIENTE SOBRE SU PROPIO FORMATO DE SALIDA, y las cuatro son la
+misma forma: un supuesto sobre CÓMO SE IMPRIME, que el texto del comando no menciona.** *2026-09-14.*
+
+| # | el supuesto invisible |
+|---|---|
+| 1 | el reporter imprime `ok` con **dos espacios fijos** — alinea por ancho |
+| 2 | el resumen empieza en columna 0 — le pega una **secuencia de escape** delante |
+| 3 | en `awk`, `.` es un **carácter** — es un byte, y `§` ocupa dos |
+| 4 | `console.log` de Node entiende **anchos** tipo `printf` — no los tiene |
+
+⚠️ **Y las cuatro fallan hacia el mismo lado: la salida SIGUE SALIENDO.** No hay excepción ni
+código de error — hay un informe que se ve casi bien, y en tres de los cuatro casos el número que
+imprimía era falso. El cuarto sólo desalineó, y por eso se vio; los otros tres había que cruzarlos
+contra algo.
+
+✅ **Lo accionable es el `--dry-run`, no leer mejor el `printf`:** un cargador que va a escribir en
+la base de un cliente se corre **en seco primero y se MIRA la salida**. Acá eso costó nada y
+además destapó los centavos de la suma de control.
+
 
 **Los tres daban un número creíble.** Ninguno daba error, ninguno se veía roto, y los tres
 sostenían una afirmación que se escribió en un commit como si fuera un hecho medido.
@@ -2426,6 +2447,52 @@ puesto «lista 4» a doce clientes por haberles vendido caro una vez. Una
 autorización a inferir **no exime de comprobar que la inferencia mida lo que
 dice**; al contrario, es cuando más hace falta, porque ya nadie más va a
 revisarla.
+
+---
+
+### 🔴 CRITERIO SIN NÚMERO · UN NÚMERO PLAUSIBLE EN LA DIRECCIÓN AGRADABLE NO LO INVESTIGA NADIE — Y UN COSTO CERO ES UN MARGEN DEL 100%
+
+*2026-09-14, midiendo la exposición a `unit_cost` nulo antes de cargar el histórico de Muscle Pro.
+Es la familia de **«un número plausible es peor que un hueco visible»**, con una vuelta que las tres
+apariciones anteriores no tenían.*
+
+**El caso.** Las 110 ventas del histórico congelan el costo vigente del producto en
+`order_items.unit_cost`. Si la venta llega antes que la primera compra, no hay costo. **Qué pasa
+entonces depende enteramente de cómo esté declarada la columna** — y son dos mundos opuestos:
+
+| `products.cost_price` | qué queda en la línea | cómo se lee en un reporte de margen |
+|---|---|---|
+| **nullable, sin default** ← lo que es | `unit_cost` **nulo** | un **hueco**: la línea no tiene costo, y se ve |
+| `not null default 0` | `unit_cost` = **0** | **margen del 100%** — una utilidad extraordinaria |
+
+> **Con default cero el orden de carga daría igual, y el resultado sería PEOR.** No porque el número
+> sea más falso —los dos lo son— sino porque **un margen del 100% se lee como buen negocio, no como
+> dato faltante.**
+
+🔴 **LA VUELTA, y es lo que lo separa de las otras tres de la familia:** un vuelto en `—`, un costo
+inventado, un precio caído a otro nivel — los tres producen algo **incómodo o raro**, y lo raro
+invita a mirar. Éste produce **la noticia que todo el mundo quiere recibir**.
+
+> **Un número plausible se revisa cuando molesta. Uno plausible Y FAVORABLE no se revisa nunca.**
+
+⚠️ Es el mismo mecanismo que este archivo ya midió en la sexta falla de instrumento —*«la afirmación
+falsa estaba A MI FAVOR, y por eso nadie tenía motivo para dudarla»*— movido del razonamiento al
+dato. **Y en un dato dura más**, porque no hay una conversación que lo corrija: queda congelado en
+una fila y se suma a un reporte cada vez que alguien lo abre.
+
+✅ **Lo accionable, y son dos:**
+
+1. **Al declarar una columna que alimenta un cálculo, preguntá qué AFIRMA su default.** `default 0`
+   sobre un costo no afirma «no sé»: afirma **«salió gratis»**. Nullable es lo correcto cuando el
+   valor puede legítimamente no existir todavía.
+2. 🔴 **Al medir una exposición, decí en qué dirección miente el valor por defecto.** *«Quedan N
+   líneas sin costo»* y *«quedan N líneas con costo cero»* suenan igual de malas y no lo son: la
+   primera se descubre sola, la segunda **se archiva como una buena noticia**.
+
+📋 **Medido acá, y es lo que hizo visible la distinción:** los 62 productos tienen `cost_price`
+**nulo** —`numeric(12,2) check (cost_price >= 0)`, sin default— porque el cargador del catálogo no
+escribe esa columna. Así que el orden de carga **sí decide**: compras antes que ventas dentro del
+día deja **0 de 110** líneas sin costo; el orden contrario, **39 de 110 y el 49,8% del vendido**.
 
 ---
 
