@@ -2043,6 +2043,43 @@ los códigos» cuando en el Mostrador todavía no se veían. Dos afirmaciones fa
 paso distinto de correr los tests: los tests estaban en verde con el Mostrador a medias, porque
 nadie había escrito un caso para lo que faltaba.
 
+🔴 **LA UNDÉCIMA NO ES UN HECHO FALSO: ES UNA RELACIÓN DE CAUSA — «X BLOQUEA A Y» — QUE NADIE PROBÓ.**
+*2026-09-14, planificando el arranque de Muscle Pro.*
+
+> *«Los 20 productos nuevos no se pueden crear porque `products.price` es `not null`»*. **El dato era
+> cierto** —la columna es `not null`— y la conclusión era falsa: **esos 20 productos no tienen precio
+> en el archivo del cliente**, así que levantar el `not null` no habilitaba nada. Se podrían vender
+> igual tecleando el precio, que es el camino que ya existe (deuda 75).
+
+**Las diez anteriores afirmaban ALGO.** Un estado, un número, una suma, una etiqueta leída como
+estado. Ésta afirma **una relación entre dos cosas**, y por eso ninguna de las técnicas escritas la
+toca: no hay número que recalcular ni comando que correr. Los dos extremos eran verdad; **la flecha
+entre ellos era la mentira**.
+
+🔴 **Y sobrevivió porque circuló.** Nació en un párrafo mío —*«están BLOQUEADOS, y no por falta de
+dato: por el esquema»*—, se adoptó del otro lado, y volvió repetida **tres veces** como premisa de
+planificación. En cada vuelta ganó autoridad **sin ganar evidencia**: es el corolario de R4 —*la
+coincidencia entre dos declaraciones no es evidencia*— cuando las dos declaraciones son **la misma
+afirmación rebotando entre dos personas**.
+
+⚠️ **Lo caro no fue el error: fue lo que ORDENÓ.** Sobre esa flecha se decidió *«la 101 va antes que
+la carga»*, que es la decisión más grande del arranque. Una premisa causal falsa **no produce un dato
+equivocado: produce un plan equivocado**, y el plan no tiene cómo ponerse rojo.
+
+✅ **LO ACCIONABLE, y es una pregunta que no estaba escrita:**
+
+> **Ante un «X bloquea a Y», preguntá QUÉ HABILITA EXACTAMENTE QUITAR X.** Si la respuesta no es una
+> capacidad concreta que hoy no existe, X no era el bloqueo.
+
+Acá la respuesta era *«que las filas existan»* — y nadie necesitaba que existieran: **necesitaba
+poder venderlas**, que es otra cosa y ya estaba resuelta. El bloqueo real era el otro argumento, el
+que no se había medido: *«sin listas vuelve al Excel el primer día»*.
+
+⚠️ Corolario para quien recibe un bloqueo: **un bloqueo es una afirmación sobre el futuro**, y las
+afirmaciones sobre el futuro no se verifican mirando el esquema. Se verifican preguntando qué va a
+poder hacer alguien el día después de levantarlo.
+
+
 🔴 **LA SEXTA ES LA MÁS GRAVE, Y POR UNA RAZÓN QUE INVIERTE EL CRITERIO: LO AFIRMADO NO ERA UN
 ESTADO, ERA EL INSTRUMENTO.** *2026-09-06, la carga v2 del catálogo de Muscle Pro.*
 
