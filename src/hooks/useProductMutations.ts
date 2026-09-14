@@ -42,15 +42,18 @@ export function useProductMutations() {
     //    «ya existe con ese nombre» sobre un código repetido manda a corregir
     //    el campo equivocado — y el nombre estaba bien.
     onError: (err) => {
+      // 🔴 La rama de `codigo` se retiró el 2026-09-14: el índice único del
+      //    código ya no existe (revisión de la decisión A de la deuda 41), así
+      //    que ese mensaje era inalcanzable. **Dos productos con el mismo código
+      //    ahora se guardan sin error**, que es lo que el cliente espera: sus
+      //    cuatro galletas Mr Cream comparten `004-6` a propósito.
       const campo = campoDuplicado(err)
       toast.error(
-        campo === 'codigo'
-          ? 'Ya existe un producto activo con ese código en esta sede.'
-          : campo === 'nombre'
-            ? 'Ya existe un producto activo con ese nombre en esta sede.'
-            : campo === 'otro'
-              ? 'Ya existe otro producto con ese dato en esta sede.'
-              : mensajeDeError(err, 'Error al guardar producto'),
+        campo === 'nombre'
+          ? 'Ya existe un producto activo con ese nombre en esta sede.'
+          : campo === 'otro'
+            ? 'Ya existe otro producto con ese dato en esta sede.'
+            : mensajeDeError(err, 'Error al guardar producto'),
       )
     },
   })

@@ -22,17 +22,38 @@ describe('mensajeDeError', () => {
 
 describe('campoDuplicado', () => {
   // 23505 = unique_violation. Postgres pone el NOMBRE DEL ÍNDICE en el mensaje,
-  // y de ahí sale qué campo nombrar. `products` tiene DOS índices únicos desde
-  // la deuda 41, así que el código ya no alcanza para saber qué se repitió.
+  // y de ahí sale qué campo nombrar: con más de un índice único en juego, el
+  // código de error solo no alcanza para saber qué se repitió.
+  // ⏸️ El segundo índice de `products` era el del CÓDIGO y se retiró el
+  //    2026-09-14 (revisión de la deuda 41). El mecanismo queda: `categories`
+  //    y `products` siguen teniendo el suyo de nombre.
   const dup = (indice: string) => ({
     code: '23505',
     message: `duplicate key value violates unique constraint "${indice}"`,
   })
 
-  it('distingue el NOMBRE del CÓDIGO — que es la razón de existir del helper', () => {
+  it('reconoce los índices de NOMBRE, que son los que quedan', () => {
     expect(campoDuplicado(dup('products_nombre_unico_por_sede'))).toBe('nombre')
-    expect(campoDuplicado(dup('products_codigo_unico_por_sede'))).toBe('codigo')
     expect(campoDuplicado(dup('categories_nombre_unico_por_sede'))).toBe('nombre')
+  })
+
+  // 🔴 EL CÓDIGO YA NO ES ÚNICO — y este caso existe para que eso sea una
+  //    DECISIÓN visible y no un olvido. El 2026-09-14 se revisó la decisión A
+  //    de la deuda 41 y se retiró `products_codigo_unico_por_sede`: el cliente
+  //    usa el código como código de LÍNEA (sus cuatro galletas Mr Cream
+  //    comparten `004-6` a propósito), así que dos productos pueden compartirlo.
+  //
+  // ⚠️ Si alguien repone un índice único sobre el código, este caso se pone ROJO
+  //    y eso es lo correcto: obliga a decidir de nuevo en vez de heredar un
+  //    mensaje. Y mientras no exista, el helper cae a `'otro'` —genérico, sin
+  //    nombrar campo— en vez de mentir diciendo «nombre».
+  it('🔴 el código NO tiene índice único: si esto se pone rojo, alguien lo repuso', () => {
+    expect(
+      campoDuplicado(dup('products_codigo_unico_por_sede')),
+      'volvió a existir un índice único sobre `codigo`. Eso revierte la revisión ' +
+      'de la deuda 41 (2026-09-14), donde se midió que el cliente comparte códigos ' +
+      'a propósito: 3 códigos en 8 productos. Decidilo, no lo heredes.',
+    ).toBe('otro')
   })
 
   // 🔴 TRIPWIRE DEL OTRO LADO (R1). Los nombres de los índices viven en las
@@ -40,11 +61,10 @@ describe('campoDuplicado', () => {
   //    `20260907120000_codigo_y_unidad_de_producto.sql`, y NO hay nada que los
   //    sincronice con la constante de `errores.ts`. Si alguien renombra un
   //    índice, el mensaje vuelve al genérico SIN ponerse rojo — salvo por este
-  //    caso, que clava las tres cadenas.
+  //    caso, que clava las cadenas vigentes.
   it('🔴 los nombres de índice están clavados · si esto se pone rojo, mirá la migración', () => {
     for (const indice of [
       'products_nombre_unico_por_sede',
-      'products_codigo_unico_por_sede',
       'categories_nombre_unico_por_sede',
     ]) {
       expect(

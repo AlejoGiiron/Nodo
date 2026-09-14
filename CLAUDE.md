@@ -2084,6 +2084,56 @@ una segunda medición, recalcular por el mismo camino es la misma.
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · UNA DECISIÓN CORRECTA SOBRE UNA PREMISA FALSA — Y LA PREMISA FALSA NO ERA UN ERROR NUESTRO
+
+*2026-09-14, revisión de la decisión A de la deuda 41. **Primera decisión del proyecto que se revierte
+por datos nuevos del cliente y no por un error propio**, y por eso se escribe: el catálogo de errores
+de este archivo no tenía casilla para esto.*
+
+> **La decisión estaba bien tomada: se enumeró, se propusieron dos salidas, se eligió con su razón y
+> se escribió el disparador. Lo que falló no fue el razonamiento — fue que el mundo que describía no
+> era el del cliente.**
+
+**El caso.** Se aprobó *«el código es único por sede»* sobre los **25 productos** que había entonces,
+que resultaron únicos **por casualidad**. Ocho días después su archivo nuevo trae **3 códigos
+compartidos por 8 productos**: usa el código como código de **línea o proveedor**, no de producto.
+
+🔴 **Y EL DEFECTO NO ESTABA EN LA CONCLUSIÓN SINO EN EL PROPÓSITO QUE LE ATRIBUIMOS.** La restricción
+se justificó así: *«si no es único, teclear el código devuelve dos y el cajero tiene que
+desambiguar»* — dicho como un **costo a evitar**. La medición dice que **desambiguar es la función**:
+teclear `004-6` y ver las cuatro galletas es lo que él espera.
+
+> **Supusimos para qué servía el dato, y lo que supusimos era exactamente lo contrario.**
+
+⚠️ **Por qué no lo caza ninguna de las técnicas de este archivo.** No es un conteo mal hecho, ni un
+instrumento que no discrimina, ni una nota que envejeció: **la medición del momento era correcta y el
+razonamiento sobre ella también**. Lo único que la habría cazado es una pregunta que no se hizo —
+*«¿para qué usás el código?»*— y no se hizo porque **la respuesta parecía obvia**.
+
+🔴 **EL PRECEDENTE QUE LA CONFIRMA, Y ES EL DATO MÁS BARATO DE TODOS:** la única vez que inventamos un
+código para que el catálogo cupiera en la restricción —`001-10` en HALOTESTIN, porque su `001-7`
+venía duplicado **en su propio archivo**— el archivo siguiente **le dio ese 001-10 a otro producto**.
+El cliente contradijo nuestro dato inventado en ocho días.
+
+> **Un duplicado en los datos del cliente es una afirmación sobre su negocio antes que un error a
+> corregir.** Lo tratamos como suciedad y era estructura.
+
+✅ **LO ACCIONABLE, y son dos preguntas al decidir una restricción sobre un dato del cliente:**
+
+1. **¿Qué pasa cuando este dato se repita?** Si la respuesta es *«no puede»*, preguntá por qué no — y
+   si la razón es *«en los datos que tenemos no se repite»*, eso **no es una razón, es una muestra**.
+2. 🔴 **¿Estoy inventando un valor para que su realidad quepa en mi restricción?** Ése es el momento
+   exacto en que la restricción pasó a ser el problema. Un dato fabricado por nosotros **no tiene
+   quien lo defienda** el día que el cliente mande el suyo.
+
+⚠️ Y el corolario sobre cómo se escribe la revisión: **reemplaza a la anterior, no va al lado** —la
+convención de este archivo—, **pero conserva la razón vieja marcada como lo que era.** Una decisión
+revertida por datos nuevos no es una decisión equivocada, y el próximo que la lea tiene que poder
+distinguir las dos cosas: si parece un error nuestro, va a desconfiar del método que la produjo, y el
+método estaba bien.
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · UNA MEDICIÓN REAL CUYA EVIDENCIA NO PUEDE ENTRAR AL REPO — SE ESCRIBE CON SU PROCEDENCIA **Y** CON CÓMO REFUTARLA
 
 *2026-09-14, con los factores de las listas de precios. Clase propia: **no es una afirmación sin

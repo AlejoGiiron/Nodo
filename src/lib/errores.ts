@@ -23,7 +23,7 @@ export function mensajeDeError(err: unknown, fallback: string): string {
 }
 
 /** Qué unicidad se violó. `null` = el error no es una violación de unicidad. */
-export type CampoDuplicado = 'nombre' | 'codigo' | 'otro' | null
+export type CampoDuplicado = 'nombre' | 'otro' | null
 
 /**
  * ¿Qué unicidad de Postgres (`23505`) se violó?
@@ -36,21 +36,37 @@ export type CampoDuplicado = 'nombre' | 'codigo' | 'otro' | null
  *    repetido habría dicho «ya existe un producto con ese NOMBRE» — un mensaje
  *    que manda a mirar el campo equivocado.
  *
+ * ⏸️ **ESE ÍNDICE YA NO EXISTE: se retiró el 2026-09-14** al revisar la decisión
+ *    A de la deuda 41. Se deja escrito el episodio porque es lo que explica por
+ *    qué este helper mira el nombre del índice, y esa razón **sigue viva**:
+ *    `products` y `categories` conservan sus índices de nombre. Lo que caducó es
+ *    el ejemplo, no el mecanismo.
+ *
  * ⚠️ Así que ahora SÍ se mira el nombre del índice, y el argumento que lo
  *    desaconsejaba sigue siendo cierto: **son dos lados sin sincronizador**
  *    —la migración y esta constante— y renombrar el índice devolvería el
  *    mensaje genérico sin ponerse rojo. Lo que cambió es que la alternativa
  *    dejó de existir: sin mirar el nombre, el mensaje MIENTE. Se elige el
  *    riesgo de un mensaje genérico sobre el de un mensaje falso.
- *    El otro lado se declara acá y `errores.test.ts` clava las dos cadenas.
+ *    El otro lado se declara acá y `errores.test.ts` clava las cadenas que quedan.
  *
  * 🔴 Y `'otro'` NO es un caso de más: un índice único que no reconocemos debe
  *    dar un mensaje que NO nombre ningún campo. Caer a `'nombre'` sería
  *    exactamente el defecto que este cambio corrige, con otro disfraz.
  */
+// 🔴 `codigo` SALIÓ DE ESTE MAPA el 2026-09-14, y no porque el helper fallara:
+//    **el índice único dejó de existir** (revisión de la decisión A de la deuda
+//    41 — el cliente usa el código como código de LÍNEA, y sus cuatro galletas
+//    Mr Cream comparten `004-6` a propósito). Sin índice, un `23505` que lo
+//    nombre no puede ocurrir, así que la entrada era una afirmación falsa sobre
+//    el esquema — la clase de estado podrido que este repo viene midiendo.
+//
+// ⚠️ Y quitarla es seguro POR `'otro'`, no a pesar de él: si algún día vuelve un
+//    índice único sobre el código, el mensaje cae al genérico —que no nombra
+//    ningún campo— en vez de mentir diciendo «nombre». Ése es el default que se
+//    diseñó justamente para esto, y es la dirección correcta del fallo.
 const INDICES = {
   nombre: ['products_nombre_unico_por_sede', 'categories_nombre_unico_por_sede'],
-  codigo: ['products_codigo_unico_por_sede'],
 } as const
 
 export function campoDuplicado(err: unknown): CampoDuplicado {
@@ -59,7 +75,7 @@ export function campoDuplicado(err: unknown): CampoDuplicado {
   // Postgres pone el nombre del índice en el mensaje; PostgREST lo reenvía.
   const texto = `${typeof e?.message === 'string' ? e.message : ''} ${typeof e?.details === 'string' ? e.details : ''}`
   for (const [campo, nombres] of Object.entries(INDICES)) {
-    if (nombres.some((n) => texto.includes(n))) return campo as 'nombre' | 'codigo'
+    if (nombres.some((n) => texto.includes(n))) return campo as 'nombre'
   }
   return 'otro'
 }
