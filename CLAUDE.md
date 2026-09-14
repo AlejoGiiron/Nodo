@@ -290,6 +290,21 @@ en Vento.
    `PERMISSION_GROUPS`**, así que se enforceaba pero no se podía conceder desde la UI de Roles.
    ⚠️ Y una clave en el catálogo **no** es evidencia de que algo esté protegido: allá 6 permisos
    no gateaban nada y fallaban **abierto**.
+   🔴 **Y SU ESPEJO, la misma moneda del otro lado (2026-09-14): que `has_permission`
+   devuelva FALSE no es evidencia de que falte el permiso — puede ser que LA CLAVE NO
+   EXISTA.** Las dos se ven idénticas desde el resultado: un `false`.
+   **Caso medido:** verificando la cuenta de carga probé `clientes.gestionar`, dio `false`,
+   y concluí *«le faltan permisos»*. Esa clave **no existe** —la inventé—; `customers` lo
+   gatea `fiado.gestionar`, y la cuenta estaba perfecta.
+   ✅ **El discriminador es un CONTROL NEGATIVO con una clave inventada.** Si
+   `has_permission('no.existe.esta.clave')` da `false` —y lo da, medido—, entonces un
+   `false` **no distingue** las dos causas: hay que verificar la clave contra
+   `src/lib/permissions.ts` ANTES de leer el resultado.
+   ⚠️ **Y engancha con la deuda 23.4, que es la tercera cara:** allá una clave mal escrita
+   da **true para un owner** (por el comodín) y **false para todos los demás**. Sumadas son
+   **tres formas del mismo defecto con UNA SOLA CAUSA: `can(string)` sin tipo.** El día que
+   la clave sea un tipo unión en vez de una cadena, las tres desaparecen juntas — y ninguna
+   advertencia las evita, porque las tres se leen como un resultado legítimo.
 
 2. **Filtro de PII de Sentry.** Ya triplicado en Vento y **con drift medido**. Es el contrato
    que más justifica extraerse a paquete real. Nodo arranca con la versión **corregida**, no con
