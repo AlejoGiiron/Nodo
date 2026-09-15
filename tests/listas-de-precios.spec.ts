@@ -154,6 +154,38 @@ test.describe('deuda 101 · el re-aplicado al cambiar de cliente', () => {
   })
 })
 
+test.describe('deuda 101 · el cliente en una venta de CONTADO', () => {
+  test('la lista del cliente siembra los precios aunque el pago NO sea fiado', async ({ page }) => {
+    // 🔴 EL CASO QUE FALTABA, y el que habria cazado el bug de produccion:
+    //    TODOS los specs de cliente entran por el camino de FIADO, porque era el
+    //    unico que existia — el picker vivia dentro del modal, bajo `isFiado`.
+    //    Asi que «elegir cliente en una venta de contado» nunca se ejercito, y
+    //    la suite entera podia estar verde con ese camino roto.
+    //
+    // ⚠️ Es la forma de «un eje que el producto dice soportar y que el lab tiene
+    //    en N=1»: aca el eje es el MEDIO DE PAGO, y todos los casos de cliente
+    //    usaban el mismo valor.
+    await irAlMostrador(page)
+    await addPosProduct(page)
+
+    const precioAntes = await page.getByTestId('cart-item-price').inputValue()
+
+    await page.getByTestId('cart-customer-search').fill('')
+    await page.getByTestId('cart-customer-option').first().click()
+
+    // El sujeto: el precio se re-cotiza a la lista del cliente SIN tocar el
+    // medio de pago. Si el picker estuviera detras de `isFiado`, no habria a
+    // quien elegir y este caso no llegaria hasta aca.
+    const precioDespues = await page.getByTestId('cart-item-price').inputValue()
+    expect(precioDespues, 'la lista del cliente tiene que sembrar el precio en una venta de CONTADO')
+      .not.toBe(precioAntes)
+
+    // Y el control del otro lado: el cobro en efectivo NO esta bloqueado. Sin
+    // esto, «el precio cambio» pasaria verde con el cobro roto para contado.
+    await expect(page.getByTestId('cobro-abrir')).toBeEnabled()
+  })
+})
+
 test.describe('deuda 101 · una línea sin precio bloquea el cobro', () => {
   test('el cobro se bloquea y el aviso dice QUÉ hacer', async ({ page }) => {
     await irAlMostrador(page)

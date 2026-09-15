@@ -828,7 +828,12 @@ function CartPanel({
         data-testid="cart-cliente"
         style={{ padding: '10px 22px', borderBottom: '1px solid var(--surface-2)' }}
       >
-        <CustomerPicker prefijo="cart-customer" value={customerId} onChange={onElegirCliente} />
+        <CustomerPicker
+          variante="compacto"
+          prefijo="cart-customer"
+          value={customerId}
+          onChange={onElegirCliente}
+        />
 
         {/* 🔴 EL CUPO SE PROYECTA CON LA VENTA EN CURSO, ANTES DE COMPROMETERLA
             (§7.1). ⚠️ Su comentario anterior decia «cambia DONDE, no cuando», y
