@@ -112,6 +112,7 @@ function PrintTicket({
   receivedAmt,
   sedeName,
   sedeAddress,
+  customerName,
 }: {
   items: CartItem[]
   subtotal: number
@@ -126,6 +127,16 @@ function PrintTicket({
   receivedAmt?: number
   sedeName: string
   sedeAddress?: string | null
+  /**
+   * A quién se le vendió. Vacío = no se eligió cliente, y entonces **la línea
+   * no aparece**: ni un campo vacío ni un guion donde no hubo dato.
+   *
+   * ⚠️ Este ticket es una implementación INDEPENDIENTE de `buildSaleTicketHtml`
+   *    —el de la reimpresión— y son los dos lados de la deuda 108. La línea del
+   *    cliente se agregó a los dos en la misma pasada; lo que no arregla eso es
+   *    que el próximo campo vuelva a entrar en uno solo.
+   */
+  customerName?: string | null
 }) {
   const now = new Date()
   const dateStr = now.toLocaleDateString('es-CO', {
@@ -181,6 +192,10 @@ function PrintTicket({
         </div>
       ))}
 
+      {customerName && (
+        <div style={{ fontSize: 10, marginBottom: 2 }}>Cliente: {customerName}</div>
+      )}
+
       <div style={{ borderTop: '1px dashed #000', margin: '6px 0' }} />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11 }}>
@@ -205,7 +220,7 @@ function PrintTicket({
       </div>
 
       <div style={{ borderTop: '1px dashed #000', margin: '8px 0' }} />
-      <div style={{ textAlign: 'center', fontSize: 11 }}>¡Gracias por su visita!</div>
+      <div style={{ textAlign: 'center', fontSize: 11 }}>¡Gracias por su compra!</div>
     </div>
   )
 }
@@ -1806,6 +1821,7 @@ function CheckoutModal({
               receivedAmt={method === 'efectivo' ? receivedNum : undefined}
               sedeName={sede?.name ?? 'Nodo'}
               sedeAddress={sede?.address}
+              customerName={customerName}
             />
           </div>
         )}

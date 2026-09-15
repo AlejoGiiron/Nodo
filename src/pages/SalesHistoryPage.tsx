@@ -127,9 +127,15 @@ function SaleDetailModal({ orderId, onClose }: { orderId: string; onClose: () =>
   }, [sale])
 
   const discount = sale ? Math.max(0, subtotal - sale.total) : 0
-  // Reimpresión: etiqueta de método(s) combinada ("Efectivo + Nequi" en mixto);
-  // null si es fiado sin payments (el ticket omite la línea de método).
-  const method = sale && sale.payments.length > 0 ? methodDisplay(sale) : null
+  // 🔴 LA REIMPRESIÓN OMITÍA EL MÉTODO CUANDO NO HABÍA PAGO, y eso dejaba al
+  //    comprobante de una venta a CRÉDITO sin decir cómo se cobró. Medido el
+  //    2026-09-15: el ticket del POS decía «Fiado» y éste no decía nada — dos
+  //    papeles del mismo hecho afirmando cosas distintas (deuda 108).
+  //
+  //    `etiquetaDeCobro` contesta SIEMPRE, y para las ventas sin fila en
+  //    `payments` contesta con la clase: crédito, cortesía o anulada. Un papel
+  //    que se entrega no puede callar cómo se pagó.
+  const method = sale ? methodDisplay(sale) : null
 
   const handleReprint = () => {
     if (!sale) return
@@ -140,6 +146,8 @@ function SaleDetailModal({ orderId, onClose }: { orderId: string; onClose: () =>
       orderId: sale.id,
       canal: sale.canal,
       method,
+      // Sin dato no va la línea: ver la nota de `customerName` en printer.ts.
+      customerName: sale.customer_name,
       createdAt: sale.created_at,
       total: sale.total,
       items: sale.order_items.map((it) => ({

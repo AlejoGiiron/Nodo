@@ -2385,6 +2385,48 @@ puede ver ese guard?»*, y eso no se contesta leyendo el guard.
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · DOS HIPÓTESIS DE ARREGLO, LAS DOS FALSAS, LAS DOS DESCARTADAS **MIDIENDO EL PREDICADO CONTRA LOS DATOS** — NO RAZONANDO SOBRE EL SQL
+
+*2026-09-15, el filtro del Historial. Las dos hipótesis estaban sobre la mesa, las dos eran
+defendibles leyendo el código, y ninguna sobrevivió a una consulta de una línea.*
+
+| hipótesis | por qué sonaba bien | qué dijo la medición |
+|---|---|---|
+| **«sacá el `!inner`»** | el join es lo que borra las filas; sin join no borra nada | 🔴 **2.988 de 2.988** — el filtro embebido **no acota al padre**: queda un **no-op silencioso** |
+| **«una sección por clase»** | ya existe el molde: «Anuladas (N)» | 🔴 eran **tres** clases, y el molde lo dictaba un comentario que describía la clase entera |
+
+🔴 **LA PRIMERA ES LA PEOR FORMA POSIBLE DE ARREGLO, y hay que nombrarla:** *el defecto desaparece de
+la vista y el mecanismo queda roto*. Con el join, filtrar por «Nequi» escondía las ventas a crédito —
+visible, reportable—. Sin el join, filtrar por «Nequi» devuelve **todo**, y eso **se ve igual que un
+filtro que anda**: la venta a crédito aparece, la clienta la encuentra, y nadie nota que también
+aparecen las de efectivo. Un arreglo que convierte un síntoma reportable en uno que nadie reporta es
+peor que el defecto.
+
+⚠️ **Y ninguna de las dos se podía descartar leyendo.** El comportamiento de un filtro embebido sin
+`!inner` no está en nuestro código: lo decide PostgREST. Razonar sobre el SQL que uno *cree* que
+genera es exactamente el proxy que R4 prohíbe — **la cosa real es la respuesta del servidor**.
+
+✅ **LO QUE LAS HABILITÓ DESCARTAR, y es el paso accionable:**
+
+> **Antes de elegir entre dos formas de un filtro, corré cada predicado contra los datos y mirá el
+> número.** No hace falta entender por qué: alcanza con que uno devuelva el total.
+
+📋 **Y el número que eligió la salida buena fue un CRUCE, no un total:**
+
+```
+`.is('payments', null)`  →  1.384
+  anuladas 570 · cortesía 110 · fiado vivo 528 · fiado saldado 176  =  1.384   ← cierra sin resto
+```
+
+Que las cuatro clases **particionen** el conjunto es lo que prueba que la lista de clases está
+completa. Un total solo habría dicho «1.384 sin pago»; la desagregación dice **que no falta ninguna**
+— *enumerar, no contar*, aplicado a un conjunto que se iba a usar como allowlist.
+
+⚠️ Corolario sobre el orden de las dos técnicas: la medición **descartó**, el cruce **eligió**. Son
+dos trabajos distintos y sólo el segundo dice que el arreglo está completo.
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · UN PARCHE QUE RESUELVE **UN MIEMBRO** DE UNA CLASE ES INDISTINGUIBLE DE UNO QUE RESUELVE LA CLASE — Y SU COMENTARIO DESCRIBE LA CLASE ENTERA
 
 *2026-09-15, arreglando el filtro del Historial. Es «enumerar la clase y arreglar la instancia» con

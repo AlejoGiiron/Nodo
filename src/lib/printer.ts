@@ -87,6 +87,17 @@ export interface SaleTicketData {
   orderId: string
   canal: string
   method?: string | null
+  /**
+   * A quién se le vendió. **Opcional a propósito y sin valor de repuesto.**
+   *
+   * 🔴 Las ventas anteriores al 2026-09-15 no lo tienen guardado: `useCobro`
+   *    escribía `customer_id`/`customer_name` sólo en la rama de fiado, así que
+   *    toda venta de contado con cliente elegido quedó con `null`. Eso NO se
+   *    rellena ni se adivina — y el ticket tampoco lo disimula: si no hay dato,
+   *    **la línea no aparece**. Ni un campo vacío ni un guion, que serían un
+   *    número plausible en el lugar de un hueco.
+   */
+  customerName?: string | null
   createdAt: string
   items: {
     qty: number
@@ -127,6 +138,7 @@ export function buildSaleTicketHtml(data: SaleTicketData): string {
       <div style="font-size:11px;margin-top:4px;letter-spacing:1px">COMPROBANTE DE VENTA</div>
       <div style="font-size:13px;font-weight:700">${ventaLabel}</div>
       <div style="font-size:10px;margin-top:2px">${dateStr}  ${timeStr} · ${canalLabel}</div>
+      ${data.customerName ? `<div style="font-size:10px;margin-top:2px">Cliente: ${data.customerName}</div>` : ''}
     </div>
     <div style="border-top:1px dashed #000;margin:6px 0"></div>
     ${data.items.map(item => `
@@ -149,7 +161,7 @@ export function buildSaleTicketHtml(data: SaleTicketData): string {
     </div>
     ${methodLabel ? `<div style="display:flex;justify-content:space-between;font-size:11px;margin-top:2px"><span>${methodLabel}</span></div>` : ''}
     <div style="border-top:1px dashed #000;margin:8px 0"></div>
-    <div style="text-align:center;font-size:11px">¡Gracias por su visita!</div>
+    <div style="text-align:center;font-size:11px">¡Gracias por su compra!</div>
   `
 
   return html

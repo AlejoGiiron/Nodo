@@ -80,4 +80,43 @@ describe('ticket de venta — lo que el papel AFIRMA', () => {
     expect(html).not.toMatch(/\bIVA\b/i)
     expect(html).toMatch(/comprobante de venta/i)
   })
+
+  // ── EL CLIENTE, Y LA REGLA DEL HUECO ─────────────────────────────────────
+
+  it('con cliente, el comprobante dice a quién se le vendió', () => {
+    const html = buildSaleTicketHtml({ ...VENTA, customerName: 'Ferretería El Tornillo' })
+    expect(html).toContain('Ferretería El Tornillo')
+    expect(html).toMatch(/Cliente:/)
+  })
+
+  it('🔴 SIN cliente no hay línea vacía ni guion — la línea NO APARECE', () => {
+    // Las ventas anteriores al 2026-09-15 no tienen cliente guardado: `useCobro`
+    // sólo lo escribía en la rama de fiado. Ese hueco NO se rellena, y el papel
+    // tampoco lo disimula — un guion donde no hubo dato es una afirmación.
+    const html = buildSaleTicketHtml({ ...VENTA, customerName: null })
+    expect(html).not.toMatch(/Cliente:/)
+
+    // ⚠️ Control de la propia lectura: si el builder devolviera algo vacío o
+    //    roto, el `not.toMatch` de arriba pasaría sin haber mirado nada.
+    expect(html).toMatch(/comprobante de venta/i)
+    expect(html).toContain('Arroz 500g')
+  })
+
+  it('un cliente vacío se trata como ausente, no como un nombre en blanco', () => {
+    // El mostrador guarda `''` mientras nadie elige: no es un nombre.
+    const html = buildSaleTicketHtml({ ...VENTA, customerName: '' })
+    expect(html).not.toMatch(/Cliente:/)
+  })
+
+  // ── EL MÉTODO, CUANDO NO HUBO PAGO ───────────────────────────────────────
+
+  it('🔴 una venta a CRÉDITO dice cómo se cobró — no calla', () => {
+    // Medido el 2026-09-15: el ticket del POS decía «Fiado» y la reimpresión
+    // OMITÍA la línea entera, porque `SalesHistoryPage` pasaba `method: null`
+    // cuando no había filas en `payments`. Dos papeles del mismo hecho diciendo
+    // cosas distintas (deuda 108). El builder ya sabía imprimir lo que le den;
+    // lo que faltaba era que le dieran algo.
+    const html = buildSaleTicketHtml({ ...VENTA, method: 'Fiado' })
+    expect(html).toContain('Fiado')
+  })
 })
