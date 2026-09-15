@@ -841,6 +841,21 @@ es válido por definición. La omisión era invisible para el único verificador
 `?? 0` la convertía en un número plausible en vez de en un hueco—. Haciéndolo obligatorio, el
 compilador rechaza al que lo olvide: **la misma diferencia entre una advertencia y un guard**.
 
+> 🔴 **El compilador no falló: respetaba EL CONTRATO QUE ESCRIBIMOS.** Y ése es el punto incómodo —
+> no hay un verificador mejor que pedirle. La ambigüedad estaba en la firma, o sea en el único lugar
+> donde `tsc` no puede ayudar, porque la firma es lo que él toma por verdad.
+
+✅ **LO ACCIONABLE, y es una regla de firma, no de atención:**
+
+> **Cuando un parámetro admite `null` COMO DATO CON SIGNIFICADO, no puede ser opcional.** La
+> opcionalidad y el `null` se confunden —los dos llegan como «no hay valor»— y **sólo uno de los dos
+> es un hecho del dominio**: el `null` dice algo sobre el mundo; el `undefined` dice algo sobre quien
+> llamó.
+
+⚠️ Corolario para leer firmas ajenas: `x?: T | null` es **la señal**. Si el `null` significa algo, el
+`?` sobra y está mezclando; si el `null` no significa nada, el `| null` sobra. **Las dos formas juntas
+casi siempre son una mezcla sin declarar.**
+
 🔴 **El cuarto caso es el primero que se ataja ANTES de escribir el valor, y por eso vale aparte.**
 Los tres primeros se repararon: la columna ya existía mezclada y hubo que separarla. El cuarto se
 cazó **enumerando** para la deuda 49, al ver que `type='return'` ya tenía dueño. Reusarlo era lo
@@ -2396,6 +2411,57 @@ puede ver ese guard?»*, y eso no se contesta leyendo el guard.
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · EL GRUPO POR CONSUMIDOR SIRVE PARA ITERAR Y **NO SIRVE COMO CRITERIO DE CIERRE** — medido en todas las tandas de una sesión
+
+*2026-09-15. Este archivo ya tiene «el grupo afectado por un componente compartido es cualquier spec
+que lo mire», y ese criterio es correcto. **Lo que se midió ahora es que aplicarlo bien no alcanza**,
+y ya no como descuido repetido: como una propiedad del método.*
+
+📋 **LA LISTA — todas las tandas de esta sesión que usaron el método, y qué se les escapó.** *(Va la
+lista y no un número: un conteo en prosa se desincroniza con sus propias filas, y este archivo ya lo
+pagó dos veces.)*
+
+| tanda | cómo se recortó el grupo | qué se le escapó |
+|---|---|---|
+| la que re-derivó `atajos.spec` (`9ec9394`) | por los archivos editados | **el spec que estaba editando**: quedó apuntando a un locator detrás del velo y **nació rojo** |
+| el pie pegajoso (`d6dbf2d`) | no se corrió grupo | ese mismo rojo siguió vivo |
+| la UI de la deuda 101 | por los archivos editados | **`extras-pos.spec`**: el modal de extras quedó mostrando el subtotal sin el precio del producto |
+| los tres grupos de esta sesión (items 4, 5, 1-2) | por **símbolo consumidor**, que es la forma buena | **`extras-pos.spec` otra vez** — lo encontró la suite entera |
+
+🔴 **LO QUE LA CUARTA FILA DEMUESTRA, Y ES LO QUE CONVIERTE ESTO EN REGLA: el recorte por símbolo
+—la forma correcta— TAMPOCO lo encontró.** No fue que el grupo se armara mal: fue que el grupo se
+arma con **los símbolos que uno tocó**, y el defecto vivía en **el significado de un valor que cruza
+un prop**. `precioUnitario` no aparece en ningún grep de lo que la tanda editó; lo que cambió fue qué
+significa su ausencia.
+
+> **El grupo por consumidor se construye con lo que uno SABE que tocó. El defecto vive en lo que uno
+> no sabe que tocó — y si lo supiera, ya lo habría arreglado.**
+
+⚠️ **Es el argumento del hook contra el recordatorio, aplicado a la cobertura:** el método depende de
+que alguien enumere bien **en el momento en que menos información tiene** —antes de correr nada—, y
+eso es exactamente lo que este archivo viene midiendo que falla. Pedir «armá mejor el grupo» es pedir
+otra vez el mecanismo que viene fallando.
+
+✅ **LA REGLA, Y SON DOS COSAS DISTINTAS QUE HASTA HOY SE CONFUNDÍAN:**
+
+| | para qué sirve | qué NO es |
+|---|---|---|
+| **grupo por consumidor** | **iterar**: rojo en dos minutos mientras se construye, para no correr veinte minutos por cada cambio | ⛔ **no es evidencia de que nada se rompió** |
+| **la suite entera** | **cerrar**: sobre árbol limpio y commiteado, con los cinco números uno por uno y el cruce contra el último `[N/N]` | — |
+
+> **El criterio de cierre es la suite entera. El grupo es una herramienta de velocidad, no una
+> medición de cobertura** — y hasta hoy se venía usando como las dos cosas sin que nadie lo dijera.
+
+📋 **CUÁNDO ES OBLIGATORIA LA SUITE ENTERA, escrito para que no se decida cada vez:**
+· antes de un **push** que va a producción · antes de **cerrar una deuda** · después de tocar
+**cualquier cosa bajo `src/lib/` o `src/stores/`**, que es por donde los valores cruzan de módulo.
+
+⚠️ Y el corolario que hace honesto el registro de una tanda: si sólo se corrió el grupo, el commit
+dice **«grupo por consumidor: N passed»** y no «verde». Son dos afirmaciones distintas y sólo una
+habilita el push.
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · UNA NOTA QUE DIRIGE MAL, PERO EN LA PANTALLA: EL PRODUCTO LE DIJO AL USUARIO QUE FUERA A UN LUGAR QUE NO EXISTE
 
 *2026-09-15, barrido de copy de la deuda 109. **Nadie lo estaba buscando**: apareció por un cambio de
@@ -2870,6 +2936,30 @@ invita a mirar. Éste produce **la noticia que todo el mundo quiere recibir**.
 falsa estaba A MI FAVOR, y por eso nadie tenía motivo para dudarla»*— movido del razonamiento al
 dato. **Y en un dato dura más**, porque no hay una conversación que lo corrija: queda congelado en
 una fila y se suma a un reporte cada vez que alguien lo abre.
+
+🔴 **TERCER CASO, 2026-09-15 — Y ES EL PRIMERO QUE LA PERSONA VE EN PANTALLA ANTES DE DECIDIR.** El
+modal de extras mostraba el subtotal **sin el precio del producto**: 4.000 donde la venta iba a ser
+14.000. El carrito después cobraba bien.
+
+> **El modal AFIRMA MENOS de lo que se cobra.** Si la cajera mira el papel, cuadra; si miró el modal,
+> no — y el cliente paga más de lo que vio en una pantalla que no es la suya.
+
+⚠️ **Y por eso es de esta familia y no de la de un número mal calculado: falla hacia el lado que nadie
+reclama.** Un subtotal de MÁS lo reclama el cliente en el acto, ahí mismo, con el papel en la mano. Uno
+de MENOS no lo reclama nadie — la cajera confirma tranquila, el cliente paga el total correcto, y el
+único que vio la diferencia fue un número que ya desapareció de la pantalla.
+
+📋 **Las tres de la familia, para verlas juntas:**
+
+| caso | el número plausible | hacia dónde falla |
+|---|---|---|
+| `cost_price` con `default 0` | margen del **100%** | **una utilidad extraordinaria** — la noticia que todos quieren |
+| el **sobrante** del arqueo en VERDE | «sobró plata» | **un buen resultado** — y se archiva |
+| el **subtotal** del modal de extras | 4.000 en vez de 14.000 | **cobra de menos en la pantalla** — nadie reclama de menos |
+
+**Las tres son plausibles hacia el lado agradable**, y por eso ninguna levanta la mano. La regla que
+las une ya está escrita arriba y ahora tiene su tercera medición: *un número plausible se revisa
+cuando molesta; uno plausible Y FAVORABLE no se revisa nunca.*
 
 ✅ **Lo accionable, y son dos:**
 
