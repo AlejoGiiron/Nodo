@@ -2469,6 +2469,52 @@ habla de nada de lo que lo causó.
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · ENDURECER UN FLAG GANA UN ESTADO Y PUEDE PERDER OTRO — LOS ESTADOS DE UNA CONSULTA SON TRES, NO DOS
+
+*2026-09-15, una hora después del arreglo de arriba y **causado por él**. Se escribe pegado a ése a
+propósito: quien lea «el guard tiene que preguntar por el dato» tiene que leer en el mismo lugar qué
+se rompe si lo aplica de más.*
+
+**El caso.** El arreglo cambió `isLoading` por `!isPending && !isFetching`, y eso es correcto para el
+estado que venía a cubrir —dato en caché, viejo, con la consulta ya contestada—. **Y rompió la
+creación de productos**: la sección de receta quedó en «Cargando…» para siempre y no se podía armar un
+compuesto.
+
+🔴 **LA CAUSA, y es una propiedad de la herramienta que hay que tener escrita:** las dos consultas
+llevan `enabled: !!id`, y **en React Query v5 una consulta DESHABILITADA queda con `isPending` en TRUE
+para siempre** — nunca resuelve porque nunca corre. Con un producto sin id, `datoConfirmado` era falso
+eternamente.
+
+| estado real | `isPending` | `isFetching` | `isLoading` |
+|---|---|---|---|
+| **apagada** (sin id) — no hay nada que cargar | **true** | false | false |
+| **cargando** por primera vez | true | true | **true** |
+| **con caché viejo** y refetch en vuelo | false | **true** | false |
+
+> **`isLoading` no era un instrumento malo: era el instrumento de UNA de las tres filas.** Y por eso
+> «funcionaba» en la creación — `isPending && isFetching` es falso con la consulta apagada, que es
+> justo la respuesta que hacía falta ahí.
+
+⚠️ **Lo que lo hace registrable y no un descuido: el arreglo era CORRECTO y aun así introdujo un
+defecto.** No falló el diagnóstico —el caché viejo era real y medido— ni la dirección. Falló tratar un
+eje de **tres** estados como si fuera de dos: se eligió el flag que separaba bien *«confirmado»* de
+*«viejo»* y **colapsaba** *«apagada»* con *«cargando»*.
+
+✅ **LO ACCIONABLE, y es una pregunta antes de cambiar un flag de carga:**
+
+> **Enumerá los estados que el flag tiene que distinguir, no los dos que te trajeron acá.** Para una
+> consulta con `enabled`, son por lo menos tres: apagada, cargando, y con dato viejo. Un flag nuevo
+> que no nombre las tres va a colapsar dos de ellas — y la que colapse va a ser la que no estabas
+> mirando.
+
+⚠️ Y el corolario sobre dónde aparece el rojo: **no donde se hizo el cambio.** El arreglo se midió
+contra el escenario que lo motivó —reabrir un producto guardado— y ahí quedó verde. El caso que se
+rompió fue **crear** un producto, que es el otro extremo del mismo modal y no estaba en el grupo. Es la
+quinta vez en esta sesión que el grupo por consumidor se recorta de menos, y la confirmación de que el
+criterio de cierre es la suite entera.
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · UN GUARD QUE PREGUNTA «¿TERMINÓ DE CARGAR?» NO CUBRE «CARGÓ OTRA COSA» — Y CON CACHÉ, LO PRIMERO ES FALSO MIENTRAS EL DATO ES VIEJO
 
 *2026-09-15, destapado por la suite entera. **Es la deuda 56 volviendo por otro camino**, y por eso
