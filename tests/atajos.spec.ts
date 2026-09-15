@@ -297,36 +297,110 @@ test.describe('Atajos de teclado (§5)', () => {
     //    dos lados sin nada que los sincronice.
   })
 
-  test('🔴 con el foco en un campo de TEXTO, las letras NO eligen medio de pago', async ({ page }) => {
-    // La otra mitad, sin la cual la primera no prueba nada: un manejador que
-    // dispara siempre pasaría el caso de arriba y rompería el de acá.
+  // ══════════════════════════════════════════════════════════════════════════
+  // 🔴 EL CASO «con el foco en un campo de TEXTO, las letras NO eligen medio de
+  //    pago» SE RETIRÓ EL 2026-09-15 — Y NO PORQUE SE FUERA SU SUJETO.
+  //
+  //    Su historia, que es lo que hay que entender antes de re-escribirlo: el
+  //    campo empezó siendo `discount-reason`; al volver el cobro al modal ese
+  //    campo quedó detrás del velo y se re-derivó a `cart-customer-search`. Con
+  //    la deuda 101 el picker BAJÓ AL CARRITO y se retiró del modal a propósito
+  //    —con su mensaje que dirige—, así que ese campo también quedó detrás del
+  //    velo. El caso empezó a morir con `<div> intercepts pointer events`, que
+  //    es el velo haciendo exactamente lo que tiene que hacer.
+  //
+  // 📋 ENUMERADO, no supuesto — campos DENTRO de `CheckoutModal`: **uno solo**,
+  //    `checkout-received`, y es el de dinero, que DECLARA `data-letras-inertes`
+  //    o sea que es justo la excepción donde las letras SÍ mandan. No queda
+  //    ningún campo de escritura adentro del modal.
+  //
+  // 🔴 Y LA OPCIÓN CÓMODA —mover el caso al buscador del carrito con el cobro
+  //    CERRADO— SE DESCARTÓ POR MEDICIÓN, NO POR OPINIÓN. El manejador de las
+  //    letras vive DENTRO de `CheckoutModal`, que se monta con `{checkout && …}`:
+  //    con el cobro cerrado su `useEffect` ya limpió el listener y la tecla no
+  //    llega a ningún lado. Verificado con el mutante —borrado
+  //    `if (elFocoEstaEscribiendo()) return`—:
+  //
+  //      sonda en el carrito, cobro cerrado  → VERDE con el guard borrado ⛔
+  //      este caso, cobro abierto            → ROJO  con el guard borrado ✅
+  //
+  //    O sea que el caso movido habría sido un verde que no puede fallar, con
+  //    el nombre de una protección que no estaría midiendo.
+  //
+  // ✅ DÓNDE VIVE HOY LA COBERTURA, para que «retirado» no se lea como «sin
+  //    probar» — y son dos mitades distintas:
+  //      · LA REGLA (qué cuenta como escribir) → `src/lib/atajos.test.ts`,
+  //        `describe('esCampoDeEscritura')`. Cubre el default que protege, la
+  //        excepción del campo de dinero y un tipo de HTML inventado. La
+  //        función recibe el elemento en vez de leer `document` EXACTAMENTE
+  //        para poder aseverarse sin navegador; está dicho en su comentario.
+  //      · EL CABLEADO (que el manejador consulte esa regla) → 🔴 **SIN MEDIR**,
+  //        y se declara así en vez de taparse. No hay escenario que lo ejerza
+  //        mientras el modal no tenga un campo de escritura.
+  //
+  // ⚠️ Lo que NO se hizo, y se nombra para que nadie lo proponga como atajo:
+  //    bajar la aserción hasta que pase. Eso es acomodar el test al código.
+  // ══════════════════════════════════════════════════════════════════════════
+
+  test('🔴 tripwire: el modal de cobro NO tiene campos de escritura', async ({ page }) => {
+    // Este caso NO mide un comportamiento: vigila la PREMISA por la que el caso
+    // de arriba se retiró. El día que el modal gane un campo de texto —una nota,
+    // un número de referencia, una cédula— el cableado del guard vuelve a ser
+    // ejercitable y hay que volver a escribirlo. Sin esto, la premisa envejece
+    // en un comentario que nadie relee.
     //
-    // 🔴 EL CAMPO DE TEXTO SE RE-DERIVÓ. En la columna era `discount-reason`,
-    //    que está en el panel del carrito; con el modal ese campo queda DETRÁS
-    //    DEL VELO y no se puede tipear. El buscador de clientes es el campo de
-    //    texto de verdad que hay adentro, y sirve igual: lo que se mide es que
-    //    la letra se escriba en vez de ejecutar.
+    // ⚠️ Y no caduca por «todavía»: se apoya en una DECISIÓN —el picker se retiró
+    //    del modal a propósito— así que si se pone rojo, el rojo es correcto:
+    //    está diciendo que la decisión cambió.
     await openShiftIfClosed(page, 0)
     await page.goto('/ventas')
     await waitPosReady(page)
     await addPosProduct(page)
     await abrirCobro(page)
 
-    await page.keyboard.press('c')
-    await expect(page.getByTestId('pay-method-fiado')).toHaveAttribute('aria-pressed', 'true')
+    const modal = page.getByTestId('checkout-modal')
+    await expect(modal, 'el cobro tiene que estar abierto, o el tripwire no mira nada').toBeVisible()
 
-    const buscador = page.getByTestId('cart-customer-search')
-    await buscador.click()
-    await buscador.fill('')
-    await page.keyboard.press('e')
-    await expect(
-      buscador,
-      'la letra tiene que ESCRIBIRSE en un campo de texto, no ejecutar un atajo',
-    ).toHaveValue('e')
-    await expect(
-      page.getByTestId('pay-method-fiado'),
-      'y el medio elegido NO cambia: escribir «efectivo» en un buscador no es elegir efectivo',
-    ).toHaveAttribute('aria-pressed', 'true')
+    // Se leen los campos REALES del modal, no una lista escrita a mano.
+    const camposDe = () => modal.locator('input, textarea, [contenteditable="true"]').evaluateAll(
+      (els) => els.map((el) => ({
+        testid: el.getAttribute('data-testid') ?? '(sin testid)',
+        inertes: el.hasAttribute('data-letras-inertes'),
+      })),
+    )
+
+    // ⚠️ LOS DOS PASOS, y el recorrido no es de más: el modal monta cosas
+    //    distintas en cada uno —`width` incluso cambia— así que mirar sólo el
+    //    primero sería «capturar un estado no es capturar la pantalla».
+    const enMetodo = await camposDe()
+    await page.getByTestId('pay-method-efectivo').click()
+    await page.getByTestId('checkout-continue').click()
+    await expect(page.getByTestId('checkout-received')).toBeVisible()
+    const enMonto = await camposDe()
+
+    const deEscritura = [...enMetodo, ...enMonto].filter((c) => !c.inertes).map((c) => c.testid)
+    expect(
+      [...new Set(deEscritura)].join(', ') || 'ninguno',
+      'EL MODAL DE COBRO GANÓ UN CAMPO DE ESCRITURA. Eso vuelve ejecutable el caso ' +
+      '«con el foco en un campo de TEXTO, las letras NO eligen medio de pago», que se ' +
+      'retiró el 2026-09-15 por falta de escenario: escribilo contra este campo, con su ' +
+      'mutante (borrar `if (elFocoEstaEscribiendo()) return` tiene que ponerlo rojo)',
+    ).toBe('ninguno')
+
+    // 🔴 CONTROL POSITIVO DE LA PROPIA LECTURA, y no es adorno: si el selector no
+    //    encontrara NADA, el filtro de arriba daría «ninguno» y el caso pasaría
+    //    sin haber mirado — un cero indistinguible de un selector roto. El campo
+    //    de dinero tiene que aparecer, y tiene que aparecer marcado como inerte.
+    expect(
+      enMonto.map((c) => c.testid),
+      'el paso del monto monta `checkout-received`; si este control no lo ve, el que ' +
+      'está roto es el selector y el «ninguno» de arriba no significa nada',
+    ).toContain('checkout-received')
+    expect(
+      enMonto.find((c) => c.testid === 'checkout-received')?.inertes,
+      '`checkout-received` tiene que DECLARAR `data-letras-inertes`: es la excepción por ' +
+      'la que los atajos de cobro pueden ser letras',
+    ).toBe(true)
   })
 
   test('🔴 control negativo: una letra que NO es atajo no hace nada', async ({ page }) => {

@@ -2322,6 +2322,65 @@ directo sigue rechazado»**, que es lo que se quería.
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · UN SPEC RE-DERIVADO PUEDE NACER ROJO — Y EL PRIMERO QUE NO LO CORRE ES LA TANDA QUE LO ESCRIBIÓ
+
+*2026-09-15, al correr el grupo de consumidores del arreglo del cliente. **Primera vez que la tanda
+que rompe un spec es la misma que lo está editando**, y por eso no lo cubre ninguno de los dos
+criterios que ya existen.*
+
+Este archivo ya dice que **un test migrado entre pantallas es código nuevo y no verificado**, y que
+**el grupo afectado por un componente compartido es cualquier spec que lo mire**. Los dos describen
+la misma dirección: un cambio rompe specs **ajenos**, que se descubren corriendo el grupo.
+
+> **Acá el cambio rompió EL SPEC QUE ESTABA EDITANDO, en el mismo commit — así que el spec nació
+> rojo y nadie lo notó durante cuatro commits.**
+
+**El caso.** `atajos.spec` tenía *«con el foco en un campo de TEXTO, las letras NO eligen medio de
+pago»*. Su campo de texto se re-derivó dos veces: primero `discount-reason`, después
+`cart-customer-search`. La segunda re-derivación **eligió un locator que el velo del modal ya
+tapaba**: el caso abre el cobro y después clickea un campo que vive en el carrito, detrás del modal.
+
+📋 **Medido contra el árbol, no inferido** — en los cinco commits del tramo, el último
+`CustomerPicker` de `POSPage` está **antes** de donde arranca `CheckoutModal`, o sea que el picker ya
+estaba fuera del modal **en el commit que re-derivó el caso**:
+
+```
+git show <sha>:src/pages/POSPage.tsx | grep -n "CustomerPicker" | tail -1
+git show <sha>:src/pages/POSPage.tsx | grep -n "^function CheckoutModal"
+```
+
+⚠️ **El síntoma no se parece a nada de lo que la tanda tocó:** `<div>…</div> intercepts pointer
+events` y un timeout de 30s. No dice «velo», no dice «modal», no nombra la decisión de diseño que lo
+causó —retirar el picker del modal, que es correcta—.
+
+🔴 **Y LA SEGUNDA MITAD ES DE ATRIBUCIÓN, con las dos puntas otra vez.** Al reportarlo escribí *«el
+rojo es del commit del pie pegajoso hacia atrás»* —cierto y vago— y volvió adoptado como *«es del
+commit del pie pegajoso»*, que es una afirmación más fuerte y **falsa**: el caso **nunca pasó**. La
+medición de arriba costó dos `git show` y cambió la historia entera: no es un spec que se rompió, es
+un spec que **nació roto**.
+
+> **«No lo causó mi cambio» y «lo causó aquel commit» son dos afirmaciones distintas, y sólo la
+> primera estaba medida.** La segunda se adoptó porque encajaba — es el corolario de R4 sobre el
+> diagnóstico, con la hipótesis rebotando entre dos personas.
+
+✅ **LO ACCIONABLE, y son dos:**
+
+1. **El spec que una tanda RE-DERIVA es el primero que esa tanda corre.** No el grupo, no la suite:
+   ése, solo, en el momento de re-derivarlo. Es el único que cambió de sujeto **y** de escenario a la
+   vez, y el único cuyo rojo no va a aparecer en ningún otro archivo.
+2. 🔴 **Al re-derivar un locator, preguntá si el elemento nuevo es ALCANZABLE en el escenario del
+   caso** — no sólo si existe. `cart-customer-search` existía, estaba visible, y estaba debajo de un
+   velo. `toBeVisible()` no distingue las dos cosas: **Playwright lo resuelve, lo ve, y no lo puede
+   clickear**.
+
+⚠️ Y el corolario sobre cómo se cierra un caso así: si el escenario ya no se puede armar, **no se
+baja la aserción hasta que pase** —eso es acomodar el test al código— y tampoco se borra en silencio.
+Se retira **declarando qué cobertura queda y cuál no**, y se deja un **tripwire sobre la premisa** que
+lo volvió inejecutable: acá, que el modal de cobro no tenga campos de escritura. El día que gane uno,
+el rojo dice que el caso volvió a ser escribible.
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · UNA APROBACIÓN SOBRE UN NÚMERO QUE RESULTÓ FALSO NO SE HEREDA — AUNQUE EL NÚMERO CAMBIE DE TAMAÑO Y NO DE SIGNO
 
 *2026-09-15, cerrando el alto del carrito. **Primera vez en el proyecto que una decisión APROBADA se

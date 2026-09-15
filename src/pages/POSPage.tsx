@@ -1399,6 +1399,11 @@ function CheckoutModal({
 
   return (
     <div
+      // El modal no tenía contenedor aseverable, así que ningún caso podía
+      // preguntar «qué hay ADENTRO del cobro» — sólo por elementos sueltos, que
+      // es la apuesta a que no haya una segunda instancia. Lo estrena el
+      // tripwire de `atajos.spec` que vigila si el modal gana un campo de texto.
+      data-testid="checkout-modal"
       style={{
         position: 'absolute', inset: 0,
         background: 'var(--overlay)',
