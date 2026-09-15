@@ -121,6 +121,13 @@ export function CustomerPicker({
           placeholder="Buscar cliente por nombre, teléfono o documento"
           style={inputStyle}
         />
+        {/* 🔴 «Nuevo» NO VA EN LA FILA COLAPSADA, y el hallazgo que lo decide
+            es contraintuitivo: de los 79px del picker compacto, **32 los manda
+            este boton y sólo 21 el buscador**. El alto no lo pagaba el campo de
+            texto — lo pagaba el control de al lado.
+            Sacarlo del colapsado devuelve 38px EN TODAS las ventas y cuesta dos
+            clics en el caso raro: crear un cliente a mitad de venta. */}
+        {(variante === 'lista' || listaVisible) && (
         <button
           data-testid={`${prefijo}-quick-create`}
           onClick={() => setCreating(true)}
@@ -129,6 +136,7 @@ export function CustomerPicker({
         >
           <Plus size={13} /> Nuevo
         </button>
+        )}
       </div>
 
       {listaVisible && (

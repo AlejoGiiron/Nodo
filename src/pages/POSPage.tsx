@@ -758,9 +758,12 @@ function CartPanel({
               <div data-testid="canal-label" style={{ fontSize: 15, fontWeight: 600, color: 'var(--ink)', letterSpacing: '-0.015em' }}>
                 {current.label}
               </div>
-              <div style={{ fontSize: 11.5, color: 'var(--ink-3)', marginTop: 1 }}>
-                Nueva orden
-              </div>
+              {/* ⚠️ El subtitulo «Nueva orden» se retiro el 2026-09-15 por ALTO,
+                  no por diseño: costaba ~16px en una columna que no los tenia, y
+                  lo que decia ya lo dice el carrito vacio con todas las letras.
+                  El titulo de arriba —el nombre del canal— SI se queda: ese no es
+                  redundante, es el unico lugar donde se lee por donde entra la
+                  venta. */}
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -826,7 +829,9 @@ function CartPanel({
           voz alta era el equivocado. */}
       <div
         data-testid="cart-cliente"
-        style={{ padding: '10px 22px', borderBottom: '1px solid var(--surface-2)' }}
+        // ⚠️ Padding 6 y no 10: ver la nota de ALTO_MINIMO_LISTA. Son 8px que en
+        //    esta columna se cuentan.
+        style={{ padding: '6px 22px', borderBottom: '1px solid var(--surface-2)' }}
       >
         <CustomerPicker
           variante="compacto"
