@@ -2660,6 +2660,58 @@ habilita el push.
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · UNA MIGRACIÓN IDEMPOTENTE NO ES PROLIJIDAD: ES LO QUE PERMITE QUE UN ESTADO DESINCRONIZADO SE ARREGLE SOLO
+
+*2026-09-15, aplicando los buckets de Storage. **El caso se resolvió sin intervención porque la
+migración anterior tenía un guard que nadie puso para esto.***
+
+**La situación.** Una migración se había aplicado **a mano**, por el SQL Editor. Eso deja el proyecto
+en un estado desincronizado que no se ve: el esquema está actualizado y `supabase_migrations` no lo
+sabe. `db push` la habría vuelto a correr — sobre el tenant de un cliente.
+
+✅ **Y LA PREGUNTA NO SE PREGUNTÓ: SE MIDIÓ.** `migration list --linked` la contesta en una línea:
+
+```
+{"local":"20260915120000","remote":""}      ← aplicada a mano: la versión NO quedó registrada
+```
+
+> **«¿Cómo la aplicaste?» es una pregunta sobre un estado, y los estados se miden.** Preguntarlo
+> costaba un turno y una respuesta que podía ser *«creo que por el editor»*; medirlo costó un comando
+> y devolvió el hecho. Es *un estado que afirma una persona se verifica igual que uno que afirma una
+> herramienta*, aplicado antes de que la afirmación existiera.
+
+🔴 **LO QUE HIZO QUE NO HUBIERA QUE REPARAR NADA, y es el hallazgo:** la migración re-corrida es un
+**no-op limpio**, porque su primer paso enumera y sale si no hay nada:
+
+```sql
+if v_antes = 0 then
+  raise notice 'Nada que reparar.';
+  return;                      -- sale SIN excepción
+end if;
+```
+
+Así que el `push` la aplicó en vacío **y de paso registró la versión**: el estado desincronizado se
+arregló solo, como efecto de correr el camino normal. Sin ese guard habría hecho falta un
+`migration repair` — una escritura extra sobre la tabla de migraciones, decidida a mano, sobre el
+proyecto de un cliente.
+
+⚠️ **Y el guard no se escribió para esto.** Estaba ahí porque *«enumerar por ausencia de fila»* exige
+contemplar el caso de que no haya ninguna. La idempotencia salió **gratis, de escribir bien la
+enumeración** — y resolvió un problema que todavía no existía cuando se escribió.
+
+✅ **LO ACCIONABLE, y es una pregunta al escribir cualquier migración de DATOS:**
+
+> **¿Qué pasa si esto corre dos veces?** Si la respuesta es *«aborta»* o *«escribe de nuevo»*, la
+> migración obliga a que alguien lleve la cuenta a mano — y la cuenta a mano es justo lo que se rompe.
+> Si la respuesta es *«no hace nada»*, el estado desincronizado deja de ser un problema.
+
+⚠️ Corolario, y vale para el resto del proyecto: **una migración de ESQUEMA suele ser idempotente por
+accidente** (`create ... if not exists`, `on conflict do nothing`). Una de **DATOS** no lo es nunca por
+accidente: hay que decidirlo. Y el momento de decidirlo es cuando se escribe la enumeración, no cuando
+alguien descubre que la aplicó por fuera.
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · UN ARCHIVO ARCHIVADO SE LEE COMO «ASÍ SE HACE ESTO ACÁ» — Y EL ÚNICO PRECEDENTE QUE EXISTÍA ERA EL DEFECTO
 
 *2026-09-15, al escribir los buckets de Storage. **La forma más cara de una nota que dirige mal**, y
