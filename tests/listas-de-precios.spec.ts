@@ -40,9 +40,13 @@ async function agregar(page: Page, nombre: string): Promise<void> {
   await card.click()
 }
 
-const P1 = POS_PRODUCTO       // 'Lab Cerveza'
-const P2 = 'Lab Doble'
-const P3 = 'Lab Vaso'
+// 🔴 SOLO EXISTEN TRES productos `Lab %`, medido: Cerveza (8.000), Coctel
+//    (18.000) y Vaso (0). `Lab Doble` —que la primera version de este archivo
+//    usaba— NO EXISTE: lo saque de un grep que leyo un nombre en otro contexto.
+// ⚠️ `Lab Coctel` queda afuera de los escenarios de carrito porque ABRE EL MODAL
+//    de extras: el caso se quedaria con un modal encima midiendo otra cosa.
+const P1 = POS_PRODUCTO       // 'Lab Cerveza' — sin L0 ni L3, a proposito
+const P2 = 'Lab Vaso'         // precio 0: entra al carrito sin abrir nada
 
 test.describe('deuda 101 · el nivel de la línea', () => {
   test('el chip del nivel está SIEMPRE, no sólo cuando difiere', async ({ page }) => {
@@ -71,9 +75,13 @@ test.describe('deuda 101 · el nivel de la línea', () => {
     // opción existe y cuál es, no sólo que hay cinco.
     await expect(page.getByTestId('cart-item-nivel-0-opcion-1')).toContainText('cliente')
 
-    await page.getByTestId('cart-item-nivel-0-opcion-3').click()
+    // 🔴 L4 y no L3: `Lab Cerveza` NO TIENE L3 —el sembrado se lo quito a
+    //    proposito— asi que esa opcion esta `disabled` y el caso moriria
+    //    esperandola. Con L4 el precio SE MUEVE de verdad (8.000 -> 12.000),
+    //    que es mas fuerte que lo que el caso medía antes del sembrado.
+    await page.getByTestId('cart-item-nivel-0-opcion-4').click()
     await expect(chip).toHaveAttribute('data-estado', 'distinto')
-    await expect(chip).toHaveAttribute('data-nivel', '3')
+    await expect(chip).toHaveAttribute('data-nivel', '4')
 
     // 🔴 Y EL PRECIO SE MOVIÓ. Sin esta aserción el caso pasaría con un chip que
     //    cambia de color y no cotiza nada — un control decorativo.
@@ -82,13 +90,13 @@ test.describe('deuda 101 · el nivel de la línea', () => {
       .not.toBe(precioAntes)
   })
 
-  test('Alt+3 cambia el nivel de la línea sin abrir nada', async ({ page }) => {
+  test('Alt+4 cambia el nivel de la línea sin abrir nada', async ({ page }) => {
     await irAlMostrador(page)
     await addPosProduct(page)
 
-    await page.keyboard.press('Alt+3')
+    await page.keyboard.press('Alt+4')
     const chip = page.getByTestId('cart-item-nivel-0')
-    await expect(chip).toHaveAttribute('data-nivel', '3')
+    await expect(chip).toHaveAttribute('data-nivel', '4')
     // «Cambiar de nivel es posible, no obligatorio» (§7.20): el atajo APLICA,
     // no despliega. Si abriera, costaría lo mismo que el clic que reemplaza.
     await expect(chip).toHaveAttribute('aria-expanded', 'false')
@@ -122,10 +130,9 @@ test.describe('deuda 101 · el re-aplicado al cambiar de cliente', () => {
     // Dos líneas intactas + una tocada a mano.
     await agregar(page, P1)
     await agregar(page, P2)
-    await agregar(page, P3)
 
     // 🔴 La tercera se toca a mano: deja de ser intacta y NO se re-aplica.
-    const precioManual = page.getByTestId('cart-item-price').nth(2)   // la 3a LINEA: el carrito ordena por insercion, no por catalogo
+    const precioManual = page.getByTestId('cart-item-price').nth(1)   // la 2a LINEA: el carrito ordena por insercion, no por catalogo
     await precioManual.fill('99999')
     await precioManual.blur()
 
@@ -137,11 +144,13 @@ test.describe('deuda 101 · el re-aplicado al cambiar de cliente', () => {
     //    toast no lo distingue: las dos versiones muestran un toast.
     const aviso = page.getByText(/líneas? re-cotizadas? a L\d/)
     await expect(aviso).toBeVisible()
-    await expect(aviso, 'el aviso tiene que decir 2: la tercera se tocó a mano y no se re-aplica')
-      .toContainText('2 líneas re-cotizadas')
+    await expect(aviso, 'el aviso tiene que decir 1: la segunda se tocó a mano y NO se re-aplica')
+      .toContainText('1 línea re-cotizada')
 
     // Y el control del otro lado: la tocada a mano conserva su precio.
-    await expect(precioManual).toHaveValue('99999')
+    // ⚠️ `99.999`, con separador de miles: el input FORMATEA. Aseverar el valor
+    //    crudo fallaba por el formato, no por el comportamiento.
+    await expect(precioManual).toHaveValue('99.999')
   })
 })
 

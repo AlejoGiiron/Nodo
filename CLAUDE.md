@@ -5889,6 +5889,91 @@ son dos afirmaciones distintas sobre el mismo cero.
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · UN `replace()` SIN `assert` ES UN NO-OP SILENCIOSO — Y LO PEOR ES QUE EL PATRÓN CORRECTO SUELE ESTAR EN EL MISMO ARCHIVO
+
+*2026-09-14. Este proyecto edita por script —es la regla, para que ningún heredoc mastique los
+escapes— así que el script de edición es código, y tiene su propio modo de fallo.*
+
+**El caso.** Un script con seis reemplazos sobre un spec. **Cinco llevaban su `assert`** de que el
+ancla existía; **uno no**. Ese ancla había dejado de coincidir porque un reemplazo anterior, en el
+mismo script, ya había cambiado parte del texto. El script **terminó bien, imprimió «ok»**, y el
+camino que debía corregir quedó intacto. Dos casos murieron por eso, y el rojo apareció lejos: en el
+E2E, señalando un `nav-fiado` que yo creía haber sacado.
+
+> **Un `replace()` que no encuentra su ancla no falla: devuelve la cadena igual.** El script no tiene
+> forma de notarlo y el que lo corre tampoco — la salida es idéntica a la de un reemplazo exitoso.
+
+🔴 **Y EL AGRAVANTE ES QUE NO FALTABA EL CONOCIMIENTO: el patrón correcto estaba en el mismo
+archivo, cinco veces, a la vista.** No es *«no sabía que había que assertar»*. Es que **el assert se
+escribe ancla por ancla**, y basta olvidarlo en uno para perder la garantía entera — mientras el
+archivo entero *parece* seguir la regla.
+
+⚠️ Es la forma de *«enumerar la clase y arreglar la instancia»* movida al andamiaje: cinco de seis
+cumplen, el archivo se lee correcto, y el que falta no produce ningún síntoma local.
+
+✅ **LO ACCIONABLE, y es un mecanismo y no atención:**
+
+> **El `assert` no va al lado del `replace`: va DENTRO de una función que hace las dos cosas.** Si
+> reemplazar sin verificar no es expresable, no se puede olvidar.
+
+```python
+def sub(s, viejo, nuevo, n=1):
+    assert viejo in s, 'ancla no encontrada: ' + viejo[:60]
+    return s.replace(viejo, nuevo, n)
+```
+
+⚠️ **Y la causa de fondo, que conviene tener escrita porque va a volver:** el ancla se rompió porque
+**un reemplazo anterior del mismo script la modificó**. Los reemplazos de un script no son
+independientes — operan sobre el resultado del anterior. Cuando dos anclas se solapan, el orden
+importa, y el único que lo detecta es el `assert`.
+
+---
+
+### 🔴 CRITERIO SIN NÚMERO · CONCLUIR UNA AUSENCIA DESDE UN PATRÓN QUE NO PODÍA ENCONTRARLA — EL CONTROL POSITIVO ES LA MITAD QUE FALTABA
+
+*Tres en un solo turno, 2026-09-14, escribiendo los specs de la 101. **Las tres tienen la misma
+forma y ninguna es un grep mal escrito**: los tres patrones eran correctos para lo que buscaban y
+**estructuralmente incapaces de encontrar lo que se les preguntó**.*
+
+| # | lo que concluí | por qué el patrón no podía encontrarlo |
+|---|---|---|
+| 1 | *«`nav-pos` existe, lo usan otros specs»* | el `grep` sobre `tests/` **leía mi propio archivo** — yo acababa de escribir esa línea |
+| 2 | *«`loginAsOwner` no existe»* | `grep "^export" \| head -4` — **estaba en la línea 33**, el `head` cortó antes |
+| 3 | *«las credenciales E2E están vacías»* | `grep -oE '^E2E_[A-Z_]+='` **corta en el `=` por construcción**: no puede ver ningún valor |
+
+🔴 **LAS TRES FALLAN HACIA «NO HAY», que es la dirección que no levanta la mano.** Un instrumento
+que reporta de más molesta y se revisa; uno que reporta **una ausencia** confirma lo que uno ya
+sospechaba y cierra la pregunta. Es el mismo modo de fallo del tope de 1000 filas de PostgREST, en
+otra capa.
+
+⚠️ **Y el tercero tiene un agravante de otra clase: iba a FRENAR EL TRABAJO.** La conclusión era
+*«no puedo correr la suite, faltan credenciales»* — o sea un bloqueo reportado a la otra parte,
+pidiéndole que resuelva algo que no estaba roto. **Un instrumento roto no sólo produce una
+afirmación falsa: produce una PETICIÓN falsa**, y esa cuesta el tiempo de los dos.
+
+✅ **LO ACCIONABLE, Y ES UNA SOLA LÍNEA QUE HABRÍA MATADO A LAS TRES:**
+
+> **Antes de concluir «X no existe», verificá que el mismo comando encuentre algo que SÍ existe.**
+
+Es el **control POSITIVO**, y es el hermano que faltaba del control negativo que este archivo ya
+tiene escrito. Los dos son la misma idea en direcciones opuestas y **atrapan cosas distintas**:
+
+| | qué se corre | qué caza |
+|---|---|---|
+| **control negativo** | el instrumento contra algo que **NO existe** | el que **no discrimina** — contesta que sí para todo |
+| 🔴 **control positivo** | el instrumento contra algo que **SÍ existe** | el que **no puede encontrar nada** — contesta que no para todo |
+
+Este archivo tenía el negativo desde el principio y usó el positivo sin nombrarlo —*«el control
+escrito de antemano: la 54 TENÍA que aparecer, y dio cero»*—. Nombrarlo es lo que lo vuelve un paso
+y no una casualidad.
+
+📋 **Y un caso del mismo turno donde el positivo SÍ se corrió, para ver la diferencia:** al afirmar
+que el lab no tiene `product_prices`, el mismo comando se corrió contra `products` —que sí está— y
+devolvió 1 por archivo. **Ahí el cero significaba algo.** Costó la misma línea que las tres que
+fallaron.
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · UN VERIFICADOR QUE FILTRA POR ID VERIFICA EL CONJUNTO QUE ELIGIÓ, NO EL QUE EL USUARIO VE
 
 *2026-09-14, verificando el histórico v3. **Es la lección de las 30 ventas invisibles INVERTIDA**, y
