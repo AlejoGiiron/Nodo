@@ -114,14 +114,40 @@ export function useCobro() {
         discount_amount: d.discountAmt,
         discount_type: d.discountAmt > 0 ? d.discountType : null,
         discount_reason: d.discountAmt > 0 ? (d.discountReason.trim() || null) : null,
+        // 🔴 EL CLIENTE VA AFUERA DE LA RAMA DE FIADO, y estaba adentro.
+        //
+        //    A quién se le vendió es un hecho de LA VENTA, no del medio de pago.
+        //    Mientras el picker vivió dentro del modal bajo `isFiado` las dos
+        //    cosas coincidían por construcción —no había forma de elegir cliente
+        //    sin que fuera fiado— y por eso la condición se leía correcta. El
+        //    picker bajó al carrito el 2026-09-14 y la coincidencia se rompió:
+        //    desde entonces se podía elegir el cliente en una venta de efectivo
+        //    y **la venta guardaba `null`**.
+        //
+        // ⚠️ Es un defecto que PIERDE DATOS, no uno que esconde: a quién se le
+        //    vendió no se deriva de ninguna otra columna. Cada venta de contado
+        //    con cliente elegido que pasó por acá quedó sin dueño para siempre.
+        //
+        // ⚠️ Y es la mitad que faltaba del arreglo del bug de producción: aquel
+        //    tocó el picker y la pantalla —lo VISIBLE— y no tocó la escritura.
+        //    Es «el arreglo se detuvo exactamente donde el rojo se puso verde».
+        //
+        // 🔴 `|| null` y no la cadena vacía: sin cliente la columna dice que NO
+        //    HAY, no que el nombre sea «». Un `''` es un valor plausible que
+        //    ningún filtro de nulos ve — la misma familia que el costo cero.
+        customer_id: d.customerId,
+        customer_name: d.customerId ? (d.customerName.trim() || null) : null,
         ...(esFiado
           ? {
               payment_status: 'pending' as const,
-              customer_id: d.customerId,
-              customer_name: d.customerName,
               // El plazo se CONGELA en la venta (deuda 46): la cartera deriva
               // de `orders`, así que leerlo del cliente daría otro vencimiento
               // mañana para una venta de enero.
+              //
+              // ⚠️ ESTE SÍ SE QUEDA ADENTRO, y la distinción es la que decide
+              //    qué se movió: el plazo es una condición DEL CRÉDITO —una
+              //    venta pagada no tiene vencimiento—. El cliente es un hecho
+              //    de la venta; el plazo, del fiado. Sólo el primero salió.
               plazo_dias: d.plazoDias,
             }
           : {}),
