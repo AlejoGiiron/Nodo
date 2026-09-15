@@ -37,9 +37,16 @@ export function ProductModal({ product, categories, onClose }: ProductModalProps
   //    base y borra todo lo que no esté en la selección en memoria. Con la
   //    selección todavía vacía, `toRemove` es TODO — y un compuesto sin receta
   //    deja de descontar stock al venderse. Medido: la receta pasó de 1 fila a 0.
-  const { assignedIds, reconcile, isLoading: cargandoExtras } = useProductExtras(product?.id ?? null)
-  const { initialRows, reconcile: reconcileRecipe, isLoading: cargandoReceta } =
+  // 🔴 `datoConfirmado`, NO `isLoading`. Los siete usos de abajo conservan su
+  //    polaridad; lo que cambia es QUE PREGUNTAN. `isLoading` decia «la
+  //    consulta todavia no contesto», y con cache contesta al instante con el
+  //    dato viejo: ahi el boton se habilitaba y guardar BORRABA los extras.
+  //    Ver la nota entera en `useProductExtras.ts`.
+  const { assignedIds, reconcile, datoConfirmado: extrasConfirmados } = useProductExtras(product?.id ?? null)
+  const cargandoExtras = !extrasConfirmados
+  const { initialRows, reconcile: reconcileRecipe, datoConfirmado: recetaConfirmada } =
     useProductComponents(product?.id ?? null)
+  const cargandoReceta = !recetaConfirmada
   const formId = useId()
 
   const isEditing = !!product

@@ -57,6 +57,29 @@ export function useProductExtras(productId: string | null) {
     productExtras: query.data ?? [],
     assignedIds,
     isLoading: query.isLoading,
+    /**
+     * ¿Lo que tengo en la mano ES el dato de ESTE producto, ya confirmado?
+     *
+     * 🔴 NO ES `isLoading`, Y ESA DISTINCION ES EL ARREGLO. Con algo en cache
+     *    —la apertura anterior del modal— React Query **sirve el dato viejo al
+     *    instante** y `isLoading` queda en FALSE: la consulta no esta
+     *    «cargando», ya contesto. Pero contesto con el dato de ANTES, y el
+     *    refetch viene en camino.
+     *
+     *    > Un guard que pregunta «¿termino de cargar?» no cubre «cargo OTRA
+     *    > COSA».
+     *
+     * ⚠️ MEDIDO, y es PERDIDA DE DATO (2026-09-15): al reabrir un producto
+     *    recien guardado, el modal sembraba la seleccion con el cache VACIO, el
+     *    boton quedaba habilitado —`isLoading` falso— y guardar mandaba
+     *    `extraIds: []`, asi que `reconcile` BORRABA la asignacion. La sonda
+     *    dio `aria-pressed=false · cargando=0 · boton-habilitado=true`, y
+     *    despues `product_extras: 0` donde antes habia 1.
+     *
+     *    Es la deuda 56 volviendo por otro camino: alla el guard FALTABA; aca
+     *    el guard esta y mira el ESTADO DE LA CONSULTA en vez del DATO.
+     */
+    datoConfirmado: !query.isPending && !query.isFetching,
     reconcile,
   }
 }
