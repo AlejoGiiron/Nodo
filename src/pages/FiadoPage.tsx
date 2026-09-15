@@ -163,7 +163,7 @@ function DebtsTab({ onAbono }: { onAbono: (d: Debt) => void }) {
     //    no lo tenía sería la maqueta borrando información que el producto da.
     //    Resultado: cuatro KPI donde la maqueta muestra tres. La divergencia es
     //    deliberada y queda anotada.
-    { key: 'fiados-abiertos', label: 'Fiados abiertos', value: String(fiadosAbiertos), tone: 'normal' as const },
+    { key: 'fiados-abiertos', label: 'Créditos abiertos', value: String(fiadosAbiertos), tone: 'normal' as const },
   ]
 
   return (
@@ -396,7 +396,7 @@ export function FiadoPage({ tabInicial = 'debts' }: { tabInicial?: Tab } = {}) {
       {/* Mismo patrón que Compras: sin eyebrow, título en --fs-head, tabs del
           §4. Ver el porqué en src/components/ui/PageHeader.tsx. */}
       <PageHeader
-        titulo="Fiado"
+        titulo="Cartera"
         descripcion="cuentas por cobrar y clientes, por sede"
         accion={tab === 'customers'
           ? <Button data-testid="new-customer-btn" onClick={() => setEditCustomer('new')}><Plus size={15} /> Nuevo cliente</Button>

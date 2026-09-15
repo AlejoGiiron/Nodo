@@ -339,7 +339,7 @@ test.describe.serial('Fiado / Cartera', () => {
     // El nombre accesible es "#10 02/07…", así que "^#10 " no matchea "#1 02/07…".
     const row = page.getByRole('button', { name: new RegExp(`^#${n}\\s`) })
     await expect(row).toBeVisible()
-    await expect(row.getByTestId('sale-row-method')).toContainText('Fiado')
+    await expect(row.getByTestId('sale-row-method')).toContainText('Crédito')
   })
 
   test('gating: el cajero TAMBIÉN puede operar fiado (decisión de producto)', async ({ page }) => {

@@ -153,7 +153,7 @@ function PrintTicket({
   const canalLabel = { mostrador: 'Mostrador', whatsapp: 'WhatsApp', telefono: 'Teléfono' }[canal]
   const methodLabel = {
     efectivo: 'Efectivo', tarjeta: 'Tarjeta',
-    transferencia: 'Transferencia', nequi: 'Nequi', fiado: 'Fiado',
+    transferencia: 'Transferencia', nequi: 'Nequi', fiado: 'Crédito',
   }[method]
 
   return (
@@ -1259,7 +1259,7 @@ function CheckoutModal({
     { id: 'tarjeta',       label: 'Tarjeta',       icon: <CreditCard size={22} /> },
     { id: 'transferencia', label: 'Transferencia', icon: <Building2 size={22} /> },
     { id: 'nequi',         label: 'Nequi / QR',   icon: <Smartphone size={22} /> },
-    ...(canFiado ? [{ id: 'fiado' as const, label: 'Fiado', icon: <HandCoins size={22} /> }] : []),
+    ...(canFiado ? [{ id: 'fiado' as const, label: 'Crédito', icon: <HandCoins size={22} /> }] : []),
   ]
 
   const quickAmounts = cashQuickAmounts(total)
@@ -1410,7 +1410,7 @@ function CheckoutModal({
   }, [])
 
   const methodLabel = (m: PaymentMethodUI) =>
-    ({ efectivo: 'Efectivo', tarjeta: 'Tarjeta', transferencia: 'Transferencia', nequi: 'Nequi / QR', fiado: 'Fiado' })[m]
+    ({ efectivo: 'Efectivo', tarjeta: 'Tarjeta', transferencia: 'Transferencia', nequi: 'Nequi / QR', fiado: 'Crédito' })[m]
 
   return (
     <div
@@ -1527,7 +1527,7 @@ function CheckoutModal({
                         fontSize: 12, lineHeight: 1.45,
                       }}
                     >
-                      Para vender a fiado hace falta un cliente.{' '}
+                      Para vender a crédito hace falta un cliente.{' '}
                       <strong>Elegilo en el carrito</strong>, arriba de la lista de
                       productos, y volvé a cobrar.
                     </div>
@@ -1575,7 +1575,7 @@ function CheckoutModal({
                     </div>
                   )}
                   <div data-testid="pos-fiado-aviso" style={{ marginTop: 8, fontSize: 11.5, color: 'var(--warning-on-soft)', background: 'var(--warning-soft)', borderRadius: 'var(--r-2)', padding: '8px 11px' }}>
-                    La venta a fiado queda pendiente de pago. No entra dinero a la caja; los abonos se registran en Fiado → Cuentas por cobrar.
+                    La venta a crédito queda pendiente de pago. No entra dinero a la caja; los abonos se registran en Cartera → Clientes.
                   </div>
                 </div>
               )}
@@ -1593,7 +1593,7 @@ function CheckoutModal({
                   {submitting
                     ? 'Procesando...'
                     : isFiado
-                      ? <><HandCoins size={15} /><span>Registrar fiado</span></>
+                      ? <><HandCoins size={15} /><span>Registrar crédito</span></>
                       : <><span>Continuar</span><ChevronRight size={15} /></>}
                 </Button>
               </div>

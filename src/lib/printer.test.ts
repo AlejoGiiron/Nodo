@@ -116,7 +116,7 @@ describe('ticket de venta — lo que el papel AFIRMA', () => {
     // cuando no había filas en `payments`. Dos papeles del mismo hecho diciendo
     // cosas distintas (deuda 108). El builder ya sabía imprimir lo que le den;
     // lo que faltaba era que le dieran algo.
-    const html = buildSaleTicketHtml({ ...VENTA, method: 'Fiado' })
-    expect(html).toContain('Fiado')
+    const html = buildSaleTicketHtml({ ...VENTA, method: 'Crédito' })
+    expect(html).toContain('Crédito')
   })
 })

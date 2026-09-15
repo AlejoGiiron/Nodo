@@ -105,10 +105,13 @@ export const CLASES_SIN_PAGO: ClaseSinPago[] = [
     // La última de la lista atrapa el resto: si no tiene pagos, no está anulada
     // y su total no es cero, es una venta a crédito.
     detecta: () => true,
+    // ⚠️ «Crédito» es la palabra de la PANTALLA; adentro el valor sigue siendo
+    //    `fiado` —permisos, ruta, testids—. Deliberado, igual que turno/jornada
+    //    en la deuda 38: ver la deuda 109.
     etiqueta: (r) =>
-      r.payment_status === 'paid' ? 'Fiado (saldado)'
-        : r.payment_status === 'partial' ? 'Fiado (parcial)'
-          : 'Fiado',
+      r.payment_status === 'paid' ? 'Crédito (saldado)'
+        : r.payment_status === 'partial' ? 'Crédito (parcial)'
+          : 'Crédito',
   },
 ]
 
