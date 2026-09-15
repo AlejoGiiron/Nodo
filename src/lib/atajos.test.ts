@@ -126,8 +126,15 @@ describe('la tabla de atajos', () => {
 
     // Y el control de que el filtro nuevo no se aflojó: el ámbito del cobro
     // tiene los tres medios MÁS F4, que es lo que acaba de cambiar.
+    // 🔴 F4 SALIÓ DE ESTE ÁMBITO el 2026-09-15: bajó al MOSTRADOR con su
+    //    control, porque el picker de clientes se mudó al carrito (corte 3).
+    // ⚠️ LA RAZÓN DE QUE ESTA LISTA EXISTA NO CADUCÓ, y por eso no se borra:
+    //    sigue siendo que `ambito` es un campo VECINO de `medio` y no el sujeto.
+    //    Que hoy vuelvan a coincidir es una coincidencia —la misma que había
+    //    antes de que F4 llegara—, y el día que otro atajo entre al cobro sin
+    //    ser un medio, esta lista lo dice en vez de que el filtro lo trague.
     const deCobro = ATAJOS.filter((a) => a.ambito === 'cobro').map((a) => a.tecla).sort()
-    expect(deCobro, 'F4 vive en el ámbito del cobro y NO es un medio de pago')
-      .toEqual(['F4', 'c', 'e', 't'])
+    expect(deCobro, 'el ámbito del cobro son los tres medios; F4 se fue al mostrador con su control')
+      .toEqual(['c', 'e', 't'])
   })
 })

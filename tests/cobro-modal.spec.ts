@@ -133,8 +133,12 @@ async function clienteDelLab(nombre: string, plazo: number): Promise<string> {
  * «un locator apoyado en unicidad no declarada» que este proyecto ya pagó.
  */
 async function elegirCliente(page: Page, nombre = CLIENTE_EQ): Promise<void> {
-  await page.getByTestId('customer-search').fill(nombre)
-  await page.getByTestId('customer-option').filter({ hasText: nombre }).first().click()
+  // 🔴 EL PICKER SE MUDO AL CARRITO (deuda 101, corte 3), asi que esto ya no es
+  //    un paso DE ADENTRO del cobro: se hace ANTES de abrirlo. No es un renombre
+  //    de testid — es el CAMINO re-derivado. El prefijo `cart-customer` es el
+  //    correcto y no se revierte: revertirlo seria acomodar el codigo al test.
+  await page.getByTestId('cart-customer-search').fill(nombre)
+  await page.getByTestId('cart-customer-option').filter({ hasText: nombre }).first().click()
 }
 
 /** Abre el cobro con el crédito ya elegido: es el prólogo de media docena de casos. */
@@ -493,12 +497,16 @@ test('🔴 el elegido queda MARCADO y la lista sigue clickeable — por eso no h
   //    imprimía «F12» con la tecla muerta. `aria-pressed` lo hizo aseverable.
   //    Y es lo que sostiene la decisión de no agregar un botón «Cambiar
   //    cliente»: si el picker no siguiera ofreciendo la lista, haría falta uno.
-  await abrirCredito(page)
   await elegirCliente(page)
-  const elegido = page.getByTestId('customer-option').filter({ hasText: CLIENTE_EQ }).first()
+  await abrirCredito(page)
+  // ⚠️ LA ASERCION VIAJA INTACTA, cambia DONDE se mide: el argumento que sostiene
+  //    «no hace falta un boton Cambiar cliente» es que el picker siga ofreciendo
+  //    la lista con el elegido marcado. Eso sigue siendo cierto — ahora en el
+  //    carrito.
+  const elegido = page.getByTestId('cart-customer-option').filter({ hasText: CLIENTE_EQ }).first()
   await expect(elegido, 'el cliente elegido queda marcado').toHaveAttribute('aria-pressed', 'true')
   await expect(
-    page.getByTestId('customer-search'),
+    page.getByTestId('cart-customer-search'),
     'y el buscador NO desaparece: cambiar de cliente no necesita un control aparte',
   ).toBeVisible()
 })
@@ -507,8 +515,8 @@ test('🔴 el plazo es un DESPLEGABLE, no un número libre', async ({ page }) =>
   // Decisión tomada con su razón escrita (deuda 46): «el typo de 3 por 30 no lo
   // detecta nada, y una venta a 3 días se lee como vencida a los cuatro».
   // Convertirlo en input no rompe nada hoy y empeora la cartera meses después.
-  await abrirCredito(page)
   await elegirCliente(page)
+  await abrirCredito(page)
   const plazo = page.getByTestId('pos-plazo')
   await expect(plazo).toBeVisible()
   expect(
@@ -527,8 +535,8 @@ test('🔴 la FRASE que explica el congelado sigue en pantalla', async ({ page }
   //    "arreglar" que cambiarle el plazo al cliente no mueva sus ventas viejas.
   // ⚠️ Se asevera que el bloque EXISTE, no su redacción: el copy puede cambiar,
   //    lo que no puede es desaparecer.
-  await abrirCredito(page)
   await elegirCliente(page)
+  await abrirCredito(page)
   await expect(page.getByTestId('pos-plazo-nota')).toBeVisible()
 })
 
@@ -553,8 +561,8 @@ test('🔴 PLAZO CONGELADO: cambiarle el plazo al cliente NO mueve la venta ya h
   //    Quinto caso del principio «la historia no se reescribe, se le agrega»: la
   //    cartera DERIVA de `orders`, así que con el plazo sólo en el cliente el
   //    mismo `select` daría otro vencimiento mañana para una venta de enero.
-  await abrirCredito(page)
   await elegirCliente(page, CLIENTE_PLAZO)
+  await abrirCredito(page)
   await expect(page.getByTestId('pos-plazo'), 'el plazo se PRECARGA del cliente')
     .toHaveValue('15')
   await page.getByTestId('checkout-continue').click()
@@ -591,8 +599,8 @@ test('🔴 PLAZO CONGELADO: cambiarle el plazo al cliente NO mueve la venta ya h
 })
 
 test('🔴 la venta a crédito queda pendiente, SIN pago y con su plazo', async ({ page }) => {
-  await abrirCredito(page)
   await elegirCliente(page, CLIENTE_EQ)
+  await abrirCredito(page)
   await page.getByTestId('checkout-continue').click()
   await expect(page.getByTestId('success-order-number').or(page.getByTestId('success-sin-numero')))
     .toBeVisible({ timeout: 20_000 })

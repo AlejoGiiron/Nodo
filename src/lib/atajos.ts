@@ -44,7 +44,15 @@ export const ATAJOS: Atajo[] = [
   // el BUSCADOR DE CLIENTES del modal: el picker muestra la lista completa con
   // el elegido marcado, así que cambiar de cliente no necesita un botón propio.
   // Ámbito 'cobro' y no 'mostrador' porque el control vive adentro del modal.
-  { tecla: 'F4',  ambito: 'cobro', que: 'Cambiar cliente' },
+  // 🔴 F4 BAJÓ AL MOSTRADOR el 2026-09-15: el picker de clientes se mudó al
+  //    carrito (deuda 101, corte 3), y EL ÁMBITO SIGUE AL CONTROL.
+  //    La decisión ya escrita es «la tecla no se cablea sin control»; su
+  //    consecuencia simétrica es que cuando el control se mueve, la tecla se
+  //    mueve con él. Dejarla en 'cobro' apuntando a un picker que ya no está
+  //    ahí la convertiría en la tecla muerta que «Cobrar — F12» ya costó.
+  // ⚠️ Esto CAMBIA el conjunto del ámbito 'cobro', que un tripwire vigila. Su
+  //    rojo es información —dice que F4 se fue—, no una regresión.
+  { tecla: 'F4',  ambito: 'mostrador', que: 'Cambiar cliente' },
   // Catálogo pasó de F5 a F8 el 2026-09-03: ver `TECLAS_RESERVADAS`. F8 estaba
   // asignada por §5 a Pedidos, que NO EXISTE (deuda 85), así que una tecla
   // reservada para una pantalla inexistente cedió ante una que se usa todos los

@@ -46,10 +46,13 @@ async function sellOnFiado(page: Page, customer: string): Promise<number> {
   // A crédito el primario del paso de método NO lleva a un segundo paso: cobra
   // ahí mismo, rotulado «Registrar fiado». Por eso este sitio termina en
   // `checkout-continue` y no en un confirmador.
+  // 🔴 EL CLIENTE SE ELIGE EN EL CARRITO Y ANTES DE ABRIR EL COBRO (corte 3).
+  //    El camino se re-deriva; las aserciones de abajo —orden pending, sin pago,
+  //    stock que baja— viajan intactas porque su sujeto no se movio.
+  await page.getByTestId('cart-customer-search').fill(customer)
+  await page.getByTestId('cart-customer-option').filter({ hasText: customer }).first().click()
   await abrirCobro(page)
   await page.getByTestId('pay-method-fiado').click()
-  await page.getByTestId('customer-search').fill(customer)
-  await page.getByTestId('customer-option').filter({ hasText: customer }).first().click()
   await page.getByTestId('checkout-continue').click()
 
   const banner = page.getByText(/Venta #\d+ registrada/)

@@ -447,13 +447,15 @@ function CartLine({ item, index, noting, onToggleNote, hasExtras, onEditExtras,
               lista {formatCOP(item.product.price)}
             </span>
           )}
-        </div>
+          {/* 🔴 EL NIVEL DE LA LÍNEA (§7.19-21). Va SIEMPRE, no sólo cuando
+              difiere: ocultarlo esconde lo que el cajero necesita para contestar
+              «¿a cuánto se lo estás dando?» sin abrir nada.
 
-        {/* 🔴 EL NIVEL DE LA LÍNEA (§7.19-21). Va SIEMPRE, no sólo cuando
-            difiere: ocultarlo esconde lo que el cajero necesita para contestar
-            «¿a cuánto se lo estás dando?» sin abrir nada. Cuando coincide con el
-            del cliente es texto apagado; cuando difiere, un chip con borde. */}
-        <div style={{ marginTop: 4 }}>
+              ⚠️ VA EN LA MISMA FILA QUE EL PRECIO, y eso NO es estética: en una
+              fila propia costaba 28px POR LÍNEA —medido: el paso pasó de 117 a
+              145px, y tres filas de 351 a 436— y rompía el mínimo de tres filas
+              que este proyecto peleó a 720px. El chip mide 20px y la fila del
+              precio ya lleva `c/u` y `lista X`: entra sin costo. */}
           <PriceLevel
             testid={`cart-item-nivel-${index}`}
             nivel={item.nivel}
@@ -807,8 +809,15 @@ function CartPanel({
           esta conteniendo nada —con el cobro en modal la lista entra sobrada—
           y se conserva igual porque la clase de defecto que ataja no depende
           de donde vive el cobro. */}
-      <div style={{ flex: 1, overflow: 'auto', minHeight: ALTO_MINIMO_LISTA }}>
-              {/* ── EL CLIENTE, EN EL CARRITO ──────────────────────────────────────
+      {/* 🔴 EL CLIENTE VA **AFUERA** DEL CONTENEDOR CON SCROLL, y esto no es
+          maquetado: adentro consumia parte del `minHeight` reservado para TRES
+          FILAS, asi que la tercera quedaba fuera de su caja —la cajera no ve que
+          esta vendiendo— y `toBeVisible()` pasaba igual.
+          Lo cazo `cobro-modal.spec` con el numero: caja de 351px, tercera fila
+          afuera. Es la CLASE que el comentario de `ALTO_MINIMO_LISTA` predijo:
+          «un panel de alto fijo en una columna flex deja a su hermano en cero»,
+          que vuelve con CUALQUIER bloque que crezca ahi. Volvio con este. */}
+      {/* ── EL CLIENTE, EN EL CARRITO ──────────────────────────────────────
           🔴 BAJO DEL MODAL (corte 3, deuda 101). No es una mudanza estetica: el
           NIVEL con el que se cotiza cada linea sale del cliente, y las lineas se
           arman ANTES de abrir el cobro. Con el cliente en el modal, el mostrador
@@ -837,7 +846,8 @@ function CartPanel({
         )}
       </div>
 
-      {items.length === 0 ? (
+      <div style={{ flex: 1, overflow: 'auto', minHeight: ALTO_MINIMO_LISTA }}>
+        {items.length === 0 ? (
           <div style={{ padding: 50, textAlign: 'center', color: 'var(--ink-4)', fontSize: 13.5 }}>
             <div style={{
               width: 56, height: 56, borderRadius: '50%', background: 'var(--border-2)',
@@ -1326,24 +1336,11 @@ function CheckoutModal({
     const handleKey = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.altKey || e.metaKey) return
 
-      // F4 · «Cambiar cliente» (§5). Apunta al BUSCADOR del picker y no a un
-      // boton propio: el picker del modal muestra la lista completa con el
-      // elegido marcado, asi que ya se puede cambiar de cliente sin un control
-      // aparte. Agregar un boton para darle destino a la tecla habria sido
-      // inventar el control en vez de encontrarlo.
-      //
-      // ⚠️ Solo actua en el camino de CREDITO, que es el unico donde existe un
-      //    cliente. Es el mismo alcance que F2, que tampoco hace nada fuera del
-      //    mostrador. Y el `preventDefault` va DESPUES del guard: si no hay a
-      //    quien enfocar, la tecla no se come el evento.
-      if (e.key === teclaDe('Cambiar cliente')) {
-        const campo = document.querySelector<HTMLInputElement>('[data-testid="customer-search"]')
-        if (!campo) return
-        e.preventDefault()
-        campo.focus()
-        campo.select()
-        return
-      }
+      // 🔴 F4 YA NO SE MANEJA ACÁ: bajó al mostrador con su control (corte 3).
+      //    El picker de clientes vive en el carrito y la tecla lo siguió.
+      //    Buscarlo acá la dejaría apuntando a un elemento que este modal ya no
+      //    monta — la tecla muerta que «Cobrar — F12» ya costó una vez.
+
 
       // Enter = el primario del paso. Si el foco esta en un boton, el navegador
       // ya lo va a accionar: correrlo ademas seria cobrar dos veces.
@@ -2073,6 +2070,20 @@ export function POSPage() {
       if (e.key === teclaDe('Buscar producto')) {
         e.preventDefault()
         searchRef.current?.focus()
+        return
+      }
+      // F4 · «Cambiar cliente» (§5). Apunta al BUSCADOR del picker, que desde el
+      // corte 3 vive EN EL CARRITO. No hay botón propio y no hace falta: el
+      // picker muestra la lista con el elegido marcado.
+      // ⚠️ El `preventDefault` va DESPUÉS del guard: si no hay a quién enfocar,
+      //    la tecla NO se come el evento. Es lo que permite que el control
+      //    negativo del spec de atajos siga discriminando.
+      if (e.key === teclaDe('Cambiar cliente')) {
+        const campo = document.querySelector<HTMLInputElement>('[data-testid="cart-customer-search"]')
+        if (!campo) return
+        e.preventDefault()
+        campo.focus()
+        campo.select()
         return
       }
       if (e.key === teclaDe('Cobrar')) {

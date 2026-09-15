@@ -210,11 +210,13 @@ test.describe('Atajos de teclado (§5)', () => {
     await openShiftIfClosed(page, 0)
     await page.goto('/ventas')
     await waitPosReady(page)
+    // 🔴 YA NO HACE FALTA ABRIR EL COBRO NI ELEGIR CREDITO: el picker vive en el
+    //    CARRITO desde el corte 3, y F4 bajo al mostrador CON su control. El
+    //    escenario se acorto porque el producto se simplifico, no porque el caso
+    //    se ablandara — sigue midiendo lo mismo: que la tecla enfoque el control.
     await addPosProduct(page)
-    await abrirCobro(page)
-    await page.keyboard.press('c')
 
-    const buscador = page.getByTestId('customer-search')
+    const buscador = page.getByTestId('cart-customer-search')
     await expect(buscador, 'el control tiene que existir ANTES de la tecla').toBeVisible()
     await buscador.blur()
     await expect(buscador, 'y NO estar enfocado, o la aserción no mide').not.toBeFocused()
@@ -313,7 +315,7 @@ test.describe('Atajos de teclado (§5)', () => {
     await page.keyboard.press('c')
     await expect(page.getByTestId('pay-method-fiado')).toHaveAttribute('aria-pressed', 'true')
 
-    const buscador = page.getByTestId('customer-search')
+    const buscador = page.getByTestId('cart-customer-search')
     await buscador.click()
     await buscador.fill('')
     await page.keyboard.press('e')
