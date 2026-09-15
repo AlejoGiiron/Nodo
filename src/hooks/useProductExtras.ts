@@ -78,8 +78,22 @@ export function useProductExtras(productId: string | null) {
      *
      *    Es la deuda 56 volviendo por otro camino: alla el guard FALTABA; aca
      *    el guard esta y mira el ESTADO DE LA CONSULTA en vez del DATO.
+     * 🔴 Y EL `!productId` NO ES DEFENSIVO: ES EL CASO DEL PRODUCTO NUEVO, y
+     *    olvidarlo rompio la creacion. La consulta lleva `enabled: !!productId`,
+     *    y en React Query v5 una consulta DESHABILITADA queda con `isPending` en
+     *    **true para siempre** —nunca va a resolver, porque nunca corre—. Sin
+     *    esta rama, `datoConfirmado` era falso eternamente en un producto sin id
+     *    y la seccion de receta se quedaba en «Cargando…»: `recipe-add-product`
+     *    no se renderizaba nunca y no se podia crear un compuesto.
+     *
+     *    ⚠️ Es exactamente por esto que `isLoading` «funcionaba» aca:
+     *    `isLoading = isPending && isFetching` es FALSO con la consulta apagada.
+     *    Al endurecer el flag se gano el caso del cache viejo y se perdio el del
+     *    id ausente — dos estados distintos que el flag tiene que separar.
+     *
+     *    Sin id no hay nada que confirmar: el vacio ES el dato.
      */
-    datoConfirmado: !query.isPending && !query.isFetching,
+    datoConfirmado: !productId || (!query.isPending && !query.isFetching),
     reconcile,
   }
 }
