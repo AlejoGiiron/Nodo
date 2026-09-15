@@ -2385,6 +2385,67 @@ puede ver ese guard?»*, y eso no se contesta leyendo el guard.
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · UNA NOTA QUE DIRIGE MAL, PERO EN LA PANTALLA: EL PRODUCTO LE DIJO AL USUARIO QUE FUERA A UN LUGAR QUE NO EXISTE
+
+*2026-09-15, barrido de copy de la deuda 109. **Nadie lo estaba buscando**: apareció por un cambio de
+vocabulario pedido por gusto de la clienta.*
+
+Este archivo ya tiene *«una nota que dirige mal cuesta más que una ausente»*, y sus casos viven en
+documentos: una tabla con el estado viejo, una deuda con el alcance de la maqueta, un comentario que
+nombra una función borrada. **Éste vive en la interfaz**, y por eso es de otro precio.
+
+**El caso.** El aviso del cobro a crédito decía, textual:
+
+> *«los abonos se registran en **Fiado → Cuentas por cobrar**»*
+
+**Ninguna de las dos existe.** El ítem de navegación dice `Cartera`; la pestaña dice `Cartera`. No
+hay ningún «Fiado» ni ningún «Cuentas por cobrar» en pantalla — así que el aviso **no es vocabulario
+desalineado: es una instrucción falsa.** Le dice a la cajera que vaya a un lugar que no está, en el
+momento exacto en que acaba de vender a crédito y necesita saber dónde va a cobrar.
+
+🔴 **POR QUÉ LA PANTALLA ES EL LUGAR MÁS CARO PARA ESTA CLASE, y son tres razones distintas:**
+
+| | una nota que dirige mal en un documento | la misma, en la pantalla |
+|---|---|---|
+| **quién la lee** | alguien del equipo, que puede grepear y desmentirla | **la clienta**, que no tiene con qué contrastarla |
+| **qué produce** | media hora buscando en el lugar equivocado | **la conclusión de que el producto está roto** — busca «Fiado», no lo encuentra, y no sabe si el error es suyo |
+| **quién la corrige** | el próximo que la lea | **nadie**: un texto correcto-en-su-día no se relee, y ningún verificador mira copy |
+
+⚠️ **Y es la misma familia que «Gestión de mesas y comandas en tiempo real» en el login de Vento**
+—la aplicación funcionando perfecto **mintiendo**— con una diferencia que la empeora: aquélla
+describía módulos que ya no existían, ésta **da una orden**. Una descripción falsa desinforma; una
+instrucción falsa **manda a alguien a hacer algo que no se puede hacer**.
+
+🔴 **CÓMO APARECIÓ, Y ES LO INCÓMODO: por un barrido de COPY, no por una auditoría.** La clienta pidió
+cambiar una palabra. Enumerar dónde estaba esa palabra obligó a leer cada texto que la contenía, y
+ahí saltó — junto con que el **título** de la pantalla decía «Fiado» mientras su propio ítem de
+navegación y su propia pestaña decían «Cartera».
+
+> **Ninguna sonda lo habría encontrado.** No hay grep para *«este texto nombra un rótulo que no
+> existe»*: los dos lados son cadenas, y comparar cadenas de UI contra rótulos de navegación no es
+> algo que nadie corra. Lo encontró **leer los textos uno por uno**, que es lo que un barrido de copy
+> obliga a hacer y ninguna otra tarea pide.
+
+✅ **LO ACCIONABLE, y son dos:**
+
+1. **Un texto que NOMBRA UN LUGAR DEL PRODUCTO es un contrato de R1 con el rótulo de ese lugar.**
+   «Andá a X» y el `label: 'X'` del menú son dos lados sin nada que los sincronice, y el que se
+   congela es el texto — porque nadie edita un aviso que ya dice algo razonable.
+2. 🔴 **Al renombrar cualquier rótulo de navegación, grepeá el rótulo VIEJO en la copy**, no sólo en
+   el código. El renombre a «Cartera» se hizo en su momento y **dejó atrás a los textos que lo
+   nombraban**, que es el corolario del renombre: *un renombre a medias es peor que no renombrar,
+   porque el texto queda afirmando la conexión que acaba de romper.*
+
+```bash
+# antes de dar por hecho un renombre de rótulo: ¿quién lo nombra en la copy?
+grep -rn "<rótulo viejo>" src/ --include=*.tsx | grep -v "data-testid"
+```
+
+⚠️ Corolario para el barrido: **el resultado de un barrido de copy no es el texto cambiado — es la
+lista de textos que hubo que leer.** Ahí está el hallazgo, y por eso un barrido no se hace con `sed`.
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · DOS HIPÓTESIS DE ARREGLO, LAS DOS FALSAS, LAS DOS DESCARTADAS **MIDIENDO EL PREDICADO CONTRA LOS DATOS** — NO RAZONANDO SOBRE EL SQL
 
 *2026-09-15, el filtro del Historial. Las dos hipótesis estaban sobre la mesa, las dos eran
