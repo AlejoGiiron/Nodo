@@ -49,7 +49,11 @@ export function useCustomerMutations() {
     mutationFn: async (
       input: Pick<
         TablesInsert<'customers'>,
-        'name' | 'phone' | 'document' | 'notes' | 'plazo_dias'
+        // ⚠️ `nivel_default` entro con la deuda 101. Es un lado mas del mismo
+        //    contrato: la columna, este Pick y el formulario. Sin el, el
+        //    control de la ficha compila y el dato NO SE GUARDA — el peor
+        //    modo de fallo, porque la pantalla se ve correcta.
+        'name' | 'phone' | 'document' | 'notes' | 'plazo_dias' | 'nivel_default'
       >
         & { id?: string },
     ) => {

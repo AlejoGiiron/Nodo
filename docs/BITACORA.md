@@ -14,6 +14,36 @@ la consulta.
 
 ---
 
+## 2026-09-14 · LA RAZÓN REAL POR LA QUE EL CLIENTE TENÍA QUE BAJAR AL CARRITO — y no es la que dimos
+
+**Lo movimos por dos razones, las dos ciertas y las dos menores:** el caso de uso (elegir cliente
+antes de armar la venta) y el cupo (verlo mientras se puede sacar un producto, no cuando ya hay que
+explicar por qué no se puede).
+
+🔴 **La razón que importaba no la vimos hasta tenerlo cableado, y es de otra magnitud:**
+
+> **Con el cliente dentro del modal de cobro, el mostrador cotizaba TODA la venta al nivel de la
+> SEDE, y el nivel correcto del cliente aparecía recién al abrir el cobro.**
+
+O sea: mientras ella arma la venta y le va diciendo los precios al cliente en voz alta —que es
+literalmente lo que pasa en un mostrador— **los números en pantalla eran los de otra lista**. El
+correcto aparecía al final, cuando ya lo había dicho.
+
+⚠️ **Y el modo de fallo es el peor de los que este proyecto cataloga: no hay error, no hay rojo, no
+hay dato incorrecto guardado.** La venta se graba bien. Lo que queda mal es *lo que ella dijo*, y eso
+no lo ve ningún verificador — lo ve el cliente cuando el total no coincide con la suma de lo que le
+fueron cantando.
+
+📋 **Por qué no lo vimos al decidir:** el orden de los pasos en la pantalla se pensó como un problema
+de **navegación** —¿dónde es más cómodo el control?— y era un problema de **cuándo existe un dato**.
+Las dos preguntas se contestan mirando la misma pantalla y sólo una mira el reloj.
+
+✅ **Lo que deja como método, y es el detector:** cuando un dato A determina cómo se muestra un dato
+B, preguntá **en qué orden los produce el usuario**. Si B se arma antes que A, el control de A no
+puede vivir después de B — por cómodo que resulte. Acá A era el cliente y B eran las líneas.
+
+---
+
 ## ⛔ Hueco — evidencia de las once reglas heredadas
 
 **Pendiente de decisión y de copia.**

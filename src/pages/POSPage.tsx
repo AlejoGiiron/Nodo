@@ -9,7 +9,7 @@ import {
 import { toast } from 'react-hot-toast'
 import {
   useCartStore, cartItemTotal, precioLejosDelCatalogo, desvioDelCatalogo,
-  lineaSinPrecio,
+  lineaSinPrecio, hayLineaSinPrecio,
 } from '@/stores/cartStore'
 import { useProducts } from '@/hooks/useProducts'
 import { useProductsWithExtras } from '@/hooks/useProductsWithExtras'
@@ -1066,12 +1066,41 @@ function CartPanel({
                  botón imprimió «F12» durante todo el proyecto con la tecla
                  muerta: eran dos lados de un contrato sin nada que los
                  sincronizara (R1). Derivándolo, no puede volver a mentir. */}
+          {/* 🔴 EL AVISO DICE QUE HACER, NO QUE PASO (§7.22, §7.18). «Hay una
+              linea sin precio» describe; «elegi otro nivel o escribi el precio»
+              resuelve. Y nombra el producto: con ocho lineas, un aviso que no
+              dice cual manda a revisarlas todas. */}
+          {hayLineaSinPrecio(items) && (
+            <div
+              data-testid="cobro-bloqueado-sin-precio"
+              style={{
+                marginBottom: 10, padding: '9px 11px', borderRadius: 'var(--r-2)',
+                background: 'var(--warning-soft)', color: 'var(--warning-on-soft)',
+                fontSize: 12, lineHeight: 1.45,
+              }}
+            >
+              {(() => {
+                const sin = items.filter(lineaSinPrecio)
+                const cuales = sin.length === 1
+                  ? sin[0].product.name
+                  : `${sin.length} líneas`
+                return `${cuales} sin precio en su nivel. Elegí otro nivel en el chip de la línea o escribí el precio a mano para poder cobrar.`
+              })()}
+            </div>
+          )}
+
           <Button
             data-testid="cobro-abrir"
             size="pos"
             block
             className="nodo-btn--sobre-tinta"
-            disabled={items.length === 0}
+            // 🔴 EL COBRO SE BLOQUEA CON UNA LINEA SIN PRECIO (§7.22), y es lo
+            //    que impide que el 0 de `cartItemTotal` se lea como un precio:
+            //    sin este bloqueo el total IGNORA una linea EN SILENCIO, que es
+            //    una CONFIRMACION FALSA —la mas silenciosa de las tres mitades
+            //    de esa regla—. La venta se veria completa y saldria cobrando
+            //    de menos.
+            disabled={items.length === 0 || hayLineaSinPrecio(items)}
             onClick={onCheckout}
           >
             Cobrar — {teclaDe('Cobrar')}

@@ -1,6 +1,7 @@
 import { useSedeConfig } from '@/hooks/useSedeConfig'
 import { DEFAULT_PLAZOS_CREDITO } from '@/lib/sedeConfig'
 import { useState } from 'react'
+import { ListSelector } from '@/components/ui/ListSelector'
 import { X, Loader2 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { useCustomerMutations, type Customer } from '@/hooks/useCustomers'
@@ -33,6 +34,13 @@ export function CustomerFormModal({ customer, onClose, onSaved }: CustomerFormMo
   //    afirmaría "vence el mismo día" y sin plazo no se puede afirmar nada.
   const { config } = useSedeConfig()
   const plazos = config.plazos_credito ?? DEFAULT_PLAZOS_CREDITO
+  // 🔴 La lista POR DEFECTO del cliente (deuda 101). `null` = sin lista, que NO
+  //    es lo mismo que L1: sin lista se vende a L1 por regla de la sede, y eso
+  //    es una suposicion NUESTRA (§8.19, sin confirmar). Marcarlo como si ella
+  //    lo hubiera elegido convertiria la suposicion en un dato suyo.
+  const [nivelDefault, setNivelDefault] = useState<number | null>(
+    isNew ? null : customer.nivel_default ?? null,
+  )
   const [plazo, setPlazo] = useState<string>(
     isNew ? '' : (customer.plazo_dias == null ? '' : String(customer.plazo_dias)),
   )
@@ -46,6 +54,7 @@ export function CustomerFormModal({ customer, onClose, onSaved }: CustomerFormMo
       document: document.trim() || null,
       notes: notes.trim() || null,
       plazo_dias: plazo === '' ? null : Number(plazo),
+      nivel_default: nivelDefault,
     })
     if (saved) onSaved?.(saved as Customer)
     onClose()
@@ -102,6 +111,15 @@ export function CustomerFormModal({ customer, onClose, onSaved }: CustomerFormMo
                 <option key={d} value={String(d)}>{d} días</option>
               ))}
             </select>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--ink-2)', margin: '0 0 6px' }}>
+              Lista de precios
+            </label>
+            {/* 🔴 ES UN DEFECTO, NO UNA ATADURA (§7.19): dice donde ARRANCA cada
+                linea de sus ventas, y cada linea se puede mover despues sin
+                tocar al cliente. Por eso vive en la ficha y no en el cobro. */}
+            <div style={{ marginBottom: 14 }}>
+              <ListSelector value={nivelDefault} onChange={setNivelDefault} testid="customer-lista" />
+            </div>
             <textarea data-testid="customer-notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Observaciones del cliente..." rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
           </div>
         </div>

@@ -2561,6 +2561,45 @@ día deja **0 de 110** líneas sin costo; el orden contrario, **39 de 110 y el 4
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · UN ESTADO QUE SOBREVIVE A LA OPERACIÓN QUE LO JUSTIFICABA CONTAMINA LA SIGUIENTE — Y EN SILENCIO
+
+*2026-09-14, al bajar el cliente al carrito (deuda 101). **No estaba pedido: se seguía del cambio**,
+y por eso vale escribirlo — la próxima vez el que mueva un estado no va a tener a nadie que se lo
+recuerde.*
+
+**El caso.** El cliente de la venta pasó de ser estado local del modal de cobro a vivir en el
+mostrador. Mientras vivía en el modal, **se destruía solo**: el modal se desmonta al cerrarse. Al
+subirlo, dejó de destruirse — y nada lo pedía, porque nada fallaba.
+
+> **La venta siguiente habría nacido cotizada a la lista del CLIENTE ANTERIOR**, con todas sus líneas
+> en un nivel que nadie eligió, y sin una sola señal en pantalla.
+
+🔴 **Por qué es silencioso y no ruidoso, que es lo que lo hace de esta familia:** un cliente pegado
+no produce ningún error. Produce **precios plausibles** — son precios reales, de una lista real, de
+un producto real. Es *un número plausible es peor que un hueco visible* con el agravante de que acá
+ni siquiera hay hueco: hay un número correcto contestando la pregunta equivocada.
+
+⚠️ **Y la causa es mecánica, no de criterio: al SUBIR un estado de componente, se pierde el
+desmontaje que lo limpiaba.** El `useState` del hijo tenía un ciclo de vida atado a la operación; el
+del padre tiene el ciclo de vida de la pantalla. Nadie escribe esa limpieza porque **antes no
+existía** — la hacía React.
+
+✅ **LO ACCIONABLE, y es una pregunta al mover cualquier estado hacia arriba:**
+
+> **¿Qué lo destruía antes, y qué lo destruye ahora?** Si la respuesta a la primera es *«el
+> desmontaje»* y a la segunda *«nada»*, falta la limpieza — y el lugar es el mismo donde ya se limpia
+> el resto de la operación.
+
+Acá: `onComplete` ya hacía `clear()` del carrito y reseteaba el canal. El cliente va ahí, con los
+otros dos, y no en un `useEffect` aparte: **lo que muere junto se escribe junto**.
+
+⚠️ Corolario para revisar código existente: **todo estado que representa «algo de ESTA operación»
+tiene que morir con ella.** Cliente, descuento, canal, plazo, notas. Si vive en la pantalla y la
+pantalla no se desmonta entre operaciones, alguien tiene que matarlo explícitamente — y el que lo
+subió es el único que sabe que hace falta.
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · EL ATAJO NO PUEDE LO QUE EL CLIC NO PUEDE — Y EL REMEDIO NO ES ESCRIBIR LA REGLA DOS VECES, ES QUE LOS DOS CAMINOS LLAMEN AL MISMO LUGAR
 
 *2026-09-14, cableando Alt+0–4 sobre el nivel de la línea. **Es R1 aplicada a una VALIDACIÓN**, y
@@ -2603,6 +2642,19 @@ primer refactor que busque «simplificar».
 Que el desplegable pinte `—` cuando no hay número no es la regla otra vez: es pintar un valor. Si se
 fuerza también eso a pasar por la función compartida, se termina metiendo lógica de UI adentro de la
 decisión, que es el error contrario.
+
+🔴 **Y EL CRITERIO SE ESCRIBIÓ PARA PREVENIR ALGO QUE YA HABÍA PASADO — se descubrió AL IR A
+ANOTARLO, no al buscarlo.** Las dos expresiones ya estaban divergidas en la forma cuando se redactó
+la regla. Que dieran el mismo resultado **era una coincidencia aritmética, no una garantía**: un
+verde que no probaba nada, corriendo en producción.
+
+⚠️ **Y eso convierte la asimetría en lo accionable, no en una observación:**
+
+> **Al buscar reglas duplicadas, empezá por el camino que MENOS gente toca.** Es donde la copia
+> vieja sobrevive, porque nadie la ejerce y ningún síntoma la delata.
+
+El orden natural es el contrario —se audita lo que más se usa, porque es lo que más importa— y es
+exactamente el orden equivocado para esta clase: lo que más se usa es lo que **se mantiene solo**.
 
 📋 **Dónde más aplica hoy, para que no quede como el arreglo de un caso:** todo par
 teclado/pantalla del mostrador —cobrar, descuento, cambiar cliente, poner en espera— y todo par
