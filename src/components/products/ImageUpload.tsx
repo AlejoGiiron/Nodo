@@ -1,8 +1,17 @@
 import { useRef, useState, useCallback } from 'react'
 import { Upload, X, ImageIcon } from 'lucide-react'
 
-const MAX_BYTES = 2 * 1024 * 1024 // 2 MB
-const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp']
+// 🔴 LOS DOS VALORES SALIERON A `@/lib/imagenes` (2026-09-15) porque el camino
+//    del LOGO de la sede es otro y no validaba nada. Salieron SOLO los valores:
+//    el `validate` de abajo se queda acá porque escribe estado de React —dos
+//    banderas para dos mensajes en linea— y eso es presentacion, no la regla.
+//
+// ⚠️ Y queda una anotacion honesta: la REGLA («que cuenta como imagen valida»)
+//    esta ahora en dos expresiones —el `validate` de este componente y
+//    `validarImagen()`— y los dos valores que las alimentan sí son uno solo. Si
+//    algun dia divergen en la REGLA y no en los valores, el lado que se congela
+//    es este, que es el que menos gente toca.
+import { MAX_BYTES, ACCEPTED } from '@/lib/imagenes'
 
 interface ImageUploadProps {
   value: string | null

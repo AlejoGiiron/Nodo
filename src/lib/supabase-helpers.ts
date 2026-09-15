@@ -274,13 +274,15 @@ export const uploadProductImage = async (
   sedeId: string,
   productId: string,
   file: File,
-): Promise<string | null> => {
+): Promise<string> => {
   const ext = file.name.split('.').pop() ?? 'jpg'
   const path = `${sedeId}/${productId}.${ext}`
   const { data, error } = await supabase.storage
     .from('product-images')
     .upload(path, file, { upsert: true })
-  if (error || !data) return null
+  // Propaga: quien llama decide como mostrarlo, con el mensaje REAL.
+  if (error) throw error
+  if (!data) throw new Error('El almacenamiento no devolvio la ruta del archivo')
   const { data: { publicUrl } } = supabase.storage
     .from('product-images')
     .getPublicUrl(data.path)
@@ -951,17 +953,34 @@ export const createUser = (params: {
 }) => supabase.functions.invoke('create-user', { body: params })
 
 // --- Storage: sede-logos (logo + nequi QR) ---
+//
+// 🔴 LAS TRES SUBIDAS PROPAGAN EL ERROR, y hasta el 2026-09-15 lo TIRABAN.
+//    La linea era `if (error || !data) return null`, asi que el `StorageError`
+//    —el unico que sabe si falto el bucket, si falto la policy, si el archivo
+//    era muy grande o si no hay permiso— se descartaba ANTES de que nadie lo
+//    leyera, y el llamador solo podia decir «Error al subir el logo».
+//
+//    No era un mensaje pobre: **el dato ya no existia** cuando el toast se
+//    escribia. Es la misma clase que el `toast.error` plano de `saveProduct`, y
+//    la misma familia que «un catch que convierte un error en '' es fail-open».
+//
+// ⚠️ SON TRES INSTANCIAS, NO DOS: `uploadSedeLogo`, `uploadNequiQR` y
+//    `uploadProductImage`. Las dos primeras comparten bucket; la tercera es de
+//    otro. Se arreglan juntas a proposito — arreglar la que duele y dejar las
+//    hermanas es el defecto que este repo ya pago varias veces.
 
 export const uploadSedeLogo = async (
   sedeId: string,
   file: File,
-): Promise<string | null> => {
+): Promise<string> => {
   const ext = file.name.split('.').pop() ?? 'png'
   const path = `${sedeId}/logo.${ext}`
   const { data, error } = await supabase.storage
     .from('sede-logos')
     .upload(path, file, { upsert: true })
-  if (error || !data) return null
+  // Propaga: quien llama decide como mostrarlo, con el mensaje REAL.
+  if (error) throw error
+  if (!data) throw new Error('El almacenamiento no devolvio la ruta del archivo')
   const { data: { publicUrl } } = supabase.storage
     .from('sede-logos')
     .getPublicUrl(data.path)
@@ -971,13 +990,15 @@ export const uploadSedeLogo = async (
 export const uploadNequiQR = async (
   sedeId: string,
   file: File,
-): Promise<string | null> => {
+): Promise<string> => {
   const ext = file.name.split('.').pop() ?? 'png'
   const path = `${sedeId}/nequi-qr.${ext}`
   const { data, error } = await supabase.storage
     .from('sede-logos')
     .upload(path, file, { upsert: true })
-  if (error || !data) return null
+  // Propaga: quien llama decide como mostrarlo, con el mensaje REAL.
+  if (error) throw error
+  if (!data) throw new Error('El almacenamiento no devolvio la ruta del archivo')
   const { data: { publicUrl } } = supabase.storage
     .from('sede-logos')
     .getPublicUrl(data.path)

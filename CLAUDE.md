@@ -2660,6 +2660,109 @@ habilita el push.
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · UN ARCHIVO ARCHIVADO SE LEE COMO «ASÍ SE HACE ESTO ACÁ» — Y EL ÚNICO PRECEDENTE QUE EXISTÍA ERA EL DEFECTO
+
+*2026-09-15, al escribir los buckets de Storage. **La forma más cara de una nota que dirige mal**, y
+la primera de esta familia que no está en un documento ni en la pantalla: está en un archivo de
+código.*
+
+**El caso.** Había que crear dos buckets con sus policies, y existía un precedente en el repo:
+`supabase/_heredado/storage-product-images.sql`. Lo que dice:
+
+```sql
+-- Ejecutar en Supabase Dashboard → SQL Editor      ← primera línea del archivo
+CREATE POLICY "product-images: upload autenticado"
+ON storage.objects FOR INSERT TO authenticated
+WITH CHECK (bucket_id = 'product-images');          ← sin acotar la CARPETA
+```
+
+> **Cualquier usuario con sesión escribe en la carpeta de cualquier tenant.** Y con `upsert: true`,
+> que es como sube el código, **sobrescribe sin avisar**.
+
+🔴 **TRES DEFECTOS EN UN ARCHIVO DE VEINTE LÍNEAS, y los tres se leen como normales:** la policy
+ancha, el hecho de vivir **fuera de `migrations/`**, y una instrucción explícita de **aplicarlo a
+mano**. Es exactamente el origen de la clase que la deuda 110 nombra — infraestructura que el repo no
+describe— escrita como si fuera el procedimiento.
+
+⚠️ **Y lo único que evitó que el agujero existiera es que NUNCA SE APLICÓ.** El bucket no existe; la
+policy tampoco. O sea que el repo estuvo protegido **por un olvido**, no por una decisión — y ese
+mismo olvido es el bug que la clienta reportó.
+
+🔴 **POR QUÉ ES LA FORMA MÁS CARA DE «UNA NOTA QUE DIRIGE MAL»:**
+
+| dónde vive la nota falsa | qué hace quien la lee |
+|---|---|
+| un documento | razona sobre ficción, y alguien puede grepear y desmentirla |
+| la pantalla | ejecuta una instrucción imposible |
+| 🔴 **un archivo de código archivado** | **lo copia** — y hereda el defecto entero, con la autoridad de que «ya estaba resuelto acá» |
+
+Un `.sql` en el repo **no se lee como historia: se lee como plantilla.** Nadie abre un archivo de
+código para estudiar de dónde viene; lo abre para hacer lo mismo. Y `_heredado/` está declarado como
+registro de procedencia en `CLAUDE.md` —**eso es cierto y no alcanza**, porque la carpeta no viaja
+pegada al archivo cuando alguien lo encuentra grepeando `storage.objects`.
+
+✅ **LO ACCIONABLE, y es sobre CÓMO SE CITA un precedente, no sobre borrarlo:**
+
+> **Antes de copiar un patrón del repo, preguntá si ese archivo se APLICÓ alguna vez.** Un archivo que
+> nunca se ejecutó no es un precedente: es un borrador que nadie revisó — y su defecto no lo destapó
+> nadie justamente porque nunca corrió.
+
+⚠️ Y el corolario que lo separa de la poda: **esto no se resuelve borrando `_heredado/`.** Ahí está la
+procedencia, y borrarla haría que un archivo archivado describiera un esquema que nunca tuvo. Lo que
+corresponde es que **la migración nueva diga explícitamente que el precedente era el defecto** — y la
+`20260915180000` lo dice en su R0, punto 2, con la línea de la policy ancha citada textual.
+
+---
+
+### 🔴 CRITERIO SIN NÚMERO · DOS DEFECTOS PROPIOS EN UNA MIGRACIÓN SIN APLICAR: UNA PRECEDENCIA BOOLEANA, Y UN OBJETO QUE NO ES NUESTRO
+
+*2026-09-15, revisando el archivo antes de pasarlo. Los dos estaban en el bloque de ASERCIONES, o sea
+**en la parte que existe para que la migración se proteja sola**.*
+
+**① LA PRECEDENCIA.** La aserción contaba las policies creadas así:
+
+```sql
+where schemaname = 'storage' and tablename = 'objects'
+  and policyname like 'sede-logos:%' or policyname like 'product-images:%'   -- ⛔
+```
+
+**`AND` liga más fuerte que `OR`**, así que eso es `(… and 'sede-logos:%') OR ('product-images:%')` —
+y la segunda rama **no tiene ningún filtro de esquema ni de tabla**. La aserción habría contado
+policies de cualquier lado y el `>= 8` habría pasado con nuestras policies a medio crear.
+
+⚠️ **Y falla hacia el lado que tranquiliza:** cuenta de MÁS, así que una migración incompleta pasa la
+verificación que existe para detenerla. Es *una confirmación falsa* dentro del mecanismo que la
+reemplaza — el mismo perfil que la suma de control inventada, en aritmética booleana en vez de
+decimal.
+
+**② UN OBJETO QUE NO ES NUESTRO — y esto es una clase nueva en el proyecto.** El archivo terminaba con
+un `comment on table storage.buckets`, para dejar anotado el contrato de R1 con `ImageUpload`. **Habría
+abortado la migración entera**: `comment` exige ser **dueño** de la tabla, y `storage.buckets` la posee
+`supabase_storage_admin`.
+
+> **Podemos escribir POLICIES sobre `storage.objects` y no podemos ponerle un COMENTARIO.** Los
+> privilegios y la propiedad son ejes distintos, y la intuición «si puedo tocarlo, puedo describirlo»
+> es falsa.
+
+🔴 **Lo que la hace clase y no una anécdota: todas las migraciones anteriores de este repo operan sobre
+objetos NUESTROS**, donde ser dueño se da por sentado y nunca hubo que preguntárselo. La primera vez
+que una migración cruza a un esquema de la plataforma —`storage`, `auth`, `cron`— esa suposición deja
+de valer, **y lo hace abortando**.
+
+✅ **LO ACCIONABLE, y son dos preguntas al escribir una migración que toca un esquema ajeno:**
+
+1. **¿Qué operaciones exigen PROPIEDAD y no privilegio?** `comment`, `alter table`, `drop`, cambiar el
+   owner. Esas no están disponibles sobre `storage`, `auth` ni `cron` — aunque sí lo esté crear una
+   policy.
+2. **Lo que no se pueda escribir EN el objeto, va en la cabecera del archivo.** La nota de R1 no se
+   perdió: se movió a donde sí se lee, que además es donde vive el resto del razonamiento.
+
+⚠️ Y el corolario sobre cuándo se cazaron: **releyendo el archivo antes de pasarlo, no ejecutándolo.**
+Los dos habrían aparecido en el `db push` —uno abortando, el otro NO— y ésa es la asimetría que
+importa: el del `comment` se anunciaba solo; **el de la precedencia habría pasado en verde.**
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · UNA NOTA QUE DIRIGE MAL, PERO EN LA PANTALLA: EL PRODUCTO LE DIJO AL USUARIO QUE FUERA A UN LUGAR QUE NO EXISTE
 
 *2026-09-15, barrido de copy de la deuda 109. **Nadie lo estaba buscando**: apareció por un cambio de

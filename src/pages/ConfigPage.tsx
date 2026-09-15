@@ -1,5 +1,7 @@
 import { useState, useRef } from 'react'
 import { toast } from 'react-hot-toast'
+import { mensajeDeError } from '@/lib/errores'
+import { validarImagen } from '@/lib/imagenes'
 import {
   Building2,
   Users,
@@ -260,11 +262,27 @@ function SectionSede() {
 
   const handleLogoUpload = async (file: File) => {
     if (!profile?.sede_id) return
+    // 🔴 ANTES DE SUBIR, y por eso existe: sin esto un archivo de 5 MB llega al
+    //    servidor y el error que vuelve es el crudo de Storage, que no dice que
+    //    hacer. El limite del bucket es el que no se puede saltear; este es el
+    //    que se entiende.
+    const problema = validarImagen(file)
+    if (problema) { toast.error(problema); return }
     setUploadingLogo(true)
-    const url = await uploadSedeLogo(profile.sede_id, file)
-    setUploadingLogo(false)
-    if (!url) { toast.error('Error al subir el logo'); return }
-    await updateSede({ logo_url: url })
+    try {
+      const url = await uploadSedeLogo(profile.sede_id, file)
+      await updateSede({ logo_url: url })
+    } catch (err) {
+      // 🔴 El mensaje REAL. Antes decia «Error al subir el logo» y punto: no
+      //    distinguia «no existe el bucket» de «no tenes permiso» de «el
+      //    archivo es muy grande», que son tres problemas de tres personas
+      //    distintas.
+      toast.error(mensajeDeError(err, 'No se pudo subir el logo'))
+    } finally {
+      // En el `finally`: antes, si la subida tiraba, el boton quedaba en
+      // «Subiendo...» para siempre.
+      setUploadingLogo(false)
+    }
   }
 
   const handleSave = async () => {
@@ -870,11 +888,21 @@ function SectionCajaForm({ config }: { config: SedeConfig }) {
 
   const handleNequiUpload = async (file: File) => {
     if (!profile?.sede_id) return
+    // 🔴 ANTES DE SUBIR, y por eso existe: sin esto un archivo de 5 MB llega al
+    //    servidor y el error que vuelve es el crudo de Storage, que no dice que
+    //    hacer. El limite del bucket es el que no se puede saltear; este es el
+    //    que se entiende.
+    const problema = validarImagen(file)
+    if (problema) { toast.error(problema); return }
     setUploadingQR(true)
-    const url = await uploadNequiQR(profile.sede_id, file)
-    setUploadingQR(false)
-    if (!url) { toast.error('Error al subir el QR'); return }
-    await updateConfig({ nequi_qr_url: url })
+    try {
+      const url = await uploadNequiQR(profile.sede_id, file)
+      await updateConfig({ nequi_qr_url: url })
+    } catch (err) {
+      toast.error(mensajeDeError(err, 'No se pudo subir el QR'))
+    } finally {
+      setUploadingQR(false)
+    }
   }
 
   return (

@@ -109,9 +109,15 @@ export function useProductMutations() {
 
   const uploadImage = async (productId: string, file: File): Promise<string | null> => {
     if (!profile) return null
-    const url = await uploadProductImage(profile.sede_id, productId, file)
-    if (!url) toast.error('No se pudo subir la imagen — el producto se guardará sin ella')
-    return url
+    try {
+      return await uploadProductImage(profile.sede_id, productId, file)
+    } catch (err) {
+      // Se conserva que el producto se guarda igual —esa parte estaba bien— y
+      // se agrega POR QUE fallo: el mensaje anterior no distinguia un bucket
+      // ausente de un archivo rechazado.
+      toast.error(mensajeDeError(err, 'No se pudo subir la imagen') + ' — el producto se guardará sin ella')
+      return null
+    }
   }
 
   const removeImage = async (imageUrl: string): Promise<void> => {
