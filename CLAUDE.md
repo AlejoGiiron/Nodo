@@ -2495,6 +2495,21 @@ eternamente.
 > «funcionaba» en la creación — `isPending && isFetching` es falso con la consulta apagada, que es
 > justo la respuesta que hacía falta ahí.
 
+🔴 **LA CONCLUSIÓN QUE HACE QUE LA PRÓXIMA ELECCIÓN NO SEA A CIEGAS, y no es «usá este flag»:**
+
+> **Ningún flag solo describe los tres estados.** Así que *«¿cuál uso?»* es la pregunta equivocada —
+> no tiene respuesta única. La pregunta es **qué DOS estados necesita distinguir ESTE consumidor**, y
+> la contesta el consumidor, no el hook.
+
+| el consumidor | qué necesita separar | el flag |
+|---|---|---|
+| **el guard de una ESCRITURA** que reconcilia | **confirmado** vs **viejo** | `!isPending && !isFetching` |
+| **el render de un formulario NUEVO** | **apagada** vs **cargando** | `isLoading` — o el `!id` explícito |
+
+⚠️ Y por eso el hook expone **los dos** y cada consumidor elige: meter un solo flag «bueno» en el hook
+es volver a colapsar el eje, esta vez en el lugar donde nadie ve al consumidor. **El hook describe la
+consulta; el consumidor decide qué distinción le importa.**
+
 ⚠️ **Lo que lo hace registrable y no un descuido: el arreglo era CORRECTO y aun así introdujo un
 defecto.** No falló el diagnóstico —el caché viejo era real y medido— ni la dirección. Falló tratar un
 eje de **tres** estados como si fuera de dos: se eligió el flag que separaba bien *«confirmado»* de
@@ -2596,6 +2611,26 @@ pagó dos veces.)*
 arma con **los símbolos que uno tocó**, y el defecto vivía en **el significado de un valor que cruza
 un prop**. `precioUnitario` no aparece en ningún grep de lo que la tanda editó; lo que cambió fue qué
 significa su ausencia.
+
+🔴 **Y HAY UNA FORMA DEL RECORTE QUE EXPLICA VARIAS DE LAS FILAS DE ARRIBA: LOS DOS EXTREMOS DE UN
+MISMO COMPONENTE NO SON EL MISMO CONSUMIDOR.** *2026-09-15.*
+
+El arreglo del guard se midió contra **reabrir** un producto guardado —el escenario que lo motivó— y
+ahí quedó verde. Lo que se rompió fue **crear** uno: el otro extremo del mismo modal, en el mismo
+archivo, con el mismo hook.
+
+> **El grupo se arma por ARCHIVO, y el defecto vive en UN CAMINO del archivo.** Un componente con modo
+> creación y modo edición no tiene un consumidor: tiene dos, y comparten casi todo el código menos la
+> pregunta que cambió.
+
+⚠️ Y es lo que hace que un grep de consumidores dé una lista **correcta y corta de más**: `ProductModal`
+aparece una vez, así que el grupo lo cubre «una vez» — y lo que había que ejercitar eran sus dos modos.
+Lo mismo vale para cualquier eje interno que el componente ramifique: con permiso y sin permiso, con
+dato y vacío, con stock y sin stock.
+
+✅ **Lo accionable, al tocar un componente que ramifica por modo:** **los dos modos son consumidores
+distintos** y los dos entran al grupo. Y si sólo se ejercitó uno, el registro lo dice — *«medido contra
+edición; creación sin medir»* es una frase honesta y **`28 passed` no lo es**.
 
 > **El grupo por consumidor se construye con lo que uno SABE que tocó. El defecto vive en lo que uno
 > no sabe que tocó — y si lo supiera, ya lo habría arreglado.**
