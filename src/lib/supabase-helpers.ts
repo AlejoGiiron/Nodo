@@ -279,7 +279,11 @@ export const uploadProductImage = async (
   const path = `${sedeId}/${productId}.${ext}`
   const { data, error } = await supabase.storage
     .from('product-images')
-    .upload(path, file, { upsert: true })
+    // `cacheControl` es POR SUBIDA, no del bucket: no degrada el cache de
+    // ningun otro objeto. El default de supabase-js es '3600' —una hora— y esa
+    // es la mitad del problema de la deuda 111; la otra mitad la resuelve el
+    // `?v=` derivado de `updated_at` en el render.
+    .upload(path, file, { upsert: true, cacheControl: '60' })
   // Propaga: quien llama decide como mostrarlo, con el mensaje REAL.
   if (error) throw error
   if (!data) throw new Error('El almacenamiento no devolvio la ruta del archivo')
@@ -977,7 +981,11 @@ export const uploadSedeLogo = async (
   const path = `${sedeId}/logo.${ext}`
   const { data, error } = await supabase.storage
     .from('sede-logos')
-    .upload(path, file, { upsert: true })
+    // `cacheControl` es POR SUBIDA, no del bucket: no degrada el cache de
+    // ningun otro objeto. El default de supabase-js es '3600' —una hora— y esa
+    // es la mitad del problema de la deuda 111; la otra mitad la resuelve el
+    // `?v=` derivado de `updated_at` en el render.
+    .upload(path, file, { upsert: true, cacheControl: '60' })
   // Propaga: quien llama decide como mostrarlo, con el mensaje REAL.
   if (error) throw error
   if (!data) throw new Error('El almacenamiento no devolvio la ruta del archivo')
@@ -995,7 +1003,11 @@ export const uploadNequiQR = async (
   const path = `${sedeId}/nequi-qr.${ext}`
   const { data, error } = await supabase.storage
     .from('sede-logos')
-    .upload(path, file, { upsert: true })
+    // `cacheControl` es POR SUBIDA, no del bucket: no degrada el cache de
+    // ningun otro objeto. El default de supabase-js es '3600' —una hora— y esa
+    // es la mitad del problema de la deuda 111; la otra mitad la resuelve el
+    // `?v=` derivado de `updated_at` en el render.
+    .upload(path, file, { upsert: true, cacheControl: '60' })
   // Propaga: quien llama decide como mostrarlo, con el mensaje REAL.
   if (error) throw error
   if (!data) throw new Error('El almacenamiento no devolvio la ruta del archivo')

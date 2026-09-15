@@ -20,6 +20,7 @@ import {
 import { toast } from 'react-hot-toast'
 import { useAuth } from '@/hooks/useAuth'
 import { usePermissions } from '@/hooks/usePermissions'
+import { urlConVersion } from '@/lib/imagenes'
 import { useSedeConfig } from '@/hooks/useSedeConfig'
 import { useCashShift } from '@/hooks/useCashShift'
 import { useCollapsedGroups } from '@/hooks/useCollapsedGroups'
@@ -132,7 +133,12 @@ export function AppLayout() {
   //    Login y en Configuración.
   const { organizationName } = useOrganization()
   const sedeName = sede?.name ?? null
-  const brandLogo = sede?.logo_url ?? null
+  // ⚠️ El `?v=` sale de `sedes.updated_at`, que COMPARTEN el logo y el QR de
+  //    Nequi porque viven en la misma fila. Cambiar el QR invalida tambien el
+  //    cache del logo, y es a proposito: UN solo lado que se mueve solo, contra
+  //    dos que habria que mantener. No es falta de granularidad -- es la
+  //    decision. Ver `urlConVersion` en `@/lib/imagenes`.
+  const brandLogo = urlConVersion(sede?.logo_url, sede?.updated_at)
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const { collapsed, toggle } = useCollapsedGroups()

@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import { toast } from 'react-hot-toast'
 import { mensajeDeError } from '@/lib/errores'
-import { validarImagen } from '@/lib/imagenes'
+import { validarImagen, urlConVersion } from '@/lib/imagenes'
 import {
   Building2,
   Users,
@@ -312,7 +312,7 @@ function SectionSede() {
             }}
           >
             {sede?.logo_url ? (
-              <img src={sede.logo_url} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <img src={urlConVersion(sede.logo_url, sede.updated_at) ?? undefined} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : (
               <Building2 size={28} color="var(--ink-4)" />
             )}
@@ -854,7 +854,7 @@ function SectionCaja() {
 }
 
 function SectionCajaForm({ config }: { config: SedeConfig }) {
-  const { updateConfig, isSaving } = useSedeConfig()
+  const { updateConfig, isSaving, sede } = useSedeConfig()
   const { profile } = useAuth()
   const nequiInputRef = useRef<HTMLInputElement>(null)
   const [uploadingQR, setUploadingQR] = useState(false)
@@ -1008,7 +1008,7 @@ function SectionCajaForm({ config }: { config: SedeConfig }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           {config.nequi_qr_url && (
             <div style={{ width: 88, height: 88, border: '1.5px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
-              <img src={config.nequi_qr_url} alt="QR Nequi" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <img src={urlConVersion(config.nequi_qr_url, sede?.updated_at) ?? undefined} alt="QR Nequi" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
           )}
           <input ref={nequiInputRef} type="file" accept="image/*" style={{ display: 'none' }}

@@ -51,3 +51,54 @@ export function validarImagen(file: File): string | null {
   }
   return null
 }
+
+/**
+ * La URL de una imagen **con su versión**, para que el navegador y el CDN no
+ * sigan sirviendo la anterior.
+ *
+ * 🔴 POR QUÉ HACE FALTA (deuda 111, medido el 2026-09-15): las tres rutas de
+ *    Storage son FIJAS —`${sedeId}/logo.png`, `${sedeId}/nequi-qr.png`,
+ *    `${sedeId}/${productId}.png`— y se suben con `upsert: true`. O sea que al
+ *    reemplazar una imagen **la URL no cambia**, y medido contra la base:
+ *
+ *      cache-control: public, max-age=3600   ·   cf-cache-status: MISS → HIT
+ *      tras borrar el archivo, la URL pública seguía devolviendo 200
+ *      la misma URL con `?v=…` devolvía 400  → el origen ya no lo tenía: era CACHÉ
+ *
+ *    Síntoma que evita: «subí el logo nuevo y sigue el de antes».
+ *
+ * 🔴 LA VERSIÓN SE DERIVA, NO SE GUARDA — y es la decisión fina. Guardar un
+ *    `?v=` dentro de `logo_url` haría que esa columna dejara de ser la URL
+ *    canónica y pasara a ser «la URL de esta versión»: un valor con dos
+ *    significados. Y peor: sería un SEGUNDO LADO que alguien tendría que
+ *    acordarse de actualizar, así que **cualquier camino futuro que escriba la
+ *    imagen sin tocar la cadena dejaría la URL vieja** — el mismo defecto que
+ *    esto arregla, reintroducido por el arreglo.
+ *
+ *    `updated_at` **se mueve solo**: lo escribe `handle_updated_at()` en un
+ *    trigger `before update`. No hay nada que recordar.
+ *
+ * ⚠️ Y EL DATO QUE HACE QUE ESTO FUNCIONE CON UNA RUTA FIJA, que hubo que
+ *    medir: **Postgres dispara el trigger aunque el valor escrito sea
+ *    IDÉNTICO**. Como la ruta no cambia, `updateSede({ logo_url })` guarda la
+ *    misma cadena — y `updated_at` se mueve igual. Sin eso el `?v=` habría sido
+ *    constante y **habría parecido resuelto sin estarlo**, que es peor que no
+ *    hacerlo.
+ *
+ * 🔴 SE DERIVA EN UN SOLO LUGAR, ACÁ. Son SEIS sitios de render —el logo en el
+ *    sidebar y en Configuración, el QR, y la foto en `ProductCard`,
+ *    `ProductRow`— y calcular lo mismo en cada uno es R1 esperando: el día que
+ *    alguien cambie el formato del parámetro, los que no toque quedan viejos.
+ */
+export function urlConVersion(
+  url: string | null | undefined,
+  version: string | null | undefined,
+): string | null {
+  if (!url) return null
+  if (!version) return url
+  const t = new Date(version).getTime()
+  // Una fecha inválida devolvería `NaN`, y `?v=NaN` es una versión que nunca
+  // cambia: sin dato de versión, mejor la URL cruda que una falsa.
+  if (Number.isNaN(t)) return url
+  return `${url}${url.includes('?') ? '&' : '?'}v=${t}`
+}

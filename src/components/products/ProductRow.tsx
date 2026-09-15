@@ -3,6 +3,7 @@ import { Pencil, Archive, ImageOff } from 'lucide-react'
 import { MoneyCell } from '@/components/ui/MoneyCell'
 import { Badge } from '@/components/ui/Badge'
 import type { ProductWithCategory } from '@/stores/cartStore'
+import { urlConVersion } from '@/lib/imagenes'
 
 /**
  * Fila del Catálogo — A6 · tanda 4, §7.3.
@@ -71,7 +72,7 @@ export function ProductRow({
       {/* Miniatura — (d): la maqueta no la dibuja, el producto la tiene. */}
       {product.image_url ? (
         <img
-          src={product.image_url}
+          src={urlConVersion(product.image_url, product.updated_at) ?? undefined}
           alt=""
           style={{ width: 30, height: 30, borderRadius: 6, objectFit: 'cover' }}
         />

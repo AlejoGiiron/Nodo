@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Pencil, Archive, ImageIcon, Package, AlertTriangle } from 'lucide-react'
 import type { ProductWithCategory } from '@/stores/cartStore'
+import { urlConVersion } from '@/lib/imagenes'
 
 const formatCOP = (n: number) =>
   new Intl.NumberFormat('es-CO', {
@@ -37,7 +38,7 @@ export function ProductCard({ product, onEdit, onDeactivate }: ProductCardProps)
       <div style={{ position: 'relative', height: 148, background: `${color}15`, flexShrink: 0 }}>
         {product.image_url ? (
           <img
-            src={product.image_url}
+            src={urlConVersion(product.image_url, product.updated_at) ?? undefined}
             alt={product.name}
             // contain (no cover) para no recortar fotos verticales/horizontales;
             // el letterbox toma el tono suave de la categoría del contenedor (${color}15).
