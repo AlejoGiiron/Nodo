@@ -1905,6 +1905,7 @@ producto crece hacia ahí, el control se pone rojo, y el rojo **no es del sujeto
 | `F4` | *"§5 la asigna y no se cableó"* | el cobro en línea le dio su control (cambiar cliente) |
 | `F8` | *"Pedidos no existe"* | Catálogo se mudó ahí al liberarse F5 |
 | **`F5`** | 🔴 *"el producto **decidió** no tomarla"* | — **nada puede matarla sin revertir la decisión** |
+| **el modal sin campos de texto** *(2026-09-15)* | 🔴 *"el picker se **retiró** del modal a propósito"* | — **nada, salvo revertir esa decisión, y entonces el rojo es correcto** |
 
 **La diferencia es la clase de hecho en que se apoya:** las dos primeras se apoyaban en una
 **propiedad temporal** —*todavía* no está—, que es una afirmación de estado, y el estado se pudre.
@@ -1920,6 +1921,22 @@ sostienen mutuamente — uno mide el efecto, el otro impide la causa.
 respuesta empieza con *"todavía"*, el control caduca y **escribí cuándo** —el hecho concreto que lo
 va a romper— al lado. Si la respuesta es *"porque se decidió que no"*, no caduca, y conviene decir
 cuál decisión: es lo que hace que el próximo rojo se lea como lo que es.
+
+🔴 **Y LA CUARTA FILA ES DE OTRA ESPECIE: NO ES UN CONTROL DENTRO DE UN CASO — ES UN CASO QUE VIGILA
+LA PREMISA DE OTRO QUE SE RETIRÓ.** *2026-09-15, con el caso de las letras y el campo de texto.*
+
+Las tres primeras son **controles negativos**: viven adentro de un caso y existen para que su verde
+signifique algo. La cuarta es un **tripwire sobre una premisa**: el caso al que acompañaba **ya no
+existe** —su escenario se volvió imposible— y lo que quedó vigila **la condición que lo volvió
+imposible**.
+
+> **Cuando un caso se retira por falta de escenario, lo que se deja no es un comentario: es un caso
+> que se pone rojo el día que el escenario vuelve.** Un comentario explica; un tripwire avisa.
+
+⚠️ Y se apoya en lo mismo que hace buena a la tercera fila: **una decisión, no un «todavía»**. El
+modal de cobro no tiene campos de escritura porque el picker se retiró de ahí a propósito, con su
+mensaje que dirige. Si alguien le agrega uno, el rojo no es una molestia — está diciendo que el caso
+retirado volvió a ser escribible, y lo dice con el nombre del campo que lo volvió posible.
 
 ✅ **El instrumento que sí mide no observa la CONSECUENCIA: observa el HECHO.** No *"el navegador no
 hizo lo suyo"* —invisible acá— sino *"el evento salió con su default cortado"*:
@@ -2322,6 +2339,97 @@ directo sigue rechazado»**, que es lo que se quería.
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · UN CASO SE PUEDE DESCARTAR POR NO PODER DAR ROJO **ANTES DE ESCRIBIRLO** — Y ES LA PRIMERA VEZ
+
+*2026-09-15, eligiendo dónde re-alojar el caso de las letras. **Todas las apariciones anteriores de
+«un verde que no podía fallar» se cazaron con el caso YA ESCRITO** —a veces meses después—; ésta se
+cazó sobre una opción que todavía era una frase.*
+
+Este archivo tiene la familia entera: la fixture con un elemento, el control que no podía dar rojo,
+el `document.fonts.check` que contesta que sí para todo, el caso de F5 que el navegador nunca iba a
+ejecutar. **Las siete se descubrieron midiendo algo que ya existía.**
+
+**El caso.** Había dos salidas para un caso cuyo escenario murió, y la que sonaba mejor era *mover el
+sujeto a otra pantalla*: el guard es el mismo, y la pantalla nueva sí tiene el campo. El argumento es
+correcto **y no alcanza**, porque no dice si el atajo llega hasta el guard en esa pantalla.
+
+✅ **Lo que costó medirlo: una sonda de doce líneas y el mutante que ya se iba a aplicar igual.**
+
+```
+mutante = borrar `if (elFocoEstaEscribiendo()) return`
+
+  la opción propuesta (otra pantalla)  → VERDE con el guard borrado   ⛔ no mide
+  el caso original (su pantalla)       → ROJO  con el guard borrado   ✅ medía
+```
+
+**La causa, que ninguna lectura del guard mostraba:** el manejador vive dentro de un componente que
+se monta condicionalmente. En la pantalla propuesta **el listener no existe**, así que la tecla no
+llega a ningún lado — con guard o sin guard, el resultado es el mismo.
+
+> **El caso movido habría sido un verde que no puede fallar, con el nombre de una protección que no
+> estaría midiendo.** Y habría entrado a la suite como cobertura, que es el daño real.
+
+🔴 **LO ACCIONABLE, y es barato porque el mutante ya está en el procedimiento:**
+
+> **Antes de mover un caso a otro escenario, aplicá el mutante del sujeto AL ESCENARIO NUEVO.** No al
+> caso —todavía no existe—: al producto, y mirá si el escenario nuevo puede notar la diferencia.
+
+⚠️ **Y la asimetría que lo hace valer la pena:** medir la opción cuesta una sonda; descubrirlo después
+cuesta que el caso viva en la suite dando confianza, y que alguien lo cite como probado. Es
+*«el orden entre dos deudas se decide midiendo»* movido a la elección de un escenario — allá el orden
+equivocado producía un verde que miente, acá lo produce la pantalla equivocada.
+
+⚠️ Corolario para quien propone la salida: **un argumento sobre el SUJETO no dice nada sobre el
+ESCENARIO.** *«El guard es el mismo»* era cierto. Lo que faltaba preguntar es *«¿el escenario nuevo
+puede ver ese guard?»*, y eso no se contesta leyendo el guard.
+
+---
+
+### 🔴 CRITERIO SIN NÚMERO · UN PARCHE QUE RESUELVE **UN MIEMBRO** DE UNA CLASE ES INDISTINGUIBLE DE UNO QUE RESUELVE LA CLASE — Y SU COMENTARIO DESCRIBE LA CLASE ENTERA
+
+*2026-09-15, arreglando el filtro del Historial. Es «enumerar la clase y arreglar la instancia» con
+una vuelta nueva: **acá el que enumeró la clase fue el comentario del propio parche**.*
+
+**El caso.** El filtro por método usaba `payments!inner`. Un INNER JOIN **elimina de la consulta**
+toda orden sin filas en `payments`, y en este producto son tres clases: crédito, cortesía y anuladas.
+Alguien se encontró con el síntoma en las **anuladas**, escribió una consulta aparte y una sección
+«Anuladas (N)» — y dejó el comentario que lo explica:
+
+> *«una anulada perdió sus payments → no tiene método → no puede bucketizarse; se muestra aparte»*
+
+**Ese comentario describe la clase entera.** No dice «las anuladas son raras»: dice *sin pagos no hay
+método*, que es exactamente lo que le pasa al crédito y a la cortesía. El arreglo cubrió **un
+miembro**.
+
+🔴 **Y LO QUE LO HACE PEOR QUE UNA CLASE NO BARRIDA: la sección existente se lee como el MOLDE.** Al
+llegar el segundo miembro, lo natural es copiar el molde —«una sección para el fiado»—, y eso escala a
+tres secciones y a una pantalla que crece por cada clase. El parche no sólo deja el defecto vivo:
+**propone la forma equivocada de arreglarlo**.
+
+📋 **Lo que decidió el arreglo fue MEDIR, y las dos mediciones apuntaban en direcciones opuestas:**
+
+```
+sin `!inner`, el filtro embebido NO acota al padre   →  2.988 (todas) ⛔ un no-op silencioso
+`.is('payments', null)` SÍ lo expresa                →  1.384
+  anuladas 570 · cortesía 110 · fiado vivo 528 · fiado saldado 176  =  1.384  ← cierra
+```
+
+La primera descarta *«sacá el inner join»*, que era la salida obvia y deja un filtro que **parece
+andar**. La segunda habilita la salida correcta —una lista de clases con su predicado— y el que la
+vuelve confiable es **el cruce**: las cuatro particionan el conjunto sin resto.
+
+✅ **LO ACCIONABLE, y es una pregunta al LEER un parche, no al escribirlo:**
+
+> **Cuando un parche traiga un comentario que explica POR QUÉ hizo falta, preguntá si esa explicación
+> nombra sólo al caso que arregla o a una CLASE.** Si nombra una clase, los otros miembros están
+> vivos — y nadie los va a buscar, porque el parche se ve como una solución.
+
+⚠️ Corolario para el que escribe el parche: si vas a dejar el comentario que nombra la clase,
+**enumerá los miembros en ese mismo momento**. Cuesta una consulta y es el único momento en que
+alguien tiene el mecanismo entero en la cabeza.
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · UN SPEC RE-DERIVADO PUEDE NACER ROJO — Y EL PRIMERO QUE NO LO CORRE ES LA TANDA QUE LO ESCRIBIÓ
 
 *2026-09-15, al correr el grupo de consumidores del arreglo del cliente. **Primera vez que la tanda
@@ -2362,6 +2470,14 @@ un spec que **nació roto**.
 > **«No lo causó mi cambio» y «lo causó aquel commit» son dos afirmaciones distintas, y sólo la
 > primera estaba medida.** La segunda se adoptó porque encajaba — es el corolario de R4 sobre el
 > diagnóstico, con la hipótesis rebotando entre dos personas.
+
+🔴 **Y LO ACCIONABLE ES POR QUÉ LA SEGUNDA CASI NUNCA SE MIDE: la primera ya tranquiliza.** Descartar
+la propia autoría cierra la pregunta que uno tenía —*«¿rompí algo?»*— y la que queda —*«¿entonces qué
+lo rompió?»* — ya no le urge a nadie. Por eso la atribución se completa con una hipótesis prestada en
+vez de con un comando, y por eso el resultado real —**nació rojo**— era peor que las dos hipótesis
+que estaban sobre la mesa.
+
+> **«No fue X» y «fue Y» necesitan mediciones distintas.** Descartar una causa no elige otra.
 
 ✅ **LO ACCIONABLE, y son dos:**
 

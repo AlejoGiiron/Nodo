@@ -1,11 +1,11 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { toast } from 'react-hot-toast'
+import type { ValorDeFiltro } from '@/lib/clases-de-venta'
 import { useAuth } from '@/hooks/useAuth'
 import {
   getSalesHistory, getSaleDetail, getCancelledSales, registerSaleVoid,
   type SalesHistoryRow, type SaleDetailRow, type SaleVoidResult,
 } from '@/lib/supabase-helpers'
-import type { Enums } from '@/types/database.types'
 import { mensajeDeError } from '@/lib/errores'
 
 export type { SalesHistoryRow, SaleDetailRow }
@@ -18,7 +18,12 @@ export const SALES_PAGE_SIZE = 25
 export interface SalesHistoryUIFilters {
   from: string                            // 'YYYY-MM-DD'
   to: string                              // 'YYYY-MM-DD'
-  method: Enums<'payment_method'> | null
+  /**
+   * Qué se está filtrando. Dejó de ser «un método» el 2026-09-15: también
+   * puede ser una clase que NO escribe fila en `payments` —crédito, cortesía,
+   * anulada—. Ver `src/lib/clases-de-venta.ts`.
+   */
+  method: ValorDeFiltro | null
   search: string                          // texto del buscador (número de venta)
   page: number                            // 0-based
 }

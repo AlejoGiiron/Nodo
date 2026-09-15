@@ -11,7 +11,10 @@ import {
   type SalesHistoryRow, type CancelledSaleRow,
 } from '@/hooks/useSalesHistory'
 import { printSaleTicket } from '@/lib/printer'
-import type { Enums } from '@/types/database.types'
+import {
+  ETIQUETA_DE_METODO, OPCIONES_DE_FILTRO, etiquetaDeCobro, esMetodoReal,
+  type ValorDeFiltro,
+} from '@/lib/clases-de-venta'
 import { Badge } from '@/components/ui/Badge'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { formatoCOP } from '@/lib/formato'
@@ -45,7 +48,8 @@ function daysAgoBogota(days: number): string {
 // CANAL sin TS7053. sale.canal/row.canal (text en BD) se castean
 // a este alias en el punto de indexado: resuelven a la misma unión.
 type Canal = 'mostrador' | 'whatsapp' | 'telefono'
-type PayMethod = Enums<'payment_method'>
+// `PayMethod` salio de aca: lo exporta `clases-de-venta.ts`, junto con las
+// opciones del filtro. Tenerlo en dos lados era el mismo contrato partido.
 
 // 🔴 LOS TRES CANALES VAN EN NEUTRO — mismo caso que los tipos de movimiento
 //    de Inventario. Tenían mostrador ÁMBAR, WhatsApp VERDE y teléfono AZUL: tres
@@ -61,41 +65,22 @@ const CANAL: Record<Canal, { label: string; icon: React.ReactNode; bg: string; f
   telefono:  { label: 'Teléfono',   icon: <Phone size={12} />,           bg: 'var(--border-2)', fg: 'var(--ink-2)' },
 }
 
-const METHOD_LABEL: Record<PayMethod, string> = {
-  cash: 'Efectivo', card: 'Tarjeta', transfer: 'Transferencia', nequi: 'Nequi / QR',
-}
+// 🔴 LA TABLA Y EL COMBO SALIERON DE ACÁ (2026-09-15) y viven en
+//    `src/lib/clases-de-venta.ts`. Eran los dos lados de un contrato de R1: el
+//    combo era una lista LITERAL de los 4 valores del enum, y la columna la
+//    producía `methodDisplay()` derivando CINCO rótulos más para las ventas sin
+//    fila en `payments`. La clienta veía «Fiado» y no podía filtrarlo.
+const METHOD_LABEL = ETIQUETA_DE_METODO
 
-const METHOD_OPTIONS: { value: PayMethod | ''; label: string }[] = [
-  { value: '',         label: 'Todos los métodos' },
-  { value: 'cash',     label: 'Efectivo' },
-  { value: 'card',     label: 'Tarjeta' },
-  { value: 'transfer', label: 'Transferencia' },
-  { value: 'nequi',    label: 'Nequi / QR' },
-]
+// Las opciones ya no se escriben acá: se DERIVAN del enum más las clases sin
+// pago. Ése era el lado que se congelaba — nadie edita un combo que ya muestra
+// «lo que hay».
+const METHOD_OPTIONS = OPCIONES_DE_FILTRO
 
-// Métodos DISTINTOS de la venta. Con pago mixto hay una fila por método; el
-// pago simple tiene una sola. Se deduplica por si acaso (no debería repetirse).
-function paymentMethodsOf(row: { payments: { method: PayMethod }[] }): PayMethod[] {
-  return [...new Set(row.payments.map((p) => p.method))]
-}
-
-// Etiqueta de método(s) para la lista/detalle. Simple → un método (igual que
-// hoy); mixto → "Efectivo + Nequi". Una venta a fiado NO tiene fila en
-// `payments` (la liquidación vive en debt_payments), así que se deriva del
-// payment_status para que no aparezca como venta sin método.
-function methodDisplay(row: { payment_status: string; total: number; payments: { method: PayMethod }[]; cancelled_at?: string | null }): string {
-  // Una venta anulada no tiene "método" útil (sus payments se borraron): se
-  // rotula como tal para no leerse como venta viva sin método.
-  if (row.cancelled_at) return 'Anulada'
-  const methods = paymentMethodsOf(row)
-  if (methods.length > 0) return methods.map((m) => METHOD_LABEL[m]).join(' + ')
-  // Venta GRATIS (descuento 100%): total 0, sin filas en payments, saldada ('paid').
-  // Se distingue del fiado saldado (que tiene total > 0).
-  if (row.total === 0) return 'Cortesía'
-  if (row.payment_status === 'paid') return 'Fiado (saldado)'
-  if (row.payment_status === 'partial') return 'Fiado (parcial)'
-  return 'Fiado'
-}
+// El rótulo de la columna «Método» ahora lo produce `etiquetaDeCobro`, que vive
+// al lado de las opciones del filtro para que no puedan divergir: el día que
+// aparezca otra clase sin pago, la columna y el combo la ganan juntos.
+const methodDisplay = etiquetaDeCobro
 
 // ─── Detalle de venta (modal) ─────────────────────────────────────
 
@@ -420,7 +405,7 @@ const inputStyle: React.CSSProperties = {
 export function SalesHistoryPage() {
   const [from, setFrom] = useState(daysAgoBogota(30))
   const [to, setTo] = useState(todayBogota())
-  const [method, setMethod] = useState<PayMethod | ''>('')
+  const [method, setMethod] = useState<ValorDeFiltro>('')
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(0)
   const [detailId, setDetailId] = useState<string | null>(null)
@@ -432,7 +417,16 @@ export function SalesHistoryPage() {
   // Sección "Anuladas": solo con filtro de método activo (sin filtro las
   // anuladas ya salen inline). Una anulada perdió sus payments → sin método →
   // no bucketizable; se muestra aparte. No toca la query paginada.
-  const { rows: cancelledRows } = useCancelledSales({ from, to, enabled: !!method })
+  // ⚠️ LA SECCIÓN «ANULADAS (N)» SE QUEDA, Y SU RAZÓN CAMBIÓ.
+  //    Existía porque el `!inner` del filtro borraba de la consulta a las ventas
+  //    sin pagos, y alguien tapó el hueco para UN miembro de esa clase. Con el
+  //    filtro arreglado las anuladas ya son alcanzables por su propia opción, así
+  //    que esto dejó de ser un parche: queda como el recordatorio de que una
+  //    anulada no tiene método, y sólo se muestra cuando hay un método REAL
+  //    filtrado — que es cuando su ausencia se notaría.
+  const { rows: cancelledRows } = useCancelledSales({
+    from, to, enabled: !!method && esMetodoReal(method),
+  })
 
   // Cualquier cambio de filtro vuelve a la primera página.
   const resetPage = () => setPage(0)
@@ -503,7 +497,7 @@ export function SalesHistoryPage() {
           <select
             data-testid="sales-method"
             value={method}
-            onChange={(e) => { setMethod(e.target.value as PayMethod | ''); resetPage() }}
+            onChange={(e) => { setMethod(e.target.value as ValorDeFiltro); resetPage() }}
             style={{ ...inputStyle, cursor: 'pointer' }}
           >
             {METHOD_OPTIONS.map((o) => (

@@ -1,6 +1,7 @@
 import { supabase } from './supabase'
 import { captureIssue } from './sentry'
 import type { Enums, Json, Tables, TablesInsert, TablesUpdate } from '@/types/database.types'
+import { esMetodoReal, type ValorDeFiltro } from './clases-de-venta'
 
 // --- Profiles ---
 
@@ -486,7 +487,11 @@ export interface SalesHistoryFilters {
   sedeId: string
   from?: string        // ISO inicio (createdAt >=)
   to?: string          // ISO fin (createdAt <=)
-  method?: Enums<'payment_method'> | null
+  /**
+   * Qué se está filtrando. **Ya no es sólo un método**: puede ser una de las
+   * clases que no escriben fila en `payments` (ver `src/lib/clases-de-venta.ts`).
+   */
+  method?: ValorDeFiltro | null
   orderNumber?: number | null
   page: number         // 0-based
   pageSize: number
@@ -509,7 +514,17 @@ export interface SalesHistoryRow {
 export const getSalesHistory = ({
   sedeId, from, to, method, orderNumber, page, pageSize,
 }: SalesHistoryFilters) => {
-  const paymentsSel = method ? 'payments!inner(method, amount)' : 'payments(method, amount)'
+  // 🔴 EL `!inner` SÓLO VA PARA UN MÉTODO REAL, y esto es el arreglo de fondo.
+  //    Un INNER JOIN sobre `payments` no filtra: ELIMINA de la consulta toda
+  //    orden sin filas de pago —crédito, cortesía, anulada—. Con el join puesto
+  //    para cualquier valor del filtro, esas ventas eran inalcanzables por TODOS
+  //    los valores: no faltaba una opción, faltaba una clase entera.
+  //
+  // ⚠️ Y sacarlo a secas NO era el arreglo: medido, sin `!inner` el filtro
+  //    embebido no acota al padre y devuelve las 2.988 — un no-op silencioso,
+  //    que es peor que el join porque se ve como un filtro que funciona.
+  const real = method != null && method !== '' && esMetodoReal(method)
+  const paymentsSel = real ? 'payments!inner(method, amount)' : 'payments(method, amount)'
   const select =
     `id, order_number, created_at, canal, customer_name, total, payment_status, cancelled_at, cancel_reason, ` +
     `${paymentsSel}, profiles!orders_created_by_fkey(full_name)`
@@ -523,7 +538,22 @@ export const getSalesHistory = ({
   if (orderNumber != null) q = q.eq('order_number', orderNumber)
   if (from) q = q.gte('created_at', from)
   if (to) q = q.lte('created_at', to)
-  if (method) q = q.eq('payments.method', method)
+
+  if (real) {
+    q = q.eq('payments.method', method)
+  } else if (method) {
+    // Las clases derivadas comparten la condición que las define —no hay pago
+    // registrado— y se separan entre sí por columnas propias de `orders`.
+    // `.is('payments', null)` está MEDIDO contra la base: devuelve 1.384 donde
+    // el total es 2.988, y las cuatro clases lo particionan sin resto.
+    q = q.is('payments', null)
+    if (method === 'anulada') q = q.not('cancelled_at', 'is', null)
+    if (method === 'cortesia') q = q.eq('total', 0).is('cancelled_at', null)
+    // Crédito: lo que queda sin pago, con importe y vivo. Incluye el fiado ya
+    // SALDADO, que se liquida por `debt_payments` y por eso tampoco escribe en
+    // `payments` — 176 en el lab, y sin esto quedaban fuera de su propio filtro.
+    if (method === 'fiado') q = q.gt('total', 0).is('cancelled_at', null)
+  }
 
   const fromIdx = page * pageSize
   return q
