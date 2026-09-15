@@ -83,6 +83,26 @@ export const nivelElegible = (
   precioLegado?: number | null,
 ): boolean => precioDeNivel(precios, nivel, precioLegado) !== null
 
+/**
+ * El precio con el que NACE una línea del carrito.
+ *
+ * 🔴 EXISTE PORQUE ERAN DOS LADOS Y DIVERGIERON. `addItem` resolvía
+ *    `precioDeNivel(precios, nivel ?? -1, legado)` y el modal de extras **no
+ *    resolvía nada**: recibía un prop opcional que el sitio de AGREGAR nunca le
+ *    pasaba, así que mostraba el subtotal sin el precio del producto. Los dos
+ *    caminos llevan a la misma decisión —cuánto vale esta línea— y ahora la
+ *    toman en el mismo lugar.
+ *
+ * ⚠️ El `?? -1` no es cosmético: `null` significa «sin nivel» y `-1` es el nivel
+ *    que no existe, así que `precioDeNivel` cae al precio legado en vez de
+ *    buscar una fila que nadie escribió.
+ */
+export const precioDeLineaNueva = (
+  precios: PrecioDeNivel[] | null | undefined,
+  nivel: number | null,
+  precioLegado: number | null,
+): number | null => precioDeNivel(precios, nivel ?? -1, precioLegado)
+
 /** ¿Este producto tiene puesto ESTE nivel, o lo que se muestra es el de L1? */
 export const nivelEstaPuesto = (precios: PrecioDeNivel[] | null | undefined, nivel: number) =>
   !!precios?.some((p) => p.nivel === nivel)

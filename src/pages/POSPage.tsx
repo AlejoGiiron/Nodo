@@ -16,7 +16,7 @@ import { useProductsWithExtras } from '@/hooks/useProductsWithExtras'
 import { useAuth } from '@/hooks/useAuth'
 import { usePermissions } from '@/hooks/usePermissions'
 import { useSedeConfig } from '@/hooks/useSedeConfig'
-import { nivelInicial, nivelElegible } from '@/lib/niveles'
+import { nivelInicial, nivelElegible, precioDeLineaNueva } from '@/lib/niveles'
 import { useCashShift } from '@/hooks/useCashShift'
 import { OpenShiftModal } from '@/components/shift/OpenShiftModal'
 import { ItemConfigModal } from '@/components/pos/ItemConfigModal'
@@ -2520,6 +2520,10 @@ export function POSPage() {
       {configProduct && (
         <ItemConfigModal
           product={configProduct}
+          // El MISMO cálculo con el que `addItem` va a hacer nacer la línea, por
+          // la misma función. Antes no se pasaba nada y el modal mostraba el
+          // subtotal sin el precio del producto.
+          precioUnitario={precioDeLineaNueva(configProduct.product_prices, nivelDeLaSede, configProduct.price)}
           onConfirm={(extras) => { addItem(configProduct, extras, nivelDeLaSede); setConfigProduct(null) }}
           onClose={() => setConfigProduct(null)}
         />

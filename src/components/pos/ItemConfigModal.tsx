@@ -27,17 +27,25 @@ export function ItemConfigModal({
   confirmLabel?: string
   onConfirm: (extras: CartExtra[]) => void
   /**
-   * 🔴 Precio unitario PACTADO de la línea (deuda 75). Al agregar un producto
-   * todavía no hay línea, así que cae en `product.price` — que es justamente la
-   * sugerencia con la que va a nacer. Al EDITAR los extras de un ítem del
-   * carrito hay que pasarlo: sin esto el modal mostraría un subtotal calculado
-   * con el precio de lista mientras la línea ya vale otra cosa.
+   * Precio unitario de la línea (deuda 75). Al EDITAR, el pactado; al AGREGAR,
+   * el que la línea va a tener al nacer — los dos salen de `precioDeLineaNueva`.
+   *
+   * 🔴 ES OBLIGATORIO, Y ESO ES EL ARREGLO. Era `precioUnitario?`, y entonces
+   *    **«el llamador no me dijo» (`undefined`) y «este nivel no tiene precio»
+   *    (`null`) compartían valor**: el `?? 0` de abajo los trataba igual. El
+   *    sitio que monta este modal al AGREGAR un producto nunca pasó el prop, así
+   *    que el subtotal salía SIN el precio del producto —4.000 donde la venta
+   *    iba a ser 14.000— y `tsc` no podía verlo, porque un prop opcional que
+   *    falta es válido.
+   *
+   *    Siendo obligatorio, el compilador es el verificador: un sitio nuevo que
+   *    lo olvide no compila. Es la diferencia entre una advertencia y un guard.
    *
    * ⚠️ Se muestra y NO se edita acá a propósito: el precio se cambia en UN solo
    * lugar, la fila del carrito. Dos puntos de edición del mismo valor serían
    * dos lados sin nada que los sincronice.
    */
-  precioUnitario?: number | null
+  precioUnitario: number | null
   onClose: () => void
 }) {
   const { productExtras, isLoading } = useProductExtras(product.id)
@@ -62,8 +70,9 @@ export function ItemConfigModal({
     setQtys((prev) => ({ ...prev, [id]: Math.max(0, qty) }))
 
   const extrasUnit = available.reduce((a, e) => a + Number(e.price) * (qtys[e.id] ?? 0), 0)
-  // 🔴 Sin precio de lista para el nivel de la línea, el modal NO inventa un
-  //    número: muestra 0 en el subtotal de extras y el precio del producto se
+  // 🔴 Acá el `?? 0` YA NO ES AMBIGUO. Con el prop obligatorio, un `null` sólo
+  //    puede significar UNA cosa: este nivel no tiene precio configurado. El
+  //    subtotal muestra lo que suman los extras y el precio del producto se
   //    resuelve en el carrito, que es donde vive el bloqueo del cobro (§7.22).
   const precio = precioUnitario ?? 0
   const unitSubtotal = precio + extrasUnit

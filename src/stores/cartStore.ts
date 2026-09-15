@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { Tables } from '@/types/database.types'
-import { precioDeNivel, type PrecioDeNivel } from '@/lib/niveles'
+import { precioDeNivel, type PrecioDeNivel, precioDeLineaNueva } from '@/lib/niveles'
 
 export type ProductWithCategory = Tables<'products'> & {
   categories: Pick<Tables<'categories'>, 'id' | 'name' | 'color'> | null
@@ -235,7 +235,7 @@ export const useCartStore = create<CartStore>((set) => ({
         next[idx] = { ...next[idx], qty: next[idx].qty + 1 }
         return { items: next }
       }
-      const precio = precioDeNivel(product.product_prices, nivel ?? -1, product.price)
+      const precio = precioDeLineaNueva(product.product_prices, nivel, product.price)
       return { items: [...state.items, { id: genId(), product, qty: 1, note: '', extras: [], price: precio, nivel }] }
     }),
 

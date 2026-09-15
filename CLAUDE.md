@@ -829,6 +829,17 @@ plausible y una pregunta que **ya no tiene respuesta posible**, ni siquiera repr
 | `debt_payments.cash_movement_id` nulo | "el abono **no tocó caja**" **+** "la jornada estaba cerrada" | Se agregó `requiere_conciliacion`, `not null default false` |
 | `orders.canal` (propuesto) | **por dónde entró** el pedido **+ quién lo originó** (`preventa`) | `preventa` queda afuera; el originador ya vive en `created_by` |
 | `stock_movements.type = 'return'` | el **reverso de una VENTA** (entra stock, lo escribe `register_sale_void`) **+** la **devolución a un PROVEEDOR** (sale stock) | Se agregó `purchase_return`; el filtro de Inventario pasó de un rótulo a dos |
+| 🔴 **un PROP OPCIONAL** (`precioUnitario?`) *(2026-09-15)* | **«el llamador no me dijo»** (`undefined`) **+** **«este nivel no tiene precio»** (`null`) — y el `?? 0` los trataba igual | Se volvió **obligatorio**: con el prop requerido, `null` sólo puede significar una cosa y **`tsc` pasa a ser el verificador** |
+
+🔴 **Y EL QUINTO ES EL PRIMERO EN TYPESCRIPT, no en la base — y muestra que la mezcla no necesita una
+columna: le alcanza un `?`.** El modal de extras recibía el precio de la línea como prop opcional. El
+sitio que lo monta al AGREGAR un producto **nunca lo pasaba**, así que el subtotal salía sin el precio
+del producto: **4.000 donde la venta iba a ser 14.000**, y la cajera confirma leyendo el número chico.
+
+⚠️ **Lo que lo hace de esta familia y no un olvido: `tsc` NO PODÍA VERLO.** Un prop opcional que falta
+es válido por definición. La omisión era invisible para el único verificador que mira esa capa —y el
+`?? 0` la convertía en un número plausible en vez de en un hueco—. Haciéndolo obligatorio, el
+compilador rechaza al que lo olvide: **la misma diferencia entre una advertencia y un guard**.
 
 🔴 **El cuarto caso es el primero que se ataja ANTES de escribir el valor, y por eso vale aparte.**
 Los tres primeros se repararon: la columna ya existía mezclada y hubo que separarla. El cuarto se
