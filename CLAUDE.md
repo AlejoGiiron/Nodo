@@ -5922,10 +5922,25 @@ def sub(s, viejo, nuevo, n=1):
     return s.replace(viejo, nuevo, n)
 ```
 
-⚠️ **Y la causa de fondo, que conviene tener escrita porque va a volver:** el ancla se rompió porque
-**un reemplazo anterior del mismo script la modificó**. Los reemplazos de un script no son
-independientes — operan sobre el resultado del anterior. Cuando dos anclas se solapan, el orden
-importa, y el único que lo detecta es el `assert`.
+🔴 **LA CAUSA DE FONDO, Y ES LA QUE EXPLICA POR QUÉ EL PATRÓN CORRECTO ESTABA CINCO VECES A LA
+VISTA Y FALLÓ IGUAL: LOS REEMPLAZOS DE UN SCRIPT NO SON INDEPENDIENTES.**
+
+Cada uno opera sobre **el resultado del anterior**, no sobre el archivo original. El ancla que
+faltó no se escribió mal: **dejó de existir cuando llegó su turno**, porque un reemplazo previo del
+mismo script ya había cambiado parte de ese texto.
+
+> **No fue ignorancia del patrón — fue que el mundo cambió entre que el ancla se escribió y el
+> momento en que se buscó.** Y eso no se arregla mirando mejor: el ancla era correcta cuando se
+> redactó.
+
+⚠️ **Corolario, y es lo que hay que retener al escribir un script de N reemplazos:**
+
+> **El orden importa, y cada reemplazo puede invalidar el ancla del siguiente.** Dos anclas que se
+> solapan —aunque sea en una línea de contexto— son un par ordenado, no dos ediciones sueltas.
+
+✅ Por eso el `assert` no es una comprobación de prolijidad: **es lo único que detecta un ancla que
+caducó a mitad del script**, y tiene que estar en los N, porque basta que falte en uno para perder
+la garantía entera mientras el archivo *parece* seguir la regla.
 
 ---
 

@@ -14,6 +14,43 @@ la consulta.
 
 ---
 
+## 2026-09-15 · «Alt+3» ESTABA VERDE Y NO MEDÍA NADA — lo destapó cambiar los DATOS, no el caso
+
+**El caso.** `Alt+3 cambia el nivel de la línea sin abrir nada` pasó en verde toda la tanda
+anterior. Al sembrar `product_prices` en el lab **se puso rojo**, y el rojo era correcto:
+`Lab Cerveza` no tiene L3, así que el atajo debe rechazarlo.
+
+> **Antes «funcionaba» porque el lab no tenía ninguna fila de precios: todo nivel caía a
+> `products.price` por la rama de etapa 1.** Alt+3, Alt+0 y Alt+4 daban el mismo número, así que el
+> caso no podía distinguir «el atajo aplicó el nivel» de «el atajo no hizo nada».
+
+🔴 **ES LA CONTRACARA DEL MUTANTE, y por eso vale como método y no como anécdota:**
+
+| | qué se cambia | qué prueba |
+|---|---|---|
+| **mutante** (R10) | el **SUJETO** — se rompe el código a propósito | que el caso puede ponerse rojo |
+| 🔴 **sembrar la entrada** | los **DATOS** — se les da la variación que no tenían | que el caso puede **distinguir** |
+
+**Y son irreemplazables entre sí.** Un mutante sobre `setNivel` habría matado el caso —el nivel no
+cambiaría— así que R10 lo daba por bueno. Lo que el mutante **no puede ver** es que el caso pasaba
+por una razón que no tenía nada que ver con el sujeto: **todos los niveles valían lo mismo.**
+
+⚠️ Este archivo ya tenía el límite escrito —*«un mutante no encuentra lo que la fixture no
+reproduce»*, y *«ningún escenario construido sobre este archivo puede distinguir los dos métodos»*—.
+Lo que faltaba es la forma **activa**: no sólo reconocer que la entrada no discrimina, sino
+**sembrarle la variación y volver a correr**, que es lo único que convierte un verde sospechoso en
+un rojo legible.
+
+✅ **Lo accionable, y es un paso del método:** cuando un caso dependa de que dos valores DIFIERAN,
+sembrá la diferencia y corré ANTES de creerle al verde. Si el caso no cambia de color al cambiar los
+datos, no estaba midiendo los datos.
+
+📋 **Y la cuenta del turno, que es lo que lo hace medición:** el sembrado movió 4 rojos a verde
+—los que no podían medir— **y un verde a rojo**. Ese quinto es el que prueba que el sembrado sirvió;
+los otros cuatro solos podrían explicarse por un caso que se ablandó.
+
+---
+
 ## 2026-09-14 · LA RAZÓN REAL POR LA QUE EL CLIENTE TENÍA QUE BAJAR AL CARRITO — y no es la que dimos
 
 **Lo movimos por dos razones, las dos ciertas y las dos menores:** el caso de uso (elegir cliente
