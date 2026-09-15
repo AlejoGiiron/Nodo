@@ -2322,6 +2322,43 @@ directo sigue rechazado»**, que es lo que se quería.
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · UNA APROBACIÓN SOBRE UN NÚMERO QUE RESULTÓ FALSO NO SE HEREDA — AUNQUE EL NÚMERO CAMBIE DE TAMAÑO Y NO DE SIGNO
+
+*2026-09-15, cerrando el alto del carrito. **Primera vez en el proyecto que una decisión APROBADA se
+retira porque su premisa cambió de TAMAÑO**, no de signo.*
+
+**El caso.** Se propusieron dos salidas y la elección se argumentó así: *«los 12px son el caso
+extremo de un viewport concreto, y la otra opción degrada toda venta»*. Con ese argumento se aprobó.
+**Al implementar y medir, el residuo era 57px** — y el botón de Cobrar, no el total.
+
+> **Los 12px no eran un dato: eran una estimación presentada como si lo fuera.** Y la aprobación se
+> apoyaba enteramente en ella: *«12px se resuelven con scroll»* es cierto; *«57px con el botón de
+> cobrar fuera de pantalla»* es otra proposición.
+
+🔴 **LO QUE LA HACE UNA CLASE NUEVA: la premisa no se invirtió, sólo creció.** Este archivo ya tiene
+la decisión correcta sobre una premisa falsa —el código único de la deuda 41, donde el dato nuevo
+decía **lo contrario**—. Acá el signo no cambió: seguía siendo «unos píxeles bajo el pliegue en un
+viewport». Cambió **cuánto**, y eso alcanzó para invalidar el argumento que la sostenía.
+
+⚠️ **Y por eso es más fácil de dejar pasar que una inversión.** Un dato que contradice se nota y
+obliga a volver. Un dato que confirma la DIRECCIÓN y multiplica la MAGNITUD se lee como *«era eso,
+un poco más»*, y la aprobación sigue pareciendo válida — nadie la firmó sobre una dirección, la
+firmó sobre un número.
+
+✅ **LO ACCIONABLE, y son dos mitades:**
+
+1. **Quien estima, MARCA que está estimando.** *«~12px»* y *«12px medidos»* se escriben casi igual y
+   deciden distinto. Si el número no salió de una medición, la frase lo dice.
+2. 🔴 **Quien implementa, VUELVE con el número medido antes de dar por cerrada la decisión** — aunque
+   el signo coincida. Si la magnitud no se parece a la que se aprobó, la aprobación **se devuelve**,
+   no se ejecuta.
+
+⚠️ Corolario para el registro: la aprobación retirada **se anota con las dos cifras**, la estimada y
+la medida. Sin eso, el próximo lee «se eligió (C)» y no sabe que (A) llegó a estar aprobada ni por
+qué dejó de estarlo — y el argumento de (A) sigue siendo bueno para un residuo de 12px.
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · UNA DECISIÓN CORRECTA SOBRE UNA PREMISA FALSA — Y LA PREMISA FALSA NO ERA UN ERROR NUESTRO
 
 *2026-09-14, revisión de la decisión A de la deuda 41. **Primera decisión del proyecto que se revierte

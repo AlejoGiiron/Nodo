@@ -503,12 +503,22 @@ test('🔴 el elegido queda MARCADO y la lista sigue clickeable — por eso no h
   //    «no hace falta un boton Cambiar cliente» es que el picker siga ofreciendo
   //    la lista con el elegido marcado. Eso sigue siendo cierto — ahora en el
   //    carrito.
-  const elegido = page.getByTestId('cart-customer-option').filter({ hasText: CLIENTE_EQ }).first()
-  await expect(elegido, 'el cliente elegido queda marcado').toHaveAttribute('aria-pressed', 'true')
+  // 🔴 RE-DERIVADO A LA VARIANTE COMPACTA, y la razon de fondo NO caduco: lo que
+  //    sostiene «no hace falta un boton Cambiar cliente» es que el picker siga
+  //    permitiendo cambiar sin un control aparte. Eso sigue siendo cierto — lo
+  //    que cambio es el MECANISMO: la lista ya no queda abierta, se despliega.
+  //    ⚠️ Se marca el cambio en vez de borrar el caso: si algun dia el picker
+  //    deja de reabrirse al enfocar, este caso tiene que ponerse rojo.
   await expect(
-    page.getByTestId('cart-customer-search'),
-    'y el buscador NO desaparece: cambiar de cliente no necesita un control aparte',
-  ).toBeVisible()
+    page.getByTestId('cart-customer-resumen'),
+    'el elegido se ve sin abrir nada: es lo que evita tener que buscarlo de nuevo',
+  ).toContainText(CLIENTE_EQ)
+
+  // Y el buscador NO desaparece: enfocarlo vuelve a desplegar la lista con el
+  // elegido MARCADO. Ese es el camino de «cambiar de cliente», y no hay boton.
+  await page.getByTestId('cart-customer-search').focus()
+  const elegido = page.getByTestId('cart-customer-option').filter({ hasText: CLIENTE_EQ }).first()
+  await expect(elegido, 'el cliente elegido queda marcado al reabrir').toHaveAttribute('aria-pressed', 'true')
 })
 
 test('🔴 el plazo es un DESPLEGABLE, no un número libre', async ({ page }) => {

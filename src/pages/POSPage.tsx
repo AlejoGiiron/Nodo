@@ -733,6 +733,13 @@ function CartPanel({
     <div style={{
       flex: 1, display: 'flex', flexDirection: 'column',
       background: 'var(--surface)', minWidth: 0, borderLeft: '1px solid var(--border)',
+      // 🔴 `minHeight: 0` FALTABA, y el panel izquierdo SI lo tenia. Sin el, un
+      //    hijo flex no baja de su contenido: el `minHeight` de la lista se
+      //    propagaba hacia arriba y empujaba la columna fuera del viewport.
+      //    Solo, NO alcanza —no crea espacio, deja achicar— y por eso va junto
+      //    con el pie pegajoso de abajo.
+      minHeight: 0,
+      overflowY: 'auto',
     }}>
       {/* Header */}
       <div style={{ padding: '18px 22px 14px', borderBottom: '1px solid var(--border-2)' }}>
@@ -885,6 +892,28 @@ function CartPanel({
           ))
         )}
       </div>
+
+      {/* ── PIE PEGAJOSO ─────────────────────────────────────────────────
+          🔴 NO ES «LO QUE YA SE INTENTO EN SEPTIEMBRE», y conviene que quede
+             escrito porque «ya se probo» es exactamente lo que alguien va a
+             decir. Aquel arreglo **scrolleaba el panel entero** y por eso mando
+             el boton Cobrar debajo del pliegue —«un defecto cambiado por otro»—.
+             Esto hace lo CONTRARIO: la columna scrollea y el pie se FIJA al
+             borde inferior. Mecanismo opuesto, resultado opuesto.
+
+          ✅ Y por eso cierra las TRES aserciones del tripwire a la vez, en vez
+             de mover el problema: la lista conserva su minimo de tres filas, el
+             total y Cobrar quedan siempre a la vista, y lo que cede es el
+             SCROLL — que no le quita informacion a nadie.
+
+          ⚠️ Un pie fijo SUPERPONE contenido mientras se scrollea: las filas
+             pasan por debajo. Al final del scroll el sticky vuelve a su posicion
+             de flujo, asi que la ULTIMA fila queda visible. Eso esta medido, no
+             supuesto — ver el spec del alto. */}
+      <div style={{
+        position: 'sticky', bottom: 0, zIndex: 1,
+        background: 'var(--surface)', flexShrink: 0,
+      }}>
 
       {/* Discount — requiere permiso pos.descuento */}
       {can('pos.descuento') && (
@@ -1126,6 +1155,7 @@ function CartPanel({
             Cobrar — {teclaDe('Cobrar')}
           </Button>
         </div>
+      </div>
       </div>
     </div>
   )
