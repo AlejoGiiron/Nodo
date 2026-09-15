@@ -725,6 +725,20 @@ código **dentro** del archivo de salida y grepealo.
 **Modo de fallo:** verde falso anunciado como verdadero. Medido: la notificación dijo *"exit code
 0"* **4 de 4 veces, con dos suites rojas**.
 
+🔴 **SEXTA VEZ AL 2026-09-15, y las dos últimas el mismo día, en la misma sesión, sobre la misma
+suite.** Las dos notificaciones dijeron `exit code 0` y las dos veces el archivo decía `suite_exit=1`
+— con un rojo real adentro cada vez.
+
+> **Es la regla que más veces cobró en este proyecto, y la única que cobra SIN QUE NADIE LA
+> INVOQUE.** Las otras piden un acto: enumerar, medir, correr el mutante, abrir el archivo. Ésta se
+> paga sola, con sólo leer el número que la herramienta ofrece — y lo ofrece **siempre**, en cada
+> corrida, con el mismo aspecto tranquilizador.
+
+⚠️ Y el corolario que explica por qué no envejece: **el canal que miente no es nuestro.** No hay
+nada que arreglar de nuestro lado —la notificación reporta el exit del shell y eso es correcto para
+el shell—; lo único que queda es **no leerla nunca** y escribir el código adentro del archivo. Una
+regla cuya causa está afuera del repo no se cierra: se cumple.
+
 → **Evidencia:** repo de Vento, `docs/BITACORA.md` → *"Trampas de TERMINAL — el síntoma no señala
 la causa"*.
 
@@ -2408,6 +2422,109 @@ equivocado producía un verde que miente, acá lo produce la pantalla equivocada
 ⚠️ Corolario para quien propone la salida: **un argumento sobre el SUJETO no dice nada sobre el
 ESCENARIO.** *«El guard es el mismo»* era cierto. Lo que faltaba preguntar es *«¿el escenario nuevo
 puede ver ese guard?»*, y eso no se contesta leyendo el guard.
+
+---
+
+### 🔴 CRITERIO SIN NÚMERO · «LOS CASOS QUE NO CORRIERON» ES PEOR QUE «LOS CASOS QUE FALLARON»: ADEMÁS DEJAN DE HACER SU TRABAJO DE FIXTURE
+
+*2026-09-15. Tercera vez que un rojo destapa algo preexistente, y la primera en que se ve la forma que
+une a las tres.*
+
+Este archivo ya dice que `did not run` **se enumera aparte y se nombra SIN MEDIR**, y que se leen como
+verdes por omisión. Faltaba la mitad caras: **un caso que no corre no sólo deja de medir — deja de
+HACER.**
+
+**El caso.** `extras-pos.spec` abortaba en `:145` desde la tanda de la deuda 101. Es `describe.serial`,
+así que sus **seis casos siguientes y su limpieza nunca corrían**. Al arreglar el defecto de `:145`, el
+archivo pasó entero por primera vez en días — y eso **destapó** una interferencia preexistente que
+terminó siendo pérdida de dato en el modal de producto.
+
+> **El arreglo no causó la interferencia: la hizo ALCANZABLE.** Mientras el archivo abortaba, su
+> limpieza no corría y el mundo que veían los specs siguientes era otro.
+
+🔴 **LAS TRES, Y LA FORMA QUE LAS UNE:**
+
+| # | el rojo | lo preexistente que destapó |
+|---|---|---|
+| 1 | `anular-venta` | un producto que otro spec dejó **activo** y ordenaba antes (deuda 67) |
+| 2 | cuatro specs de precios | una **orden fechada mañana** que una sonda dejó viva (deuda 100) |
+| 3 | `extras.spec` | el guard que mira `isLoading`, alcanzable sólo cuando `extras-pos` **limpia** |
+
+**La forma:** *un spec que aborta temprano deja de limpiar, y **su residuo o su AUSENCIA de residuo**
+cambia lo que ven los demás.* Las dos direcciones cuentan: en los dos primeros sobró estado; en el
+tercero **faltó** —la limpieza que no corrió era justamente la que creaba la condición—.
+
+⚠️ **Y por eso la asimetría con `failed` no es de grado:** un caso que falla te dice qué está mal. Un
+caso que **no corre** hace dos daños — no mide **y** no ejecuta su parte del arnés — y el segundo no
+aparece en ningún número del resumen. Se manifiesta días después, en otro archivo, como un rojo que no
+habla de nada de lo que lo causó.
+
+✅ **LO ACCIONABLE, y son dos:**
+
+1. **Un `did not run` en un archivo con limpieza se reporta como «la suite quedó SUCIA», no sólo como
+   casos sin medir.** Es información sobre el estado del laboratorio, no sólo sobre la cobertura.
+2. 🔴 **La limpieza no puede ser el último CASO de un `describe.serial`.** Un caso es lo primero que
+   se saltea; `afterAll` corre igual cuando los casos fallan. Es la misma regla que ya está escrita
+   para el arnés —*su trabajo es existir cuando lo demás no*— aplicada al orden de ejecución.
+
+---
+
+### 🔴 CRITERIO SIN NÚMERO · UN GUARD QUE PREGUNTA «¿TERMINÓ DE CARGAR?» NO CUBRE «CARGÓ OTRA COSA» — Y CON CACHÉ, LO PRIMERO ES FALSO MIENTRAS EL DATO ES VIEJO
+
+*2026-09-15, destapado por la suite entera. **Es la deuda 56 volviendo por otro camino**, y por eso
+vale aparte: allá el guard FALTABA; acá el guard está, está bien construido, y pregunta lo que no
+alcanza.*
+
+Este archivo ya tiene *«una escritura que persiste un cálculo no existe hasta que todos sus insumos
+hayan cargado»*, con sus cuatro casos y su forma de arreglo: **leer la carga donde se decide, y que el
+botón no se renderice** —no un spinner—. `ProductModal` lo cumplía **al pie de la letra**: el botón se
+reemplaza por «Cargando extras y receta…», y `insumosPendientes` alimenta `isValid`.
+
+> **Y aun así borraba datos.** Porque el guard preguntaba `isLoading`, y `isLoading` contesta sobre la
+> CONSULTA, no sobre el DATO.
+
+**El caso, medido.** Al reabrir un producto recién guardado, React Query **sirve el caché al
+instante** —el de la apertura anterior, vacío y correcto entonces—. La consulta no está «cargando»:
+ya contestó. Así que:
+
+```
+aria-pressed=false · cargando=0 · boton-visible=1 · boton-habilitado=true
+```
+
+El extra se ve sin marcar, el placeholder no está, y el botón está **habilitado**. Guardando ahí,
+`reconcile` recibe `extraIds: []` y **borra la fila**:
+
+```
+E2E ExtProd 196894 -> product_extras: 0     <- después de guardar en ese estado
+E2E ExtProd 625565 -> product_extras: 1     <- los anteriores la conservan
+```
+
+🔴 **LO QUE LO HACE UNA CLASE NUEVA Y NO LA 56 OTRA VEZ:** los cuatro casos de aquella familia eran
+**defaults vacíos mientras se carga** —`?? new Set()`, `?? []`— y se arreglan leyendo `isLoading`. Acá
+el default no existe: **hay dato de verdad, y es de otro momento**. `isLoading` es el instrumento
+correcto para «todavía no sé» y **no tiene nada que decir sobre «sé algo viejo»**.
+
+| la pregunta | qué contesta | cuándo miente |
+|---|---|---|
+| `isLoading` | ¿la consulta ya contestó? | **con caché**: contesta al instante, y el dato es de antes |
+| `isFetching` | ¿hay una consulta en vuelo? | — |
+| ✅ **`!isPending && !isFetching`** | ¿lo que tengo es el dato de ESTE objeto, confirmado? | — |
+
+⚠️ **Y el modo de fallo es el peor de los tres tipos de afirmación falsa: una CONFIRMACIÓN falsa.** El
+botón habilitado afirma *«ya sé lo que este producto tiene»*, y produce **la ausencia de una acción
+correcta** —nadie espera, nadie vuelve a mirar— más una escritura que borra.
+
+✅ **LO ACCIONABLE, y es una regla sobre qué flag exponer:**
+
+> **Un hook cuyo valor SIEMBRA un formulario que después RECONCILIA no puede exponer `isLoading`: tiene
+> que exponer si el dato está CONFIRMADO para el objeto que se está editando.** Reconciliar borra lo
+> que no está en la selección, así que sembrar con un dato viejo no muestra mal: **destruye**.
+
+📋 **Cómo se enumera la clase, y acá dio dos:** `grep -rn "isLoading: query.isLoading" src/hooks/`
+devuelve una docena, y **la mayoría son legítimas** —pantallas de lectura, donde mostrar algo viejo un
+instante no cuesta nada—. Las que hay que mirar son las que alimentan un formulario con reconciliación:
+`useProductExtras` y `useProductComponents`, las dos consumidas por el mismo modal. **El filtro no es
+el hook: es su consumidor.**
 
 ---
 
