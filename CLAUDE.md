@@ -2297,6 +2297,47 @@ hace, empezando por quien sumó.
 sí** — que es *enumerar, no contar* aplicado a un número que ya venía sumado.
 
 
+🔴 **LA DECIMOTERCERA ES LA NOVENA OTRA VEZ — UNA SUMA — PERO CON EL ERROR EN EL SUJETO, NO EN
+LA MEDICIÓN. Y ESTA VEZ EL NÚMERO ERA CORRECTO.** *2026-09-15, verificando el respaldo.*
+
+> *«157 órdenes en Muscle Pro, 147 con `customer_id`»*. Los dos números son **exactos** — y son de la
+> **ORGANIZACIÓN**, no de la sede. La restauración los desagregó: **127 + 30 = 157** y **117 + 30 =
+> 147**, repartidos entre «Muscle Pro» y «Muscle Pro (retirada 14/09)».
+
+**De dónde salieron:** una sonda que filtraba `/Muscle/i` — un patrón que **matchea las dos sedes**.
+La medición hizo exactamente lo que el patrón pedía; el enunciado que la reportó dijo *«Muscle Pro»*,
+en singular, como si fuera una.
+
+🔴 **LO QUE LA SEPARA DE LA NOVENA, y es lo que la hace registrable aparte:**
+
+| | la novena (`42 + 20 = 62`) | **ésta (`127 + 30 = 157`)** |
+|---|---|---|
+| el número | **falso** — sumaba productos con clientes | **correcto** — y verificable |
+| qué estaba mal | la **aritmética**: dos clases distintas | el **SUJETO**: la frase que lo nombra |
+| cómo se caza | desagregar, y el desvío salta | 🔴 **no salta**: desagregado sigue cerrando |
+
+⚠️ **Y por eso es más difícil de atajar que una suma mal hecha.** Una suma falsa se cae al
+desagregar — los 42 y los 20 se ven distintos al lado. **Un total correcto con el sujeto equivocado
+sobrevive a la desagregación**: 127 y 30 suman 157, así que cualquier verificación aritmética lo
+confirma. Lo único que lo destapa es **mirar de qué filas salió**, que es una pregunta sobre el
+patrón, no sobre el número.
+
+🔴 **Y circuló como CRITERIO DE ACEPTACIÓN, que es donde más duele.** No fue a un reporte suelto:
+se repitió varias veces como *«el criterio de éxito son estos cuatro números»*, se adoptó del otro
+lado, y se iba a usar para decidir **si el respaldo servía**. Un criterio con el sujeto mal no falla
+al medir — falla al INTERPRETAR: una restauración de la sede activa sola habría dado 127 y se habría
+leído como **30 órdenes perdidas**.
+
+✅ **LO ACCIONABLE, y es sobre el PATRÓN, no sobre el número:**
+
+> **Cuando un número sale de un filtro por nombre, el enunciado nombra EL FILTRO, no lo que uno cree
+> que el filtro selecciona.** *«157 órdenes en las sedes que matchean `/Muscle/i`»* es largo y es
+> cierto; *«157 en Muscle Pro»* es corto y nombra un objeto que no es el medido.
+
+⚠️ Y el disparador barato: **si el filtro es una expresión regular o un `like`, imprimí QUÉ
+MATCHEÓ junto al total.** Una línea más en la sonda —la lista de nombres— y el singular no se
+escribe, porque se ven dos.
+
 🔴 **LA OCTAVA ES LA PRIMERA SOBRE TRABAJO AJENO, Y SE INFIRIÓ DESDE UNA ETIQUETA.**
 *2026-09-07, al cerrar la primera tanda de la deuda 41.*
 
