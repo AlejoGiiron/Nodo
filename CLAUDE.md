@@ -3967,9 +3967,43 @@ y hay que elegir uno. El estado es el que describe lo que se quería.
 
 🔴 **Y EL NÚMERO ES EL HALLAZGO, PORQUE LA ENUMERACIÓN SE PIDIÓ ESPERANDO CINCO O SEIS.**
 
-> **La clase es MÁS GRANDE QUE LA DEUDA QUE LA DESTAPÓ.** Las tres apariciones que la motivaron
-> —`rbac-escalada` y las dos limpiezas de la tanda A— son **3 de 50: el 6%**. Las otras 46 no las
-> miró nadie, nunca.
+> **La clase es MÁS GRANDE QUE LA DEUDA QUE LA DESTAPÓ.** Los episodios que la motivaron son **tres
+> archivos de 18**, y en sentencias **6 de 50**. El resto no lo miró nadie, nunca.
+
+⚠️ **Y la cifra de arriba REEMPLAZA a la primera que escribí, que decía «3 de 50: el 6%» y mezclaba
+dos universos** — tres *episodios* contados contra cincuenta *sentencias*. Es la resta entre conteos
+de universos distintos que este archivo ya tiene medida con `26 − 23 = 3`, cometida de nuevo en el
+párrafo que estrena el hallazgo.
+
+📋 **La cuenta después de la tanda A, y CIERRA — que es lo único que la vuelve creíble:**
+
+```
+ 50   medidas antes de la tanda
+  -7   arregladas (onboarding 3 · alta-usuario 3 · sedes-sin-delete:206)
+  +1   NUEVA, mía: el afterAll del spec de esta misma tanda
+  ---
+ 44   ✅ y 44 es lo que el instrumento mide hoy
+```
+
+🔴 **PERO EL 44 ES UNA COTA SUPERIOR, NO EL PROBLEMA — y esto es lo que más corrige al hallazgo
+original: el instrumento mide «error descartado» y la deuda es sobre «EFECTO NO VERIFICADO», y no
+son el mismo conjunto.**
+
+La `+1` mía lo muestra: el `afterAll` hace `await admin.from('sedes').delete(...)` sin asignar **y la
+línea siguiente lee el estado y lo asevera**. El error se descarta a propósito, porque lo que
+verifica no es la operación sino su efecto. Lo mismo pasa con `sedes-sin-delete:161,162`, cubiertas
+por el `fin.count === 1` de tres líneas abajo.
+
+> **Una escritura sin verificador es la que nadie asevera NI directa NI indirectamente.** El grep no
+> puede distinguirlas, así que su total sobrestima — y hay que decirlo, porque un número que
+> sobrestima un problema se gasta igual que uno que lo subestima: **se deja de creer entero.**
+
+⚠️ Y una consecuencia sobre el propio instrumento: **su control positivo se apoyaba en una línea
+ROTA, y arreglarla lo mató.** `onboarding-organizacion.spec.ts:72` ya no existe, así que el control
+ahora contesta «no lo encuentra» sobre un detector que funciona. Es la fecha de vencimiento implícita
+que este archivo ya tiene escrita para los controles negativos, aparecida por primera vez **en un
+control POSITIVO**: el sujeto en el que se apoyaba era un defecto, y el trabajo consiste en
+eliminarlo. **El sujeto de un control positivo tiene que ser algo que NO se planee arreglar.**
 
 ⚠️ **Y eso invierte lo que la enumeración estaba haciendo.** Se pidió para *acotar el alcance de una
 tanda* —¿qué limpiezas hay que reescribir?— y lo que devolvió fue **una clase entera que no tenía
