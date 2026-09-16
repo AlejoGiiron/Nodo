@@ -5025,6 +5025,127 @@ Mismo criterio que el resto del proyecto: *la historia no se reescribe, se le ag
 dejar de usarla y dejar de apuntarle la suite; borrarla destruiría la única referencia de qué había
 cuando se tomaron las decisiones de estos meses.
 
+### 🔴 CRITERIO SIN NÚMERO · UN FALLO TEMPRANO NO DEVUELVE «NO SE PUEDE»: DEVUELVE «NO LLEGUÉ A SABERLO»
+
+*2026-09-15, respaldando la base (deuda 113). **Dos casos el mismo día, y el segundo lo produje
+después de haber escrito el primero.***
+
+> **Cuando una cadena de requisitos falla en el primero, el estado de los demás queda SIN MEDIR — y
+> se reporta como si estuviera medido.**
+
+| # | lo que se reportó | lo que era |
+|---|---|---|
+| 1 | *«`db dump` da 401; no sabemos si además pide Docker»* | el 401 llegaba **antes**, así que la pregunta de `pg_dump` **no se había hecho**, no es que no tuviera respuesta |
+| 2 | 🔴 *«Docker no está disponible»* — repetido varias veces | **Docker 29.6.1 ESTÁ instalado**. Lo que falla es `docker info`, o sea el **daemon parado** |
+
+🔴 **Y el segundo es el caro, porque la diferencia entre los dos estados es el TRABAJO QUE
+IMPLICAN:**
+
+| lo que `docker info` no distingue | qué hay que hacer |
+|---|---|
+| binario **ausente** | instalar Docker: descarga, permisos, reinicio |
+| daemon **parado** | **abrir una aplicación** |
+
+Sobre la primera lectura se escribió que el respaldo *«requiere instalar herramientas»*, y eso ayudó a
+que la 113 pareciera más cara de lo que es. **Un prerrequisito sobreestimado posterga igual que uno
+real**, y no hay síntoma que lo corrija: nadie vuelve a medir algo que ya dio *«no está»*.
+
+⚠️ **Por qué se escapa, y no es descuido:** un comando que falla **contesta**, y una respuesta se
+lee como una medición. `docker info` no dice *«no pude averiguarlo»*: dice un error, con su texto,
+que suena a diagnóstico. Es la misma familia que *«los ceros son ausencia de línea»* — ahí un vacío
+se lee como cero; acá **un fallo se lee como estado**.
+
+✅ **LO ACCIONABLE, y son dos:**
+
+1. **Un comando que falla mide lo que falló, no lo que venía después.** Al reportarlo, la frase es
+   *«no llegué a saberlo»*, nunca *«no se puede»*.
+2. 🔴 **Y para un requisito, preguntar por el BINARIO y por el SERVICIO por separado** — son dos
+   estados y un solo comando los colapsa:
+
+```bash
+command -v docker          # ¿está instalado?      -> instalar, o no
+docker info                # ¿el daemon corre?     -> abrir la app, o no
+```
+
+⚠️ Vale igual para cualquier cosa con demonio o servidor detrás: una base local, un emulador, un
+servidor de desarrollo. **«No responde» y «no existe» se escriben distinto y cuestan distinto.**
+
+---
+
+### 🔴 CRITERIO SIN NÚMERO · EJECUTAR ENCUENTRA LO QUE UNO NO SABÍA QUE ESTABA — PERO LEER ES LO QUE DICE **QUÉ** SE ESTÁ EJECUTANDO
+
+*2026-09-15, diagnosticando el ticket de la venta #128. **Es el acotamiento de «releer confirma lo
+que uno ya escribió; enumerar encuentra lo que uno no sabía que estaba»**, y hacía falta porque esa
+frase, sola, se lee como «reproducir le gana a leer».*
+
+**El caso.** Un ticket de producción no mostraba el cliente y no tenía Subtotal. Había dos hipótesis
+razonables —que el arreglo del cliente no hubiera llegado al ticket del POS, y que el Subtotal se
+hubiera perdido en la tanda— y el plan natural era **reproducirlo**.
+
+🔴 **Reproducir no habría contestado nada, y la razón es estructural: hay DOS implementaciones de
+ticket** — la del POS y la de la reimpresión (deuda 108). Sin saber cuál produce esa captura, el
+escenario montado mide **un camino que uno no eligió**.
+
+> **Reproducir sin saber qué camino se ejercita mide un escenario CIEGO** — y su verde o su rojo son
+> sobre una pregunta que nadie formuló.
+
+✅ **Lo que cerró el diagnóstico fue LEER las dos implementaciones**, y con un discriminador que el
+lab no podía dar: el POS imprime `Subtotal` **incondicional** y la reimpresión **no lo tiene nunca**.
+Como la captura no lo traía, la captura era la reimpresión — y las dos hipótesis se cayeron sin
+montar un solo escenario. *(La otra mitad la dio un `select`: esa venta tenía `customer_id` NULL, o
+sea que el ticket estaba bien.)*
+
+⚠️ **Y esto NO contradice la regla que acota: la ordena.** Las dos siguen siendo ciertas y hacen
+cosas distintas:
+
+| | qué aporta | qué NO puede dar |
+|---|---|---|
+| **leer** | **qué caminos existen** y en qué se diferencian — o sea, qué se va a medir | no dice qué pasa de verdad al correrlo |
+| **ejecutar** | lo que uno no sabía que estaba | **no dice cuál de los caminos ejercitó** |
+
+✅ **LO ACCIONABLE, y es una pregunta antes de montar un escenario:**
+
+> **¿Cuántas implementaciones tiene esto, y cuál voy a ejercitar?** Si la respuesta es *«una»* sin
+> haberlo grepeado, eso es una suposición — y en un repo con dos tickets, dos formularios o dos
+> caminos de cobro, es la suposición que invalida la medición entera.
+
+⚠️ Corolario para el lab: reproducir **después** de leer sigue valiendo, y acá valió — el par que se
+escribió dejó el tripwire que el ticket de producción no podía dejar, y murió con su mutante. Lo que
+no vale es reproducir **en lugar de** leer: eso no es medir antes que opinar, es medir sin saber qué.
+
+---
+
+### 🔴 CRITERIO SIN NÚMERO · DOS DEUDAS BLOQUEADAS POR «LO MISMO» CASI NUNCA NECESITAN LO MISMO — Y EL BLOQUEO COMPARTIDO LAS SACA DE LA DISCUSIÓN
+
+*2026-09-15, al confirmar que no hay respaldos (deuda 113).*
+
+La 103 (segunda mitad) y la 114 figuraban las dos como *«esperan el backup»*. Con el dashboard
+medido —**no hay ninguno, y nadie lo está construyendo**— esa frase dejó de describir un orden y
+pasó a describir un limbo.
+
+> **Una deuda ABIERTA compite por prioridad. Una deuda BLOQUEADA se lee como trabajo ORDENADO — «va
+> después de X»— y sale de la discusión: nadie la prioriza porque ya tiene su lugar en una fila que
+> no avanza.**
+
+🔴 **Y es peor que una deuda abierta, porque PARECE TENER UN PLAN.** Es la misma forma que *«una
+deuda mencionada en un reporte no es una deuda abierta»*, movida un paso: allá el objeto citado no
+existía; acá **la condición citada no la trabaja nadie**, y en los dos casos lo que circula es la
+sensación de que está contemplado.
+
+✅ **LO ACCIONABLE, y es lo que las saca del limbo: el bloqueo se escribe POR DEUDA, no compartido.**
+Al enumerarlo aparecieron dos condiciones distintas donde parecía haber una:
+
+| deuda | qué necesita de verdad | por qué |
+|---|---|---|
+| **103** (retirar como operación) | el respaldo **probado por restauración** | escribe sobre datos de la clienta, y eso no se deshace |
+| **114** (emparejar las FK) | el respaldo **hecho y verificado en local** | cambia esquema, y un cambio de esquema **se revierte con otra migración** |
+
+⚠️ Y el corolario que hace la diferencia práctica: **una de las dos se desbloquea antes que la
+otra.** Mientras el bloqueo estaba escrito como uno solo, las dos esperaban al más exigente — y
+nadie tenía forma de ver que una podía avanzar.
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · UNA OPCIÓN SE ELIGE POR SER SEGURA EN UN EJE, Y NADIE PREGUNTA POR LOS OTROS
 
 *2026-09-15, enumerando cómo respaldar la base de la clienta (deuda 113). **El error no fue elegir
