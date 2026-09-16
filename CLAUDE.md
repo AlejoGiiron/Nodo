@@ -5025,6 +5025,55 @@ Mismo criterio que el resto del proyecto: *la historia no se reescribe, se le ag
 dejar de usarla y dejar de apuntarle la suite; borrarla destruiría la única referencia de qué había
 cuando se tomaron las decisiones de estos meses.
 
+### 🔴 NO SE PRUEBA EN EL TENANT DE LA CLIENTA — LAS PRUEBAS VAN A `LAB Pruebas`
+
+*Fijada el 2026-09-15, al mirar el ticket de una venta real. **La razón es medida, no de
+principio** — y lo que la hace no negociable es que el costo NO SE PUEDE DESHACER.*
+
+> **Una venta de prueba en producción no es un dato de más: es un HECHO QUE NO OCURRIÓ, escrito
+> para siempre en el historial de un negocio real.**
+
+🔴 **Lo que escribe una sola venta de prueba, enumerado — y ninguna línea se puede revertir:**
+
+| qué toca | por qué no se deshace |
+|---|---|
+| **consume un correlativo** (`next_order_number`) | el número queda usado; la venta siguiente salta, y el salto no se explica |
+| **descuenta stock** | el inventario deja de cuadrar con lo físico, y corregirlo es **otro** hecho (`adjust_stock`, con su motivo) |
+| **entra a los reportes del período** | vendido, utilidades y arqueo del día la cuentan |
+| **no se puede borrar** | ninguna tabla tiene policy de `DELETE`, por diseño |
+| **anularla tampoco la saca** | deja `cancelled_at` y motivo: la prueba queda **visible** en su historial |
+
+⚠️ **Y ya pasó, así que no es una hipótesis:** la **orden fantasma** de Muscle Pro —residuo de un
+cargador nuestro— hubo que anularla con un `update` directo **porque `register_sale_void` la
+rechazaba**, y el intento de limpiarla por el camino correcto costó además **una jornada vacía**
+que tampoco se puede borrar. Ver *«limpiar residuo produjo residuo»*: en este sistema **toda
+limpieza es una escritura**, así que probar en producción no cuesta el dato — cuesta el dato **más
+lo que haga falta para taparlo**.
+
+✅ **DÓNDE VAN LAS PRUEBAS: `LAB Pruebas`.** Existe exactamente para esto — sede limpia, catálogo
+real cargado, cuenta propia— y ahí un escenario se repite cuantas veces haga falta. Es además la
+sede que resolvió *«un eje que el producto dice soportar y que el lab tiene en N=1»*: ya está
+poblada y ya está en el arnés.
+
+📋 **LO QUE SÍ SE PUEDE HACER EN PRODUCCIÓN, y conviene escribirlo o la regla se lee como
+«no tocar nada»:**
+
+| ✅ permitido | ⛔ prohibido |
+|---|---|
+| **MIRAR** — `select`, sondas de solo lectura declaradas, abrir una pantalla, leer un ticket | crear una venta, una compra, un gasto, un movimiento de caja |
+| **la carga de datos que la clienta autorizó** — su histórico, su catálogo, sus listas | «una pruebita» de cualquier flujo que escriba |
+| aplicar **migraciones** por el camino con confirmación | dejar residuo de una sonda que escribe |
+
+> **La línea es una sola: nada que escriba un HECHO QUE NO OCURRIÓ.** Una migración cambia el
+> esquema y queda en git; una carga transcribe hechos que sí pasaron y la clienta pidió. Una venta
+> de prueba **inventa un hecho**, y el sistema está construido para que los hechos no se borren.
+
+⚠️ **Y el corolario sobre qué prueba un ticket de producción:** sirve para **ver qué muestra**, no
+para verificar un arreglo. La venta #128 es el caso: su ticket no traía cliente, y medir contra la
+base dijo que **esa venta no tenía cliente** — o sea que el ticket estaba bien. Un artefacto de
+producción es una observación con **una sola muestra y sin control**; el par que discrimina —una
+venta CON cliente y otra SIN— sólo se puede armar donde se puede repetir.
+
 ### 🔴 ENTRE DOS CAMINOS AL MISMO RESULTADO, GANA EL QUE NO SUMA UNA CREDENCIAL — AUNQUE SEA MÁS LARGO
 
 *2026-09-14, al cerrar la transición de Muscle Pro sin credencial de usuario viva.*
