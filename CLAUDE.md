@@ -5303,6 +5303,45 @@ respuesta, no se evaluó — se justificó.
 
 ---
 
+### 🔴 LO QUE YO NO PUEDO EJECUTAR SE ESCRIBE COMO PEDIDO, NUNCA EN PRIMERA PERSONA
+
+*2026-09-15. **Corrección propia y repetida**, señalada porque ya dejó una acción sin dueño.*
+
+> **Hay acciones que sólo puede ejecutar Alejandro — rotar un token, mirar el dashboard, cifrar el
+> respaldo, tocar una app de escritorio. Yo DECIDO y REDACTO; él EJECUTA. Escribirlas en primera
+> persona convierte un pedido en un reporte.**
+
+🔴 **El costo no es de cortesía, y ya se pagó:** escribí *«el token se rota al cerrar»* varias
+veces, en mensajes y en una deuda. **Yo no puedo rotar un token.** Leído del otro lado, eso no es una
+promesa mía: es **un hecho consumado**, y entonces nadie lo hace — la acción queda **sin dueño**,
+que es peor que quedar pendiente: un pendiente tiene a alguien esperando.
+
+⚠️ **Y es exactamente la forma que este archivo ya mide en otra capa:** *«ya está»* y *«creo que ya
+está»* se escriben igual. Acá el par es *«lo hago»* y *«hay que hacerlo»* — las dos frases caben en
+dos palabras y **sólo una deja a alguien a cargo**.
+
+📋 **Dónde aplica hoy, enumerado para que no se lea como un matiz de estilo:**
+
+| acción | quién la ejecuta |
+|---|---|
+| rotar un token, resetear la contraseña de la base | **Alejandro** |
+| mirar el dashboard de Supabase (backups, planes, claves) | **Alejandro** |
+| cifrar el respaldo y borrar los `.sql` en claro | **Alejandro** |
+| abrir o cerrar una app de escritorio (Docker Desktop) | **Alejandro** |
+| exportar una variable **en la sesión** antes de arrancar | **Alejandro** |
+| correr comandos, escribir archivos, commitear, pushear | yo |
+
+✅ **LO ACCIONABLE, y es una forma de escribir, no una intención:**
+
+> **Cuando la acción necesita la máquina de Alejandro, va como PEDIDO con su comando al lado** —
+> *«corré esto: …»*, *«rotalo y avisame»* — **nunca** *«rotamos el token»* ni *«queda cifrado»*.
+
+⚠️ Y el corolario para el estado: **una acción que yo no ejecuté no se escribe en pasado en ningún
+registro.** *«El respaldo está cifrado»* sólo se escribe cuando alguien lo confirmó — y ahí va con
+quién lo confirmó, que es lo que separa un hecho de una expectativa.
+
+---
+
 ### 🔴 NO SE PRUEBA EN EL TENANT DE LA CLIENTA — LAS PRUEBAS VAN A `LAB Pruebas`
 
 *Fijada el 2026-09-15, al mirar el ticket de una venta real. **La razón es medida, no de
