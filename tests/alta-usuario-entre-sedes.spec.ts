@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { ownerCreds } from './helpers/auth'
 import { clienteDeServicio } from './helpers/servicio'
+import { limpiarOrganizaciones } from './helpers/limpieza'
 
 // ============================================================================
 // ALTA DE USUARIO ENTRE SEDES — deuda 92
@@ -103,13 +104,12 @@ test.beforeAll(async () => {
 })
 
 test.afterAll(async () => {
-  if (!comoServicio) return
-  for (const id of creados) await comoServicio.auth.admin.deleteUser(id)
-  if (orgsCreadas.length) {
-    await comoServicio.from('sedes').delete().in('organization_id', orgsCreadas)
-    await comoServicio.from('roles').delete().in('organization_id', orgsCreadas)
-    await comoServicio.from('organizations').delete().in('id', orgsCreadas)
-  }
+  // 🔴 La limpieza ASEVERA que limpió — ver `helpers/limpieza.ts`. Y acá importa
+  //    doble: los `creados.push` de abajo van detrás de un `if (r.body.user_id)`,
+  //    así que una respuesta sin ese campo deja una cuenta SIN RASTREAR, su
+  //    perfil vivo, y —con la tanda A de la deuda 114— la sede imposible de
+  //    borrar. Antes eso era silencioso; ahora nombra qué quedó.
+  await limpiarOrganizaciones(comoServicio, creados, orgsCreadas)
 })
 
 // ── DIRECCIÓN 1 · lo que la deuda venía a habilitar ─────────────────────────

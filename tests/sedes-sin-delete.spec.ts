@@ -203,5 +203,14 @@ test('④ no se puede crear una sede en OTRA organización', async () => {
     'la condición de la policy original',
   ).not.toBeNull()
 
-  await admin!.from('sedes').delete().eq('id', id)
+  // 🔴 La limpieza asevera que limpió. Esta línea se escribió en el mismo turno
+  //    en que documentábamos que «toda limpieza asevera que limpió» — descartaba
+  //    el error, así que podía dejar de borrar y este caso seguiría verde.
+  const fin = await admin!.from('sedes').delete({ count: 'exact' }).eq('id', id)
+  expect(
+    fin.count,
+    `QUEDÓ UNA SEDE HUÉRFANA EN EL LAB: ${id}. La sede del caso ④ no tiene nada ` +
+    'apuntándole, así que si no se borra es que el camino de limpieza dejó de ' +
+    'funcionar — y sin esta aserción eso sería invisible.',
+  ).toBe(1)
 })

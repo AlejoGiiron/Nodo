@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { ownerCreds } from './helpers/auth'
+import { limpiarOrganizaciones } from './helpers/limpieza'
 
 // ============================================================================
 // ALTA DE ORGANIZACIÓN — deuda 36. `onboard_organization`.
@@ -63,16 +64,10 @@ test.afterAll(async () => {
   // Las organizaciones de prueba se borran: no tienen historia que conservar
   // —nacen y mueren dentro del spec— y dejarlas rompería el guard de homónimas
   // de la propia función en la corrida siguiente.
-  if (comoServicio && usuarios.length) {
-    // Primero las cuentas: `profiles.id` cae por cascade, y sin eso la sede no
-    // se puede borrar.
-    for (const id of usuarios) await comoServicio.auth.admin.deleteUser(id)
-  }
-  if (comoServicio && creadas.length) {
-    await comoServicio.from('sedes').delete().in('organization_id', creadas)
-    await comoServicio.from('roles').delete().in('organization_id', creadas)
-    await comoServicio.from('organizations').delete().in('id', creadas)
-  }
+  // 🔴 La limpieza ASEVERA que limpió. Antes era una tanda de `delete` cuyo
+  //    `error` no leía nadie: podía dejar de funcionar entera y el spec seguía
+  //    verde acumulando una organización por corrida. Ver `helpers/limpieza.ts`.
+  await limpiarOrganizaciones(comoServicio, usuarios, creadas)
 })
 
 // ── LA MITAD QUE CORRE SIEMPRE: la función NO se puede invocar desde la app ──
