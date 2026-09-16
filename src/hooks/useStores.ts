@@ -5,7 +5,14 @@ import { useAuth } from '@/hooks/useAuth'
 import type { Tables } from '@/types/database.types'
 
 export type StoreRow = Tables<'sedes'>
-export type OrgUser = Pick<Tables<'profiles'>, 'id' | 'full_name' | 'email'>
+/**
+ * 🔴 `sede_id` ENTRA AL TIPO el 2026-09-15, y es una LECTURA de mas — nada
+ *    escribe esta columna desde esta pantalla. Hace falta porque la pantalla
+ *    pasa a mostrar DONDE ESTA PARADA cada persona, que es lo que RLS lee de
+ *    verdad (`get_my_sede_id()` -> `profiles.sede_id`), al lado de a donde
+ *    PUEDE ir (`user_stores`). Los dos hechos son ciertos y son distintos.
+ */
+export type OrgUser = Pick<Tables<'profiles'>, 'id' | 'full_name' | 'email' | 'sede_id'>
 export type StoreAssignment = { user_id: string; sede_id: string }
 
 /**
@@ -54,7 +61,7 @@ export function useStores() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, email')
+        .select('id, full_name, email, sede_id')
         .eq('organization_id', organizationId!)
         .order('full_name')
       if (error) throw error
@@ -105,14 +112,27 @@ export function useStores() {
     onError: () => toast.error('Error al actualizar la sede'),
   })
 
-  const deleteStoreMut = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from('sedes').delete().eq('id', id)
-      if (error) throw error
-    },
-    onSuccess: () => { invalidateStores(); toast.success('Sede eliminada') },
-    onError: () => toast.error('Error al eliminar la sede'),
-  })
+  // 🔴 `deleteStoreMut` SE BORRO el 2026-09-15 (deuda 103), junto con su boton.
+  //    Hacia `supabase.from('sedes').delete()`, y 16 tablas cuelgan de `sedes`
+  //    con `on delete cascade`. Medido en el tenant de la clienta: un clic
+  //    borraba **722 filas** — 127 ventas, 106 pagos, 224 movimientos de stock,
+  //    20 jornadas — y, porque `profiles` TAMBIEN esta en el cascade, **las dos
+  //    cuentas de la sede**. No era perder la historia: era perder a las
+  //    personas y su acceso.
+  //
+  // ⚠️ SE BORRA LA MUTACION, NO SOLO EL BOTON, y es el precedente de
+  //    `updateProductStock`: un escritor vivo sin consumidor es la ruta mas
+  //    corta al hueco que se acaba de cerrar, esperando a que alguien la
+  //    encuentre porque «ya existe».
+  //
+  // 📋 Y el camino queda cerrado tambien en la BASE: la migracion
+  //    `20260915190000` parte la policy `for all` en select/insert/update sin
+  //    `delete`. Sacar solo la UI seria la deuda 61 en otra capa — la interfaz
+  //    ocupando el lugar de la autorizacion.
+  //
+  //    «Retirar» una sede es otra cosa y hoy no existe como operacion: se hizo
+  //    a mano una vez (renombrar + sacar de `user_stores`) y va con la otra
+  //    mitad de la 103.
 
   const setAssignmentMut = useMutation({
     mutationFn: async ({ userId, sedeId, assigned }: { userId: string; sedeId: string; assigned: boolean }) => {
@@ -141,8 +161,7 @@ export function useStores() {
     isLoading,
     createStore: createStoreMut.mutateAsync,
     updateStore: updateStoreMut.mutateAsync,
-    deleteStore: deleteStoreMut.mutateAsync,
     setAssignment: setAssignmentMut.mutateAsync,
-    isMutating: createStoreMut.isPending || updateStoreMut.isPending || deleteStoreMut.isPending,
+    isMutating: createStoreMut.isPending || updateStoreMut.isPending,
   }
 }

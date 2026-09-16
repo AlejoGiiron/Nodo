@@ -24,6 +24,7 @@ import {
   KeyRound,
   Puzzle,
   Package,
+  UserRound,
   type LucideIcon,
 } from 'lucide-react'
 import { useSedeConfig } from '@/hooks/useSedeConfig'
@@ -1111,7 +1112,7 @@ function StoreModal({
 }
 
 function SectionSedes() {
-  const { stores, orgUsers, assignments, isLoading, createStore, updateStore, deleteStore, setAssignment, isMutating } = useStores()
+  const { stores, orgUsers, assignments, isLoading, createStore, updateStore, setAssignment, isMutating } = useStores()
   const [editStore, setEditStore] = useState<StoreRow | 'new' | null>(null)
 
   if (isLoading) return <Skeleton />
@@ -1125,11 +1126,12 @@ function SectionSedes() {
     setEditStore(null)
   }
 
-  const handleDelete = async (store: StoreRow) => {
-    if (stores.length <= 1) { toast.error('No puedes eliminar la única sede de la organización'); return }
-    if (!window.confirm(`¿Eliminar la sede "${store.name}"? Se borrarán también sus datos asociados.`)) return
-    await deleteStore(store.id)
-  }
+  // 🔴 `handleDelete` SE BORRO con su boton (deuda 103). Su guard se veia
+  //    suficiente y no lo era, y por eso el camino llego hasta produccion:
+  //      · el `window.confirm` decia «se borraran tambien sus datos
+  //        asociados» — no decia 722 filas, ni que se iban las CUENTAS;
+  //      · y el guard de «la unica sede» NO protegia a Muscle Pro, que tiene
+  //        dos. Protegia el caso que nunca iba a pasar.
 
   return (
     <div>
@@ -1155,12 +1157,75 @@ function SectionSedes() {
               </div>
               <div style={{ display: 'flex', gap: 6 }}>
                 <button onClick={() => setEditStore(store)} title="Editar" style={{ width: 30, height: 30, border: '1px solid var(--border)', background: 'var(--surface)', borderRadius: 7, cursor: 'pointer', color: 'var(--ink-3)', display: 'grid', placeItems: 'center' }}><Pencil size={13} /></button>
-                <button onClick={() => handleDelete(store)} disabled={stores.length <= 1 || isMutating} title={stores.length <= 1 ? 'No puedes eliminar la única sede' : 'Eliminar'} style={{ width: 30, height: 30, border: '1px solid var(--danger-soft)', background: 'var(--danger-soft)', borderRadius: 7, cursor: stores.length <= 1 ? 'not-allowed' : 'pointer', color: 'var(--danger)', display: 'grid', placeItems: 'center', opacity: stores.length <= 1 ? 0.4 : 1 }}><Trash2 size={13} /></button>
+                {/* 🔴 ACA IBA EL TARRO DE BASURA DE LA SEDE. Retirado el
+                    2026-09-15: un clic borraba 722 filas en cascada, las dos
+                    cuentas de la sede incluidas, y no habia vuelta. Ver la
+                    nota en `useStores.ts` y la migracion 20260915190000. */}
               </div>
             </div>
-            {/* Acceso de usuarios */}
+            {/* ══ TRABAJANDO EN ══════════════════════════════════════════
+                🔴 ESTE BLOQUE ES NUEVO Y ES EL QUE FALTABA. La pantalla decia
+                   «Acceso de usuarios» sobre un check que escribe
+                   `user_stores` — y `user_stores` NO da acceso: alimenta la
+                   LISTA DEL SELECTOR. Quien decide que se puede leer y
+                   escribir es `profiles.sede_id`, que es lo que lee
+                   `get_my_sede_id()` y con el todas las policies.
+
+                   Medido el 2026-09-15 en el tenant de la clienta: una
+                   persona con CERO filas en `user_stores` estaba operando con
+                   acceso completo, porque su `profiles.sede_id` era esa sede.
+                   El admin la veia desmarcada en las dos. Un control de
+                   acceso que no controla.
+
+                ⚠️ ES DE SOLO LECTURA, y no por prudencia: la version editable
+                   NO ES EXPRESABLE. `profiles.sede_id` es `not null` y admite
+                   UNA sede, asi que «desmarcar» no tiene destino — y el unico
+                   que habria seria `null`, que deja a la persona sin poder
+                   hacer nada en el acto. Mover a alguien de sede ya tiene su
+                   camino: el StoreSelector, sobre uno mismo.
+
+                ⚠️ Y VA VISUALMENTE SEPARADO del check de abajo a proposito.
+                   Dos listas de personas una encima de la otra, una con check
+                   y otra sin, es exactamente la forma de volver a
+                   confundirlos — y confundirlos es el defecto que esto
+                   cierra. Por eso este bloque no tiene casillas, va sobre
+                   fondo propio y nombra a los que SI estan aca. */}
+            <div style={{ padding: '12px 16px', background: 'var(--surface-2)', borderTop: '1px solid var(--border-2)' }}>
+              <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: 0.5, margin: '0 0 8px' }}>Trabajando en esta sede</p>
+              {(() => {
+                const aca = orgUsers.filter(u => u.sede_id === store.id)
+                return aca.length === 0 ? (
+                  <p data-testid="sede-trabajando-vacio" style={{ fontSize: 13, color: 'var(--ink-4)', margin: 0 }}>Nadie está trabajando en esta sede.</p>
+                ) : (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {aca.map(u => (
+                      <span
+                        key={u.id}
+                        data-testid="sede-trabajando"
+                        data-user={u.id}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12.5, fontWeight: 600, color: 'var(--ink-2)', background: 'var(--surface)', border: '1px solid var(--border-2)', borderRadius: 999, padding: '3px 10px' }}
+                      >
+                        <UserRound size={12} style={{ color: 'var(--ink-3)' }} />
+                        {u.full_name}
+                      </span>
+                    ))}
+                  </div>
+                )
+              })()}
+              <p style={{ fontSize: 11.5, color: 'var(--ink-4)', margin: '8px 0 0' }}>
+                Es dónde está parada cada persona ahora, y lo que decide qué datos ve. Cada quien la
+                cambia desde el selector de sede, arriba a la izquierda.
+              </p>
+            </div>
+
+            {/* ══ PUEDE CAMBIARSE A ESTA SEDE ════════════════════════════
+                Esto es `user_stores`: la lista que el selector le OFRECE a
+                cada persona. No concede acceso por si solo —el acceso llega
+                cuando la persona elige la sede y eso escribe
+                `profiles.sede_id`— y por eso el rotulo dice lo que hace y no
+                «Acceso de usuarios», que era el nombre del OTRO hecho. */}
             <div style={{ padding: '12px 16px' }}>
-              <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: 0.5, margin: '0 0 10px' }}>Acceso de usuarios</p>
+              <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: 0.5, margin: '0 0 10px' }}>Puede cambiarse a esta sede</p>
               {orgUsers.length === 0 ? (
                 <p style={{ fontSize: 13, color: 'var(--ink-4)', margin: 0 }}>Sin usuarios.</p>
               ) : (
@@ -1182,6 +1247,10 @@ function SectionSedes() {
                   })}
                 </div>
               )}
+              <p style={{ fontSize: 11.5, color: 'var(--ink-4)', margin: '8px 0 0' }}>
+                Marcar a alguien acá NO le da acceso: le ofrece esta sede en su selector. El acceso
+                lo tiene sobre la sede en la que está trabajando.
+              </p>
             </div>
           </div>
         ))}

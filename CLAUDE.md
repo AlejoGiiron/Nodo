@@ -397,6 +397,26 @@ en Vento.
    destapó no fue notarlo: fue **correr el comando**, que hasta ese día no se podía porque el token
    estaba rotado.
 
+   🔴 **SEGUNDA APARICIÓN, 2026-09-15 — Y LAS DOS VECES SE DESCUBRIÓ AL REPONER EL ACCESO, NO AL
+   OCURRIR.** Regenerar dio **59 líneas de más y cero borradas**: la tabla `jornada_cierres_con_fecha`
+   y la función `cerrar_jornada_con_fecha`, que entraron con la migración del 2026-09-14 y nunca se
+   regeneraron. Nada de TypeScript las consume — exactamente como `recalcular_total_de_orden`.
+
+   > **Dos de dos: esta clase no se descubre cuando se introduce, se descubre cuando alguien PUEDE
+   > correr el comando.** Y eso significa que el intervalo de divergencia no lo fija el defecto: lo
+   > fija la disponibilidad del token.
+
+   ⚠️ **Lo que agrega sobre la primera:** ya no es un caso, es una **tasa**. Las dos veces que el
+   comando se pudo correr después de un hueco de acceso, el archivo estaba divergido. Ninguna de las
+   dos divergencias tuvo síntoma, ninguna la habría encontrado una lectura, y las dos entraron por
+   migraciones que agregaron objetos **que el frontend no usa todavía** — que es la condición exacta
+   que describe esta nota.
+
+   ✅ **Y el corolario operativo, que es lo único que baja la tasa:** `pnpm db:types` + `git diff` se
+   corre **en la misma pasada que el `db push`**, no cuando alguien se acuerda. La migración y el
+   archivo de tipos son dos lados del mismo contrato; separarlos en el tiempo es lo que produce el
+   hueco, y el momento en que los dos están a mano es exactamente el del push.
+
    🔴 **Por eso el check es de ÁRBOL y no una lectura, y por eso no lo cubre `tsc`:** `tsc` verifica
    que lo que el código usa exista. Este contrato es sobre lo que el código **no** usa — y lo que no
    se usa es exactamente lo que nadie mira. El día que alguien empiece a consumir esa función, el
@@ -1510,6 +1530,43 @@ que un rol tenga ese permiso.
 haya error. Y cuando dos guards pueden negar el mismo caso, el test dice **cuál de los dos** —
 si contesta el otro, el que se está probando no está funcionando.
 
+🔴 **Y LA TERCERA VEZ, 2026-09-15 — EL CRITERIO ESTABA EN LA CABECERA DEL ARCHIVO QUE YO ESTABA
+ESCRIBIENDO, Y EL CASO LO VIOLÓ IGUAL.**
+
+El spec de la deuda 103 tenía que probar que `sedes` no se puede borrar. Escribí la aserción
+`expect(count).toBe(0)` — *«esperaba que negara»— y **el archivo pasó VERDE ANTES DE APLICAR LA
+MIGRACIóN**. Lo frenaba una **clave foránea**: de las 18 que apuntan a `sedes`, diecisiete son
+`on delete cascade` y `cash_movements.sede_id` quedó en `NO ACTION`, así que restringía el borrado de
+las cuatro sedes que existen — todas tienen movimientos de caja.
+
+> **Un `count` de cero no distingue «RLS lo rechazó» de «la FK lo bloqueó».**
+
+⚠️ **Es la forma que este archivo ya mide —el defecto muerde al texto que lo documenta— y van
+varias.** Lo que agrega ésta es **por qué el criterio no alcanzó**, y no fue olvido:
+
+> **«Que niegue» y «que niegue POR ESTA RAZÓN» se escriben casi igual, y el primero pasa.**
+
+La diferencia entre el caso correcto y el defectuoso es **una aserción más**, no una estructura
+distinta. Así que el caso incompleto no se ve incompleto: se ve como el caso, con su nombre correcto,
+su sujeto correcto y su verde. **Leerlo al lado del criterio no lo delata** — lo delató que el verde
+llegara ANTES de que existiera la cosa que debía producirlo.
+
+✅ **Lo accionable, y suma al criterio de arriba:** cuando dos mecanismos distintos puedan producir el
+mismo rechazo, el caso no sólo asevera **cuál** contesta — asevera **cómo se distinguen sus
+respuestas**, y monta un caso por cada uno. Acá los dos rechazos ni siquiera se parecen, y eso es el
+discriminador:
+
+| quién niega | cómo se ve desde el cliente |
+|---|---|
+| **RLS** | `count: 0` y **`error` null** — no hay fila que matchear |
+| **la FK** | un **error con `code: 23503`** |
+
+⚠️ **Y el segundo caso no era imposible de escribir, como creí al principio.** Descarté medir la
+dirección de la FK por destructivo —habría que borrar salteando RLS, y sin la FK eso se llevaría la
+sede en cascada— y esa razón era **falsa**: asumí que el sujeto tenía que ser una sede REAL. El caso
+crea la sede **y su movimiento**, así que si la FK no estuviera, lo que el cascade se llevaría son
+filas que el caso acaba de crear. **La objeción correcta al control destructivo no lo cancela: lo
+obliga a construir su propio sujeto.**
 ⚠️ Corolario, que es el mismo de R10 leído al revés: **un verde sospechoso no es el que pasa siempre,
 es el que pasaría también sin el sujeto.** Antes de dar por bueno un test de seguridad, preguntá qué
 otra cosa podría producir ese mismo rojo.
