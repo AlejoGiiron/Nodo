@@ -5642,6 +5642,66 @@ falsa. El estado es lo que se pudre, así que se escribe distinto.
 
 ## Git
 
+### 🔴 UN PUSH A `develop` DESPLIEGA A PRODUCCIÓN — publicar y desplegar son EL MISMO ACTO
+
+*Fijado el 2026-09-15, al habilitar `Bash(git push:*)`.*
+
+**Vercel construye `develop` automáticamente.** No hay un paso intermedio donde alguien mire: el push
+es el despliegue, y del otro lado está el mostrador de un negocio que está vendiendo.
+
+🔴 **LAS TRES CONDICIONES PARA PUSHEAR. Van juntas y sin excepción:**
+
+| # | condición | cómo se comprueba |
+|---|---|---|
+| 1 | **la suite ENTERA en verde** | los cinco números **uno por uno**, leídos de ADENTRO del archivo, más el cruce contra el último `[N/N]`. ⛔ **No un grupo** |
+| 2 | **`tsc` y `lint` en cero** | ejecutados, no recordados |
+| 3 | **el árbol limpio** | `git status --porcelain` vacío — **verificado, no recordado** |
+
+**Si alguna falta, no se pushea — y se dice por qué.** No «casi verde», no «el grupo pasó», no «lo que
+falla no tiene que ver».
+
+⚠️ **Por qué la 1 dice ENTERA y está subrayado:** este archivo tiene medido que el grupo por consumidor
+**no es criterio de cierre** —falla por elegir mal y también por escribir mal el comando— y que la suite
+entera es lo único sin parámetros donde equivocarse. Un push sobre un grupo verde es exactamente la
+clase que esa regla describe, con producción del otro lado.
+
+⚠️ **Y la 3 no es formalismo:** un árbol sucio significa que **lo que se probó no es lo que se publica**.
+La suite mide el árbol; el push publica los commits. Si hay cambios sin commitear, esos dos conjuntos
+son distintos y el verde no describe lo que va a correr el cliente.
+
+🔴 **LO QUE ESTO NO HABILITA, dicho explícitamente: PODER PUSHEAR NO ES PODER APLICAR ESQUEMA.**
+
+> **Las migraciones se siguen MOSTRANDO antes de aplicar**, con las cuatro preguntas de R0 en la
+> cabecera y con las decisiones propuestas. `db push` y cualquier escritura sobre la base siguen
+> exigiendo confirmación, igual que antes.
+
+Son dos capacidades distintas y conviene decir por qué: **un push se revierte** —otro commit, otro
+deploy, y el código vuelve—. **Una migración aplicada no**: por R5 es inmutable, y si escribió datos, lo
+escrito ya está. La reversibilidad es lo que separa las dos, no el riesgo aparente.
+
+📋 **POR QUÉ SE HABILITÓ, porque el motivo importa más que el permiso.** El bloqueo costó **tres idas y
+vueltas en una sola sesión** —la suite verde, el push denegado, el pedido, la espera—, y en ninguna de
+las tres el freno agregó una decisión: el push siempre terminaba haciéndose. **La decisión que el
+bloqueo simulaba tomar no era técnica sino de ALCANCE** —*¿cuándo corresponde publicar?*—, y un permiso
+no sabe contestar eso: dice sí o no sin mirar la suite.
+
+> **Ahora el alcance está en la regla y no en el permiso.** Las tres condiciones son verificables y
+> dejan rastro; un bloqueo sólo producía una interrupción y una pregunta.
+
+⚠️ Y el corolario honesto: **esto cambia quién verifica, no si se verifica.** Antes lo miraba una
+persona antes de teclear; ahora lo tiene que comprobar quien pushea, y por eso las tres condiciones
+están escritas como comprobaciones con su comando y no como buenas intenciones.
+
+⚠️ **Divergencia con Vento, declarada:** `permissions` en `.claude/settings.json` es nuevo acá y **no**
+viaja al repo hermano. Es alcance de este proyecto —Vento no despliega desde `develop` con este
+flujo—, no una mejora del mecanismo. Es la misma clase que el ledger de disparos: *instrumentar y
+acotar pueden divergir; corregir, no* (R1 punto 9).
+
+⚠️ Y el modo de fallo del propio archivo, que ya está escrito arriba y acá cobra: **un
+`settings.json` malformado desactiva TODAS las settings, permisos incluidos** — así que después de
+tocarlo se valida con `node -e "JSON.parse(...)"`, y el control negativo es comprobar que el validador
+pueda decir que no.
+
 - Rama activa de desarrollo: `develop`
 - Nunca hacer commit directo a `main`
 - Commits en formato Conventional Commits
