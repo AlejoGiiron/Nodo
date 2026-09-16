@@ -5055,6 +5055,28 @@ lee como una medición. `docker info` no dice *«no pude averiguarlo»*: dice un
 que suena a diagnóstico. Es la misma familia que *«los ceros son ausencia de línea»* — ahí un vacío
 se lee como cero; acá **un fallo se lee como estado**.
 
+🔴 **Y EL MODO DE FALLO ES UNO QUE ESTE ARCHIVO NO TENÍA ESCRITO: NO PRODUJO UNA ACCIÓN
+EQUIVOCADA — PRODUJO INACCIÓN.**
+
+Todas las imprecisiones medidas hasta hoy empujaban a **hacer algo**: un conteo que decía «presente»
+mandaba a arreglar código correcto; una causa inferida mandaba a limpiar 162 filas; una suma de
+control inventada mandaba a tocar el catálogo de un cliente. **Todas se descubren al chocar con el
+mundo**, porque alguien intenta ejecutarlas.
+
+> **Una medición que dice «no se puede» no manda a hacer nada. Y lo que nadie hace, nadie lo
+> desmiente.**
+
+⚠️ **Acá el costo fue tiempo de la deuda 113:** sobre *«Docker no está»* se escribió que el respaldo
+requería **instalar herramientas**, y con eso pasó de *«prender una app»* a *«un proyecto»*. **Un
+prerrequisito sobreestimado posterga exactamente igual que uno real**, y no tiene síntoma: nadie
+vuelve a medir algo que ya dio ausente — al contrario, cada vez que se cita se vuelve más firme, que
+es el corolario de R4 leído sobre una ausencia en vez de sobre una presencia.
+
+🔴 **Y por eso la asimetría importa al decidir qué re-medir:** las mediciones que habilitan
+trabajo se auto-corrigen — alguien las usa y falla. **Las que lo bloquean son de una sola vía**:
+entran al registro, ordenan la prioridad, y ya nadie las toca. Si una medición va a **frenar** algo,
+vale el doble que una que lo empuja.
+
 ✅ **LO ACCIONABLE, y son dos:**
 
 1. **Un comando que falla mide lo que falló, no lo que venía después.** Al reportarlo, la frase es
@@ -5131,6 +5153,23 @@ pasó a describir un limbo.
 deuda mencionada en un reporte no es una deuda abierta»*, movida un paso: allá el objeto citado no
 existía; acá **la condición citada no la trabaja nadie**, y en los dos casos lo que circula es la
 sensación de que está contemplado.
+
+🔴 **Y EL DAÑO NO ES QUE ESPEREN: ES QUE TODAS ESPERAN AL MÁS EXIGENTE.** Un bloqueo escrito
+como compartido **toma el máximo de los requisitos y se lo aplica a todos**, sin que nadie lo haya
+decidido — y el que podría avanzar con menos **no tiene cómo hacerse visible**, porque su condición
+real nunca se escribió por separado.
+
+> **Una frase compartida no describe un bloqueo: describe el PEOR de los bloqueos, aplicado a
+> todos.**
+
+⚠️ Y es una forma de *«un valor que significa dos cosas no es un dato»* movida a la planificación:
+*«esperan el backup»* carga dos requisitos distintos en una sola frase, y una vez mezclados **no se
+pueden recuperar** sin volver a enumerar.
+
+✅ **EL TEST, y cuesta escribir dos renglones:**
+
+> **Cuando dos cosas esperan «lo mismo», escribí QUÉ NECESITA CADA UNA. Si las dos frases salen
+> distintas, el bloqueo no era compartido.**
 
 ✅ **LO ACCIONABLE, y es lo que las saca del limbo: el bloqueo se escribe POR DEUDA, no compartido.**
 Al enumerarlo aparecieron dos condiciones distintas donde parecía haber una:
