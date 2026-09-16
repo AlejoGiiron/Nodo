@@ -754,6 +754,38 @@ suite.** Las dos notificaciones dijeron `exit code 0` y las dos veces el archivo
 > paga sola, con sólo leer el número que la herramienta ofrece — y lo ofrece **siempre**, en cada
 > corrida, con el mismo aspecto tranquilizador.
 
+🔴 **SÉPTIMA VEZ, 2026-09-15, Y LA PRIMERA QUE TAPÓ ALGO QUE HABRÍA FRENADO UNA PUBLICACIÓN.**
+Las seis anteriores falsearon un **reporte**: un verde anunciado sobre una suite roja, que se
+corrige volviendo a mirar. Ésta escondió **un error de lint real** — un import sin usar — que
+bloqueaba la **condición 2 de las cuatro para pushear.**
+
+**El caso, y el canal es NUEVO: no fue la notificación ni la tubería de la suite — fue un pipe que
+yo mismo escribí en el comando.**
+
+```bash
+pnpm exec eslint src tests | tail -8; echo "lint_exit=$?"   # ⛔ el exit es el de `tail`
+```
+
+Imprimió **`lint_exit=0`** sobre una salida que decía, tres líneas más arriba, **`1 error`**.
+
+⚠️ **Lo que agrega sobre las seis:** un reporte falso se descubre cuando alguien vuelve a mirar, y
+siempre hay una próxima corrida. **Una condición de push que se da por cumplida no se vuelve a
+mirar por definición** — es la puerta, y una vez que dice que sí, nadie la reabre. El verde falso
+no habría producido un informe equivocado: habría producido **un deploy**.
+
+✅ **Y lo accionable es de una línea, no de atención:**
+
+> **El exit se toma con `PIPESTATUS` o ANTES del pipe — nunca después.**
+
+```bash
+cmd | tail -8; echo "exit=${PIPESTATUS[0]}"        # ✅ el del comando, no el de tail
+(cmd > salida.txt 2>&1; echo "exit=$?" >> salida.txt)   # ✅ mejor: escrito ADENTRO del archivo
+```
+
+⚠️ Y la segunda forma es la que este archivo ya prescribía para las suites. Lo que el caso
+demuestra es que **la regla no era sobre las suites: era sobre los pipes**, y por escribirla acotada
+a un instrumento quedó sin cubrir todos los demás comandos donde el mismo pipe hace lo mismo.
+
 ⚠️ Y el corolario que explica por qué no envejece: **el canal que miente no es nuestro.** No hay
 nada que arreglar de nuestro lado —la notificación reporta el exit del shell y eso es correcto para
 el shell—; lo único que queda es **no leerla nunca** y escribir el código adentro del archivo. Una
