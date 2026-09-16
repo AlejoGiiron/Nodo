@@ -5025,6 +5025,47 @@ Mismo criterio que el resto del proyecto: *la historia no se reescribe, se le ag
 dejar de usarla y dejar de apuntarle la suite; borrarla destruiría la única referencia de qué había
 cuando se tomaron las decisiones de estos meses.
 
+### 🔴 CRITERIO SIN NÚMERO · UNA OPCIÓN SE ELIGE POR SER SEGURA EN UN EJE, Y NADIE PREGUNTA POR LOS OTROS
+
+*2026-09-15, enumerando cómo respaldar la base de la clienta (deuda 113). **El error no fue elegir
+mal: fue elegir bien por una razón y no preguntar por las demás.***
+
+**El caso.** Había que ver qué produce `supabase db dump` sin generar un archivo con **PII de los
+clientes de la clienta**. Elegí `--dry-run` exactamente por eso: no trae datos. **Y es cierto — no
+trae datos.** Lo que hace es imprimir el script de `pg_dump` que ejecutaría, con sus variables:
+
+```
+PGHOST=... PGUSER=cli_login_postgres.<ref> PGPASSWORD=<la contraseña, en texto plano>
+```
+
+> **Evitó exponer los datos y expuso la llave para sacarlos cuando uno quiera.**
+
+🔴 **LA FORMA, y es lo que la hace clase y no un descuido:**
+
+> **«Es la opción segura» es una afirmación INCOMPLETA: segura ES UNA RELACIÓN CON UN EJE.** Y quien
+> la elige nombra el eje que tenía en la cabeza — nunca los que no.
+
+⚠️ **Por qué no lo caza la atención:** el razonamiento fue **correcto en su eje** y llegó a la
+conclusión correcta en ese eje. No hay un paso mal dado que revisar. Lo que faltó es una pregunta
+que no sale sola, porque **la respuesta que uno ya tiene se siente completa**: *«no trae datos»* es
+verdadero, suficiente para la pregunta que uno se hizo, y silencioso sobre todo lo demás.
+
+✅ **LO ACCIONABLE, y es una frase que se escribe antes de elegir:**
+
+> **Nombrá EL EJE por el que la opción es segura. Si sólo podés nombrar uno, faltan los demás.**
+
+📋 Los ejes que este proyecto ya vio morder, para usarlos de lista: **datos** (PII, de la clienta
+o de terceros) · **credenciales** (secretos que quedan en logs, historiales o archivos) ·
+**escritura** (¿deja algo escrito que no se puede borrar?) · **reversibilidad** (¿se deshace?) ·
+**alcance** (¿sobre qué recurso actúa: una fila, una sede, el proyecto?).
+
+⚠️ Y el corolario que lo conecta con lo que este archivo ya mide: es *«una verificación que no
+podía haber salido mal no es una verificación»* movido de los TESTS a las DECISIONES. Allá se
+pregunta *¿cómo se vería el rojo?*; acá, **¿por qué eje podría ser insegura esta opción?** Si no hay
+respuesta, no se evaluó — se justificó.
+
+---
+
 ### 🔴 NO SE PRUEBA EN EL TENANT DE LA CLIENTA — LAS PRUEBAS VAN A `LAB Pruebas`
 
 *Fijada el 2026-09-15, al mirar el ticket de una venta real. **La razón es medida, no de
