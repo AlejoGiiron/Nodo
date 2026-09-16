@@ -3858,6 +3858,62 @@ columna) y **leer la salida entera**, no filtrar por «los que se rompen». Lo q
 **se borra en el mismo commit** —es la carga de la prueba invertida cumplida: la demostración de
 que no sostiene peso ya está hecha—, y lo que sostiene algo se migra al camino con rastro.
 
+🔴 **TERCERA APARICIÓN, 2026-09-15 — Y LA PRIMERA DONDE EL DESTAPADO FALLA EN SILENCIO EN VEZ
+DE ROMPERSE.**
+
+Las dos anteriores —`addOrderItems` antes de la RLS, `updateProductStock` antes del allowlist—
+**fallaban ruidosamente** cuando alguien las tocaba: un error de privilegios, un rechazo, algo que
+se ve. Ésta no.
+
+**El caso.** Al cerrar el `DELETE` de `sedes` (deuda 103) enumeré los consumidores **de la UI** y
+**de la policy**, y los cerré bien. `rbac-escalada.spec` borra su sede de prueba en el `afterAll`
+**con el cliente del owner**, que es `authenticated`. Desde la migración eso **no borra y no
+falla**: sin policy de DELETE, RLS devuelve `count 0` **y `error: null`** — no hay fila que
+matchear, y eso no es un error.
+
+> **Resultado: una sede huérfana por corrida de la suite, con la suite entera en VERDE.** Medido
+> dos días después: dos sedes, una por cada corrida completa del día.
+
+🔴 **LO QUE FALTÓ EN LA ENUMERACIÓN, Y ES LA FORMA COMPLETA DEL HALLAZGO:**
+
+> **Los TESTS son un consumidor del producto, y no estaban en la lista de consumidores.**
+
+La enumeración preguntó *«¿quién llama a esto en `src/`?»* y *«¿qué policy lo permite?»*. **El arnés
+usa el producto igual que un usuario** — crea, escribe y limpia por los mismos caminos— y por eso
+un camino cerrado lo alcanza exactamente igual. La lista de consumidores de un camino de escritura
+incluye `tests/`, y acá no lo incluía.
+
+⚠️ **Y por qué esta variante es peor que las dos anteriores:** un consumidor que se rompe **avisa** y
+alguien lo arregla. Un consumidor que **deja de tener efecto** sigue verde, sigue corriendo, y
+**acumula**. El daño no aparece donde está la causa ni cuando ocurre: aparece como suciedad en el
+laboratorio, semanas después, sin nada que lo conecte con la migración que lo produjo.
+
+🔴 **Y hay una asimetría que decide dónde mirar: qué pasa cuando se cierra un camino, según cómo
+lo use el consumidor.**
+
+| el consumidor usaba el camino para… | qué pasa al cerrarlo |
+|---|---|
+| **producir** un efecto que después asevera | ✅ **rojo** — la aserción no se cumple |
+| **limpiar** al final | 🔴 **verde, y residuo** — nadie asevera que la limpieza limpió |
+
+✅ **LO ACCIONABLE, y son dos:**
+
+1. **Al cerrar un camino de escritura, `grep` de la forma en `tests/` TAMBIÉN** — no sólo en `src/`:
+
+```bash
+grep -rn "from('<tabla>').delete\|from('<tabla>').update" src/ tests/ scripts/
+```
+
+2. 🔴 **Y toda limpieza asevera que limpió.** Una limpieza sin aserción es la única parte del arnés
+   que **puede dejar de funcionar sin que nada se ponga rojo** — porque su efecto no lo mira nadie.
+   El arreglo de acá es una línea: `expect(borrada.count, «QUEDÓ UNA SEDE HUÉRFANA: <id>»).toBe(1)`,
+   y con el mutante muere nombrando el UUID que quedó.
+
+⚠️ Corolario que lo ata a la regla del arnés: **la limpieza no comparte camino con el sujeto.** Acá
+los CASOS tienen que ir con sesión de usuario real —el trigger sólo muerde con
+`current_user = 'authenticated'`— y la LIMPIEZA va con service role. Que el sujeto necesite un
+camino angosto no obliga al arnés a usar el mismo.
+
 ⚠️ Y el corolario que lo ata al criterio de la poda: **un escritor muerto es peor que una pieza
 muerta cualquiera.** Una pieza muerta no hace nada; un escritor muerto es la ruta más corta al
 hueco que se acaba de cerrar, esperando a que alguien la encuentre porque «ya existe».

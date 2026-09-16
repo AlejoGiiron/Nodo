@@ -45,6 +45,26 @@ async function signIn(creds: { email: string; password: string }): Promise<Supab
   return c
 }
 
+/**
+ * 🔴 EL CLIENTE DE LA LIMPIEZA — service role, y SÓLO para limpiar.
+ *
+ * Los CASOS de este archivo van con sesión de usuario real a propósito: el
+ * trigger sólo muerde con `current_user = 'authenticated'`, así que medirlos
+ * con service role daría un falso negativo. Eso no cambia.
+ *
+ * ⚠️ Pero la LIMPIEZA es arnés, y el arnés va por el camino más tonto que
+ *    funcione — no por el mismo que el sujeto. Desde que `sedes` dejó de tener
+ *    policy de DELETE (deuda 103), borrar la sede B con el cliente del owner
+ *    **no borra y no falla**: RLS devuelve `count 0` sin error. El spec quedó
+ *    verde dejando UNA SEDE HUÉRFANA POR CORRIDA — medido: dos en el lab.
+ */
+const servicio = (): SupabaseClient | null => {
+  const key = process.env.E2E_SERVICE_ROLE_KEY
+  return key
+    ? createClient(process.env.VITE_NODO_SUPABASE_URL!, key, { auth: { persistSession: false } })
+    : null
+}
+
 type ProfileSnap = {
   id: string
   role: string
@@ -148,12 +168,36 @@ test.afterAll(async () => {
   // Red de seguridad: pase lo que pase, el lab queda como estaba. Los perfiles
   // PRIMERO — si alguno quedó apuntando a la sede B, borrarla antes fallaría por
   // la FK y dejaría al usuario en una sede que ya no existe.
+  //
+  // ⚠️ Ese orden lo exige el cascade de `profiles.sede_id`: hoy borrar una sede
+  //    BORRA los perfiles que apuntan a ella. Es la razón por la que la deuda
+  //    114 pone a `profiles` en su primera tanda.
   if (owner && cajeroSnap) await restore(cajeroSnap)
   if (owner && ownerSnap) await restore(ownerSnap)
-  if (owner && SEDE_B) {
-    if (US_OWNER_B) await owner.from('user_stores').delete().eq('user_id', ownerSnap.id).eq('sede_id', SEDE_B)
-    await owner.from('sedes').delete().eq('id', SEDE_B)
+
+  if (!SEDE_B) return
+
+  const admin = servicio()
+  if (owner && US_OWNER_B) {
+    await owner.from('user_stores').delete().eq('user_id', ownerSnap.id).eq('sede_id', SEDE_B)
   }
+  const borrada = admin
+    ? await admin.from('sedes').delete({ count: 'exact' }).eq('id', SEDE_B)
+    : { count: 0, error: null }
+
+  // 🔴 Y SI NO PUDO LIMPIAR, FALLA. Una limpieza que no limpia y no avisa es
+  //    peor que ninguna: deja residuo creciendo con la suite entera en verde,
+  //    que es exactamente lo que pasó acá. El mensaje nombra la sede para que
+  //    el rojo diga QUÉ quedó, no sólo que algo quedó.
+  expect(
+    borrada.count,
+    `QUEDÓ UNA SEDE HUÉRFANA EN EL LAB: ${SEDE_B}. ` +
+    (admin
+      ? 'El borrado con service role no la sacó — si el error es 23503, alguna FK a `sedes` ya no ' +
+        'es cascade (deuda 114) y esta limpieza tiene que borrar las hijas primero.'
+      : 'Falta E2E_SERVICE_ROLE_KEY: desde la deuda 103 `sedes` no tiene policy de DELETE, así que ' +
+        'el cliente del owner no puede borrarla y la limpieza NO es posible sin la key.'),
+  ).toBe(1)
 })
 
 // ── DEBEN FALLAR ────────────────────────────────────────────────────────────
