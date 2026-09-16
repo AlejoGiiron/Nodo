@@ -5656,6 +5656,7 @@ es el despliegue, y del otro lado está el mostrador de un negocio que está ven
 | 1 | **la suite ENTERA en verde** | los cinco números **uno por uno**, leídos de ADENTRO del archivo, más el cruce contra el último `[N/N]`. ⛔ **No un grupo** |
 | 2 | **`tsc` y `lint` en cero** | ejecutados, no recordados |
 | 3 | **el árbol limpio** | `git status --porcelain` vacío — **verificado, no recordado** |
+| 4 | 🔴 **lo probado ES lo que se publica** | `git diff --stat <commit que midió la suite> -- src/ tests/ supabase/` → **vacío** |
 
 **Si alguna falta, no se pushea — y se dice por qué.** No «casi verde», no «el grupo pasó», no «lo que
 falla no tiene que ver».
@@ -5669,6 +5670,22 @@ clase que esa regla describe, con producción del otro lado.
 La suite mide el árbol; el push publica los commits. Si hay cambios sin commitear, esos dos conjuntos
 son distintos y el verde no describe lo que va a correr el cliente.
 
+🔴 **LA 4 ES LA QUE ATA LAS OTRAS TRES, y sin ella se cumplen las tres y el árbol publicado puede no
+ser el probado.** La suite tarda veinte minutos. En ese rato —y entre que termina y que alguien
+pushea— **pueden entrar commits**: un registro, un arreglo chico, un cambio «que no afecta».
+
+> **La suite prueba UN ÁRBOL, no una rama.** «La suite pasó» y «esto es lo que se publicó» son dos
+> afirmaciones distintas, y la 4 es el único paso que las une.
+
+⚠️ **Y el acotado a `src/ tests/ supabase/` es deliberado:** un commit de documentación entre la
+corrida y el push **no invalida el verde** —`CLAUDE.md` no lo ejecuta nadie— y exigir re-correr por eso
+volvería la regla impracticable, que es como mueren las reglas. Lo que hay que comprobar no es que
+nada se haya movido: es que **no se haya movido nada que la suite mida**.
+
+📋 El comando pide el commit contra el que se corrió la suite, así que **ese sha se anota al lanzarla**
+—no se reconstruye después—. Reconstruirlo de memoria es exactamente el error que la condición existe
+para atajar.
+
 🔴 **LO QUE ESTO NO HABILITA, dicho explícitamente: PODER PUSHEAR NO ES PODER APLICAR ESQUEMA.**
 
 > **Las migraciones se siguen MOSTRANDO antes de aplicar**, con las cuatro preguntas de R0 en la
@@ -5677,7 +5694,19 @@ son distintos y el verde no describe lo que va a correr el cliente.
 
 Son dos capacidades distintas y conviene decir por qué: **un push se revierte** —otro commit, otro
 deploy, y el código vuelve—. **Una migración aplicada no**: por R5 es inmutable, y si escribió datos, lo
-escrito ya está. La reversibilidad es lo que separa las dos, no el riesgo aparente.
+escrito ya está.
+
+🔴 **Y ESA ES LA RAZÓN, no «es más riesgoso» — la diferencia entre las dos formulaciones es lo que hace
+que esta regla se pueda aplicar:**
+
+> **El riesgo se DISCUTE; la reversibilidad se MIDE.**
+
+«Más riesgoso» invita a una conversación sobre cuánto, y la contesta distinto cada persona y cada día —
+con prisa encima, siempre da «esta vez no tanto». *«¿Se puede deshacer?»* tiene una sola respuesta por
+operación, no depende de quién pregunte, y se contesta antes de hacerla.
+
+⚠️ Corolario para cualquier capacidad futura que haya que acotar: **preguntá si la operación se
+deshace, no cuánto daño hace.** Las dos suenan parecidas y sólo una es una propiedad del mundo.
 
 📋 **POR QUÉ SE HABILITÓ, porque el motivo importa más que el permiso.** El bloqueo costó **tres idas y
 vueltas en una sola sesión** —la suite verde, el push denegado, el pedido, la espera—, y en ninguna de
