@@ -1840,6 +1840,42 @@ nota.
    verificador era falso y habría hecho fallar una carga correcta; acá el verificador era **cierto
    pero no reproducible**, y habría hecho fallar una carga correcta igual.
 
+🔴 **`grep -c` CUENTA LÍNEAS, NO COINCIDENCIAS — Y MORDIÓ TRES VECES EN UN SOLO TURNO, LA
+SEGUNDA DOS COMANDOS DESPUÉS DE ANOTAR LA PRIMERA.** *2026-09-15, verificando el respaldo.*
+
+> **`grep -c` devuelve cuántas LÍNEAS matchean. Si lo que buscás aparece N veces en una línea, o si
+> todo el archivo es una línea larga, el número no cuenta lo que creés.**
+
+| # | qué se contó | qué dio | qué era |
+|---|---|---|---|
+| 1 | filas en el dump: `grep -c "INSERT INTO …orders"` | **1** | el volcado usa **un solo `INSERT` multi-fila por tabla** — ese 1 cuenta SENTENCIAS |
+| 2 | los tres hallazgos recién escritos en la deuda | **1** | los tres estaban **en la misma línea** (el bloque va con `<br>`) |
+| 3 | tablas sin `sede_id`: `26 − 23` | **3** | eran **7** — resté *columnas* contra *BASE TABLEs*, dos universos distintos |
+
+🔴 **Lo que lo hace registrable no es el error: es la CADENCIA.** El primero se anotó en la
+deuda **como hallazgo**, con su frase sobre contar la superficie equivocada. **El segundo ocurrió dos
+comandos después**, en el control positivo de esa misma anotación. El tercero, en el turno siguiente.
+
+> **Escribir la lección no la aplica — y el intervalo entre escribirla y volver a violarla se mide en
+> COMANDOS, no en días.**
+
+⚠️ Es el argumento del hook contra el recordatorio en su forma más corta que este archivo tiene
+medida. Las otras veces la reincidencia fue *un turno después*, *el mismo día*, *en el mismo commit*.
+**Acá fueron dos comandos**, sobre el texto que acababa de escribir la regla.
+
+✅ **LO ACCIONABLE, y es sustituir el comando, no recordar la trampa:**
+
+```bash
+grep -c  "patrón" archivo          # ⛔ LÍNEAS que matchean
+grep -o  "patrón" archivo | wc -l  # ✅ OCURRENCIAS
+grep -o  "patrón" archivo          # ✅ mejor: ENUMERAR y mirar la lista
+```
+
+⚠️ Y el caso 3 agrega una forma que no es de `grep`: **una RESTA entre dos conteos de universos
+distintos**. `26 − 23` se lee como una cuenta y no lo es — las 26 eran `BASE TABLE` y las 23 eran
+*columnas* en todas las relaciones, vistas incluidas. **La lista se deriva, no se resta**: el `select`
+que enumera las tablas sin la columna dio las 7 en un renglón.
+
 🔴 **UN CONTEO HECHO SOBRE FILAS TRAÍDAS MIDE LA PÁGINA, NO LA TABLA — Y EL TOPE DE PostgREST
 SON 1000 FILAS.** *Segunda aparición, 2026-09-14. La primera está en `docs/BITACORA.md` como
 evidencia; la regla faltaba acá, que es donde se lee antes de trabajar.*
