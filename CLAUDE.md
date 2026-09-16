@@ -3918,6 +3918,77 @@ camino angosto no obliga al arnés a usar el mismo.
 muerta cualquiera.** Una pieza muerta no hace nada; un escritor muerto es la ruta más corta al
 hueco que se acaba de cerrar, esperando a que alguien la encuentre porque «ya existe».
 
+🔴 **Y LA TERCERA APARICIÓN EN TRES DÍAS OBLIGÓ A ENUMERAR LA CLASE ENTERA — PORQUE NO ERAN
+DOS LIMPIEZAS, ERA UN PATRÓN DEL ARNÉS.** *2026-09-16, abriendo la tanda A de la deuda 114.*
+
+Las tres tienen el mismo síntoma: **residuo que crece por corrida y nadie ve**. Y las tres tienen la
+misma causa de una línea:
+
+```ts
+await comoServicio.from('sedes').delete().in('organization_id', creadas)   // ⛔ el error se descarta
+```
+
+> **`supabase-js` NO LANZA: devuelve `{ data, error }`.** Una escritura que no se asigna a nada tiene
+> su error inaccesible por construcción — no es que alguien se olvidó de mirarlo: **no hay dónde
+> mirarlo**.
+
+🔴 **LA ENUMERACIÓN, que es lo que cambió el tamaño del problema.** Se buscaron las sentencias
+que empiezan en `await`, llaman a `.from(...)` y a un verbo de escritura, y **no están asignadas**:
+
+```
+TOTAL: 50 escrituras con el `error` descartado, en 18 archivos de tests/
+  de las cuales DELETE: 14
+CONTROL POSITIVO: encuentra onboarding-organizacion.spec.ts:72 ✅
+```
+
+⚠️ **El control positivo no es adorno: sin él, un cero —o un total bajo— sería indistinguible de un
+detector que no encuentra nada.** Se le exigió devolver un caso que ya conocíamos antes de creerle
+el total, que es la regla que este archivo ya tiene escrita para la dirección contraria.
+
+🔴 **Y lo que la enumeración desmintió es la lectura cómoda: «hay que arreglar dos limpiezas».**
+Eran cincuenta lugares, y *ninguno de los cincuenta puede decir si dejó de funcionar*. La mayoría
+anda hoy; el punto no es que estén rotos, es que **su rotura no tendría síntoma** — y eso no se
+arregla mirando los dos que ya mordieron.
+
+⚠️ **Y una la escribí yo en el turno anterior**, en `sedes-sin-delete.spec.ts`, mientras redactábamos
+esta misma clase. Es la cadencia que este archivo ya midió con `grep -c`: **el intervalo entre
+escribir la lección y volver a violarla se mide en comandos, no en días.**
+
+✅ **LO ACCIONABLE, y es una forma de escribir, no una advertencia:**
+
+> **Una escritura del arnés que no se asigna a nada es una escritura sin verificador.** Si el
+> resultado no se captura, el `error` no existe para nadie — así que la regla no es «acordate de
+> mirar el error», es **«asignalo siempre»**.
+
+⚠️ Y el corolario sobre qué aseverar, que salió de que el caso ① de la tanda A **nace rojo**: una
+limpieza asevera **el ESTADO, no la OPERACIÓN**. *«La sede ya no existe»* cierra aunque el propio
+caso se la haya llevado antes; *«el delete borró 1»* sería falso en ese mundo y verdadero en el otro,
+y hay que elegir uno. El estado es el que describe lo que se quería.
+
+🔴 **Y EL NÚMERO ES EL HALLAZGO, PORQUE LA ENUMERACIÓN SE PIDIÓ ESPERANDO CINCO O SEIS.**
+
+> **La clase es MÁS GRANDE QUE LA DEUDA QUE LA DESTAPÓ.** Las tres apariciones que la motivaron
+> —`rbac-escalada` y las dos limpiezas de la tanda A— son **3 de 50: el 6%**. Las otras 46 no las
+> miró nadie, nunca.
+
+⚠️ **Y eso invierte lo que la enumeración estaba haciendo.** Se pidió para *acotar el alcance de una
+tanda* —¿qué limpiezas hay que reescribir?— y lo que devolvió fue **una clase entera que no tenía
+deuda propia**. Las tres que mordieron no eran «los casos»: eran los tres que **algo hizo visibles**.
+
+🔴 **POR QUÉ LAS 46 RESTANTES NO SE VEN, Y NO ES DESCUIDO: HOY FUNCIONAN.** Ninguna está rota.
+El defecto no es su comportamiento — es que **su rotura no tendría síntoma**. Así que no hay nada que
+las delate mientras el camino que usan siga abierto.
+
+✅ **EL DISPARADOR, y es lo único que las vuelve urgentes — escrito porque sin él la deuda 115 queda
+esperando a nadie:**
+
+> **Cualquier cambio de FK o de policy que haga fallar una escritura que hoy pasa.** Las 46 son
+> inofensivas hasta que algo cierra el camino que usan, y ahí **fallan en silencio todas juntas**.
+
+⚠️ Es *«cerrar un camino destapa a los que lo usaban»* leído sobre un censo en vez de sobre un caso:
+ya sabemos **cuántos** consumidores mudos hay y **dónde**, así que el próximo cierre de camino no
+tiene por qué descubrirlos de a uno por corrida. La lista se mira **antes** de cerrar, no después.
+
 ---
 
 ### 🔴 CRITERIO SIN NÚMERO · LO QUE UNA DEUDA ABIERTA CITA ENTRE COMILLAS SON TRES COSAS DISTINTAS, Y FALLAN EN DIRECCIONES OPUESTAS
@@ -5312,9 +5383,79 @@ Al enumerarlo aparecieron dos condiciones distintas donde parecía haber una:
 | **103** (retirar como operación) | el respaldo **probado por restauración** | escribe sobre datos de la clienta, y eso no se deshace |
 | **114** (emparejar las FK) | el respaldo **hecho y verificado en local** | cambia esquema, y un cambio de esquema **se revierte con otra migración** |
 
+🔴 **Y DE AHÍ SALE ALGO QUE NO ES OBVIO: UN RESPALDO VIEJO NO SIRVE PARA DESHACER UN CAMBIO DE
+ESQUEMA — Y TAMPOCO HACE FALTA.** *2026-09-16, al preguntar si el respaldo del día anterior quedaba
+desfasado para aplicar la tanda A.*
+
+La pregunta suena razonable y la respuesta es que **el desfase no aplica a esta deuda**, porque las
+dos cosas se deshacen por caminos distintos:
+
+| qué cambia | con qué se revierte | ¿le importa la antigüedad del respaldo? |
+|---|---|---|
+| **esquema** (la 114: FK, policies, columnas) | **otra migración**, escrita a mano | **no** — el dump ni siquiera es el instrumento |
+| **datos** (la 103 segunda mitad: «retirar» escribe hechos) | **el respaldo**, restaurado | 🔴 **sí** — todo lo escrito después del dump se pierde |
+
+> **Un respaldo protege los DATOS. Un cambio de esquema se revierte con SQL.** Pedirle a un dump que
+> deshaga un `alter table` es pedirle a la herramienta equivocada — y peor: **restaurarlo para
+> revertir esquema tiraría todos los datos escritos desde que se tomó.**
+
+⚠️ **Por qué vale escribirlo: el respaldo es la condición que desbloqueó las dos deudas, así que es
+natural leerlo como la red de las dos.** No lo es. Para la 114 el respaldo es una red contra *otra
+cosa* —que algo salga mal y haya que volver al estado anterior de los datos, que la migración no
+toca— y su antigüedad no cambia nada. Para la 103 sí, y ahí el desfase se mide en horas de operación
+de la clienta.
+
+✅ **Lo accionable, y es la misma pregunta del bloqueo por deuda:** antes de preguntar *«¿el respaldo
+sigue sirviendo?»*, preguntá **qué se revierte con qué**. Si la respuesta es «con otra migración», la
+fecha del respaldo es irrelevante para esa deuda.
+
 ⚠️ Y el corolario que hace la diferencia práctica: **una de las dos se desbloquea antes que la
 otra.** Mientras el bloqueo estaba escrito como uno solo, las dos esperaban al más exigente — y
 nadie tenía forma de ver que una podía avanzar.
+
+---
+
+### 🔴 CRITERIO SIN NÚMERO · LA RESPUESTA CORRECTA A LA PREGUNTA EQUIVOCADA TRANQUILIZA IGUAL QUE LA CORRECTA
+
+*2026-09-16, enumerando qué limpiezas rompe la tanda A de la deuda 114. **Es la hermana del criterio
+de abajo, un paso antes**: aquél dice que una opción se elige por ser segura en UN eje; éste, que una
+MEDICIÓN puede ser impecable y contestar una pregunta que no era la que importaba.*
+
+**El caso.** Había que saber si pasar `profiles.sede_id` y `user_stores.sede_id` a `NO ACTION`
+rompía las limpiezas de dos specs. Se midió bien: se leyó la cadena de FK, se confirmó que
+`handle_new_user` escribe **sólo** `profiles`, y que las dos limpiezas borran las cuentas de Auth
+primero — así que el cascade `auth.users → profiles → user_stores` deja la sede sin nadie
+apuntándole. **Conclusión: no se rompen. Y es cierta.** Se reportó «cero reescrituras».
+
+🔴 **La pregunta era otra.** No *«¿se rompe la limpieza?»* sino **«¿podría AVISAR si se
+rompiera?»**. Y la respuesta a ésa también era no: las dos limpiezas eran
+`await comoServicio.from('sedes').delete()...` **sin leer el `error`**, y `supabase-js` no lanza —
+devuelve `{ data, error }`. Una limpieza rota habría dejado la sede huérfana **en verde**.
+
+> **Un «no» correcto sobre la pregunta equivocada se lee exactamente igual que un «no» sobre la
+> correcta.** Las dos frases son «no hay problema», las dos vienen con su medición al lado, y
+> ninguna marca de cuál pregunta salió.
+
+⚠️ **Y por eso no lo caza ninguna de las técnicas que este archivo ya tiene.** El control negativo
+caza al instrumento que no discrimina; el positivo, al que no puede encontrar nada; el cruce, al que
+mide de menos. **Acá el instrumento midió perfecto.** Lo que estaba mal no era el número ni el
+patrón: era **el sujeto de la pregunta** — la misma forma que el error del 157, movida del
+enunciado de un resultado al enunciado de una PREGUNTA.
+
+🔴 **Y la dirección del daño es la que no levanta la mano:** una medición que dice *«sí, se
+rompe»* manda a trabajar, y el trabajo choca con el mundo. Una que dice *«no se rompe»* **cierra la
+pregunta**, y lo que nadie hace nadie lo desmiente. Es el mismo eje que *«una medición que frena
+vale el doble que una que empuja»*.
+
+✅ **LO ACCIONABLE, y es una segunda pregunta, no una medición mejor:**
+
+> **Cuando la respuesta sea «no hay problema», preguntá QUÉ PASARÍA SI LO HUBIERA — y si algo lo
+> mostraría.** Si la respuesta es *«nada lo mostraría»*, el «no» de recién no era la conclusión:
+> era la mitad tranquilizadora de un hallazgo.
+
+⚠️ Corolario para quien recibe la conclusión: **pedí la pregunta, no el resultado.** *«Medí si se
+rompe»* y *«medí si nos enteraríamos»* son dos encargos distintos, y el primero se puede contestar
+entero sin tocar el segundo.
 
 ---
 
@@ -7225,6 +7366,44 @@ Con una sola, el mostrador está mostrando el filtro por defecto en vez del cat�
 allá el rojo era falso con un mensaje impecable; acá el rojo era **verdadero** y el mensaje mandaba
 al lugar equivocado. El síntoma que los une: en los dos casos hay que mirar **qué aserción fue la
 que reventó**, no sólo que el caso esté rojo.
+
+🔴 **Y UNA CUARTA FORMA, 2026-09-16, CON UNA CAUSA QUE NO ES DE NUESTRO LADO: EL ROJO DE UN
+TEARDOWN SE CUELGA DEL ÚLTIMO CASO DEL GRUPO.**
+
+Las tres de arriba son sobre **cómo escribimos el caso**: un mensaje falso, un mensaje impecable
+sobre algo que no pasó, un control puesto antes del sujeto. Las tres se arreglan escribiendo mejor.
+Ésta no:
+
+> **Una limpieza que falla no falla en ningún caso — falla en el `afterAll`— y Playwright ATRIBUYE
+> ese fallo al último caso que corrió.** El rojo sale con el nombre de un caso que no tiene nada que
+> ver con la limpieza.
+
+📋 **Medido con un mutante**, rompiendo a propósito la última aserción de `helpers/limpieza.ts`
+y corriendo `onboarding-organizacion.spec.ts`:
+
+```
+4 passed · 1 failed · suite_exit=1
+  el failed salió bajo: «🔴 con DOS organizaciones homónimas falla CERRADO, en vez de elegir una»
+  Error: QUEDARON ORGANIZACIONES HUÉRFANAS EN EL LAB: 1b8dd397…, 7d74eae6…, 0088f4b4…
+```
+
+✅ **LA MITAD BUENA, y hay que decirla porque era la duda:** sí produce un **rojo visible**, y además
+cuenta como `failed` — no queda como un error de worker que el resumen no muestra. O sea que una
+limpieza con aserción **no puede pasar en verde dejando residuo**, que es exactamente lo que se
+quería conseguir.
+
+🔴 **LA MITAD MALA: el nombre del caso MIENTE sobre qué se rompió.** Y no hay orden de
+aserciones que lo arregle —la causa está en el framework, no en el caso—, así que el remedio es el
+único que queda:
+
+> **El mensaje de una aserción de teardown TIENE QUE NOMBRARSE A SÍ MISMO y listar los objetos que
+> quedaron vivos.** Es lo único que el lector va a tener para saber que el rojo no es del caso bajo
+> el que apareció.
+
+⚠️ Corolario para leer una suite: **si un caso se pone rojo con un mensaje que no habla de lo que ese
+caso asevera, mirá el `afterAll` antes que el caso.** Y es otra regla cuya causa está afuera del
+repo: como la notificación de tarea de R9, no hay nada que arreglar de nuestro lado — sólo saber que
+el canal atribuye mal y escribir el mensaje para que se defienda solo.
 
 ⚠️ Es la misma familia que el control negativo, del otro lado: allá se comprueba que el instrumento
 **puede decir que no**; acá, que el rojo **está diciendo que sí por la razón que dice**. Hay que trabajar activamente para que dirija; por defecto no
