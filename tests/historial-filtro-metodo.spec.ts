@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { loginAsOwner } from './helpers/auth'
-import { waitPosReady, addPosProduct, abrirCobro, cobrarCon, POS_PRODUCTO } from './helpers/pos'
+import { waitPosReady, addPosProduct, abrirCobro, cobrarCon } from './helpers/pos'
 import { openShiftIfClosed } from './helpers/shift'
 
 // ============================================================================

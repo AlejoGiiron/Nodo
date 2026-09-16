@@ -313,6 +313,61 @@ export type Database = {
           },
         ]
       }
+      jornada_cierres_con_fecha: {
+        Row: {
+          closed_at_pedido: string
+          closed_at_sistema: string
+          created_at: string
+          created_by: string | null
+          id: string
+          jornada_id: string
+          motivo: string
+          sede_id: string
+        }
+        Insert: {
+          closed_at_pedido: string
+          closed_at_sistema: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          jornada_id: string
+          motivo: string
+          sede_id: string
+        }
+        Update: {
+          closed_at_pedido?: string
+          closed_at_sistema?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          jornada_id?: string
+          motivo?: string
+          sede_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jornada_cierres_con_fecha_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jornada_cierres_con_fecha_jornada_id_fkey"
+            columns: ["jornada_id"]
+            isOneToOne: false
+            referencedRelation: "jornadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jornada_cierres_con_fecha_sede_id_fkey"
+            columns: ["sede_id"]
+            isOneToOne: false
+            referencedRelation: "sedes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       jornadas: {
         Row: {
           close_comment: string | null
@@ -1456,6 +1511,10 @@ export type Database = {
       }
       adjust_stock: {
         Args: { p_product_id: string; p_qty: number; p_reason: string }
+        Returns: undefined
+      }
+      cerrar_jornada_con_fecha: {
+        Args: { p_closed_at: string; p_jornada_id: string; p_motivo: string }
         Returns: undefined
       }
       get_my_organization_id: { Args: never; Returns: string }
