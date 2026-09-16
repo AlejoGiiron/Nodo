@@ -2682,6 +2682,24 @@ otra vez el mecanismo que viene fallando.
 > **El criterio de cierre es la suite entera. El grupo es una herramienta de velocidad, no una
 > medición de cobertura** — y hasta hoy se venía usando como las dos cosas sin que nadie lo dijera.
 
+🔴 **Y LA RAZÓN ESTRUCTURAL, que es más fuerte que «la suite es más completa».** El mismo día, dos
+casos la dejaron como lo único que cubría, **por razones distintas**:
+
+| caso | por qué el grupo no alcanzó | ¿se arregla pensando mejor? |
+|---|---|---|
+| `extras-pos` | el consumidor estaba en **otro archivo**: el defecto viajaba por el significado de un valor que cruza un prop | **sí** — es un problema de criterio |
+| `config.spec` | el comando tenía un **typo** que no produce error | 🔴 **no** — el criterio estaba bien |
+
+> **Lo que los une no es que la suite mida más: es que NO TIENE PARÁMETROS DONDE EQUIVOCARSE.**
+
+Un grupo se arma con una lista, y una lista admite dos clases de error: **elegir mal** —que se puede
+razonar y mejorar— y **escribir mal** —que no—. La suite entera no recibe lista. No hay nombre que
+tipear, no hay consumidor que enumerar, no hay archivo que pueda no existir.
+
+⚠️ Y por eso *«armá mejor el grupo»* no es una respuesta: cubre la primera columna y **no toca la
+segunda**. Es el argumento del hook contra el recordatorio otra vez — lo que depende de escribir bien
+un parámetro falla escribiendo mal el parámetro, y ninguna cantidad de criterio lo evita.
+
 📋 **CUÁNDO ES OBLIGATORIA LA SUITE ENTERA, escrito para que no se decida cada vez:**
 · antes de un **push** que va a producción · antes de **cerrar una deuda** · después de tocar
 **cualquier cosa bajo `src/lib/` o `src/stores/`**, que es por donde los valores cruzan de módulo.
@@ -6832,6 +6850,37 @@ exceso.
 ⚠️ Y el corolario para cuando hagan falta las dos preguntas: **son dos bloques separados y se dicen
 distinto.** *«La carga escribió 110 órdenes correctas»* y *«Cartera muestra 10 filas»* son las dos
 ciertas al mismo tiempo — y sólo escribiendo las dos aparece que una no es la otra.
+
+---
+
+### 🔴 CRITERIO SIN NÚMERO · UNA DEUDA MENCIONADA EN UN REPORTE NO ES UNA DEUDA ABIERTA — Y LA CITA LA VUELVE REAL PARA LOS DOS LADOS
+
+*2026-09-15. Es la contracara del criterio de abajo: allá una deuda **cerrada** seguía figurando
+abierta; acá una deuda que **nunca se abrió** se citó como existente — y la citaron los dos.*
+
+**El caso.** Al reportar los hallazgos del logo escribí *«va como deuda»* y seguí. Nunca la escribí en
+`DEUDAS.md`. Dos turnos después la nombré como **«la deuda que abrimos antes»**, y del otro lado se
+adoptó igual. **El objeto citado no existía.**
+
+🔴 **Es la forma de «una afirmación que se propaga adoptada» con una vuelta nueva:** las veces
+anteriores lo que circulaba era una afirmación **falsa sobre algo real** —un número, una causa, un
+estado—. Acá lo que circulaba era una referencia **a un objeto inexistente**, y ninguna de las técnicas
+escritas la toca: no hay número que recalcular, no hay comando que correr, y **citar una deuda por su
+tema en vez de por su número hace que nadie vaya a buscarla**.
+
+⚠️ **Y lo que la hace difícil de atajar es que el reporte SE SIENTE como el registro.** Escribir el
+hallazgo con su medición, su clase y su alcance en un mensaje **es el mismo trabajo** que escribirlo en
+la deuda — así que al terminar de redactarlo uno tiene la sensación de haberlo anotado. Lo único que
+falta es el paso que no agrega pensamiento: pegarlo donde se lee.
+
+✅ **LO ACCIONABLE, y es sobre DÓNDE, no sobre acordarse:**
+
+> **El reporte se lee UNA VEZ; `DEUDAS.md` se lee PARA PLANIFICAR.** Una deuda que sólo existe en un
+> mensaje ya desapareció: nadie va a releer la conversación al decidir qué sigue.
+
+⚠️ Corolario para el que recibe: **si una deuda se cita por su tema y no por su número, pedí el
+número.** Un número se verifica con un `grep` sobre `DEUDAS.md`; *«la del logo en el ticket»* no se
+puede verificar sin leer el archivo entero — y por eso no se verifica nunca.
 
 ---
 
