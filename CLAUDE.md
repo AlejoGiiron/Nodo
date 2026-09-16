@@ -2612,6 +2612,38 @@ arma con **los símbolos que uno tocó**, y el defecto vivía en **el significad
 un prop**. `precioUnitario` no aparece en ningún grep de lo que la tanda editó; lo que cambió fue qué
 significa su ausencia.
 
+🔴 **Y UNA FORMA NUEVA, Y ES LA PEOR DE TODAS PORQUE NO DEJA RASTRO DE HABER SIDO PEDIDA: UN ARCHIVO
+QUE NO EXISTE.** *2026-09-15, segunda vez en el día.*
+
+Corrí el grupo nombrando `tests/configuracion.spec.ts`. **Ese archivo no existe** —el real es
+`config.spec.ts`—. Playwright **no se quejó**: corrió los cuatro que sí existían, imprimió
+**`23 passed`**, y el resumen se leyó como un grupo completo. El que faltaba era justamente el de la
+pantalla que el cambio tocaba.
+
+> **Elegir mal el grupo deja algo afuera y se puede razonar** —uno mira la lista y pregunta «¿y
+> aquél?»—. **Un archivo que no existe no deja rastro de haber sido pedido**: no aparece en el
+> resumen, no aparece como error, y su ausencia es indistinguible de no haberlo querido correr.
+
+⚠️ Y el número tranquiliza igual: `23 passed · 0 failed` es exactamente lo que uno espera ver. Es
+*«los ceros son ausencia de línea»* movido un nivel arriba — acá lo ausente no es una línea del
+resumen: **es un archivo entero del pedido**.
+
+✅ **LO ACCIONABLE, y es una línea:**
+
+> **Verificá qué CORRIÓ de verdad, no qué se pidió.**
+
+```bash
+grep -o '[a-z-]*\.spec\.ts' salida-limpia.txt | sort -u    # y contalos contra lo que pediste
+```
+
+Eso fue lo que lo cazó acá: enumerar la salida en vez de creerle al total. Es *enumerar, no contar*
+aplicado a la ENTRADA de la corrida en vez de a su resultado.
+
+🔴 **Y LO QUE ESTO CONFIRMA, POR SEGUNDA VEZ EN EL MISMO DÍA: la regla escrita hoy —*el criterio de
+cierre es la suite entera*— vuelve a ser lo único que cubre esto.** Ninguna mejora del método del grupo
+lo habría atajado: el grupo estaba bien pensado y **el comando tenía un typo**. La suite entera no
+acepta una lista de archivos, así que no tiene dónde equivocarse.
+
 🔴 **Y HAY UNA FORMA DEL RECORTE QUE EXPLICA VARIAS DE LAS FILAS DE ARRIBA: LOS DOS EXTREMOS DE UN
 MISMO COMPONENTE NO SON EL MISMO CONSUMIDOR.** *2026-09-15.*
 
