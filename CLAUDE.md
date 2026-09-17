@@ -594,6 +594,14 @@ lo mostrara. Un `0x08` es invisible en el editor y en el `git diff`.
 ⚠️ Y si un ancla o un reemplazo tiene que contener un backslash, se construye con `chr(92)` en vez
 de escribirlo: no hay forma de que sobreviva a un escape de más ni a uno de menos.
 
+🔴 **2026-09-17: DOS scripts de edición por heredoc otra vez, con la regla de arriba escrita.** El
+barrido dio **0** en los dos, así que no mordió — y es la mitad 2 funcionando cuando la mitad 1 no se
+cumplió. Uno falló por **otra** causa, que conviene sumar a la lista: `useShiftHistory.ts` tiene
+finales **CRLF** y el ancla se escribió con LF. El `assert` de ancla cortó el script con el primer
+archivo aplicado entero y el segundo intacto, que es lo que el `assert` existe para garantizar.
+⚠️ Con anclas multilínea, **la Edit del harness** compara exacto y maneja el final de línea; un
+script con `newline=''` no — y eso es otra razón para no escribir anclas de varias líneas a mano.
+
 
 **🔴 COROLARIO — POR QUÉ LEER NO ALCANZA.** R4 dice *qué* hacer. Esto dice *por qué*, que es lo
 que hace que se aplique cuando nadie está mirando:
@@ -896,6 +904,16 @@ plausible y una pregunta que **ya no tiene respuesta posible**, ni siquiera repr
 | `orders.canal` (propuesto) | **por dónde entró** el pedido **+ quién lo originó** (`preventa`) | `preventa` queda afuera; el originador ya vive en `created_by` |
 | `stock_movements.type = 'return'` | el **reverso de una VENTA** (entra stock, lo escribe `register_sale_void`) **+** la **devolución a un PROVEEDOR** (sale stock) | Se agregó `purchase_return`; el filtro de Inventario pasó de un rótulo a dos |
 | 🔴 **un PROP OPCIONAL** (`precioUnitario?`) *(2026-09-15)* | **«el llamador no me dijo»** (`undefined`) **+** **«este nivel no tiene precio»** (`null`) — y el `?? 0` los trataba igual | Se volvió **obligatorio**: con el prop requerido, `null` sólo puede significar una cosa y **`tsc` pasa a ser el verificador** |
+
+🔴 **Y UN SEXTO QUE NO ES DEL PRODUCTO: LO COMETIÓ UN INSTRUMENTO DE MEDICIÓN.** *2026-09-17.*
+La sonda de LAB que decidió el ancla del saldo de movimientos contaba `stock_qty ?? 0` contra la suma
+de movimientos. `products.stock_qty` es `integer` **nullable**: `null` dice *«no hay existencia
+registrada»*, `0` dice *«hay cero»* — y el `?? 0` los colapsó. El «269 de 1.537 con desajuste» puede
+estar corrido por eso. **No cambió la decisión** (el caso que la decidió, 56 contra −4, no era
+nulo), pero es la distinción exacta que la pantalla decidió NO colapsar pintando «—», cometida por
+el instrumento que medía para esa pantalla. La vista del saldo trata el nulo como hueco.
+⚠️ Lo accionable para sondas: **un `?? 0` en un instrumento es una afirmación sobre el dato**, igual
+que en el producto. Si la columna es nullable, la sonda cuenta los nulos aparte.
 
 🔴 **Y EL QUINTO ES EL PRIMERO EN TYPESCRIPT, no en la base — y muestra que la mezcla no necesita una
 columna: le alcanza un `?`.** El modal de extras recibía el precio de la línea como prop opcional. El
@@ -5668,6 +5686,24 @@ base dijo que **esa venta no tenía cliente** — o sea que el ticket estaba bie
 producción es una observación con **una sola muestra y sin control**; el par que discrimina —una
 venta CON cliente y otra SIN— sólo se puede armar donde se puede repetir.
 
+🔴 **Y SE EXTIENDE A LA LECTURA: TAMPOCO SE LEE SIN RAZÓN.** *2026-09-17, decidido por Alejandro al
+descartar una sonda sobre Muscle Pro.*
+
+> **Una medición de lectura sobre el tenant del cliente necesita justificar por qué el lab no
+> alcanza.** Si la respuesta es *«para saber qué va a ver el cliente»*, eso no es una decisión de
+> diseño: es curiosidad sobre un dato que el cliente va a reportar solo.
+
+**El caso.** El saldo acumulado de movimientos necesitaba decidir su ancla. LAB ya lo había
+decidido: **269 de 1.537 productos** con `stock_qty ≠ Σ qty` («AV Simple»: 56 contra −4) descartaron
+acumular desde el origen. La sonda preparada para Muscle Pro sólo agregaba **cuánto** iba a ver ella
+en la línea de «existencia sin movimiento» — que no cambiaba ninguna decisión. Se descartó, y ese
+número se contesta cuando ella abra la pantalla.
+
+⚠️ La regla de arriba cubría escrituras porque su costo no se deshace. La lectura no escribe, pero
+**no es gratis**: saca datos de un tercero fuera del producto, a una sesión de trabajo, sin que el
+dato decida nada. La pregunta es la misma en las dos: *¿qué decisión depende de esto que el lab no
+puede contestar?*
+
 ### 🔴 ENTRE DOS CAMINOS AL MISMO RESULTADO, GANA EL QUE NO SUMA UNA CREDENCIAL — AUNQUE SEA MÁS LARGO
 
 *2026-09-14, al cerrar la transición de Muscle Pro sin credencial de usuario viva.*
@@ -6463,6 +6499,99 @@ acotar pueden divergir; corregir, no* (R1 punto 9).
 tocarlo se valida con `node -e "JSON.parse(...)"`, y el control negativo es comprobar que el validador
 pueda decir que no.
 
+🔴 **«HABILITADO» ERA INCOMPLETO: EL PERMISO NO ES LA ÚNICA CAPA.** *Medido el 2026-09-17, al
+pushear la tanda B de la deuda 114.*
+
+La regla **sí está escrita** —`.claude/settings.json`, `"allow": ["Bash(git push:*)"]`, verificado
+leyendo el archivo— y el push **se bloqueó igual**: lo negó el **clasificador del modo automático**,
+con la razón *«Out-of-Place Publication»*. Son dos capas distintas: la regla de permisos decide si
+hace falta preguntar; el clasificador evalúa la acción por su cuenta y puede negarla con la regla
+puesta.
+
+⚠️ La hipótesis *«el permiso no quedó escrito»* se descartó leyendo el archivo, no razonando. Lo que
+dirigía mal no era un dato falso sobre `settings.json`: era **«al habilitar»** leído como *«el push
+sale»*.
+
+✅ **Con auto mode activo, un push con las cuatro condiciones cumplidas puede negarse. La negación
+NO se rodea:** se reportan las condiciones verificadas, y el push lo hace Alejandro. Después se
+confirma con `git fetch` + `git rev-list --count origin/develop..develop` → 0.
+
+### 🔴 CRITERIO SIN NÚMERO · AGREGAR UNA CAPACIDAD PUEDE AUMENTAR LA EXPOSICIÓN DE UN DEFECTO QUE YA ESTABA
+
+*2026-09-17. **Primera vez medida en el proyecto**, señalada por Alejandro.*
+
+> **La capacidad nueva no causa el defecto: lo hace USARSE MÁS.** Y el defecto viejo pasa de estar
+> en un camino poco transitado a estar en el camino exacto que la capacidad nueva abre.
+
+**El caso.** El rango de fechas de Movimientos cortaba mal desde siempre: `new Date('AAAA-MM-DD')`
+es medianoche **UTC**, o sea las 19:00 del día anterior en Bogotá. Medido contra LAB con la consulta
+de la pantalla: un movimiento de las 21:23 del 15 aparecía filtrando el 16, y **384 de los últimos
+1.000** movimientos caen entre 19:00 y 23:59. El filtro por producto no lo tocó — pero **producto +
+fecha es la combinación para auditar un descuadre**, que es para lo que la clienta lo pidió. Sin
+arreglarlo, la primera auditoría le habría mostrado movimientos de la noche anterior sin avisar.
+
+✅ **Lo accionable:** al agregar una capacidad, enumerar **con qué capacidades VIEJAS se combina** en
+el uso para el que se pidió, y verificar esas antes. Si una está rota, su arreglo va **primero, en la
+misma tanda** — no como deuda aparte, porque la tanda es la que la vuelve urgente.
+
+⚠️ Y el barrido de la clase dio un par que no mordía y era R1 esperando: Ventas y Turnos cortaban
+bien con **dos copias** de `dayStartISO`/`dayEndISO`. Quedó una fuente, `src/lib/diaBogota.ts`, y las
+tres pantallas la llaman.
+
+### 🔴 CRITERIO SIN NÚMERO · UN EMPATE DE ORDEN QUE EL LAB MIDE EN CERO PUEDE SER CONSTRUIBLE
+
+*2026-09-17, en el orden de los movimientos de stock.*
+
+LAB midió **0** grupos `(producto, created_at)` empatados. Y el empate es **construible**: dos líneas
+del mismo producto en una venta se escriben en la misma transacción y comparten su `now()`.
+
+> **Un cero medido sobre una muestra no es una propiedad del esquema.** Si el mecanismo que produce
+> el caso existe, el caso existe — aunque no esté en los datos de hoy.
+
+Es la misma forma que el orden intra-día del histórico, con otro actor: allá el archivo no tenía hora
+y el orden lo elegimos **nosotros**; acá, sin desempate, lo elige **el motor**, distinto en cada
+consulta. Con `range()` eso repite una fila en dos páginas y pierde otra. `getStockMovements` ordena
+por `created_at, id`.
+
+### 🔴 CRITERIO SIN NÚMERO · UNA MIGRACIÓN NO VIAJA A `develop` ANTES DE APLICARSE
+
+*2026-09-17, al partir la tanda de movimientos de stock en filtro y saldo.*
+
+> **`develop` es lo que el próximo `db push` empuja.** Una migración commiteada y sin aplicar la
+> aplica el push de CUALQUIER tanda siguiente, sin que nadie la mire.
+
+Es *mostrar antes de aplicar* **saltado por acumulación**: nadie decide saltearlo. La confirmación
+se pide para la migración de la tanda que se está cerrando, y la que estaba esperando entra pegada,
+sin su propia revisión.
+
+**El caso.** `20260917120000` (la vista del saldo, sin aplicar) venía **dentro del commit** del
+filtro por producto. Publicar el filtro la habría dejado en `develop`. Se vio enumerando los
+archivos del commit antes de partir la tanda.
+
+✅ **Lo accionable:** al armar una tanda, `git show --name-only` sobre lo que va a `develop`, y por
+cada `.sql` de `supabase/migrations/` confirmar que figura **remoto** en `migration list`. Si no, se
+queda en su rama hasta que se muestra y se aplica.
+
+### 🔴 CRITERIO SIN NÚMERO · PARTIR UNA TANDA ENGENDRA NOTAS QUE DIRIGEN MAL
+
+*2026-09-17, la misma partición.*
+
+> **Un comentario puede ser cierto en la tanda donde se escribió y falso en la tanda donde se
+> publica.** Partir no toca ninguna línea, y cambia el contexto de todas.
+
+**El caso.** El desempate `created_at, id` de `getStockMovements` se justificaba así: *«es el MISMO
+orden de la ventana de `stock_movements_con_saldo` (migración 20260917120000)»*. Cierto con el saldo
+en la tanda; publicado con el filtro solo, nombraba una vista y una migración que no existen.
+
+⚠️ **Es una forma nueva de la nota que dirige mal, y va a volver:** las otras nacen falsas o
+envejecen. Ésta nace cierta y **se vuelve falsa por un corte**, sin que nadie edite la línea.
+
+✅ **Lo accionable:** al partir, grepear en los archivos que viajan **los nombres de lo que se
+queda** —vistas, migraciones, funciones, componentes—. Cada acierto es una referencia que el corte
+dejó colgando, y se reescribe con la razón que le es propia en SU tanda (acá: con `created_at`
+empatado, `range()` repite una fila en dos páginas y pierde otra). El contrato con lo que se queda
+viaja con lo que se queda.
+
 - Rama activa de desarrollo: `develop`
 - Nunca hacer commit directo a `main`
 - Commits en formato Conventional Commits
@@ -6825,6 +6954,23 @@ real**, que además ejercita `handle_new_user` y mide más que el atajo.
 
 ⚠️ Corolario para leer una suite: un `skipped` **no es un cero**, igual que un `did not run`. Los dos
 son casos sin medir, y el segundo al menos lo grita.
+
+🔴 **Y UN CAMBIO EN LA CANTIDAD DE SKIPPED ES UN CAMBIO DE ESTADO QUE SE EXPLICA, AUNQUE BAJE.**
+*2026-09-17: la suite de la tanda B dio 15 skipped donde la última registrada daba 17.* Un skip menos
+es un caso más que corre, pero dos que desaparecen sin que nadie lo pida son un estado sin causa
+conocida. El reporter `line` **no lista los skipped**, así que se miden con el JSON:
+
+```bash
+PLAYWRIGHT_JSON_OUTPUT_NAME=skips.json pnpm exec playwright test <archivos con test.skip> --reporter=json
+# y listar los tests con status 'skipped' con su anotación de motivo
+```
+
+**Medido:** los 15 son de `E2E_GCENTRO_HMAC_SECRET` ausente (12 de `suscripcion-banner`, a nivel de
+archivo; 3 de `suscripcion-estado`), declarados y con motivo impreso — honestos. Cruce: 15 en los 8
+archivos con `test.skip` = 15 en la suite entera. Los 2 que faltan contra el 2026-09-03 eran skips
+por `E2E_SERVICE_ROLE_KEY` ausente (`suscripcion-estado:213` y `onboarding-organizacion`): la key
+llegó a `.env.test` el 2026-09-04 y desde entonces **corren**. En el árbol del 09-03 los sitios eran
+exactamente 15 + 2.
 
 **🔴 ANTES DE BORRAR UN TEST POR OBSOLETO, VERIFICÁ SI SU ASERCIÓN SIGUE SIENDO VERDADERA BAJO EL
 MODELO NUEVO.** *El sujeto puede haber cambiado y la expectativa seguir valiendo.*

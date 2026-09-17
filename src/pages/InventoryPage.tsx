@@ -6,10 +6,12 @@ import {
 import { useProducts } from '@/hooks/useProducts'
 import { useStockMovements } from '@/hooks/useStockMovements'
 import { StockAdjustModal } from '@/components/inventory/StockAdjustModal'
+import { FiltroProducto, type ProductoFiltrado } from '@/components/inventory/FiltroProducto'
 import type { ProductWithCategory } from '@/stores/cartStore'
 import type { StockMovementType } from '@/lib/supabase-helpers'
 // Regla ÚNICA de estado de inventario, compartida con el POS (antes duplicada).
 import { stockStatus, type StockStatus } from '@/lib/stockStatus'
+import { dayStartISO, dayEndISO } from '@/lib/diaBogota'
 import { Badge, type BadgeTone } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { KpiCard } from '@/components/ui/KpiCard'
@@ -218,14 +220,21 @@ const MOV_META: Record<string, { label: string; icon: React.ReactNode }> = {
 
 function MovementsTab() {
   const [type, setType] = useState<StockMovementType | null>(null)
+  // null = todos los productos. Es el estado por defecto y el ✕ del chip vuelve acá.
+  const [producto, setProducto] = useState<ProductoFiltrado | null>(null)
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
   const [page, setPage] = useState(0)
 
+  const elegirProducto = (p: ProductoFiltrado | null) => { setProducto(p); setPage(0) }
+
   const { data, isLoading, isFetching } = useStockMovements({
     type,
-    from: from ? new Date(from).toISOString() : undefined,
-    to: to ? new Date(to + 'T23:59:59').toISOString() : undefined,
+    productId: producto?.id ?? null,
+    // 🔴 Antes: `new Date(from)` = medianoche UTC = 19:00 del día ANTERIOR en
+    // Bogotá, y `to + 'T23:59:59'` dependía de la zona del navegador. Ver diaBogota.
+    from: from ? dayStartISO(from) : undefined,
+    to: to ? dayEndISO(to) : undefined,
     page,
     pageSize: PAGE_SIZE,
   })
@@ -271,10 +280,11 @@ function MovementsTab() {
           ))}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <input type="date" value={from} onChange={(e) => { setFrom(e.target.value); setPage(0) }} style={inputStyle} />
+          <input type="date" data-testid="mov-desde" value={from} onChange={(e) => { setFrom(e.target.value); setPage(0) }} style={inputStyle} />
           <span style={{ color: 'var(--ink-4)', fontSize: 12 }}>→</span>
-          <input type="date" value={to} onChange={(e) => { setTo(e.target.value); setPage(0) }} style={inputStyle} />
+          <input type="date" data-testid="mov-hasta" value={to} onChange={(e) => { setTo(e.target.value); setPage(0) }} style={inputStyle} />
         </div>
+        <FiltroProducto value={producto} onChange={elegirProducto} />
       </div>
 
       {/* Table */}
@@ -308,7 +318,21 @@ function MovementsTab() {
                       {meta.icon}{meta.label}
                     </span>
                   </td>
-                  <td style={{ padding: '11px 16px', fontWeight: 600, color: 'var(--ink)' }}>{m.products?.name ?? '—'}</td>
+                  <td style={{ padding: '11px 16px' }}>
+                    {m.products ? (
+                      // El camino que se usa sin leer ninguna instrucción: clic en el
+                      // nombre = ver sólo ese producto. Mismo estado que el buscador.
+                      <button
+                        type="button"
+                        data-testid="stock-movement-product"
+                        title="Ver sólo los movimientos de este producto"
+                        onClick={() => elegirProducto({ id: m.product_id, name: m.products!.name, is_active: m.products!.is_active })}
+                        style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: 'var(--action-700)', textAlign: 'left' }}
+                      >
+                        {m.products.name}
+                      </button>
+                    ) : '—'}
+                  </td>
                   <td data-testid="stock-movement-qty" style={{ padding: '11px 16px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: m.qty >= 0 ? 'var(--success-700)' : 'var(--danger)' }}>
                     {m.qty >= 0 ? '+' : '−'}{Math.abs(m.qty)}
                   </td>

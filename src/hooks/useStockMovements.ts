@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/useAuth'
 
 export interface StockMovementsParams {
   type?: StockMovementType | null
+  productId?: string | null
   from?: string
   to?: string
   page: number
@@ -15,18 +16,18 @@ export interface StockMovementsParams {
 }
 
 /**
- * Movimientos de stock paginados (auditoría append-only), filtrables por tipo
- * y rango de fechas. keepPreviousData evita parpadeo al paginar.
+ * Movimientos de stock paginados (auditoría append-only), filtrables por tipo,
+ * producto y rango de fechas. keepPreviousData evita parpadeo al paginar.
  */
-export function useStockMovements({ type, from, to, page, pageSize }: StockMovementsParams) {
+export function useStockMovements({ type, productId, from, to, page, pageSize }: StockMovementsParams) {
   const { profile } = useAuth()
   const sedeId = profile?.sede_id
 
   return useQuery({
-    queryKey: ['stock_movements', sedeId, type ?? null, from ?? null, to ?? null, page, pageSize],
+    queryKey: ['stock_movements', sedeId, type ?? null, productId ?? null, from ?? null, to ?? null, page, pageSize],
     queryFn: async () => {
       const { data, error, count } = await getStockMovements({
-        sedeId: sedeId!, type, from, to, page, pageSize,
+        sedeId: sedeId!, type, productId, from, to, page, pageSize,
       })
       if (error) throw error
       return {

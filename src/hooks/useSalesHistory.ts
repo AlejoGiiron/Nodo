@@ -7,6 +7,7 @@ import {
   type SalesHistoryRow, type SaleDetailRow, type SaleVoidResult,
 } from '@/lib/supabase-helpers'
 import { mensajeDeError } from '@/lib/errores'
+import { dayStartISO, dayEndISO } from '@/lib/diaBogota'
 
 export type { SalesHistoryRow, SaleDetailRow }
 
@@ -28,14 +29,7 @@ export interface SalesHistoryUIFilters {
   page: number                            // 0-based
 }
 
-// 'YYYY-MM-DD' (Bogotá) → límites ISO del día en UTC. Bogotá = UTC-5 fijo
-// (sin horario de verano), por eso se desplaza +5h al inicio/fin del día.
-function dayStartISO(day: string): string {
-  return new Date(`${day}T00:00:00-05:00`).toISOString()
-}
-function dayEndISO(day: string): string {
-  return new Date(`${day}T23:59:59.999-05:00`).toISOString()
-}
+// Límites de día: fuente única en `@/lib/diaBogota` (R1, R7).
 
 /**
  * Historial de ventas COMPLETADAS (las que tienen order_number), paginado y

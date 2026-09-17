@@ -229,6 +229,8 @@ export type StockMovementType =
 export interface StockMovementsFilters {
   sedeId: string
   type?: StockMovementType | null
+  /** null = todos los productos, que es el estado por defecto de la pantalla. */
+  productId?: string | null
   from?: string        // ISO inicio (createdAt >=)
   to?: string          // ISO fin (createdAt <=)
   page: number         // 0-based
@@ -243,29 +245,84 @@ export interface StockMovementRow {
   reference_id: string | null
   notes: string | null
   product_id: string
-  products: { name: string } | null
+  products: { name: string; is_active: boolean } | null
   profiles: { full_name: string | null } | null
 }
 
 export const getStockMovements = ({
-  sedeId, type, from, to, page, pageSize,
+  sedeId, type, productId, from, to, page, pageSize,
 }: StockMovementsFilters) => {
   let q = supabase
     .from('stock_movements')
     .select(
-      'id, created_at, type, qty, reference_id, notes, product_id, products(name), profiles(full_name)',
+      'id, created_at, type, qty, reference_id, notes, product_id, products(name, is_active), profiles(full_name)',
       { count: 'exact' },
     )
     .eq('sede_id', sedeId)
 
   if (type) q = q.eq('type', type)
+  // 🔴 Filtra por la COLUMNA de stock_movements, no por el embebido. Un
+  //    `products!inner(...)` con filtro es la forma que escondió una clase entera
+  //    de ventas en el Historial. Acá además no hace falta: `product_id` es
+  //    `not null` con `on delete restrict`, así que no hay movimiento sin producto.
+  if (productId) q = q.eq('product_id', productId)
   if (from) q = q.gte('created_at', from)
   if (to) q = q.lte('created_at', to)
 
   const fromIdx = page * pageSize
+  // 🔴 `created_at, id`, los dos descendentes. Sólo `created_at` NO define un
+  //    orden: dos movimientos pueden empatar —dos líneas del mismo producto en
+  //    una venta comparten el `now()` de la transacción— y entre empatados el
+  //    motor elige distinto en cada consulta. Con `range()` eso hace que una
+  //    fila aparezca en dos páginas y otra en ninguna. El `id` desempata.
   return q
     .order('created_at', { ascending: false })
+    .order('id', { ascending: false })
     .range(fromIdx, fromIdx + pageSize - 1)
+}
+
+export interface ProductoBuscado {
+  id: string
+  name: string
+  codigo: string | null
+  is_active: boolean
+}
+
+/** Escapa los comodines de LIKE para que el texto tecleado se busque literal. */
+const literalLike = (s: string) => s.replace(/[\\%_]/g, (c) => '\\' + c)
+
+/**
+ * Búsqueda de productos EN EL SERVIDOR, para elegir un producto en un filtro.
+ *
+ * 🔴 NO sale de `getProducts`, y son dos razones medidas:
+ *   1. `getProducts` no pagina, y PostgREST corta en 1000 filas SIN AVISAR —
+ *      LAB Principal tenía 1.206 productos (2026-09-14). Un desplegable armado
+ *      con eso pierde productos en silencio.
+ *   2. `getProducts` trae sólo ACTIVOS, y un producto archivado conserva sus
+ *      movimientos. Es justo el que se busca cuando algo no cuadra con un
+ *      producto que ya se retiró. Por eso acá NO se filtra `is_active`.
+ *
+ * Nombre y código van en DOS consultas y no en un `.or()`: el texto del usuario
+ * adentro de un `.or()` rompe la sintaxis del filtro con una coma o un
+ * paréntesis. El código NO es único (varios productos comparten línea), así que
+ * buscar por código puede devolver varios, y eso es lo esperado.
+ */
+export async function buscarProductos(
+  sedeId: string, termino: string, limite = 20,
+): Promise<ProductoBuscado[]> {
+  const patron = `%${literalLike(termino)}%`
+  const cols = 'id, name, codigo, is_active'
+  const [porNombre, porCodigo] = await Promise.all([
+    supabase.from('products').select(cols).eq('sede_id', sedeId).ilike('name', patron).order('name').limit(limite),
+    supabase.from('products').select(cols).eq('sede_id', sedeId).ilike('codigo', patron).order('name').limit(limite),
+  ])
+  if (porNombre.error) throw porNombre.error
+  if (porCodigo.error) throw porCodigo.error
+  const unicos = new Map<string, ProductoBuscado>()
+  for (const p of [...(porNombre.data ?? []), ...(porCodigo.data ?? [])]) unicos.set(p.id, p)
+  return [...unicos.values()]
+    .sort((a, b) => a.name.localeCompare(b.name, 'es'))
+    .slice(0, limite)
 }
 
 // --- Storage: product-images ---

@@ -1,6 +1,7 @@
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { useAuth } from '@/hooks/useAuth'
 import { getClosedShifts, type ClosedShiftRow } from '@/lib/supabase-helpers'
+import { dayStartISO, dayEndISO } from '@/lib/diaBogota'
 
 export type { ClosedShiftRow }
 
@@ -17,13 +18,7 @@ export interface ShiftHistoryUIFilters {
   page: number
 }
 
-// 'YYYY-MM-DD' (Bogotá) → límites ISO del día en UTC. Bogotá = UTC-5 fijo.
-function dayStartISO(day: string): string {
-  return new Date(`${day}T00:00:00-05:00`).toISOString()
-}
-function dayEndISO(day: string): string {
-  return new Date(`${day}T23:59:59.999-05:00`).toISOString()
-}
+// Límites de día: fuente única en `@/lib/diaBogota` (R1, R7).
 
 /**
  * Historial de turnos de caja CERRADOS (con su cuadre persistido:
