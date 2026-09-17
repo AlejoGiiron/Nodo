@@ -12,6 +12,7 @@ import type { StockMovementType } from '@/lib/supabase-helpers'
 // Regla ÚNICA de estado de inventario, compartida con el POS (antes duplicada).
 import { stockStatus, type StockStatus } from '@/lib/stockStatus'
 import { dayStartISO, dayEndISO } from '@/lib/diaBogota'
+import { useExistenciaSinMovimiento } from '@/hooks/useExistenciaSinMovimiento'
 import { Badge, type BadgeTone } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { KpiCard } from '@/components/ui/KpiCard'
@@ -227,6 +228,7 @@ function MovementsTab() {
   const [page, setPage] = useState(0)
 
   const elegirProducto = (p: ProductoFiltrado | null) => { setProducto(p); setPage(0) }
+  const { hueco, confirmado } = useExistenciaSinMovimiento(producto?.id ?? null)
 
   const { data, isLoading, isFetching } = useStockMovements({
     type,
@@ -296,15 +298,16 @@ function MovementsTab() {
               <th style={{ padding: '10px 16px', fontWeight: 600 }}>Tipo</th>
               <th style={{ padding: '10px 16px', fontWeight: 600 }}>Producto</th>
               <th style={{ padding: '10px 16px', fontWeight: 600, textAlign: 'right' }}>Cantidad</th>
+              <th style={{ padding: '10px 16px', fontWeight: 600, textAlign: 'right' }}>Existencia</th>
               <th style={{ padding: '10px 16px', fontWeight: 600 }}>Usuario</th>
               <th style={{ padding: '10px 16px', fontWeight: 600 }}>Referencia</th>
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
-              <tr><td colSpan={6} style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--ink-4)' }}>Cargando...</td></tr>
+              <tr><td colSpan={7} style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--ink-4)' }}>Cargando...</td></tr>
             ) : rows.length === 0 ? (
-              <tr><td colSpan={6} style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--ink-4)' }}>Sin movimientos en el período</td></tr>
+              <tr><td colSpan={7} style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--ink-4)' }}>Sin movimientos en el período</td></tr>
             ) : rows.map(m => {
               const meta = MOV_META[m.type] ?? { bg: 'var(--border-2)', fg: 'var(--ink-3)', label: m.type, icon: null }
               const ref = (m.type === 'sale' || m.type === 'purchase') && m.reference_id
@@ -336,6 +339,14 @@ function MovementsTab() {
                   <td data-testid="stock-movement-qty" style={{ padding: '11px 16px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: m.qty >= 0 ? 'var(--success-700)' : 'var(--danger)' }}>
                     {m.qty >= 0 ? '+' : '−'}{Math.abs(m.qty)}
                   </td>
+                  {/* Existencia DESPUÉS del movimiento. `—` cuando el producto no
+                      lleva existencia: un 0 afirmaría que se contó y dio cero. */}
+                  <td
+                    data-testid="stock-movement-saldo"
+                    style={{ padding: '11px 16px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: m.saldo_despues === null ? 'var(--ink-4)' : 'var(--ink-2)' }}
+                  >
+                    {m.saldo_despues === null ? '—' : m.saldo_despues}
+                  </td>
                   <td style={{ padding: '11px 16px', color: 'var(--ink-3)' }}>{m.profiles?.full_name ?? '—'}</td>
                   <td style={{ padding: '11px 16px', color: 'var(--ink-4)', fontVariantNumeric: 'tabular-nums', fontSize: 12 }}>{ref}</td>
                 </tr>
@@ -344,6 +355,22 @@ function MovementsTab() {
           </tbody>
         </table>
       </div>
+
+      {/* 🔴 La línea para CUADRAR. Sólo con un producto elegido, y sólo si hay
+          hueco: `stock_qty` que ningún movimiento explica —típicamente la
+          existencia inicial del alta—. Sin hueco NO aparece: si apareciera
+          siempre, dejaría de ser información. Con `hueco === null` tampoco: ese
+          producto no lleva existencia. */}
+      {producto && confirmado && hueco !== null && hueco !== 0 && (
+        <div
+          data-testid="mov-existencia-sin-movimiento"
+          style={{ fontSize: 12.5, color: 'var(--ink-2)', background: 'var(--attention)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px' }}
+        >
+          Existencia sin movimiento registrado:{' '}
+          <strong style={{ fontVariantNumeric: 'tabular-nums' }}>{hueco}</strong>
+          <span style={{ color: 'var(--ink-3)' }}> — entró sin quedar en esta lista, casi siempre la existencia inicial del alta.</span>
+        </div>
+      )}
 
       {/* Pagination */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

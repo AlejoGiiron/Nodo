@@ -245,6 +245,13 @@ export interface StockMovementRow {
   reference_id: string | null
   notes: string | null
   product_id: string
+  /**
+   * Existencia DESPUÉS de este movimiento, anclada en `products.stock_qty`
+   * (migración 20260917120000). **Nulo es un dato**: el producto no lleva
+   * existencia o no tiene `stock_qty`. Se pinta «—», nunca 0 — un 0 afirmaría
+   * que se contó y dio cero.
+   */
+  saldo_despues: number | null
   products: { name: string; is_active: boolean } | null
   profiles: { full_name: string | null } | null
 }
@@ -252,10 +259,16 @@ export interface StockMovementRow {
 export const getStockMovements = ({
   sedeId, type, productId, from, to, page, pageSize,
 }: StockMovementsFilters) => {
+  // 🔴 Lee la VISTA, no la tabla: trae el saldo acumulado y admite los mismos
+  //    embebidos (verificado contra la base el 2026-09-17). El filtro por fecha
+  //    o tipo NO se empuja por debajo de la ventana —también medido, y es el
+  //    primer caso de `movimientos-saldo.spec`—, así que el saldo se calcula
+  //    sobre toda la historia del producto y el filtro sólo elige qué filas se
+  //    muestran. Costo medido en LAB con 4.957 movimientos: +14 ms por página.
   let q = supabase
-    .from('stock_movements')
+    .from('stock_movements_con_saldo')
     .select(
-      'id, created_at, type, qty, reference_id, notes, product_id, products(name, is_active), profiles(full_name)',
+      'id, created_at, type, qty, reference_id, notes, product_id, saldo_despues, products(name, is_active), profiles(full_name)',
       { count: 'exact' },
     )
     .eq('sede_id', sedeId)
@@ -270,6 +283,11 @@ export const getStockMovements = ({
   if (to) q = q.lte('created_at', to)
 
   const fromIdx = page * pageSize
+  // 🔴 ESTE ORDEN ES UN LADO DEL CONTRATO CON LA VENTANA de
+  //    `stock_movements_con_saldo`: la vista acumula con `order by created_at
+  //    desc, id desc`. Si acá cambia y allá no, el saldo de una fila deja de ser
+  //    el de la fila de arriba menos su cantidad, y nada se pone rojo.
+  //
   // 🔴 `created_at, id`, los dos descendentes. Sólo `created_at` NO define un
   //    orden: dos movimientos pueden empatar —dos líneas del mismo producto en
   //    una venta comparten el `now()` de la transacción— y entre empatados el
@@ -280,6 +298,19 @@ export const getStockMovements = ({
     .order('id', { ascending: false })
     .range(fromIdx, fromIdx + pageSize - 1)
 }
+
+/**
+ * `products.stock_qty − Σ stock_movements.qty` de un producto. Distinto de cero
+ * = existencia que ningún movimiento explica, típicamente la inicial del alta.
+ * Nulo = el producto no lleva existencia. Alimenta la línea del pie de
+ * Movimientos, que es la herramienta para cuadrar.
+ */
+export const getExistenciaSinMovimiento = (productId: string) =>
+  supabase
+    .from('productos_existencia_sin_movimiento')
+    .select('existencia_sin_movimiento')
+    .eq('product_id', productId)
+    .maybeSingle()
 
 export interface ProductoBuscado {
   id: string

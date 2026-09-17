@@ -35,12 +35,14 @@ loadEnv('.env'); loadEnv('.env.test')
 const SUFFIX = Date.now().toString().slice(-6)
 const ACTIVO = `E2E MovActivo ${SUFFIX}`
 const ARCHIVADO = `E2E MovArchivado ${SUFFIX}`
+const SIN_STOCK = `E2E MovSinStock ${SUFFIX}`
 const CODIGO_ACTIVO = `E2EMOV-${SUFFIX}`
 
 let db: SupabaseClient
 let CAT_ID = ''
 let ID_ACTIVO = ''
 let ID_ARCHIVADO = ''
+let ID_SIN_STOCK = ''
 
 async function ajustar(id: string, qty: number) {
   const { error } = await db.rpc('adjust_stock', { p_product_id: id, p_qty: qty, p_reason: 'movimientos-stock.spec' })
@@ -65,14 +67,20 @@ test.beforeAll(async () => {
   const a = await db.from('products').insert({ ...base, name: ACTIVO, codigo: CODIGO_ACTIVO, stock_qty: 0 }).select('id').single()
   // ARCHIVADO nace con 10 SIN movimiento: existencia inicial fuera del registro.
   const b = await db.from('products').insert({ ...base, name: ARCHIVADO, stock_qty: 10 }).select('id').single()
+  // SIN_STOCK no lleva existencia: `adjust_stock` igual le escribe movimiento
+  // —sólo exige que sea simple— y la vista le da NULO, que es el caso del «—».
+  const c = await db.from('products').insert({ ...base, name: SIN_STOCK, stock_tracking: false }).select('id').single()
   expect(a.error?.message ?? null).toBeNull()
   expect(b.error?.message ?? null).toBeNull()
+  expect(c.error?.message ?? null).toBeNull()
   ID_ACTIVO = a.data!.id
   ID_ARCHIVADO = b.data!.id
+  ID_SIN_STOCK = c.data!.id
 
   await ajustar(ID_ACTIVO, 7)
   await ajustar(ID_ACTIVO, -2)
   await ajustar(ID_ARCHIVADO, 4)
+  await ajustar(ID_SIN_STOCK, 3)
 
   const arch = await db.from('products').update({ is_active: false }).eq('id', ID_ARCHIVADO)
   expect(arch.error?.message ?? null, 'no se pudo archivar el producto de la fixture').toBeNull()
@@ -82,12 +90,13 @@ test.afterAll(async () => {
   if (!db) return
   // Productos con movimientos no se borran (FK restrict): se archivan. La
   // limpieza ASEVERA el estado, porque supabase-js no lanza (deuda 115).
-  const p = await db.from('products').update({ is_active: false }).in('id', [ID_ACTIVO, ID_ARCHIVADO])
+  const ids = [ID_ACTIVO, ID_ARCHIVADO, ID_SIN_STOCK].filter(Boolean)
+  const p = await db.from('products').update({ is_active: false }).in('id', ids)
   const c = await db.from('categories').update({ is_active: false }).eq('id', CAT_ID)
-  const vivos = await db.from('products').select('id').in('id', [ID_ACTIVO, ID_ARCHIVADO]).eq('is_active', true)
+  const vivos = await db.from('products').select('id').in('id', ids).eq('is_active', true)
   expect(
     [p.error?.message, c.error?.message, vivos.error?.message, (vivos.data ?? []).length],
-    `LIMPIEZA de movimientos-stock.spec: quedaron productos E2E activos (${ID_ACTIVO}, ${ID_ARCHIVADO})`,
+    `LIMPIEZA de movimientos-stock.spec: quedaron productos E2E activos (${ids.join(', ')})`,
   ).toEqual([undefined, undefined, undefined, 0])
 })
 
@@ -156,6 +165,48 @@ test('🔴 un producto ARCHIVADO se encuentra y se filtra — es el que se busca
   await expect(page.getByTestId('mov-producto-chip')).toContainText('Archivado')
   await expect(filas(page), 'el filtro no acota: aparecen movimientos de OTROS productos').toHaveCount(1)
   await expect(filas(page).first().getByTestId('stock-movement-qty')).toContainText('+4')
+})
+
+// ── la columna de existencia y la línea para cuadrar ────────────────────────
+test('🔴 la línea «existencia sin movimiento» aparece con hueco y NO aparece sin él', async ({ page }) => {
+  await abrirMovimientos(page)
+  const linea = page.getByTestId('mov-existencia-sin-movimiento')
+
+  // Sin producto elegido no se pinta: el número es de UN producto.
+  await expect(linea, 'la línea se pintó sin producto elegido: ese número no es de nadie').toHaveCount(0)
+
+  // ARCHIVADO nació con 10 de existencia y sólo tiene +4 de movimiento.
+  await page.getByTestId('mov-producto-buscar').fill(ARCHIVADO)
+  await page.getByTestId('mov-producto-opcion').filter({ hasText: ARCHIVADO }).click()
+  await expect(linea).toContainText('10')
+
+  // CONTROL: ACTIVO nació en 0, así que NO tiene hueco. Sin este caso, un
+  // defecto de «siempre muestra la línea» pasaría verde.
+  await page.getByTestId('mov-producto-quitar').click()
+  await page.getByTestId('mov-producto-buscar').fill(CODIGO_ACTIVO)
+  await page.getByTestId('mov-producto-opcion').filter({ hasText: ACTIVO }).click()
+  await expect(filas(page)).toHaveCount(2)
+  await expect(linea, 'un producto sin hueco NO lleva la línea').toHaveCount(0)
+})
+
+test('la columna de existencia muestra el saldo, y «—» cuando el producto no lleva existencia', async ({ page }) => {
+  await abrirMovimientos(page)
+  await page.getByTestId('mov-producto-buscar').fill(CODIGO_ACTIVO)
+  await page.getByTestId('mov-producto-opcion').filter({ hasText: ACTIVO }).click()
+  await expect(filas(page)).toHaveCount(2)
+
+  // 0 +7 −2 = 5, y la fila de arriba es la más nueva.
+  const saldos = await page.getByTestId('stock-movement-saldo').allInnerTexts()
+  expect(saldos, 'el saldo no acumula hacia atrás desde el stock actual').toEqual(['5', '7'])
+
+  await page.getByTestId('mov-producto-quitar').click()
+  await page.getByTestId('mov-producto-buscar').fill(SIN_STOCK)
+  await page.getByTestId('mov-producto-opcion').filter({ hasText: SIN_STOCK }).click()
+  await expect(filas(page)).toHaveCount(1)
+  await expect(
+    filas(page).first().getByTestId('stock-movement-saldo'),
+    'un producto sin control de existencia tiene que mostrar «—»: un 0 afirmaría que se contó y dio cero',
+  ).toHaveText('—')
 })
 
 test('clic en el nombre de una fila filtra por ese producto', async ({ page }) => {

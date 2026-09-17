@@ -301,6 +301,13 @@ export type Database = {
             foreignKeyName: "extras_linked_product_id_fkey"
             columns: ["linked_product_id"]
             isOneToOne: false
+            referencedRelation: "productos_existencia_sin_movimiento"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "extras_linked_product_id_fkey"
+            columns: ["linked_product_id"]
+            isOneToOne: false
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
@@ -532,6 +539,13 @@ export type Database = {
             foreignKeyName: "order_items_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "productos_existencia_sin_movimiento"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
@@ -746,8 +760,22 @@ export type Database = {
             foreignKeyName: "product_components_component_id_fkey"
             columns: ["component_id"]
             isOneToOne: false
+            referencedRelation: "productos_existencia_sin_movimiento"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_components_component_id_fkey"
+            columns: ["component_id"]
+            isOneToOne: false
             referencedRelation: "products"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_components_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "productos_existencia_sin_movimiento"
+            referencedColumns: ["product_id"]
           },
           {
             foreignKeyName: "product_components_parent_id_fkey"
@@ -808,6 +836,13 @@ export type Database = {
             foreignKeyName: "product_cost_adjustments_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "productos_existencia_sin_movimiento"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_cost_adjustments_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
@@ -851,6 +886,13 @@ export type Database = {
             foreignKeyName: "product_extras_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "productos_existencia_sin_movimiento"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_extras_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
@@ -882,6 +924,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "product_prices_producto_de_su_sede"
+            columns: ["product_id", "sede_id"]
+            isOneToOne: false
+            referencedRelation: "productos_existencia_sin_movimiento"
+            referencedColumns: ["product_id", "sede_id"]
+          },
           {
             foreignKeyName: "product_prices_producto_de_su_sede"
             columns: ["product_id", "sede_id"]
@@ -1075,6 +1124,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "purchase_invoices"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_invoice_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "productos_existencia_sin_movimiento"
+            referencedColumns: ["product_id"]
           },
           {
             foreignKeyName: "purchase_invoice_items_product_id_fkey"
@@ -1284,6 +1340,13 @@ export type Database = {
             foreignKeyName: "stock_movements_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "productos_existencia_sin_movimiento"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "stock_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
@@ -1460,11 +1523,78 @@ export type Database = {
             foreignKeyName: "order_items_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "productos_existencia_sin_movimiento"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "orders_sede_id_fkey"
+            columns: ["sede_id"]
+            isOneToOne: false
+            referencedRelation: "sedes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      productos_existencia_sin_movimiento: {
+        Row: {
+          existencia_sin_movimiento: number | null
+          product_id: string | null
+          sede_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_sede_id_fkey"
+            columns: ["sede_id"]
+            isOneToOne: false
+            referencedRelation: "sedes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_movements_con_saldo: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string | null
+          notes: string | null
+          product_id: string | null
+          qty: number | null
+          reference_id: string | null
+          saldo_despues: number | null
+          sede_id: string | null
+          type: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_movements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "productos_existencia_sin_movimiento"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "stock_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_sede_id_fkey"
             columns: ["sede_id"]
             isOneToOne: false
             referencedRelation: "sedes"

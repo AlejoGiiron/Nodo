@@ -602,6 +602,20 @@ archivo aplicado entero y el segundo intacto, que es lo que el `assert` existe p
 ⚠️ Con anclas multilínea, **la Edit del harness** compara exacto y maneja el final de línea; un
 script con `newline=''` no — y eso es otra razón para no escribir anclas de varias líneas a mano.
 
+🔴 **TERCERA VEZ EL MISMO DÍA, Y LA PEOR: EL SCRIPT NO ESCRIBIÓ EL ARCHIVO.** Un heredoc de tres
+líneas para cambiar `colSpan={6}` por `{7}`: leía, reemplazaba en memoria **y nunca guardaba**. El
+`assert` del ancla pasó —la cadena estaba— así que **el script terminó con éxito y no hizo nada**.
+
+> **Un script de edición que no escribe se ve igual que uno que escribió bien: sin error y sin
+> salida.** Lo único que lo delata es **verificar el efecto en el archivo**, no el exit code.
+
+⚠️ Y es la forma que este archivo ya tiene para las limpiezas del arnés —*«una escritura sin
+verificador»*— aparecida en una herramienta de edición: el `assert` verificaba **la entrada** (que el
+ancla existiera) y **nada verificaba la salida**. Lo cazó un `grep -c` del resultado, que dio 0.
+✅ Accionable, y ya está escrito arriba: **estas ediciones van con la Edit del harness**, que falla
+ruidosamente si no aplica. Un script propio sólo si el cambio es masivo — y entonces el `grep` del
+resultado es parte del script, no del que lo corre.
+
 
 **🔴 COROLARIO — POR QUÉ LEER NO ALCANZA.** R4 dice *qué* hacer. Esto dice *por qué*, que es lo
 que hace que se aplique cuando nadie está mirando:
@@ -1754,6 +1768,7 @@ misma forma: un supuesto sobre CÓMO SE IMPRIME, que el texto del comando no men
 | 2 | el resumen empieza en columna 0 — le pega una **secuencia de escape** delante |
 | 3 | en `awk`, `.` es un **carácter** — es un byte, y `§` ocupa dos |
 | 4 | `console.log` de Node entiende **anchos** tipo `printf` — no los tiene |
+| 4-bis 🔴 | **el mismo, otra vez el 2026-09-17**, en la sonda que midió el costo de la vista: `%-34s` salió literal. La lección estaba escrita **en esta misma tabla** |
 
 ⚠️ **Y las cuatro fallan hacia el mismo lado: la salida SIGUE SALIENDO.** No hay excepción ni
 código de error — hay un informe que se ve casi bien, y en tres de los cuatro casos el número que
