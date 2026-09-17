@@ -739,6 +739,20 @@ trace, y recién ahí re-correr.
 **Modo de fallo:** Playwright **borra `test-results/` al arrancar**. Re-correr destruye la única
 evidencia — y un flake, por definición, no se reproduce a pedido.
 
+🔴 **Y NO SÓLO `test-results/`: CUALQUIER INVOCACIÓN SOBRESCRIBE `playwright-report/`, INCLUIDA UNA
+QUE NO CORRE NADA.** *Falta propia, 2026-09-17.* Para contar casos corrí `playwright test --list`; el
+config tiene el reporter `html`, así que **reescribió `playwright-report/index.html`** — el reporte
+del 2026-09-14, la única fuente de duraciones por caso que existía. Quedó diciendo «338 skipped,
+1,8 s». Si traía duraciones de una suite entera, ya no se puede saber.
+
+> **Un artefacto se lee ANTES de sobrescribirlo** — y «sobrescribir» incluye comandos que no parecen
+> escribir nada.
+
+✅ **Remedio, de acá en adelante:** las suites se corren con `--reporter=line,json` (con
+`PLAYWRIGHT_JSON_OUTPUT_NAME` a un archivo fuera del repo), que deja la duración de cada caso sin
+costo extra. Y antes de un `--list` o cualquier corrida auxiliar, se copia lo que haya en
+`playwright-report/` si todavía no se leyó.
+
 → **Evidencia:** repo de Vento, `docs/BITACORA.md` → *"ANTE UN FALLO: LEER LOS ARTEFACTOS ANTES
 DE RE-CORRER"*.
 
@@ -2891,6 +2905,88 @@ un parámetro falla escribiendo mal el parámetro, y ninguna cantidad de criteri
 ⚠️ Y el corolario que hace honesto el registro de una tanda: si sólo se corrió el grupo, el commit
 dice **«grupo por consumidor: N passed»** y no «verde». Son dos afirmaciones distintas y sólo una
 habilita el push.
+
+---
+
+### 🔴 CRITERIO SIN NÚMERO · EL VERDE DE REFERENCIA NO ES UNIVERSAL — PORQUE EN EL REGISTRO NO DECIDIÓ NUNCA UNA ATRIBUCIÓN
+
+*Aprobado el 2026-09-17, con la búsqueda hecha y no supuesta. La suite entera ANTES del cambio costaba
+18 minutos por tanda —36 con la del final— y se aplicaba siempre.*
+
+> **No es que la referencia sea inútil en teoría: es que en 60 archivos y varias semanas no decidió
+> una sola atribución.** La suite al FINAL, en el mismo período, cobró cinco veces.
+
+📋 **La búsqueda, y lo que encontró** (en `CLAUDE.md`, `docs/DEUDAS.md`, `docs/BITACORA.md` y los
+commits): **cero** casos donde una suite entera corrida antes del cambio haya resuelto de dónde venía
+un rojo. Los más cercanos, y por qué no cuentan:
+
+| caso | qué resolvió la atribución | ¿una referencia habría servido? |
+|---|---|---|
+| los tres rojos que destaparon algo preexistente (`anular-venta`, las cuatro de precios, `extras.spec`) | **leer el mecanismo** | ⛔ no: en dos el residuo apareció ENTRE corridas; en el tercero el arreglo lo hizo **alcanzable**, y una referencia no distingue «lo causó» de «lo hizo alcanzable» |
+| `atajos.spec` nació rojo y siguió así 4 commits | **dos `git show`**, segundos | ✅ sí, y es el único — pero no se corrió, y lo barato alcanzó |
+| tandas A y B de la 114 | **el spec propio naciendo rojo** antes de aplicar | es otra cosa: no es la suite entera |
+
+🔴 **LA ASIMETRÍA QUE DECIDE, medida:** lo que funcionó **siempre** fue el **spec propio naciendo
+rojo antes de aplicar**. Cuesta segundos y discrimina **mejor**, porque señala el sujeto; una suite
+entera señala un árbol.
+
+✅ **EL CRITERIO:**
+
+| | ¿referencia de suite entera antes? |
+|---|---|
+| migración de **FK, policy, RLS o trigger** | **sí** |
+| componente o helper **compartido** — `src/components/ui/`, `src/lib/`, `src/stores/`, `tests/helpers/` | **sí** |
+| cualquier cosa que cambie **qué ve el arnés** — seed, limpiezas, `global-setup` | **sí** |
+| una tanda que **AGREGA** algo acotado —una pantalla, un filtro, un spec nuevo— | **no**: si el final sale rojo, el diff dice qué se tocó, y se atribuye con el artefacto + `git show` |
+
+⛔ **Lo que NO cambia:** el spec propio naciendo rojo antes de aplicar, y la **suite entera al final
+antes del push** (condición 1). El costo baja de 36 a 18 minutos en la mayoría de las tandas sin tocar
+lo que sí cobró.
+
+### 🔴 CRITERIO SIN NÚMERO · PARALELIZAR LA SUITE: 84% COMPARTE ESTADO, Y LA GANANCIA DE LO FÁCIL NO VALE EL RIESGO
+
+*Medido el 2026-09-17, por lectura estática del código. **No decidido: anotado con su dato.***
+
+| clase | archivos | casos |
+|---|---|---|
+| **comparte estado del lab** | 49 | **283** (84%) |
+| candidato independiente, con datos propios | 8 | 43 |
+| candidato independiente, sin escribir datos | 3 | 12 |
+
+**La señal dominante es la JORNADA — 192 casos.** Hay una sola abierta por sede, y vender, comprar o
+abonar la exige: dos workers en la misma sede se cierran la jornada entre sí. Después: `.first()`
+sobre el catálogo compartido (77), configuración de la sede (68), roles y asignaciones (33), «la
+última fila» (27).
+
+⚠️ **Los 55 candidatos son COTA SUPERIOR, no medición: el clasificador se equivoca en las dos
+direcciones.** `reportes.spec` sale independiente y **lee agregados de la sede** que otro worker
+estaría escribiendo; `sedes-fk-hechos` sale compartido por abrir jornadas y **crea su propia sede**.
+Y la primera versión leía comentarios: marcó `movimientos-stock` como serial por el comentario que
+dice que no lo es — lo cazó un caso cuya respuesta se conocía.
+
+🔴 **La cuenta que lo descarta hoy:** paralelizar los independientes daría como máximo ~16% —unos 3
+minutos de 18—. **No vale el riesgo del estado cruzado, que ya costó dos veces rojos que parecían de
+otra cosa.**
+
+📋 **La palanca real, anotada SIN decidir:** una **sede del lab por worker**, con sus cuentas, aislaría
+los 192 de la jornada. Cambia el arnés y el seed, y se decide midiendo, no suponiendo.
+
+🔴 **Y NO HAY SPECS DESPROPORCIONADOS: el tiempo está repartido.** *Medido el 2026-09-17 sobre la
+suite del filtro (`9aeb672`, 323 passed en 20,5 min), marcando la hora de inicio de cada caso desde la
+salida del reporter — muestreo de ~1 s, cubre del caso 90 al 338 (14,4 min); los primeros ~90 quedaron
+sin medir.*
+
+| | |
+|---|---|
+| tramo más largo | **21 s** — ningún caso pasa de 30 s |
+| tramos de más de 10 s | 13, que suman **3,0 min (21%)** |
+| los 4 archivos más lentos | `fiado` · `extras-pos` · `inventario` · `ventas-historial` = **33%** |
+
+⚠️ **Lo que sí muestran los tramos largos es un patrón, no un culpable:** son `setup` y `limpieza`
+hechos **por la UI** (crear categoría, productos y extras clickeando; cerrar turno y desactivar) y
+flujos que pasan por el POS con jornada. Ahí hay 11–21 s por caso que un arnés por API haría en
+segundos. **Anotado como candidato, no medido:** cuánto ahorraría depende de cuántos archivos arman
+así su fixture, y eso se enumera antes de proponerlo.
 
 ---
 
