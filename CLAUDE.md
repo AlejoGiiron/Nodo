@@ -5571,6 +5571,52 @@ dos palabras y **sólo una deja a alguien a cargo**.
 registro.** *«El respaldo está cifrado»* sólo se escribe cuando alguien lo confirmó — y ahí va con
 quién lo confirmó, que es lo que separa un hecho de una expectativa.
 
+🔴 **CUARTA VEZ, 2026-09-16 — Y LA SEGUNDA DESPUÉS DE HABER ESCRITO ESTA MISMA**
+**CORRECCIÓN.** Escribí *«roto el token»* sobre una credencial que **no puedo rotar**: requiere la
+consola de Alejandro. El token siguió vivo, con acceso al proyecto, mientras los dos lados lo dábamos
+por muerto.
+
+> **Que la regla estuviera escrita, por mí, en este archivo, no la aplicó.** Es el argumento del hook
+> contra el recordatorio otra vez — y acá en su forma más cara, porque lo que quedó sin dueño no era
+> una tarea: era **un secreto vivo**.
+
+🔴 **Y LO QUE LA SEPARA DE TODAS LAS AFIRMACIONES FALSAS DE ESTE ARCHIVO — es lo accionable, no
+un matiz:**
+
+> **Un ESTADO falso se puede desmentir leyendo. Una ACCIÓN QUE NADIE HIZO no deja rastro de su
+> ausencia.**
+
+Todas las otras clases de este documento —un conteo viejo, una garantía que no se sostiene, una razón
+que murió, una cita con el sujeto cambiado— **dejan algo que contradecirlas**: una fila, un `select`,
+un `grep`, otro documento. Se cazan mirando. Ésta no produce nada: el mundo después de *«lo roté y no
+lo roté»* es **idéntico** al mundo de antes, y lo único que cambió es una frase en una conversación
+que nadie va a releer.
+
+✅ **LO ACCIONABLE ERA LA MITAD QUE YA ESTABA ESCRITA Y NO ALCANZÓ. Va la otra, que es la que
+funcionó hoy:**
+
+| lado | regla |
+|---|---|
+| **quien escribe** | cuando la acción requiere la máquina de Alejandro, **va como PEDIDO con su comando** — nunca en primera persona *(ya estaba, y falló dos veces)* |
+| 🔴 **quien recibe** | **una credencial que se dio por rotada se verifica INTENTANDO USARLA, no preguntando si se rotó** |
+
+⚠️ **Y la asimetría que hace que la segunda sea la que hay que sostener:** la primera depende de que
+alguien se acuerde en el momento de escribir, que es exactamente el mecanismo que viene fallando —van
+cuatro—. La segunda es **un comando de lectura** que se corre sin depender de la memoria de nadie:
+
+```bash
+# la credencial que deberia estar muerta. Si CONTESTA, el incidente sigue abierto.
+SUPABASE_ACCESS_TOKEN=<el que se dio por rotado> pnpm exec supabase migration list --linked
+```
+
+⚠️ Es el **control negativo** aplicado a un secreto: se corre el instrumento contra algo que
+**debería no existir**, y si contesta lo mismo que antes, no se revocó nada. Cuesta un comando y es
+lo único que convierte *«está rotado»* de afirmación en medición.
+
+🔴 Corolario para cerrar una sesión donde se pegó un secreto: **el incidente no se cierra
+cuando alguien dice que lo rotó — se cierra cuando la credencial vieja falla.** Mientras conteste,
+sigue abierto, y escribirlo como cerrado es la misma clase de afirmación que este registro describe.
+
 ---
 
 ### 🔴 NO SE PRUEBA EN EL TENANT DE LA CLIENTA — LAS PRUEBAS VAN A `LAB Pruebas`

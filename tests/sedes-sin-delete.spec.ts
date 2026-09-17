@@ -158,8 +158,24 @@ test('② una sede CON movimientos también es rechazada — pero por la FK, y e
   ).toContain('cash_movements')
 
   // ── LIMPIEZA, en orden inverso al montaje ──────────────────────────────
-  await admin!.from('cash_movements').delete().eq('id', cm.data!.id)
-  await admin!.from('jornadas').delete().eq('id', jornada.data!.id)
+  // 🔴 Con su error LEÍDO. Hasta la tanda B de la deuda 114 estas dos líneas lo
+  //    descartaban: el `fin.count === 1` de abajo las cubría indirectamente, así
+  //    que no eran un defecto — pero su fallo salía como «la sede no se borró»,
+  //    que manda a mirar la FK de `sedes` en vez de la fila que quedó viva.
+  //    Con `jornadas.sede_id` en NO ACTION eso pasa de confuso a frecuente.
+  const cmBorrado = await admin!.from('cash_movements').delete().eq('id', cm.data!.id)
+  expect(
+    cmBorrado.error?.message ?? 'sin error',
+    `no se pudo borrar el movimiento ${cm.data!.id}: sin esto la sede queda ` +
+    'trabada y el rojo va a hablar de la sede, no del movimiento',
+  ).toBe('sin error')
+
+  const jBorrada = await admin!.from('jornadas').delete().eq('id', jornada.data!.id)
+  expect(
+    jBorrada.error?.message ?? 'sin error',
+    `no se pudo borrar la jornada ${jornada.data!.id}: con la tanda B esta FK ` +
+    'está en NO ACTION, así que la sede no se va hasta que la jornada no esté',
+  ).toBe('sin error')
   const fin = await admin!.from('sedes').delete({ count: 'exact' }).eq('id', id)
   expect(
     fin.count,
