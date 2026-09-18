@@ -3,13 +3,19 @@ import { X, Plus, Trash2, Loader2, PackageCheck } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { useSuppliers } from '@/hooks/useSuppliers'
 import { useProducts } from '@/hooks/useProducts'
-import { useRegisterPurchase } from '@/hooks/usePurchases'
+import { useRegisterPurchase, useUpdatePurchase, type PurchaseInvoiceDetailRow } from '@/hooks/usePurchases'
 import { formatoCOP } from '@/lib/formato'
 
 interface NewInvoiceModalProps {
   onClose: () => void
   /** Abre directo el form de proveedor (cuando no hay ninguno). */
   onNeedSupplier: () => void
+  /**
+   * La compra a editar, o `null` para registrar una nueva. OBLIGATORIO a
+   * propósito: `null` es un dato («crear»), y un prop opcional mezclaría
+   * «crear» con «el llamador no dijo» (criterio del prop opcional, CLAUDE.md).
+   */
+  editando: PurchaseInvoiceDetailRow | null
 }
 
 interface DraftLine {
@@ -53,18 +59,42 @@ function hoyBogota(): string {
   }).format(new Date())
 }
 
-export function NewInvoiceModal({ onClose, onNeedSupplier }: NewInvoiceModalProps) {
+/** Una línea guardada, como borrador editable. El costo viaja como string SIN
+ *  truncar: el histórico tiene costos con centavos (× 1,16) y un `parseInt`
+ *  cambiaría en silencio líneas que nadie tocó. */
+const lineaDesdeGuardada = (
+  it: PurchaseInvoiceDetailRow['purchase_invoice_items'][number],
+): DraftLine => ({
+  key: `l${lineSeq++}`,
+  product_id: it.product_id,
+  qty: String(it.qty),
+  unit_cost: String(Number(it.unit_cost)),
+  purchase_unit: it.purchase_unit ?? '',
+  factor: it.purchase_unit ? String(it.units_per_purchase_unit) : '',
+})
+
+/** Costo de la línea. `Number`, no `parseInt`: ver `lineaDesdeGuardada`. Lo que
+ *  se teclea sólo admite dígitos (el `onChange` los filtra). */
+const costoDe = (l: DraftLine) => Number(l.unit_cost) || 0
+
+export function NewInvoiceModal({ onClose, onNeedSupplier, editando }: NewInvoiceModalProps) {
   const { suppliers } = useSuppliers()
   const { data: products = [] } = useProducts()
   const { registerPurchase, isRegistering } = useRegisterPurchase()
+  const { updatePurchase, isUpdating } = useUpdatePurchase()
+  const guardando = isRegistering || isUpdating
 
-  const [supplierId, setSupplierId] = useState('')
-  const [invoiceNumber, setInvoiceNumber] = useState('')
-  const [notes, setNotes] = useState('')
+  const [supplierId, setSupplierId] = useState(editando?.supplier_id ?? '')
+  const [invoiceNumber, setInvoiceNumber] = useState(editando?.invoice_number ?? '')
+  const [notes, setNotes] = useState(editando?.notes ?? '')
   // 🔴 Deuda 44: la fecha del papel del proveedor. El cliente registra el 2
   //    de septiembre facturas del 31 de agosto — medido en su archivo real.
-  const [documentDate, setDocumentDate] = useState(hoyBogota())
-  const [lines, setLines] = useState<DraftLine[]>([newLine()])
+  const [documentDate, setDocumentDate] = useState(editando?.document_date ?? hoyBogota())
+  const [lines, setLines] = useState<DraftLine[]>(
+    editando && editando.purchase_invoice_items.length > 0
+      ? editando.purchase_invoice_items.map(lineaDesdeGuardada)
+      : [newLine()],
+  )
 
   const productById = useMemo(() => {
     const m = new Map<string, (typeof products)[number]>()
@@ -73,7 +103,7 @@ export function NewInvoiceModal({ onClose, onNeedSupplier }: NewInvoiceModalProp
   }, [products])
 
   const lineSubtotal = (l: DraftLine) =>
-    (parseInt(l.qty, 10) || 0) * (parseInt(l.unit_cost, 10) || 0)
+    (parseInt(l.qty, 10) || 0) * costoDe(l)
 
   const total = useMemo(() => lines.reduce((s, l) => s + lineSubtotal(l), 0), [lines])
 
@@ -90,7 +120,7 @@ export function NewInvoiceModal({ onClose, onNeedSupplier }: NewInvoiceModalProp
   const removeLine = (key: string) => setLines(ls => (ls.length > 1 ? ls.filter(l => l.key !== key) : ls))
 
   const validLines = lines.filter(
-    l => l.product_id && (parseInt(l.qty, 10) || 0) > 0 && (parseInt(l.unit_cost, 10) || 0) >= 0,
+    l => l.product_id && (parseInt(l.qty, 10) || 0) > 0 && costoDe(l) >= 0,
   )
   const isValid = !!supplierId && validLines.length > 0
 
@@ -98,14 +128,13 @@ export function NewInvoiceModal({ onClose, onNeedSupplier }: NewInvoiceModalProp
     if (!supplierId) { toast.error('Selecciona un proveedor'); return }
     if (validLines.length === 0) { toast.error('Agrega al menos un ítem con cantidad y costo'); return }
 
-    await registerPurchase({
-      invoice: {
-        supplier_id: supplierId,
-        invoice_number: invoiceNumber.trim() || null,
-        notes: notes.trim() || null,
-        document_date: documentDate,
-      },
-      items: validLines.map(l => ({
+    const invoice = {
+      supplier_id: supplierId,
+      invoice_number: invoiceNumber.trim() || null,
+      notes: notes.trim() || null,
+      document_date: documentDate,
+    }
+    const items = validLines.map(l => ({
         // ⚠️ `purchase_unit` y el factor viajan JUNTOS o no viajan. Mandar la
         //    etiqueta sin el factor hace que la RPC rechace la compra entera —
         //    a propósito, es fail-closed: un factor asumido en 1 cuando era 50
@@ -116,9 +145,14 @@ export function NewInvoiceModal({ onClose, onNeedSupplier }: NewInvoiceModalProp
           : {}),
         product_id: l.product_id,
         qty: parseInt(l.qty, 10),
-        unit_cost: parseInt(l.unit_cost, 10),
-      })),
-    })
+        unit_cost: costoDe(l),
+      }))
+
+    if (editando) {
+      await updatePurchase({ invoiceId: editando.id, invoice, items })
+    } else {
+      await registerPurchase({ invoice, items })
+    }
     onClose()
   }
 
@@ -135,7 +169,9 @@ export function NewInvoiceModal({ onClose, onNeedSupplier }: NewInvoiceModalProp
         <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--border-2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
           <div>
             <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--action)', textTransform: 'uppercase', letterSpacing: 1 }}>Compras</div>
-            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--ink)', letterSpacing: -0.3, marginTop: 1 }}>Registrar compra</div>
+            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--ink)', letterSpacing: -0.3, marginTop: 1 }}>
+              {editando ? `Editar compra #${editando.purchase_number}` : 'Registrar compra'}
+            </div>
           </div>
           <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--border-2)', border: 'none', cursor: 'pointer', color: 'var(--ink-3)', display: 'grid', placeItems: 'center' }}><X size={16} /></button>
         </div>
@@ -260,7 +296,7 @@ export function NewInvoiceModal({ onClose, onNeedSupplier }: NewInvoiceModalProp
                 {validLines.filter(l => l.purchase_unit.trim()).map(l => {
                   const pr = products.find(x => x.id === l.product_id)
                   const unidades = (parseInt(l.qty, 10) || 0) * factorDe(l)
-                  const costoUnitario = Math.round((parseInt(l.unit_cost, 10) || 0) / factorDe(l))
+                  const costoUnitario = Math.round(costoDe(l) / factorDe(l))
                   return (
                     <div key={l.key} data-testid="invoice-efecto-linea" style={{ fontVariantNumeric: 'tabular-nums' }}>
                       {pr?.name ?? 'Producto'}: {l.qty} {l.purchase_unit.trim()} × {factorDe(l)} ={' '}
@@ -274,7 +310,9 @@ export function NewInvoiceModal({ onClose, onNeedSupplier }: NewInvoiceModalProp
             {/* Hint de stock */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, fontSize: 11.5, color: 'var(--ink-3)' }}>
               <PackageCheck size={13} color="var(--action)" />
-              Los productos con inventario suben su stock al registrar la compra. Todos actualizan su costo.
+              {editando
+                ? 'Al guardar, la diferencia de stock se asienta como ajuste y la de plata entra o sale de la caja de hoy.'
+                : 'Los productos con inventario suben su stock al registrar la compra. Todos actualizan su costo.'}
             </div>
 
             <button
@@ -318,11 +356,11 @@ export function NewInvoiceModal({ onClose, onNeedSupplier }: NewInvoiceModalProp
             <button
               data-testid="invoice-submit"
               onClick={handleSubmit}
-              disabled={!isValid || isRegistering}
-              style={{ padding: '11px 24px', border: 'none', borderRadius: 10, background: !isValid || isRegistering ? 'var(--ink-4)' : 'var(--action)', cursor: !isValid || isRegistering ? 'not-allowed' : 'pointer', fontSize: 13.5, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}
+              disabled={!isValid || guardando}
+              style={{ padding: '11px 24px', border: 'none', borderRadius: 10, background: !isValid || guardando ? 'var(--ink-4)' : 'var(--action)', cursor: !isValid || guardando ? 'not-allowed' : 'pointer', fontSize: 13.5, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}
             >
-              {isRegistering && <Loader2 size={15} className="animate-spin" />}
-              {isRegistering ? 'Registrando...' : 'Registrar compra'}
+              {guardando && <Loader2 size={15} className="animate-spin" />}
+              {guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Registrar compra'}
             </button>
           </div>
         </div>

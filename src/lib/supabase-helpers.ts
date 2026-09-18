@@ -1187,6 +1187,8 @@ export interface RegisterPurchaseResult {
   total: number
   /** `null` si el total redondeado dio 0 (no se crea movimiento por cero). */
   cash_movement_id: string | null
+  /** Consecutivo de compra de la sede (migración `numeracion_de_compras`). */
+  purchase_number: number
 }
 
 // Registra la compra de forma atómica: sube stock (en unidades de VENTA, ya
@@ -1198,6 +1200,37 @@ export const registerPurchase = (
   items: PurchaseItemPayload[],
 ) =>
   supabase.rpc('register_purchase', {
+    p_invoice: invoice as unknown as Json,
+    p_items: items as unknown as Json,
+  })
+
+/**
+ * Resultado de update_purchase — las CUATRO claves del `jsonb_build_object` de
+ * la migración `editar_compra`, verificadas contra ella (R1 punto 5b).
+ */
+export interface UpdatePurchaseResult {
+  invoice_id: string
+  purchase_number: number
+  total: number
+  /** Movimiento `correccion_compra` por la diferencia de plata; `null` si el
+   *  total redondeado no cambió. */
+  cash_movement_id: string | null
+}
+
+/**
+ * Reescribe una compra: ítems y cabecera (decisión 2026-09-17, ventana
+ * «siempre»). La RPC asienta la diferencia de stock como ajuste y la de plata
+ * en la jornada ABIERTA; rechaza compras con devoluciones. El costo promedio es
+ * exacto sólo si la compra fue lo último que movió el producto — ver la
+ * migración `20260918120000_editar_compra`.
+ */
+export const updatePurchase = (
+  invoiceId: string,
+  invoice: PurchaseInvoicePayload,
+  items: PurchaseItemPayload[],
+) =>
+  supabase.rpc('update_purchase', {
+    p_invoice_id: invoiceId,
     p_invoice: invoice as unknown as Json,
     p_items: items as unknown as Json,
   })
@@ -1215,6 +1248,8 @@ export type PurchaseInvoiceKind = 'purchase' | 'return'
 export interface PurchaseInvoiceListRow {
   id: string
   created_at: string
+  /** Consecutivo de COMPRA por sede. `null` en las devoluciones. */
+  purchase_number: number | null
   invoice_number: string | null
   total: number
   /** Fecha del papel del proveedor. Es la que ORDENA esta lista. */
@@ -1243,7 +1278,7 @@ export const getPurchaseInvoices = ({
       // ⚠️ SIN payment_method: la columna no existe (deuda 26 — la compra sale
       //    de caja, siempre). Pedirla hacia fallar la consulta ENTERA y la lista
       //    de compras se veia vacia. Nadie la leia: era solo el select.
-      'id, created_at, invoice_number, total, kind, document_date, ' +
+      'id, created_at, purchase_number, invoice_number, total, kind, document_date, ' +
         'suppliers(name), profiles!purchase_invoices_created_by_fkey(full_name)',
       { count: 'exact' },
     )
@@ -1260,6 +1295,8 @@ export const getPurchaseInvoices = ({
 export interface PurchaseInvoiceDetailRow {
   id: string
   created_at: string
+  /** Consecutivo de COMPRA por sede. `null` en las devoluciones. */
+  purchase_number: number | null
   invoice_number: string | null
   total: number
   kind: PurchaseInvoiceKind
@@ -1271,10 +1308,15 @@ export interface PurchaseInvoiceDetailRow {
   // la interfaz lo declaraba igual — las dos mitades del contrato en el mismo
   // archivo, contradiciéndose, y TS mirando solo una.
   notes: string | null
+  /** Para precargar el formulario al editar. */
+  supplier_id: string
+  /** Última edición con update_purchase; `null` = nunca se editó. */
+  edited_at: string | null
   suppliers: { name: string; contact: string | null; phone: string | null } | null
   profiles: { full_name: string | null } | null
   purchase_invoice_items: {
     id: string
+    product_id: string
     /** Unidades de COMPRA. Las de venta son `qty × units_per_purchase_unit`. */
     qty: number
     unit_cost: number
@@ -1291,11 +1333,11 @@ export const getPurchaseInvoiceDetail = (invoiceId: string) =>
   supabase
     .from('purchase_invoices')
     .select(
-      'id, created_at, invoice_number, total, notes, kind, returns_invoice_id, ' +
-        'document_date, ' +
+      'id, created_at, purchase_number, invoice_number, total, notes, kind, returns_invoice_id, ' +
+        'document_date, supplier_id, edited_at, ' +
         'suppliers(name, contact, phone), ' +
         'profiles!purchase_invoices_created_by_fkey(full_name), ' +
-        'purchase_invoice_items(id, qty, unit_cost, subtotal, ' +
+        'purchase_invoice_items(id, product_id, qty, unit_cost, subtotal, ' +
         'purchase_unit, units_per_purchase_unit, products(name, codigo))',
     )
     .eq('id', invoiceId)

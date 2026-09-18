@@ -3,7 +3,7 @@ import {
   Plus, Pencil, Trash2, ChevronLeft, ChevronRight, Building2, Phone,
 } from 'lucide-react'
 import { useSuppliers, type Supplier } from '@/hooks/useSuppliers'
-import { usePurchaseInvoices } from '@/hooks/usePurchases'
+import { usePurchaseInvoices, type PurchaseInvoiceDetailRow } from '@/hooks/usePurchases'
 import { SupplierFormModal } from '@/components/purchases/SupplierFormModal'
 import { NewInvoiceModal } from '@/components/purchases/NewInvoiceModal'
 import { PurchaseDetailModal } from '@/components/purchases/PurchaseDetailModal'
@@ -35,6 +35,7 @@ function InvoicesTab({ onNew, onOpen }: { onNew: () => void; onOpen: (id: string
             {/* Etiquetas de columna: el otro de los dos únicos lugares donde la
                 skill permite mayúscula sostenida (--fs-label, §2). */}
             <tr style={{ background: 'var(--surface-2)', textAlign: 'left', color: 'var(--ink-3)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.04em' }}>
+              <th style={{ padding: '9px 16px', fontWeight: 600 }}>N.°</th>
               <th style={{ padding: '9px 16px', fontWeight: 600 }}>Fecha factura</th>
               <th style={{ padding: '9px 16px', fontWeight: 600 }}>Proveedor</th>
               <th style={{ padding: '9px 16px', fontWeight: 600 }}>N.° factura</th>
@@ -45,7 +46,7 @@ function InvoicesTab({ onNew, onOpen }: { onNew: () => void; onOpen: (id: string
             {rows.length === 0 ? (
               // EmptyState (§4): siempre con al menos un botón. Una pantalla
               // vacía es una invitación a actuar, no un mensaje de ánimo.
-              <tr><td colSpan={4} style={{ padding: '40px 16px', textAlign: 'center' }}>
+              <tr><td colSpan={5} style={{ padding: '40px 16px', textAlign: 'center' }}>
                 <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--ink)', marginBottom: 4 }}>
                   Aún no hay compras registradas
                 </div>
@@ -62,6 +63,14 @@ function InvoicesTab({ onNew, onOpen }: { onNew: () => void; onOpen: (id: string
                 className="nodo-fila"
                 style={{ borderTop: '1px solid var(--border-2)', cursor: 'pointer' }}
               >
+                {/* Consecutivo de compra de la sede. Una devolución no tiene
+                    número propio: la identifica la compra que revierte. */}
+                <td
+                  data-testid="purchase-number"
+                  style={{ padding: '10px 16px', color: 'var(--ink)', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}
+                >
+                  {inv.purchase_number != null ? `#${inv.purchase_number}` : '—'}
+                </td>
                 {/* 🔴 La fecha del PAPEL, no la del tecleo (deuda 44). El
                     `title` conserva cuándo se registró: las dos existen y cada
                     una contesta una pregunta distinta. */}
@@ -175,6 +184,8 @@ export function PurchasesPage() {
   const [invoiceOpen, setInvoiceOpen] = useState(false)
   const [editSupplier, setEditSupplier] = useState<Supplier | 'new' | null>(null)
   const [detailId, setDetailId] = useState<string | null>(null)
+  // La compra abierta en modo edición: el MISMO formulario que registrar.
+  const [editando, setEditando] = useState<PurchaseInvoiceDetailRow | null>(null)
 
   return (
     <div style={{ height: '100%', overflow: 'auto', background: 'var(--bg)', color: 'var(--ink)' }}>
@@ -205,14 +216,28 @@ export function PurchasesPage() {
           : <SuppliersTab onEdit={setEditSupplier} />}
       </div>
 
+      {editando && (
+        <NewInvoiceModal
+          editando={editando}
+          onClose={() => setEditando(null)}
+          onNeedSupplier={() => { setEditando(null); setEditSupplier('new'); setTab('suppliers') }}
+        />
+      )}
       {invoiceOpen && (
         <NewInvoiceModal
+          editando={null}
           onClose={() => setInvoiceOpen(false)}
           onNeedSupplier={() => { setInvoiceOpen(false); setEditSupplier('new'); setTab('suppliers') }}
         />
       )}
       {editSupplier && <SupplierFormModal supplier={editSupplier} onClose={() => setEditSupplier(null)} />}
-      {detailId && <PurchaseDetailModal invoiceId={detailId} onClose={() => setDetailId(null)} />}
+      {detailId && (
+        <PurchaseDetailModal
+          invoiceId={detailId}
+          onClose={() => setDetailId(null)}
+          onEdit={(inv) => { setDetailId(null); setEditando(inv) }}
+        />
+      )}
     </div>
   )
 }

@@ -178,6 +178,13 @@ const COLUMNAS_DEL_ESQUEMA: ColumnaEsquema[] = [
   { tabla: 'stock_movements', columna: 'notes', ejemplo: 'Ajuste hecho por Ana' },
   { tabla: 'stock_movements', columna: 'reference_id', ejemplo: '3f2b1c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d', permitida: true },
   { tabla: 'store_sequences', columna: 'last_order_number', ejemplo: 1247 },
+  // Migración `numeracion_de_compras` (2026-09-17). R1 punto 6: misma sesión.
+  // No van al allowlist: redactarlas de más es gratis (falla cerrado).
+  { tabla: 'store_sequences', columna: 'last_purchase_number', ejemplo: 88 },
+  { tabla: 'purchase_invoices', columna: 'purchase_number', ejemplo: 88 },
+  // Migración `editar_compra` (2026-09-18). Misma sesión.
+  { tabla: 'purchase_invoices', columna: 'edited_at', ejemplo: '2026-09-18T15:04:00Z' },
+  { tabla: 'purchase_invoices', columna: 'edited_by', ejemplo: '7c1e9a2b-4d5f-4e6a-9b8c-1d2e3f4a5b6c' },
 ]
 
 const PROHIBIDAS = COLUMNAS_DEL_ESQUEMA.filter((c) => !c.permitida)

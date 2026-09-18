@@ -1,17 +1,20 @@
-import { X } from 'lucide-react'
-import { usePurchaseInvoiceDetail } from '@/hooks/usePurchases'
+import { X, Pencil } from 'lucide-react'
+import { usePurchaseInvoiceDetail, type PurchaseInvoiceDetailRow } from '@/hooks/usePurchases'
 import { formatoCOP } from '@/lib/formato'
+import { Button } from '@/components/ui/Button'
 
 interface PurchaseDetailModalProps {
   invoiceId: string
   onClose: () => void
+  /** Abre el formulario de compra en modo edición con este documento. */
+  onEdit: (invoice: PurchaseInvoiceDetailRow) => void
 }
 
 
 const fmtDateTime = (iso: string) =>
   new Intl.DateTimeFormat('es-CO', { timeZone: 'America/Bogota', dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso))
 
-export function PurchaseDetailModal({ invoiceId, onClose }: PurchaseDetailModalProps) {
+export function PurchaseDetailModal({ invoiceId, onClose, onEdit }: PurchaseDetailModalProps) {
   const { invoice, isLoading } = usePurchaseInvoiceDetail(invoiceId)
 
   return (
@@ -25,7 +28,13 @@ export function PurchaseDetailModal({ invoiceId, onClose }: PurchaseDetailModalP
       >
         <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--border-2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--action)', textTransform: 'uppercase', letterSpacing: 1 }}>Compra</div>
+            {/* El consecutivo de la SEDE, no el del papel del proveedor (ése es
+                «N.° factura», abajo). Las devoluciones no llevan número propio. */}
+            <div data-testid="purchase-detail-numero" style={{ fontSize: 11, fontWeight: 600, color: 'var(--action)', textTransform: 'uppercase', letterSpacing: 1, fontVariantNumeric: 'tabular-nums' }}>
+              {invoice?.kind === 'return'
+                ? 'Devolución'
+                : invoice?.purchase_number != null ? `Compra #${invoice.purchase_number}` : 'Compra'}
+            </div>
             <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--ink)', letterSpacing: -0.3, marginTop: 1 }}>
               {invoice?.suppliers?.name ?? 'Detalle de compra'}
             </div>
@@ -43,6 +52,13 @@ export function PurchaseDetailModal({ invoiceId, onClose }: PurchaseDetailModalP
                 <Meta label="Fecha" value={fmtDateTime(invoice.created_at)} />
                 <Meta label="N.° factura" value={invoice.invoice_number ?? '—'} />
                 <Meta label="Registró" value={invoice.profiles?.full_name ?? '—'} />
+                {/* Una compra editada lo DICE: el documento ya no es el que se
+                    registró, y el rastro de stock y caja lleva su propia fecha. */}
+                {invoice.edited_at && (
+                  <div data-testid="purchase-detail-editada">
+                    <Meta label="Editada" value={fmtDateTime(invoice.edited_at)} />
+                  </div>
+                )}
                 {invoice.suppliers?.contact && <Meta label="Contacto" value={invoice.suppliers.contact} />}
                 {invoice.suppliers?.phone && <Meta label="Teléfono" value={invoice.suppliers.phone} />}
               </div>
@@ -81,7 +97,16 @@ export function PurchaseDetailModal({ invoiceId, onClose }: PurchaseDetailModalP
               </div>
 
               {/* Total */}
-              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'flex-end', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10 }}>
+                {/* Una devolución no se edita: la RPC la rechaza, y el botón
+                    no se ofrece para no invitar a un error seguro. */}
+                {invoice.kind === 'purchase' && (
+                  <div style={{ marginRight: 'auto' }}>
+                    <Button variant="secondary" data-testid="purchase-edit" onClick={() => onEdit(invoice)}>
+                      <Pencil size={14} /> Editar compra
+                    </Button>
+                  </div>
+                )}
                 <span style={{ fontSize: 12.5, color: 'var(--ink-3)', fontWeight: 600 }}>Total</span>
                 <span style={{ fontSize: 22, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--ink)' }}>{formatoCOP(invoice.total)}</span>
               </div>

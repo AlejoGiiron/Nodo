@@ -1,9 +1,10 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { toast } from 'react-hot-toast'
 import {
-  getPurchaseInvoices, getPurchaseInvoiceDetail, registerPurchase,
+  getPurchaseInvoices, getPurchaseInvoiceDetail, registerPurchase, updatePurchase,
   type PurchaseInvoiceListRow, type PurchaseInvoiceDetailRow,
   type PurchaseInvoicePayload, type PurchaseItemPayload, type RegisterPurchaseResult,
+  type UpdatePurchaseResult,
 } from '@/lib/supabase-helpers'
 import { useAuth } from '@/hooks/useAuth'
 import type { SentryArea } from '@/lib/sentry'
@@ -68,9 +69,9 @@ export function usePurchaseInvoiceDetail(invoiceId: string | null) {
  * invalida inventario (niveles + movimientos) y el historial de compras, para
  * que el nuevo stock se refleje sin recargar.
  *
- * La compra NO toca la caja: no genera egreso automático. Si salió efectivo
- * del cajón, el cajero lo registra como egreso MANUAL (Movimientos → egreso),
- * que admite monto parcial. El método de pago de la factura es informativo.
+ * La compra SALE de la caja del día (deuda 26): la RPC crea el egreso y exige
+ * jornada abierta. *(Este comentario decía lo contrario y era falso desde la
+ * deuda 26 — corregido al tocar el hook, 2026-09-17.)*
  */
 export function useRegisterPurchase() {
   const { profile } = useAuth()
@@ -86,18 +87,52 @@ export function useRegisterPurchase() {
       if (error) throw error
       return data as unknown as RegisterPurchaseResult
     },
-    onSuccess: () => {
+    onSuccess: (res) => {
       // Inventario: niveles (products) + auditoría de movimientos.
       queryClient.invalidateQueries({ queryKey: ['products', sedeId] })
       queryClient.invalidateQueries({ queryKey: ['stock_movements'] })
       // Historial de compras.
       queryClient.invalidateQueries({ queryKey: ['purchase_invoices', sedeId] })
 
-      // La compra NO toca la caja: no hay egreso automático que reflejar.
-      toast.success('Compra registrada y stock actualizado.')
+      // El número sale de la RPC, la misma fuente que lo asignó.
+      toast.success(`Compra #${res.purchase_number} registrada y stock actualizado.`)
     },
     onError: (err) => toast.error(mensajeDeError(err, 'Error al registrar la compra')),
   })
 
   return { registerPurchase: mutation.mutateAsync, isRegistering: mutation.isPending }
+}
+
+/**
+ * Edita una compra vía update_purchase (atómica). Mueve stock, costo y caja,
+ * así que invalida lo mismo que registrar, más el detalle y los movimientos de
+ * caja (la diferencia de plata entra como `correccion_compra`).
+ */
+export function useUpdatePurchase() {
+  const { profile } = useAuth()
+  const queryClient = useQueryClient()
+  const sedeId = profile?.sede_id ?? null
+
+  const mutation = useMutation({
+    meta: { area: 'compras' satisfies SentryArea },
+    mutationFn: async (
+      { invoiceId, invoice, items }:
+        { invoiceId: string; invoice: PurchaseInvoicePayload; items: PurchaseItemPayload[] },
+    ) => {
+      const { data, error } = await updatePurchase(invoiceId, invoice, items)
+      if (error) throw error
+      return data as unknown as UpdatePurchaseResult
+    },
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ['products', sedeId] })
+      queryClient.invalidateQueries({ queryKey: ['stock_movements'] })
+      queryClient.invalidateQueries({ queryKey: ['purchase_invoices', sedeId] })
+      queryClient.invalidateQueries({ queryKey: ['purchase_invoice_detail', res.invoice_id] })
+      queryClient.invalidateQueries({ queryKey: ['cash_movements'] })
+      toast.success(`Compra #${res.purchase_number} actualizada.`)
+    },
+    onError: (err) => toast.error(mensajeDeError(err, 'Error al editar la compra')),
+  })
+
+  return { updatePurchase: mutation.mutateAsync, isUpdating: mutation.isPending }
 }

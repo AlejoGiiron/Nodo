@@ -1146,10 +1146,13 @@ export type Database = {
           created_at: string
           created_by: string | null
           document_date: string
+          edited_at: string | null
+          edited_by: string | null
           id: string
           invoice_number: string | null
           kind: string
           notes: string | null
+          purchase_number: number | null
           returns_invoice_id: string | null
           sede_id: string
           supplier_id: string
@@ -1159,10 +1162,13 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           document_date?: string
+          edited_at?: string | null
+          edited_by?: string | null
           id?: string
           invoice_number?: string | null
           kind?: string
           notes?: string | null
+          purchase_number?: number | null
           returns_invoice_id?: string | null
           sede_id: string
           supplier_id: string
@@ -1172,10 +1178,13 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           document_date?: string
+          edited_at?: string | null
+          edited_by?: string | null
           id?: string
           invoice_number?: string | null
           kind?: string
           notes?: string | null
+          purchase_number?: number | null
           returns_invoice_id?: string | null
           sede_id?: string
           supplier_id?: string
@@ -1185,6 +1194,13 @@ export type Database = {
           {
             foreignKeyName: "purchase_invoices_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_invoices_edited_by_fkey"
+            columns: ["edited_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1362,14 +1378,17 @@ export type Database = {
       store_sequences: {
         Row: {
           last_order_number: number
+          last_purchase_number: number
           sede_id: string
         }
         Insert: {
           last_order_number?: number
+          last_purchase_number?: number
           sede_id: string
         }
         Update: {
           last_order_number?: number
+          last_purchase_number?: number
           sede_id?: string
         }
         Relationships: [
@@ -1694,6 +1713,10 @@ export type Database = {
         Returns: boolean
       }
       seed_system_roles: { Args: { p_org: string }; Returns: undefined }
+      update_purchase: {
+        Args: { p_invoice: Json; p_invoice_id: string; p_items: Json }
+        Returns: Json
+      }
     }
     Enums: {
       movement_type: "in" | "out"

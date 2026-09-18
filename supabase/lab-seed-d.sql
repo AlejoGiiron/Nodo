@@ -46,6 +46,7 @@ declare
   v_prov     uuid;
   v_prod     uuid;
   v_fact     uuid;
+  v_num      integer;
   v_orden    uuid;
   v_galleta  uuid;
 begin
@@ -77,12 +78,23 @@ begin
   if v_prod is not null and not exists (
     select 1 from public.purchase_invoices
      where sede_id=v_sede and invoice_number='MP-FACT-ATRASADA') then
+    -- Desde `numeracion_de_compras` (2026-09-17) toda compra lleva su
+    -- consecutivo: el CHECK rechaza una sin numero. Mismo incremento que hace
+    -- register_purchase.
+    insert into public.store_sequences (sede_id, last_purchase_number)
+    values (v_sede, 1)
+    on conflict (sede_id) do update
+      set last_purchase_number = public.store_sequences.last_purchase_number + 1
+    returning last_purchase_number into v_num;
+
     insert into public.purchase_invoices
-      (sede_id, supplier_id, invoice_number, total, created_by, document_date, notes)
+      (sede_id, supplier_id, invoice_number, total, created_by, document_date, notes,
+       purchase_number)
     values
       (v_sede, v_prov, 'MP-FACT-ATRASADA', 150000, v_perfil,
        (now() - interval '9 days')::date,
-       'La factura es de hace 9 dias y se teclea hoy: document_date != created_at (deuda 44)')
+       'La factura es de hace 9 dias y se teclea hoy: document_date != created_at (deuda 44)',
+       v_num)
     returning id into v_fact;
 
     insert into public.purchase_invoice_items
