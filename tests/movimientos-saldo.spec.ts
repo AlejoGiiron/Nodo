@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { ownerCreds } from './helpers/auth'
 import { limpiarOrganizaciones } from './helpers/limpieza'
+import { clienteDeServicio } from './helpers/servicio'
 
 // ============================================================================
 // SALDO DE MOVIMIENTOS — `stock_movements_con_saldo` (migración 20260917120000)
@@ -81,8 +82,10 @@ test.beforeAll(async () => {
   if (error) throw error
   const uid = (await db.auth.getUser()).data.user!.id
   SEDE = (await db.from('profiles').select('sede_id').eq('id', uid).single()).data!.sede_id as string
-  const key = process.env.E2E_SERVICE_ROLE_KEY
-  if (key) admin = createClient(URL(), key, { auth: { persistSession: false } })
+  // 🔴 SUJETO, y con el motivo que YA existia: el caso ⑤ monta el tenant ajeno
+  //    llamando a `onboard_organization`, que esta REVOCADA a `authenticated`
+  //    -- o sea que service_role no es un atajo, es el unico invocador posible.
+  admin = clienteDeServicio('crear-organizacion')
 
   CAT = (await db.from('categories').insert({ sede_id: SEDE, name: `E2E Saldo ${SUF}` }).select('id').single()).data!.id
   const base = { sede_id: SEDE, category_id: CAT, price: 1000, kind: 'simple' as const }

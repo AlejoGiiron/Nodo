@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { ownerCreds } from './helpers/auth'
+import { clienteDeServicio } from './helpers/servicio'
 
 // ============================================================================
 // DEUDA 114 · TANDA B — borrar una sede NO se lleva la HISTORIA DEL NEGOCIO
@@ -65,12 +66,10 @@ test.beforeAll(async () => {
   if (p.error) throw p.error
   ORG = p.data.organization_id as string
 
-  const key = process.env.E2E_SERVICE_ROLE_KEY
-  if (key) {
-    admin = createClient(process.env.VITE_NODO_SUPABASE_URL!, key, {
-      auth: { persistSession: false },
-    })
-  }
+// 🔴 SUJETO, no atajo: el caso mide la FK, y RLS niega ANTES de que la FK
+//    hable. Con el cliente del owner el delete da `count 0` sin error, asi
+//    que el caso estaria midiendo RLS y reportando que midio la FK.
+  admin = clienteDeServicio('medir-fk')
 })
 
 // ── LA LIMPIEZA ─────────────────────────────────────────────────────────────

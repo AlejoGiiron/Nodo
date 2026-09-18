@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { ownerCreds } from './helpers/auth'
+import { clienteDeServicio } from './helpers/servicio'
 
 // ============================================================================
 // `sedes` NO SE PUEDE BORRAR — y el rechazo tiene que venir de RLS
@@ -58,8 +59,17 @@ test.beforeAll(async () => {
   MI_SEDE = p.data.sede_id as string
   ORG = p.data.organization_id as string
 
-  const key = process.env.E2E_SERVICE_ROLE_KEY
-  if (key) admin = createClient(process.env.VITE_NODO_SUPABASE_URL!, key, { auth: { persistSession: false } })
+  // 🔴 ESTE ARCHIVO USA LA KEY PARA DOS COSAS DISTINTAS, y las dos tienen su
+  //    motivo declarado en `helpers/servicio.ts`:
+  //      ② SUJETO -- `medir-fk`: el caso borra SALTEANDO RLS para que conteste
+  //         la FK y no la policy. Y su escenario (una jornada y un movimiento
+  //         en una sede ajena) tampoco se puede armar por el producto.
+  //      ① LIMPIEZA -- `limpiar-sin-policy-de-delete`: desde la deuda 103 la
+  //         sede que el caso crea no se puede deshacer por el camino del
+  //         producto: no borra y NO FALLA.
+  //    Es el MISMO cliente. Se pide con el motivo del SUJETO porque es el que
+  //    manda: un archivo que MIDE con la key la necesita aunque no limpiara.
+  admin = clienteDeServicio('medir-fk')
 })
 
 /** Crea una sede del laboratorio por el camino del producto y devuelve su id. */

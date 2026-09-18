@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { ownerCreds } from './helpers/auth'
+import { clienteDeServicio } from './helpers/servicio'
 
 // ============================================================================
 // DEUDA 114 · TANDA A — borrar una sede NO se lleva a quien tiene acceso a ella
@@ -69,12 +70,11 @@ test.beforeAll(async () => {
   MI_SEDE = p.data.sede_id as string
   ORG = p.data.organization_id as string
 
-  const key = process.env.E2E_SERVICE_ROLE_KEY
-  if (key) {
-    admin = createClient(process.env.VITE_NODO_SUPABASE_URL!, key, {
-      auth: { persistSession: false },
-    })
-  }
+// 🔴 SUJETO, no atajo: el caso mide la FK, y RLS niega ANTES de que la FK
+//    hable. Los dos rechazos se distinguen por la respuesta -- RLS da
+//    `count 0` con error null; la FK da `23503`-- y sin saltear RLS el caso
+//    no llega a preguntarle a la FK.
+  admin = clienteDeServicio('medir-fk')
 })
 
 // ── LA LIMPIEZA ─────────────────────────────────────────────────────────────

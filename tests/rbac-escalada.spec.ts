@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { ownerCreds, cashierCreds } from './helpers/auth'
+import { clienteDeServicio } from './helpers/servicio'
 
 // ============================================================================
 // RBAC — escalada por auto-edición de profiles (trigger
@@ -58,12 +59,13 @@ async function signIn(creds: { email: string; password: string }): Promise<Supab
  *    **no borra y no falla**: RLS devuelve `count 0` sin error. El spec quedó
  *    verde dejando UNA SEDE HUÉRFANA POR CORRIDA — medido: dos en el lab.
  */
-const servicio = (): SupabaseClient | null => {
-  const key = process.env.E2E_SERVICE_ROLE_KEY
-  return key
-    ? createClient(process.env.VITE_NODO_SUPABASE_URL!, key, { auth: { persistSession: false } })
-    : null
-}
+// ⚠️ LIMPIEZA, NO SUJETO -- y por eso pasa por la puerta con ese motivo. El
+//    comentario de arriba ya lo decia: la limpieza NO comparte camino con el
+//    sujeto. Lo que la hace legitima no es comodidad: desde la deuda 103
+//    `sedes` no tiene policy de DELETE, asi que por el camino del producto no
+//    borra Y NO FALLA -- count 0 con error null-- y la suite queda verde
+//    dejando una sede huerfana por corrida.
+const servicio = (): SupabaseClient | null => clienteDeServicio('limpiar-sin-policy-de-delete')
 
 type ProfileSnap = {
   id: string
