@@ -2385,6 +2385,42 @@ leído como **30 órdenes perdidas**.
 MATCHEÓ junto al total.** Una línea más en la sonda —la lista de nombres— y el singular no se
 escribe, porque se ven dos.
 
+🔴 **SEGUNDA VEZ DEL MISMO FILTRO, Y LA MÁS CARA DE LA CLASE: `order_number` NO ES ÚNICO ENTRE
+SEDES, ASÍ QUE UNA CONSULTA POR NÚMERO DEVUELVE FILAS DE OTRO TENANT — Y EL RESULTADO ERA
+PLAUSIBLE.** *2026-09-17, enumerando las ventas a anular de Muscle Pro.*
+
+> **La sonda pidió cinco `order_number` y devolvió DIEZ filas** —cinco de `LAB Principal` y cinco
+> de `Muscle Pro`—. El bucle tomaba la primera de cada número, o sea **siempre LAB**.
+
+**Lo que iba a reportar, y es lo que la hace la peor de las trece:** *«#134 y #112 ya están
+anuladas, y sus arqueos están en cero»*. **Las dos afirmaciones eran ciertas sobre LAB.** No hay
+número que no cierre, no hay `null`, no hay error: hay un informe coherente sobre el tenant
+equivocado, que además **cerraba la pregunta** — si ya están anuladas, no hay nada que hacer.
+
+| | la decimotercera (`127 + 30 = 157`) | **ésta** |
+|---|---|---|
+| el filtro | `/Muscle/i`, que matchea **dos sedes** | `order_number`, que **se repite por sede** |
+| cómo se caza | mirar de qué filas salió | **ninguna sonda sola lo caza** |
+| qué produjo | un total correcto mal nombrado | 🔴 **un informe entero sobre otro tenant** |
+
+⚠️ **Y el índice lo dice, si uno lo lee:** `idx_orders_sede_order_number` es único **sobre el par
+`(sede_id, order_number)`**, no sobre el número. O sea que la no-unicidad está **declarada en el
+esquema** y aun así la consulta se escribió por número solo — porque en la cabeza de uno «la venta
+#134» es un objeto, y en la base es una coordenada de dos ejes.
+
+✅ **LO ACCIONABLE ES EL DISPARADOR DE ARRIBA, QUE YA ESTABA ESCRITO Y NO SE CORRIÓ.** Imprimir qué
+matcheó habría bastado: las diez filas con su sede al lado se ven de un vistazo. Lo que agrega este
+caso es **cuándo aplicarlo**, porque `order_number` no parece un filtro por nombre:
+
+> **La regla no es «si el filtro es regex o like»: es «si la clave que estoy usando no es la clave
+> ÚNICA de la tabla».** Un `order_number`, un `codigo`, un `name`, un `document` — todos son claves
+> del negocio, únicas **dentro de un tenant**, y ninguna identifica una fila sola.
+
+⚠️ Corolario, y es el mismo de R0 punto 4 leído sobre una LECTURA en vez de sobre un borrado:
+**el objetivo se fija por UUID también cuando sólo se mira.** R0 lo pide para `DELETE`/`UPDATE`
+porque ahí el daño es visible; acá el daño fue un informe, que es peor de detectar — un `delete`
+por el número equivocado revienta contra una FK, y un `select` por el número equivocado **contesta**.
+
 🔴 **LA OCTAVA ES LA PRIMERA SOBRE TRABAJO AJENO, Y SE INFIRIÓ DESDE UNA ETIQUETA.**
 *2026-09-07, al cerrar la primera tanda de la deuda 41.*
 
