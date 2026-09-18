@@ -59,7 +59,8 @@ async function crearProducto(page: Page, name: string) {
   await page.getByTestId('producto-nombre').fill(name)
   await page.getByTestId('producto-precio').fill('1000')
   await page.getByTestId('product-category-select').selectOption({ label: CAT })
-  await page.getByTestId('product-stock-tracking').click()
+  // Nace controlando existencia (2026-09-17): no se toca el interruptor.
+  await expect(page.getByTestId('product-stock-tracking')).toHaveAttribute('aria-checked', 'true')
   await page.getByRole('button', { name: 'Crear producto' }).click()
   await expect(page.getByText(name)).toBeVisible()
 }

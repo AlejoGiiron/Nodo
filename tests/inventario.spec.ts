@@ -22,8 +22,9 @@ async function createSimpleTracked(page: Page, name: string, price: string) {
   await page.getByTestId('producto-nombre').fill(name)
   await page.getByTestId('producto-precio').fill(price)
   await page.getByTestId('product-category-select').selectOption({ label: CAT })
-  // kind 'simple' es el default; activar control de inventario.
-  await page.getByTestId('product-stock-tracking').click()
+  // kind 'simple' es el default, y desde el 2026-09-17 también el control de
+  // inventario: no se toca el interruptor.
+  await expect(page.getByTestId('product-stock-tracking')).toHaveAttribute('aria-checked', 'true')
   await saveProductAndClose(page)
   await expect(page.getByText(name)).toBeVisible()
 }

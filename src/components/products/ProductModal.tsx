@@ -92,7 +92,15 @@ export function ProductModal({ product, categories, onClose }: ProductModalProps
   const [imageUrl, setImageUrl] = useState<string | null>(product?.image_url ?? null)
   const [pendingFile, setPendingFile] = useState<File | null>(null)
   const [kind, setKind] = useState<ProductKind>((product?.kind as ProductKind) ?? 'simple')
-  const [stockTracking, setStockTracking] = useState(product?.stock_tracking ?? false)
+  // 🔴 Un producto NUEVO nace controlando existencia; apagarlo es la excepción
+  // y se hace a mano. Nacía apagado y el 2026-09-17 una compra de Muscle Pro
+  // cargó 7 productos que no subieron stock ni aparecieron en Inventario: la
+  // compra solo mueve existencia de productos con control (register_purchase).
+  // Un default que dice «no controlo» se queda en silencio justo cuando falla.
+  // Al EDITAR se respeta lo guardado. El default de la BASE sigue en false a
+  // propósito: los inserts que lo omiten incluyen compuestos, que no tienen
+  // stock propio.
+  const [stockTracking, setStockTracking] = useState(product?.stock_tracking ?? true)
   const [minStock, setMinStock] = useState(product?.min_stock != null ? String(product.min_stock) : '0')
   const [saving, setSaving] = useState(false)
 

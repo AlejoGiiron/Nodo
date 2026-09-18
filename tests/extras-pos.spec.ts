@@ -23,8 +23,10 @@ async function createProduct(page: Page, name: string, price: string, opts?: { s
   await page.getByTestId('producto-nombre').fill(name)
   await page.getByTestId('producto-precio').fill(price)
   await page.getByTestId('product-category-select').selectOption({ label: CAT })
-  if (opts?.stock) {
-    await page.getByTestId('product-stock-tracking').click() // Control de inventario (kind simple)
+  // El control de inventario nace PRENDIDO (2026-09-17): se apaga sólo cuando
+  // el caso pide un producto sin control.
+  if (!opts?.stock) {
+    await page.getByTestId('product-stock-tracking').click()
   }
   await saveProductAndClose(page)
   await expect(page.getByText(name)).toBeVisible()

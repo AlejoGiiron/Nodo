@@ -48,7 +48,8 @@ test.describe.serial('Stock bajo en el POS', () => {
     await page.getByTestId('producto-nombre').fill(PROD)
     await page.getByTestId('producto-precio').fill('4000')
     await page.getByTestId('product-category-select').selectOption({ label: CAT })
-    await page.getByTestId('product-stock-tracking').click()
+    // Nace controlando existencia (2026-09-17): no se toca el interruptor.
+    await expect(page.getByTestId('product-stock-tracking')).toHaveAttribute('aria-checked', 'true')
     await page.getByTestId('product-min-stock').fill(String(MIN_STOCK))
     await saveProductAndClose(page)
     await expect(page.getByText(PROD)).toBeVisible()
