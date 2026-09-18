@@ -99,7 +99,7 @@ test.describe.serial('Compras / Proveedores', () => {
 
     await registerPurchase(page, { supplier: PROVEEDOR, product: INSUMO, qty: 10, cost: 1500 })
     await expect(page.getByTestId('new-invoice-modal')).toHaveCount(0)
-    await expect(page.getByText(/Compra registrada/)).toBeVisible()
+    await expect(page.getByText(/Compra #\d+ registrada/)).toBeVisible()
 
     // El stock subió 0 → 10.
     expect(await readStock(page, INSUMO)).toBe(10)
@@ -129,7 +129,7 @@ test.describe.serial('Compras / Proveedores', () => {
 
     await registerPurchase(page, { supplier: PROVEEDOR, product: INSUMO, qty: 5, cost: 2000 })
     await expect(page.getByTestId('new-invoice-modal')).toHaveCount(0)
-    await expect(page.getByText(/Compra registrada/)).toBeVisible()
+    await expect(page.getByText(/Compra #\d+ registrada/)).toBeVisible()
 
     // El egreso automático está en los movimientos de la jornada, con el
     // detalle que escribe la RPC ('Compra a proveedor X (factura N)').

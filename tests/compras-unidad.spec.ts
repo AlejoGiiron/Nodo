@@ -104,7 +104,7 @@ async function comprar(
   await page.getByTestId('invoice-item-cost').first().fill(String(cost))
   await page.getByTestId('invoice-submit').click()
   await expect(page.getByTestId('new-invoice-modal')).toHaveCount(0)
-  await expect(page.getByText(/Compra registrada/)).toBeVisible()
+  await expect(page.getByText(/Compra #\d+ registrada/)).toBeVisible()
 }
 
 // ── Suite ─────────────────────────────────────────────────────────
