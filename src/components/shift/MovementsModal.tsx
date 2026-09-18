@@ -182,7 +182,6 @@ export function MovementsModal({ onClose }: MovementsModalProps) {
         zIndex: 50, fontFamily: 'inherit',
         padding: '20px',
       }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div style={{
         background: 'var(--surface)', borderRadius: 14,

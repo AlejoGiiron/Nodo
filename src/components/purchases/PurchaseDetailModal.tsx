@@ -20,6 +20,7 @@ export function PurchaseDetailModal({ invoiceId, onClose, onEdit }: PurchaseDeta
   return (
     <div
       style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', display: 'grid', placeItems: 'center', zIndex: 50, fontFamily: 'inherit', padding: 20 }}
+      data-cierra-con-fondo
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div
@@ -70,7 +71,13 @@ export function PurchaseDetailModal({ invoiceId, onClose, onEdit }: PurchaseDeta
               )}
 
               {/* Ítems */}
-              <div style={{ border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
+              {/* 🔴 `flexShrink: 0` NO es decorativo. Esta caja es hija DIRECTA
+                  del cuerpo flex en columna, y con `overflow: hidden` su alto
+                  mínimo pasa a ser 0: con muchos ítems se ENCOGÍA en vez de
+                  dejar scrollear al cuerpo, y recortaba las últimas filas sin
+                  scroll (compra #81, 20 ítems, 2026-09-18). El `overflow` se
+                  queda por las esquinas redondeadas. */}
+              <div style={{ border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden', flexShrink: 0 }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
                     <tr style={{ background: 'var(--surface-2)', textAlign: 'left', color: 'var(--ink-3)', fontSize: 11.5 }}>

@@ -1863,7 +1863,6 @@ function HoldLabelModal({ onConfirm, onClose }: {
   return (
     <div
       style={{ position: 'absolute', inset: 0, background: 'rgba(15,23,42,.55)', display: 'grid', placeItems: 'center', zIndex: 60 }}
-      onClick={onClose}
     >
       <div
         style={{ background: 'var(--surface)', borderRadius: 14, width: 420, maxWidth: '92%', boxShadow: '0 25px 50px -12px rgba(0,0,0,.25)', overflow: 'hidden' }}
@@ -1928,6 +1927,7 @@ function HeldOrdersPanel({ held, onResume, onDiscard, onClose }: {
   return (
     <div
       style={{ position: 'absolute', inset: 0, background: 'rgba(15,23,42,.55)', display: 'grid', placeItems: 'center', zIndex: 55 }}
+      data-cierra-con-fondo
       onClick={onClose}
     >
       <div
@@ -2001,6 +2001,7 @@ function ResumeConflictDialog({ onKeep, onDiscardCurrent, onCancel }: {
   return (
     <div
       style={{ position: 'absolute', inset: 0, background: 'rgba(15,23,42,.6)', display: 'grid', placeItems: 'center', zIndex: 65 }}
+      data-cierra-con-fondo
       onClick={onCancel}
     >
       <div

@@ -55,7 +55,6 @@ export function StockAdjustModal({ products, preselectedId, onClose }: StockAdju
         display: 'grid', placeItems: 'center', zIndex: 50,
         fontFamily: 'inherit', padding: 20,
       }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div
         data-testid="stock-adjust-modal"

@@ -165,6 +165,7 @@ function SaleDetailModal({ orderId, onClose }: { orderId: string; onClose: () =>
   return (
     <div
       style={{ position: 'absolute', inset: 0, background: 'var(--overlay)', display: 'grid', placeItems: 'center', zIndex: 50 }}
+      data-cierra-con-fondo
       onClick={onClose}
     >
       <div
@@ -337,7 +338,6 @@ function SaleDetailModal({ orderId, onClose }: { orderId: string; onClose: () =>
         {voiding && sale && (
           <div
             style={{ position: 'absolute', inset: 0, background: 'var(--overlay)', display: 'grid', placeItems: 'center', zIndex: 60 }}
-            onClick={() => { if (!voidMutation.isPending) { setVoiding(false); setReason('') } }}
           >
             <div
               data-testid="sale-void-dialog"

@@ -431,7 +431,6 @@ function CreateUserModal({ onClose }: { onClose: () => void }) {
   return (
     <div
       style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', display: 'grid', placeItems: 'center', zIndex: 50 }}
-      onClick={e => e.target === e.currentTarget && onClose()}
     >
       <div style={{ background: 'var(--surface)', borderRadius: 14, width: 460, maxWidth: '92%', boxShadow: 'var(--shadow-1)', overflow: 'hidden' }}>
         {/* Header */}
@@ -1083,7 +1082,6 @@ function StoreModal({
   return (
     <div
       style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', display: 'grid', placeItems: 'center', zIndex: 50 }}
-      onClick={e => e.target === e.currentTarget && onClose()}
     >
       <div style={{ background: 'var(--surface)', borderRadius: 14, width: 460, maxWidth: '92%', boxShadow: 'var(--shadow-1)', overflow: 'hidden' }}>
         <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--border-2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -1299,7 +1297,6 @@ function RoleModal({ role, onClose }: { role: RoleRow | 'new'; onClose: () => vo
   return (
     <div
       style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', display: 'grid', placeItems: 'center', zIndex: 50 }}
-      onClick={e => e.target === e.currentTarget && onClose()}
     >
       <div data-testid="role-modal" style={{ background: 'var(--surface)', borderRadius: 14, width: 560, maxWidth: '94%', maxHeight: '88vh', boxShadow: 'var(--shadow-1)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--border-2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
@@ -1472,7 +1469,6 @@ function ExtraFormModal({
   return (
     <div
       style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', display: 'grid', placeItems: 'center', zIndex: 50 }}
-      onClick={e => e.target === e.currentTarget && onClose()}
     >
       <div style={{ background: 'var(--surface)', borderRadius: 14, width: 440, boxShadow: 'var(--shadow-1)' }}>
         <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--border-2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

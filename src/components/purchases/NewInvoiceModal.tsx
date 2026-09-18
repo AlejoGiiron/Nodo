@@ -159,7 +159,6 @@ export function NewInvoiceModal({ onClose, onNeedSupplier, editando }: NewInvoic
   return (
     <div
       style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', display: 'grid', placeItems: 'center', zIndex: 50, fontFamily: 'inherit', padding: 20 }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div
         data-testid="new-invoice-modal"

@@ -101,7 +101,6 @@ export function CategoryModal({ category, onClose }: CategoryModalProps) {
         zIndex: 60, fontFamily: 'Inter, system-ui, sans-serif',
         padding: '20px',
       }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div style={{
         background: '#fff', borderRadius: 14,

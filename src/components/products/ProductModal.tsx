@@ -268,7 +268,6 @@ export function ProductModal({ product, categories, onClose }: ProductModalProps
         zIndex: 50, fontFamily: 'Inter, system-ui, sans-serif',
         padding: '20px',
       }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div data-testid="product-modal" style={{
         background: '#fff', borderRadius: 14,
