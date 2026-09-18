@@ -2421,6 +2421,39 @@ caso es **cuándo aplicarlo**, porque `order_number` no parece un filtro por nom
 porque ahí el daño es visible; acá el daño fue un informe, que es peor de detectar — un `delete`
 por el número equivocado revienta contra una FK, y un `select` por el número equivocado **contesta**.
 
+🔴 **TERCERA VEZ EN DOS DÍAS, Y YA NO ES UNA ANÉCDOTA POR CASO: UN PATRÓN DE TEXTO MATCHEA MÁS DE LO
+QUE NOMBRA.** *2026-09-17, atribuyendo «Javier Coach».*
+
+| # | el patrón | lo que nombraba | lo que matcheaba |
+|---|---|---|---|
+| 1 | `/Muscle/i` sobre `sedes` | «Muscle Pro» | **dos sedes** — y la activa más la retirada |
+| 2 | `order_number in (…)` | cinco ventas | **diez filas**, de dos tenants |
+| 3 | `ilike '%Coach%'` sobre `customers` | «Javier Coach» | **dos clientas** |
+
+⚠️ Y hubo una cuarta en el medio que no llegó a la tabla porque se cazó al primer intento:
+`ilike '%Karen%'` también daba **dos**. O sea que en la práctica es **cuatro de cuatro veces** que un
+patrón de texto sobre datos de un cliente real seleccionó de más.
+
+> **No es mala suerte ni datos sucios: es lo normal.** Un nombre propio, un rótulo de sede, un código
+> de producto — ninguno es una clave única, y el único motivo por el que a veces alcanza es que la
+> muestra todavía es chica.
+
+✅ **Y lo accionable ya estaba escrito arriba —imprimí QUÉ matcheó— y esta vez se aplicó, con la
+vuelta que lo vuelve concluyente: el CONTROL NEGATIVO SOBRE EL PATRÓN, no sobre el dato.**
+
+```
+ilike '%Javier%Coach%'  -> 1 fila    el patrón ordenado selecciona una sola
+ilike '%Coach%Javier%'  -> 0 filas   🔴 y ÉSTE es el que prueba que discrimina
+```
+
+Sin la segunda línea, el `1` de la primera **no distingue** *«el patrón es preciso»* de *«hay una
+sola fila y cualquier patrón la habría traído»*. Es el control negativo de siempre, aplicado a una
+expresión de búsqueda en vez de a un instrumento — y cuesta una línea.
+
+⚠️ Corolario para escribir el objetivo: el patrón sirve para **encontrar** el UUID una vez, mirando
+la salida. **Lo que se escribe en la migración es el UUID**, nunca el patrón — porque el patrón se
+vuelve a evaluar contra los datos del día que corra, y los datos crecen.
+
 🔴 **LA OCTAVA ES LA PRIMERA SOBRE TRABAJO AJENO, Y SE INFIRIÓ DESDE UNA ETIQUETA.**
 *2026-09-07, al cerrar la primera tanda de la deuda 41.*
 
@@ -6564,14 +6597,29 @@ falsa. El estado es lo que se pudre, así que se escribe distinto.
 **Vercel construye `develop` automáticamente.** No hay un paso intermedio donde alguien mire: el push
 es el despliegue, y del otro lado está el mostrador de un negocio que está vendiendo.
 
-🔴 **LAS TRES CONDICIONES PARA PUSHEAR. Van juntas y sin excepción:**
+🔴 **LAS CONDICIONES PARA PUSHEAR — las de la tabla. Van juntas y sin excepción:**
+
+*(El encabezado decía «LAS TRES» sobre una tabla de cuatro filas, y hoy son cinco. Es el conteo en
+prosa que este mismo archivo prohíbe, cometido acá. Ahora no lleva número: el lector cuenta las
+filas.)*
 
 | # | condición | cómo se comprueba |
 |---|---|---|
 | 1 | **la suite ENTERA en verde** | los cinco números **uno por uno**, leídos de ADENTRO del archivo, más el cruce contra el último `[N/N]`. ⛔ **No un grupo** |
 | 2 | **`tsc` y `lint` en cero** | ejecutados, no recordados |
 | 3 | **el árbol limpio** | `git status --porcelain` vacío — **verificado, no recordado** |
-| 4 | 🔴 **lo probado ES lo que se publica** | `git diff --stat <commit que midió la suite> -- src/ tests/ supabase/` → **vacío** |
+| 4 | 🔴 **lo probado ES lo que se publica** | `git diff --stat <commit que midió la suite> -- src/ tests/ supabase/` → **vacío**, salvo la excepción de abajo |
+| 5 | 🔴 **`pnpm test:unit` en verde** | `unit_exit=0` escrito ADENTRO del archivo. **Agregada el 2026-09-17, y no por prolijidad** |
+
+🔴 **POR QUÉ ENTRÓ LA 5, Y ES UNA CAUSA MEDIDA:** sin ella, el tripwire de `service_role`
+(`src/lib/arnes-service-role.test.ts`) estuvo **18 commits publicados en rojo**, dos días, sin que
+nada lo delatara — **porque ninguna condición de push pedía los unitarios**. Ver *«un tripwire que
+nadie corre no es un tripwire»* más abajo. La lección operativa es corta: **un verificador que vive
+fuera de la puerta no verifica.**
+
+⚠️ Y el corolario sobre el orden de los arreglos: arreglar los cinco specs sin agregar esta condición
+deja el mismo hueco abierto — se arregla hoy y vuelve a romperse mañana, otra vez sin síntoma. **La
+puerta va primero.**
 
 **Si alguna falta, no se pushea — y se dice por qué.** No «casi verde», no «el grupo pasó», no «lo que
 falla no tiene que ver».
@@ -6596,6 +6644,59 @@ pushea— **pueden entrar commits**: un registro, un arreglo chico, un cambio «
 corrida y el push **no invalida el verde** —`CLAUDE.md` no lo ejecuta nadie— y exigir re-correr por eso
 volvería la regla impracticable, que es como mueren las reglas. Lo que hay que comprobar no es que
 nada se haya movido: es que **no se haya movido nada que la suite mida**.
+
+🔴 **LA ÚNICA EXCEPCIÓN A LA 4, ESCRITA PARA QUE NO QUEDE COMO UN JUICIO QUE ALGUIEN REPITE MAL.**
+*Fijada el 2026-09-17, después de que una migración de datos apareciera en el diff con la suite ya
+verde.*
+
+Un archivo nuevo bajo `supabase/migrations/` rompe la 4 por construcción. Pero **una migración de
+DATOS no cambia nada que la suite haya medido**, y eso se puede acotar en tres condiciones que se
+comprueban con un comando cada una — no con criterio:
+
+| # | la condición | cómo se comprueba |
+|---|---|---|
+| a | **cero sentencias de ESQUEMA** — y eso incluye `grant`/`revoke`, no sólo DDL | el comando de abajo → **0** |
+| b | **filas fijadas por UUID**, nunca por patrón, nombre ni `like` | `grep -vE "^\s*--" <la migración> \| grep -icE "like\|ilike"` → **0**, y los objetivos son `constant uuid` |
+| c | **de un tenant DISTINTO al que corre la suite** | el `sede_id`/`organization_id` literal **no** es el de LAB — y es verificable porque `tests/global-setup.ts` **aborta si la organización del owner no se llama `LAB`** |
+
+```bash
+# (a) · VERIFICADO POR EJECUCIÓN el 2026-09-17 contra LAS 47 migraciones del repo:
+#      47 correctas, 0 discrepantes. Las 6 de datos dan 0; las 41 de esquema dan >0.
+ESQ='(create|alter|drop)([[:space:]]+(or[[:space:]]+replace|if[[:space:]]+(not[[:space:]]+)?exists|unique|materialized|recursive))*[[:space:]]+(table|index|type|function|view|policy|trigger|constraint|column|schema|sequence|extension)|(^|[^a-z])(grant|revoke)[[:space:]]'
+grep -vE "^\s*--" <la migración> | grep -icE "$ESQ"      # tiene que dar 0
+```
+
+🔴 **LAS TRES VECES QUE ESTE COMANDO ESTUVO MAL ANTES DE ESTAR BIEN, porque cada corrección la
+encontró el CONTROL POSITIVO y ninguna la habría encontrado leyéndolo:**
+
+| intento | qué se le escapaba | cómo se vio |
+|---|---|---|
+| `^\s*(create\|alter\|drop)\s` | el DDL **dentro de `execute format('alter table …')`** — SQL dinámico en un `do $$` | el control positivo sobre una migración de esquema dio **0** |
+| sin `or replace` | `create or replace view` — el patrón exigía `create` pegado a `view` | `movimientos_con_saldo` dio **0** y crea una vista |
+| sin `grant\|revoke` | **DCL, que no es DDL y cambia lo que la suite mide igual** | `20260907130000` dio 0 — y es la deuda 78, que **tiene su propio spec** |
+
+⚠️ **La tercera es la que más enseña: `grant`/`revoke` no crean ni modifican ningún objeto, así que
+«cero DDL» era CIERTO sobre esa migración y aun así el criterio estaba mal.** La pregunta no es si
+toca el esquema: es **si cambia lo que la suite puede medir**, y un privilegio de columna lo cambia
+entero.
+
+✅ **Y el comando falla hacia el lado seguro a propósito: un comentario que mencione `alter table`
+cuenta como coincidencia y obliga a re-correr.** Un falso positivo cuesta veinte minutos; un falso
+negativo publica algo sin medir. Es la dirección del fallo aplicada al verificador, no al producto.
+
+> **Si las tres se cumplen, `git diff --stat <sha> -- src/ tests/` vacío alcanza.
+> Si alguna NO se cumple, se re-corre la suite.** No hay tercera opción ni juicio intermedio.
+
+🔴 **Y EL DATO INCÓMODO VA ACÁ, NO EN UNA NOTA APARTE: LA BASE SÍ CAMBIÓ DESPUÉS DE MEDIR.** No es
+que no haya cambiado nada — cambió. **Lo que la hace aceptable es DÓNDE cambió**, y las tres
+condiciones de arriba son exactamente la forma de comprobar ese «dónde». Escribirlo como *«no
+cambió nada»* sería una garantía falsa en el punto donde se decide, que es la regla sin número que
+este archivo abre con el caso #13.
+
+⚠️ **Lo que la excepción NO cubre, dicho explícitamente porque es donde se va a estirar:** una
+migración de **esquema** —aunque sea una columna «que nadie usa todavía»— **no entra**. Ahí la 4
+aplica entera y se re-corre. El precedente está medido dos veces en R1 punto 5: los objetos que el
+frontend no consume son justamente los que se congelan sin síntoma.
 
 📋 El comando pide el commit contra el que se corrió la suite, así que **ese sha se anota al lanzarla**
 —no se reconstruye después—. Reconstruirlo de memoria es exactamente el error que la condición existe
@@ -6662,6 +6763,61 @@ sale»*.
 ✅ **Con auto mode activo, un push con las cuatro condiciones cumplidas puede negarse. La negación
 NO se rodea:** se reportan las condiciones verificadas, y el push lo hace Alejandro. Después se
 confirma con `git fetch` + `git rev-list --count origin/develop..develop` → 0.
+
+### 🔴 CRITERIO SIN NÚMERO · UN TRIPWIRE QUE NADIE CORRE NO ES UN TRIPWIRE — SU VALOR ES PONERSE ROJO **UNA VEZ**, Y EL ROJO PERMANENTE ES RUIDO
+
+*2026-09-17, al correr `pnpm test:unit` como verificador extra antes de publicar. **No lo destapó una
+falla: lo destapó correr algo que ninguna condición obligaba a correr.***
+
+Este archivo tiene medida la familia entera de *«el verde no dice nada»*: el mutante que sobrevive, el
+control que no puede dar rojo, la fixture con un elemento, la API que contesta que sí para todo. **En
+todas, el problema es que el rojo NO EXISTÍA.** Ésta es la otra mitad, y no estaba escrita:
+
+> **Acá el rojo SÍ estaba. El hueco era que nadie lo miraba.**
+
+**El caso, medido con control.** `src/lib/arnes-service-role.test.ts` —el tripwire de la deuda 92.1,
+que se pone rojo si un spec toma `E2E_SERVICE_ROLE_KEY` por su cuenta— estuvo **18 commits publicados
+en rojo**, dos días:
+
+```
+20d9bc0~1  ->  2 passed, exit=0      PASABA
+20d9bc0    ->  ROJO                  (deuda 103, 2026-09-15)
+desde entonces: 18 commits en origin/develop, todos con el tripwire rojo
+```
+
+🔴 **LA CAUSA ES ESTRUCTURAL, NO UN DESCUIDO — y por eso vale como criterio.** Las condiciones para
+pushear pedían la **suite E2E**, `tsc`, `lint` y el árbol limpio. **Los unitarios quedaron afuera.**
+Así que durante dos días nada obligó a correrlos, y *lo que depende de que alguien se acuerde falla*.
+Es el argumento del hook contra el recordatorio, movido a la **puerta de publicación**.
+
+> **Un verificador que vive fuera de la puerta no verifica.**
+
+⚠️ **Y el rojo permanente es peor que ninguno, que es lo contraintuitivo:** el valor entero de un
+tripwire es **ponerse rojo una vez**, cuando alguien cruza la línea. Con cinco specs adentro y un rojo
+que ya es parte del paisaje, **el sexto no cambia nada de lo que se ve** — el mecanismo sigue
+existiendo, sigue corriendo, y dejó de informar.
+
+🔴 **Y el corolario incómodo sobre el precedente:** la contención de la 92.1 se diseñó con un
+argumento que este archivo defiende —*un check de ÁRBOL caza lo que un hook no ve: el archivo nuevo
+que nadie revisa*—. **El diseño era correcto y falló igual**, por una razón que no estaba
+contemplada: el check existe, funciona, nombra los archivos, y **nadie lo ejecuta**. Elegir bien el
+mecanismo no alcanza si no se elige también **quién lo dispara**.
+
+✅ **LO ACCIONABLE, y son dos cosas que no se mezclan:**
+
+1. **El verificador entra a la puerta.** `pnpm test:unit` es ahora la condición 5 para pushear.
+2. ⛔ **Y el rojo se apaga caso por caso, NUNCA metiendo todo a la allowlist para que pase.** Eso es
+   *editar el tripwire para que no suene*, la misma forma que el backfill de datos para que cumplan
+   un invariante nuevo y que bajar una aserción hasta que el test pase: **se cambia la evidencia para
+   que coincida con la expectativa.** Cada caso se decide con la pregunta que el propio mensaje del
+   tripwire hace —*¿es el SUJETO del caso, o un ATAJO para armar el escenario?*— y con su razón
+   escrita.
+
+⚠️ **Corolario para cuando se agregue un tripwire nuevo:** escribí **qué comando lo ejecuta y en qué
+puerta está**. Un tripwire sin disparador declarado no es un mecanismo — es un archivo que alguien va
+a encontrar rojo dentro de dos días, o de dos meses.
+
+---
 
 ### 🔴 CRITERIO SIN NÚMERO · AGREGAR UNA CAPACIDAD PUEDE AUMENTAR LA EXPOSICIÓN DE UN DEFECTO QUE YA ESTABA
 
