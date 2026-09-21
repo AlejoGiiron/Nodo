@@ -101,6 +101,13 @@ export type Database = {
             foreignKeyName: "cash_movements_sede_id_fkey"
             columns: ["sede_id"]
             isOneToOne: false
+            referencedRelation: "balance_de_sede"
+            referencedColumns: ["sede_id"]
+          },
+          {
+            foreignKeyName: "cash_movements_sede_id_fkey"
+            columns: ["sede_id"]
+            isOneToOne: false
             referencedRelation: "sedes"
             referencedColumns: ["id"]
           },
@@ -141,6 +148,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "categories_sede_id_fkey"
+            columns: ["sede_id"]
+            isOneToOne: false
+            referencedRelation: "balance_de_sede"
+            referencedColumns: ["sede_id"]
+          },
           {
             foreignKeyName: "categories_sede_id_fkey"
             columns: ["sede_id"]
@@ -191,6 +205,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "customers_sede_id_fkey"
+            columns: ["sede_id"]
+            isOneToOne: false
+            referencedRelation: "balance_de_sede"
+            referencedColumns: ["sede_id"]
+          },
           {
             foreignKeyName: "customers_sede_id_fkey"
             columns: ["sede_id"]
@@ -260,6 +281,13 @@ export type Database = {
             foreignKeyName: "debt_payments_sede_id_fkey"
             columns: ["sede_id"]
             isOneToOne: false
+            referencedRelation: "balance_de_sede"
+            referencedColumns: ["sede_id"]
+          },
+          {
+            foreignKeyName: "debt_payments_sede_id_fkey"
+            columns: ["sede_id"]
+            isOneToOne: false
             referencedRelation: "sedes"
             referencedColumns: ["id"]
           },
@@ -315,6 +343,13 @@ export type Database = {
             foreignKeyName: "extras_sede_id_fkey"
             columns: ["sede_id"]
             isOneToOne: false
+            referencedRelation: "balance_de_sede"
+            referencedColumns: ["sede_id"]
+          },
+          {
+            foreignKeyName: "extras_sede_id_fkey"
+            columns: ["sede_id"]
+            isOneToOne: false
             referencedRelation: "sedes"
             referencedColumns: ["id"]
           },
@@ -365,6 +400,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "jornadas"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jornada_cierres_con_fecha_sede_id_fkey"
+            columns: ["sede_id"]
+            isOneToOne: false
+            referencedRelation: "balance_de_sede"
+            referencedColumns: ["sede_id"]
           },
           {
             foreignKeyName: "jornada_cierres_con_fecha_sede_id_fkey"
@@ -435,6 +477,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jornadas_sede_id_fkey"
+            columns: ["sede_id"]
+            isOneToOne: false
+            referencedRelation: "balance_de_sede"
+            referencedColumns: ["sede_id"]
           },
           {
             foreignKeyName: "jornadas_sede_id_fkey"
@@ -647,6 +696,13 @@ export type Database = {
             foreignKeyName: "orders_sede_id_fkey"
             columns: ["sede_id"]
             isOneToOne: false
+            referencedRelation: "balance_de_sede"
+            referencedColumns: ["sede_id"]
+          },
+          {
+            foreignKeyName: "orders_sede_id_fkey"
+            columns: ["sede_id"]
+            isOneToOne: false
             referencedRelation: "sedes"
             referencedColumns: ["id"]
           },
@@ -725,6 +781,13 @@ export type Database = {
             foreignKeyName: "payments_sede_id_fkey"
             columns: ["sede_id"]
             isOneToOne: false
+            referencedRelation: "balance_de_sede"
+            referencedColumns: ["sede_id"]
+          },
+          {
+            foreignKeyName: "payments_sede_id_fkey"
+            columns: ["sede_id"]
+            isOneToOne: false
             referencedRelation: "sedes"
             referencedColumns: ["id"]
           },
@@ -788,6 +851,13 @@ export type Database = {
             foreignKeyName: "product_components_sede_id_fkey"
             columns: ["sede_id"]
             isOneToOne: false
+            referencedRelation: "balance_de_sede"
+            referencedColumns: ["sede_id"]
+          },
+          {
+            foreignKeyName: "product_components_sede_id_fkey"
+            columns: ["sede_id"]
+            isOneToOne: false
             referencedRelation: "sedes"
             referencedColumns: ["id"]
           },
@@ -845,6 +915,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "products"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_cost_adjustments_sede_id_fkey"
+            columns: ["sede_id"]
+            isOneToOne: false
+            referencedRelation: "balance_de_sede"
+            referencedColumns: ["sede_id"]
           },
           {
             foreignKeyName: "product_cost_adjustments_sede_id_fkey"
@@ -1017,6 +1094,13 @@ export type Database = {
             foreignKeyName: "products_sede_id_fkey"
             columns: ["sede_id"]
             isOneToOne: false
+            referencedRelation: "balance_de_sede"
+            referencedColumns: ["sede_id"]
+          },
+          {
+            foreignKeyName: "products_sede_id_fkey"
+            columns: ["sede_id"]
+            isOneToOne: false
             referencedRelation: "sedes"
             referencedColumns: ["id"]
           },
@@ -1073,6 +1157,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "roles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_sede_id_fkey"
+            columns: ["sede_id"]
+            isOneToOne: false
+            referencedRelation: "balance_de_sede"
+            referencedColumns: ["sede_id"]
           },
           {
             foreignKeyName: "profiles_sede_id_fkey"
@@ -1216,6 +1307,13 @@ export type Database = {
             foreignKeyName: "purchase_invoices_sede_id_fkey"
             columns: ["sede_id"]
             isOneToOne: false
+            referencedRelation: "balance_de_sede"
+            referencedColumns: ["sede_id"]
+          },
+          {
+            foreignKeyName: "purchase_invoices_sede_id_fkey"
+            columns: ["sede_id"]
+            isOneToOne: false
             referencedRelation: "sedes"
             referencedColumns: ["id"]
           },
@@ -1269,6 +1367,8 @@ export type Database = {
       sedes: {
         Row: {
           address: string | null
+          capital_inicial: number | null
+          capital_inicial_desde: string | null
           config: Json
           created_at: string
           id: string
@@ -1280,6 +1380,8 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          capital_inicial?: number | null
+          capital_inicial_desde?: string | null
           config?: Json
           created_at?: string
           id?: string
@@ -1291,6 +1393,8 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          capital_inicial?: number | null
+          capital_inicial_desde?: string | null
           config?: Json
           created_at?: string
           id?: string
@@ -1370,6 +1474,13 @@ export type Database = {
             foreignKeyName: "stock_movements_sede_id_fkey"
             columns: ["sede_id"]
             isOneToOne: false
+            referencedRelation: "balance_de_sede"
+            referencedColumns: ["sede_id"]
+          },
+          {
+            foreignKeyName: "stock_movements_sede_id_fkey"
+            columns: ["sede_id"]
+            isOneToOne: false
             referencedRelation: "sedes"
             referencedColumns: ["id"]
           },
@@ -1392,6 +1503,13 @@ export type Database = {
           sede_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "store_sequences_sede_id_fkey"
+            columns: ["sede_id"]
+            isOneToOne: true
+            referencedRelation: "balance_de_sede"
+            referencedColumns: ["sede_id"]
+          },
           {
             foreignKeyName: "store_sequences_sede_id_fkey"
             columns: ["sede_id"]
@@ -1443,6 +1561,13 @@ export type Database = {
             foreignKeyName: "suppliers_sede_id_fkey"
             columns: ["sede_id"]
             isOneToOne: false
+            referencedRelation: "balance_de_sede"
+            referencedColumns: ["sede_id"]
+          },
+          {
+            foreignKeyName: "suppliers_sede_id_fkey"
+            columns: ["sede_id"]
+            isOneToOne: false
             referencedRelation: "sedes"
             referencedColumns: ["id"]
           },
@@ -1469,6 +1594,13 @@ export type Database = {
             foreignKeyName: "user_stores_sede_id_fkey"
             columns: ["sede_id"]
             isOneToOne: false
+            referencedRelation: "balance_de_sede"
+            referencedColumns: ["sede_id"]
+          },
+          {
+            foreignKeyName: "user_stores_sede_id_fkey"
+            columns: ["sede_id"]
+            isOneToOne: false
             referencedRelation: "sedes"
             referencedColumns: ["id"]
           },
@@ -1483,6 +1615,72 @@ export type Database = {
       }
     }
     Views: {
+      balance_de_sede: {
+        Row: {
+          abonos: number | null
+          capital_inicial: number | null
+          capital_inicial_desde: string | null
+          cartera: number | null
+          cobrado_ventas: number | null
+          compras: number | null
+          costo_vendido: number | null
+          devoluciones_proveedor: number | null
+          gastos: number | null
+          inventario_a_costo: number | null
+          lineas_venta_sin_costo: number | null
+          otras_entradas: number | null
+          otras_salidas: number | null
+          productos_sin_costo: number | null
+          retiros: number | null
+          sede_id: string | null
+          sede_nombre: string | null
+          unidades_sin_costo: number | null
+          vendido: number | null
+        }
+        Insert: {
+          abonos?: never
+          capital_inicial?: number | null
+          capital_inicial_desde?: string | null
+          cartera?: never
+          cobrado_ventas?: never
+          compras?: never
+          costo_vendido?: never
+          devoluciones_proveedor?: never
+          gastos?: never
+          inventario_a_costo?: never
+          lineas_venta_sin_costo?: never
+          otras_entradas?: never
+          otras_salidas?: never
+          productos_sin_costo?: never
+          retiros?: never
+          sede_id?: string | null
+          sede_nombre?: string | null
+          unidades_sin_costo?: never
+          vendido?: never
+        }
+        Update: {
+          abonos?: never
+          capital_inicial?: number | null
+          capital_inicial_desde?: string | null
+          cartera?: never
+          cobrado_ventas?: never
+          compras?: never
+          costo_vendido?: never
+          devoluciones_proveedor?: never
+          gastos?: never
+          inventario_a_costo?: never
+          lineas_venta_sin_costo?: never
+          otras_entradas?: never
+          otras_salidas?: never
+          productos_sin_costo?: never
+          retiros?: never
+          sede_id?: string | null
+          sede_nombre?: string | null
+          unidades_sin_costo?: never
+          vendido?: never
+        }
+        Relationships: []
+      }
       daily_sales_summary: {
         Row: {
           avg_ticket: number | null
@@ -1503,6 +1701,13 @@ export type Database = {
             foreignKeyName: "orders_sede_id_fkey"
             columns: ["sede_id"]
             isOneToOne: false
+            referencedRelation: "balance_de_sede"
+            referencedColumns: ["sede_id"]
+          },
+          {
+            foreignKeyName: "orders_sede_id_fkey"
+            columns: ["sede_id"]
+            isOneToOne: false
             referencedRelation: "sedes"
             referencedColumns: ["id"]
           },
@@ -1517,6 +1722,13 @@ export type Database = {
           total_revenue: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "orders_sede_id_fkey"
+            columns: ["sede_id"]
+            isOneToOne: false
+            referencedRelation: "balance_de_sede"
+            referencedColumns: ["sede_id"]
+          },
           {
             foreignKeyName: "orders_sede_id_fkey"
             columns: ["sede_id"]
@@ -1556,6 +1768,13 @@ export type Database = {
             foreignKeyName: "orders_sede_id_fkey"
             columns: ["sede_id"]
             isOneToOne: false
+            referencedRelation: "balance_de_sede"
+            referencedColumns: ["sede_id"]
+          },
+          {
+            foreignKeyName: "orders_sede_id_fkey"
+            columns: ["sede_id"]
+            isOneToOne: false
             referencedRelation: "sedes"
             referencedColumns: ["id"]
           },
@@ -1568,6 +1787,13 @@ export type Database = {
           sede_id: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "products_sede_id_fkey"
+            columns: ["sede_id"]
+            isOneToOne: false
+            referencedRelation: "balance_de_sede"
+            referencedColumns: ["sede_id"]
+          },
           {
             foreignKeyName: "products_sede_id_fkey"
             columns: ["sede_id"]
@@ -1619,6 +1845,13 @@ export type Database = {
             foreignKeyName: "stock_movements_sede_id_fkey"
             columns: ["sede_id"]
             isOneToOne: false
+            referencedRelation: "balance_de_sede"
+            referencedColumns: ["sede_id"]
+          },
+          {
+            foreignKeyName: "stock_movements_sede_id_fkey"
+            columns: ["sede_id"]
+            isOneToOne: false
             referencedRelation: "sedes"
             referencedColumns: ["id"]
           },
@@ -1641,6 +1874,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_sede_id_fkey"
+            columns: ["sede_id"]
+            isOneToOne: false
+            referencedRelation: "balance_de_sede"
+            referencedColumns: ["sede_id"]
           },
           {
             foreignKeyName: "orders_sede_id_fkey"

@@ -204,6 +204,19 @@ const COLUMNAS_DEL_ESQUEMA: ColumnaEsquema[] = [
   //    de más es gratis. `order_number` se allowlisteó a propósito; a
   //    `purchase_number` nadie se lo preguntó, y redactado falla cerrado.
   { tabla: 'stock_movements_con_saldo', columna: 'purchase_number', ejemplo: 88 },
+  // Migracion `balance_de_sede` (2026-09-21). Misma sesion.
+  // 🔴 `capital_inicial` es lo que el dueno puso de su bolsillo: no identifica a
+  //    una persona, pero dice cuanto tiene. Se verifica que no salga.
+  { tabla: 'sedes', columna: 'capital_inicial', ejemplo: 15000000 },
+  { tabla: 'sedes', columna: 'capital_inicial_desde', ejemplo: '2026-08-31' },
+  // ⚠️ La vista `balance_de_sede` son AGREGADOS de tablas que ya estan en este
+  //    censo, asi que no se repiten sus 18 columnas una por una. Se verifican
+  //    las tres que llevan la cifra mas delicada —cuanto vale el negocio, cuanto
+  //    le deben y cuanto tiene guardado—, que son las que un evento de Sentry
+  //    podria arrastrar completas.
+  { tabla: 'balance_de_sede', columna: 'vendido', ejemplo: 13024300 },
+  { tabla: 'balance_de_sede', columna: 'cartera', ejemplo: 1096100 },
+  { tabla: 'balance_de_sede', columna: 'inventario_a_costo', ejemplo: 9260098 },
 ]
 
 const PROHIBIDAS = COLUMNAS_DEL_ESQUEMA.filter((c) => !c.permitida)

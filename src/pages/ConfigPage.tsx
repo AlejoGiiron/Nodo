@@ -248,6 +248,8 @@ function SectionSede() {
   const [address, setAddress] = useState('')
   const [phone, setPhone] = useState('')
   const [slug, setSlug] = useState('')
+  const [capital, setCapital] = useState('')
+  const [capitalDesde, setCapitalDesde] = useState('')
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [initialized, setInitialized] = useState(false)
 
@@ -256,6 +258,10 @@ function SectionSede() {
     setAddress(sede.address ?? '')
     setPhone(sede.phone ?? '')
     setSlug((config.slug as string) ?? '')
+    // Vacio = sin configurar. NO se inicializa en '0': un cero afirmaria que
+    // el negocio arranco sin plata, y ese numero despues alimenta el Balance.
+    setCapital(sede.capital_inicial == null ? '' : String(Math.round(Number(sede.capital_inicial))))
+    setCapitalDesde(sede.capital_inicial_desde ?? '')
     setInitialized(true)
   }
 
@@ -287,7 +293,15 @@ function SectionSede() {
   }
 
   const handleSave = async () => {
-    await updateSede({ name, address, phone })
+    // 🔴 Vacio vuelve a NULL, nunca a 0. Son dos cosas distintas: null dice que
+    //    nadie lo cargo —y el Balance lo pide en vez de mostrar cifras falsas—,
+    //    y un 0 afirmaria que arranco sin nada.
+    const capNum = capital.replace(/\D/g, '') === '' ? null : Number(capital.replace(/\D/g, ''))
+    await updateSede({
+      name, address, phone,
+      capital_inicial: capNum,
+      capital_inicial_desde: capitalDesde || null,
+    })
     await updateConfig({ slug: slug.toLowerCase().replace(/\s+/g, '-') })
   }
 
@@ -363,6 +377,39 @@ function SectionSede() {
             value={slug}
             onChange={v => setSlug(v.toLowerCase().replace(/\s+/g, '-'))}
             placeholder="mi-sede"
+          />
+        </div>
+
+        {/* 🔴 Alimenta el Balance de Reportes. Vacio = sin configurar, y esa
+            pantalla lo PIDE en vez de asumir cero. */}
+        <div style={{ gridColumn: '1 / -1', borderTop: '1px solid var(--border-2)', paddingTop: 16, marginTop: 4 }}>
+          <FieldLabel>Con cuánta plata arrancó el negocio</FieldLabel>
+          <div style={{ fontSize: 11.5, color: 'var(--ink-4)', marginTop: -4, marginBottom: 8, lineHeight: 1.5 }}>
+            Es el punto de partida del Balance, en Reportes. Si se deja vacío, el Balance
+            avisa que falta el dato en vez de suponer que se arrancó sin nada.
+          </div>
+        </div>
+        <div>
+          <FieldLabel>Capital inicial (COP)</FieldLabel>
+          <TextInput
+            value={capital}
+            onChange={v => setCapital(v.replace(/\D/g, ''))}
+            placeholder="15000000"
+            testId="config-capital-inicial"
+          />
+        </div>
+        <div>
+          <FieldLabel>Desde qué fecha</FieldLabel>
+          <input
+            type="date"
+            data-testid="config-capital-desde"
+            value={capitalDesde}
+            onChange={e => setCapitalDesde(e.target.value)}
+            style={{
+              width: '100%', padding: '9px 12px', border: '1.5px solid var(--border)',
+              borderRadius: 9, fontSize: 13.5, color: 'var(--ink)', outline: 'none',
+              background: 'var(--surface)',
+            }}
           />
         </div>
       </div>

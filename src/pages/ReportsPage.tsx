@@ -9,11 +9,12 @@ import {
   LineChart, Line,
   PieChart, Pie, Cell,
 } from 'recharts'
-import { Download, Wallet, Boxes } from 'lucide-react'
+import { Download, Wallet, Boxes, Scale } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { useReports } from '@/hooks/useReports'
 import { KpiCard } from '@/components/ui/KpiCard'
 import { buildFinancieroWorkbook, buildStockWorkbook } from '@/lib/exportes'
+import { BalancePanel } from '@/components/reports/BalancePanel'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -95,7 +96,7 @@ export function ReportsPage() {
   const [to,   setTo]   = useState(() => format(new Date(), 'yyyy-MM-dd'))
   const [activeShortcut, setActiveShortcut] = useState<string>('mes')
   const [isExporting, setIsExporting] = useState(false)
-  const [activeTab, setActiveTab] = useState<'financiero' | 'stock'>('financiero')
+  const [activeTab, setActiveTab] = useState<'financiero' | 'stock' | 'balance'>('financiero')
 
   // ─── Previous period (same length, ending day before `from`) ──────────────
   const periodLen = useMemo(
@@ -330,12 +331,16 @@ export function ReportsPage() {
             <div>
               <h1 style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)' }}>Reportes</h1>
               <p style={{ fontSize: 11, color: 'var(--ink-4)', marginTop: 1 }}>
-                {format(parseISO(from), "d MMM yyyy", { locale: es })}
-                {' — '}
-                {format(parseISO(to),   "d MMM yyyy", { locale: es })}
+                {activeTab === 'balance'
+                  ? 'acumulado desde el inicio'
+                  : <>
+                      {format(parseISO(from), "d MMM yyyy", { locale: es })}
+                      {' — '}
+                      {format(parseISO(to),   "d MMM yyyy", { locale: es })}
+                    </>}
               </p>
             </div>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            <div style={{ display: activeTab === 'balance' ? 'none' : 'flex', gap: 6, flexWrap: 'wrap' }}>
               {SHORTCUTS.map(s => (
                 <button
                   key={s.key}
@@ -355,7 +360,11 @@ export function ReportsPage() {
           </div>
 
           {/* Date pickers + Exportar */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {/* 🔴 Escondidos en Balance: ese reporte es ACUMULADO desde el inicio y
+              no toma el rango. Dejarlos visibles sin efecto le diria a la clienta
+              que puede acotar un balance a una semana, que es justo lo que no
+              tiene sentido responder. */}
+          <div style={{ display: activeTab === 'balance' ? 'none' : 'flex', alignItems: 'center', gap: 8 }}>
             <input
               type="date" value={from} max={to}
               onChange={e => { setFrom(e.target.value); setActiveShortcut('') }}
@@ -375,6 +384,7 @@ export function ReportsPage() {
           {([
             { id: 'financiero' as const, label: 'Financiero', icon: <Wallet size={14} /> },
             { id: 'stock'      as const, label: 'Stock',      icon: <Boxes size={14} /> },
+            { id: 'balance'    as const, label: 'Balance',    icon: <Scale size={14} /> },
           ]).map(t => {
             const active = activeTab === t.id
             return (
@@ -782,6 +792,8 @@ export function ReportsPage() {
           </div>
           </>
           )}
+
+          {activeTab === 'balance' && <BalancePanel />}
         </div>
       </div>
     </div>

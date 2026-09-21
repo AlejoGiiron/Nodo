@@ -1,9 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import ExcelJS from 'exceljs'
 import {
-  buildFinancieroWorkbook, buildStockWorkbook,
+  buildFinancieroWorkbook, buildStockWorkbook, buildBalanceWorkbook,
   type FilaDiaria, type TotalesFinancieros,
 } from './exportes'
+import { derivarBalance } from './balance'
 
 // ============================================================================
 // EL CONTENIDO DE LOS DOS EXCEL — deuda 53, auditoría A3 §3.3
@@ -148,5 +149,91 @@ describe('Excel de stock — la venta bruta dice que no totaliza el período', (
     const t = textoDe(wb.getWorksheet('Definiciones')!)
     expect(t).toMatch(/NO coincide con Vendido/i)
     expect(t).toMatch(/descuento/i)
+  })
+})
+
+// ============================================================================
+// EL EXCEL DEL BALANCE
+//
+// 🔴 Es el artefacto que más pesa de los tres: afirma CUÁNTA PLATA debería tener
+//    alguien, y se guarda. Si dentro de cuatro meses ella lo abre y ve «−3.109.325»
+//    sin nada que lo explique, o cree que el negocio se robó esa plata, o cree
+//    que el archivo está mal. Las dos lecturas son evitables y las evita la hoja
+//    de definiciones, no la pantalla que lo generó.
+// ============================================================================
+describe('Excel del balance — se entiende sin la app al lado', () => {
+  const BAL = derivarBalance({
+    sede_nombre: 'Muscle Pro',
+    capital_inicial: 15_000_000,
+    capital_inicial_desde: '2026-08-31',
+    cobrado_ventas: 10_117_600,
+    abonos: 1_810_600,
+    otras_entradas: 0,
+    compras: 19_762_523.38,
+    devoluciones_proveedor: 0,
+    gastos: 5_631_200,
+    retiros: 0,
+    otras_salidas: 0,
+    vendido: 13_024_300,
+    costo_vendido: 10_230_224.67,
+    inventario_a_costo: 9_260_098.72,
+    cartera: 1_096_100,
+    productos_sin_costo: 5,
+    unidades_sin_costo: 29,
+    lineas_venta_sin_costo: 8,
+  })
+
+  const wb = buildBalanceWorkbook(new ExcelJS.Workbook(), {
+    balance: BAL, sede: 'Muscle Pro', generado: '2026-09-21 16:40',
+  })
+
+  it('trae los números del balance, no un resumen vago', () => {
+    const c = celdas(wb.getWorksheet('Balance')!)
+    expect(c).toContain(String(15_000_000))
+    expect(c).toContain(String(BAL.efectivo))
+    expect(c).toContain(String(BAL.patrimonio))
+    expect(c).toContain(String(BAL.resultado))
+    // CONTROL: el archivo dice de qué sede y de cuándo es. Sin eso, dos
+    // exportes de sedes distintas son indistinguibles en una carpeta.
+    expect(c).toContain('Muscle Pro')
+    expect(c).toContain('2026-09-21 16:40')
+  })
+
+  it('🔴 dice que NO es un reporte de período', () => {
+    // Sin esto, alguien va a cruzarlo contra el Excel financiero de una semana
+    // y va a concluir que uno de los dos está mal.
+    const t = textoDe(wb.getWorksheet('Definiciones')!)
+    expect(t).toMatch(/acumulado desde que arrancó/i)
+    expect(t).toMatch(/no usa el selector de fechas/i)
+  })
+
+  it('🔴 explica el descuadre y NO lo esconde', () => {
+    const t = textoDe(wb.getWorksheet('Definiciones')!)
+    expect(t).toMatch(/Debería dar cero/i)
+    expect(t).toMatch(/sin costo cargado/i)
+    // Y el número está en la hoja, con sus contadores.
+    const c = celdas(wb.getWorksheet('Balance')!)
+    expect(c).toContain('5')   // productos sin costo
+    expect(c).toContain('29')  // unidades sin costo
+  })
+
+  it('🔴 dice que un retiro NO es una pérdida, y que el margen tiene un límite', () => {
+    const t = textoDe(wb.getWorksheet('Definiciones')!)
+    expect(t).toMatch(/NO es una pérdida/i)
+    expect(t).toMatch(/no son comparables/i)
+  })
+
+  it('sin capital cargado NO inventa un cero: lo dice', () => {
+    const sinCapital = derivarBalance({
+      sede_nombre: 'Muscle Pro', capital_inicial: null, capital_inicial_desde: null,
+      cobrado_ventas: 0, abonos: 0, otras_entradas: 0,
+      compras: 0, devoluciones_proveedor: 0, gastos: 0, retiros: 0, otras_salidas: 0,
+      vendido: 0, costo_vendido: 0, inventario_a_costo: 0, cartera: 0,
+      productos_sin_costo: 0, unidades_sin_costo: 0, lineas_venta_sin_costo: 0,
+    })
+    const c = celdas(buildBalanceWorkbook(new ExcelJS.Workbook(), {
+      balance: sinCapital, sede: 'Muscle Pro', generado: '2026-09-21 16:40',
+    }).getWorksheet('Balance')!)
+    expect(c.filter((x) => x === 'sin configurar').length).toBeGreaterThan(0)
   })
 })

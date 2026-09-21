@@ -338,6 +338,36 @@ export const getExistenciaSinMovimiento = (productId: string) =>
     .eq('product_id', productId)
     .maybeSingle()
 
+/**
+ * Los componentes del balance de una sede, acumulados desde el inicio
+ * (`balance_de_sede`, migración 20260921160000).
+ *
+ * ⚠️ Son COMPONENTES, no el balance: las restas viven en `src/lib/balance.ts`,
+ * una sola vez, porque la pantalla y el Excel tienen que dar el mismo número.
+ */
+export const getBalanceDeSede = (sedeId: string) =>
+  supabase
+    .from('balance_de_sede')
+    .select(
+      'sede_nombre, capital_inicial, capital_inicial_desde, cobrado_ventas, abonos, otras_entradas, ' +
+        'compras, devoluciones_proveedor, gastos, retiros, otras_salidas, ' +
+        'vendido, costo_vendido, inventario_a_costo, cartera, ' +
+        'productos_sin_costo, unidades_sin_costo, lineas_venta_sin_costo',
+    )
+    .eq('sede_id', sedeId)
+    .maybeSingle()
+
+/** El capital inicial lo edita Configuración. Nulo = sin configurar, nunca 0. */
+export const setCapitalInicial = (
+  sedeId: string,
+  capital: number | null,
+  desde: string | null,
+) =>
+  supabase
+    .from('sedes')
+    .update({ capital_inicial: capital, capital_inicial_desde: desde })
+    .eq('id', sedeId)
+
 export interface ProductoBuscado {
   id: string
   name: string
