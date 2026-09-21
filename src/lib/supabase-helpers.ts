@@ -252,6 +252,26 @@ export interface StockMovementRow {
    * que se contó y dio cero.
    */
   saldo_despues: number | null
+  /**
+   * A quién se le vendió. Sólo `type` sale y return (la anulación de esa misma
+   * venta); en compras y ajustes es nulo por construcción.
+   *
+   * 🔴 Es el nombre CONGELADO en la venta (`orders.customer_name`), no el vivo
+   * de `customers`. `orders.customer_id` es ON DELETE SET NULL, así que el
+   * congelado es lo único que sobrevive si borran al cliente — y una auditoría
+   * no puede cambiar de respuesta porque alguien corrigió una ficha.
+   *
+   * ⚠️ Nulo significa UNA sola cosa: esa venta no tenía cliente. No es «no pude
+   * verla»: las policies de SELECT de `stock_movements` y de `orders` son
+   * idénticas —`sede_id = get_my_sede_id()`, sin permiso extra—, medido en
+   * 20260921120000. Si alguna gana un `has_permission`, el nulo vuelve a ser
+   * ambiguo y esto deja de valer.
+   */
+  customer_name: string | null
+  /** N.° de la venta (sale) o de la venta que se anuló (return). */
+  order_number: number | null
+  /** N.° de la compra. Sólo `type` purchase: una devolución a proveedor no lleva número. */
+  purchase_number: number | null
   products: { name: string; is_active: boolean } | null
   profiles: { full_name: string | null } | null
 }
@@ -268,7 +288,13 @@ export const getStockMovements = ({
   let q = supabase
     .from('stock_movements_con_saldo')
     .select(
-      'id, created_at, type, qty, reference_id, notes, product_id, saldo_despues, products(name, is_active), profiles(full_name)',
+      // `customer_name`, `order_number` y `purchase_number` son COLUMNAS de la
+      // vista, no embebidos: `reference_id` es un FK lógico y polimórfico —según
+      // el type apunta a `orders` o a `purchase_invoices`— así que PostgREST no
+      // tiene ninguna relación que seguir. El salto lo hace la vista, con su
+      // allowlist de types (20260921120000).
+      'id, created_at, type, qty, reference_id, notes, product_id, saldo_despues, ' +
+        'customer_name, order_number, purchase_number, products(name, is_active), profiles(full_name)',
       { count: 'exact' },
     )
     .eq('sede_id', sedeId)

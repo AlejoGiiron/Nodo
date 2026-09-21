@@ -185,6 +185,25 @@ const COLUMNAS_DEL_ESQUEMA: ColumnaEsquema[] = [
   // Migración `editar_compra` (2026-09-18). Misma sesión.
   { tabla: 'purchase_invoices', columna: 'edited_at', ejemplo: '2026-09-18T15:04:00Z' },
   { tabla: 'purchase_invoices', columna: 'edited_by', ejemplo: '7c1e9a2b-4d5f-4e6a-9b8c-1d2e3f4a5b6c' },
+  // Migración `movimientos_con_cliente_y_referencia` (2026-09-21). Misma sesión.
+  // 🔴 PRIMERAS ENTRADAS DE UNA VISTA, y entran porque lo que importa no es de
+  //    dónde sale la columna sino QUÉ VIAJA en la respuesta. Un nombre de
+  //    cliente ahora llega también en Movimientos, no sólo en el Historial.
+  // ⚠️ `customer_name` se llama IGUAL que `orders.customer_name` a propósito: el
+  //    filtro es por NOMBRE DE CLAVE, así que un rótulo propio —`cliente_de_la_venta`,
+  //    por ejemplo— habría sido una clave nueva a la que nadie le miró el
+  //    allowlist. El mismo nombre hereda la decisión ya tomada.
+  { tabla: 'stock_movements_con_saldo', columna: 'customer_name', ejemplo: 'Juan Perez' },
+  // ⚠️ `order_number` YA VIAJABA, igual que pasó con `purchase_invoices.kind`:
+  //    está en el allowlist como 'entero' desde que se escribió el filtro, bajo
+  //    «Correlativos y conteos. No identifican a nadie». Agregarlo acá no aflojó
+  //    nada — puso el rojo que DESTAPÓ que la decisión estaba tomada.
+  { tabla: 'stock_movements_con_saldo', columna: 'order_number', ejemplo: 134, permitida: true },
+  // ⚠️ Y su hermano NO viaja, aunque sea el mismo tipo de dato. No es una
+  //    incoherencia que haya que emparejar: hacia el lado que PROHÍBE, quedarse
+  //    de más es gratis. `order_number` se allowlisteó a propósito; a
+  //    `purchase_number` nadie se lo preguntó, y redactado falla cerrado.
+  { tabla: 'stock_movements_con_saldo', columna: 'purchase_number', ejemplo: 88 },
 ]
 
 const PROHIBIDAS = COLUMNAS_DEL_ESQUEMA.filter((c) => !c.permitida)

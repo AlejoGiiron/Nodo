@@ -2,9 +2,12 @@ import { test, expect, type Page } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { loginAsOwner, ownerCreds } from './helpers/auth'
+import { waitPosReady, cobrarCon } from './helpers/pos'
+import { openShiftIfClosed } from './helpers/shift'
 
 // ============================================================================
-// MOVIMIENTOS DE STOCK · corte de fechas en Bogotá, filtro por producto
+// MOVIMIENTOS DE STOCK · corte de fechas en Bogotá, filtro por producto, y
+// A QUIÉN se le vendió
 //
 // 🔴 EL CORTE DE FECHAS SE ASEVERA SOBRE EL HECHO, NO SOBRE LA CONSECUENCIA.
 //    La consecuencia —«un movimiento de las 21:00 no aparece filtrando el día
@@ -36,6 +39,10 @@ const SUFFIX = Date.now().toString().slice(-6)
 const ACTIVO = `E2E MovActivo ${SUFFIX}`
 const ARCHIVADO = `E2E MovArchivado ${SUFFIX}`
 const SIN_STOCK = `E2E MovSinStock ${SUFFIX}`
+// Producto PROPIO para la venta, y no uno de los de arriba: vender mueve el
+// stock y agrega una fila, así que usar ACTIVO correría los saldos que los
+// otros casos aseveran («0 +7 −2 = 5»). Un sujeto compartido es la deuda 67.
+const VENDIDO = `E2E MovVendido ${SUFFIX}`
 const CODIGO_ACTIVO = `E2EMOV-${SUFFIX}`
 
 let db: SupabaseClient
@@ -43,6 +50,8 @@ let CAT_ID = ''
 let ID_ACTIVO = ''
 let ID_ARCHIVADO = ''
 let ID_SIN_STOCK = ''
+let ID_VENDIDO = ''
+let CLIENTE = ''       // nombre exacto de un cliente activo de la sede
 
 async function ajustar(id: string, qty: number) {
   const { error } = await db.rpc('adjust_stock', { p_product_id: id, p_qty: qty, p_reason: 'movimientos-stock.spec' })
@@ -77,10 +86,29 @@ test.beforeAll(async () => {
   ID_ARCHIVADO = b.data!.id
   ID_SIN_STOCK = c.data!.id
 
+  // VENDIDO nace en 0 y entra con UN ajuste: su segunda fila va a ser la venta.
+  const d = await db.from('products').insert({ ...base, name: VENDIDO, stock_qty: 0 }).select('id').single()
+  expect(d.error?.message ?? null).toBeNull()
+  ID_VENDIDO = d.data!.id
+
   await ajustar(ID_ACTIVO, 7)
   await ajustar(ID_ACTIVO, -2)
   await ajustar(ID_ARCHIVADO, 4)
   await ajustar(ID_SIN_STOCK, 3)
+  await ajustar(ID_VENDIDO, 5)
+
+  // 🔴 El cliente se elige por nombre exacto desde la BASE, no con `.first()`
+  //    sobre la pantalla: el valor esperado tiene que venir de un lugar
+  //    INDEPENDIENTE de lo que la vista muestre, o el caso compararía la vista
+  //    contra sí misma y un error de la vista se cancelaría solo.
+  const cli = await db.from('customers').select('name')
+    .eq('sede_id', sede).eq('is_active', true).order('name').limit(1)
+  expect(cli.error?.message ?? null).toBeNull()
+  expect(
+    cli.data?.length,
+    'el lab necesita al menos un cliente ACTIVO en esta sede, o el caso de la venta no puede montar su escenario',
+  ).toBe(1)
+  CLIENTE = cli.data![0].name as string
 
   const arch = await db.from('products').update({ is_active: false }).eq('id', ID_ARCHIVADO)
   expect(arch.error?.message ?? null, 'no se pudo archivar el producto de la fixture').toBeNull()
@@ -90,7 +118,7 @@ test.afterAll(async () => {
   if (!db) return
   // Productos con movimientos no se borran (FK restrict): se archivan. La
   // limpieza ASEVERA el estado, porque supabase-js no lanza (deuda 115).
-  const ids = [ID_ACTIVO, ID_ARCHIVADO, ID_SIN_STOCK].filter(Boolean)
+  const ids = [ID_ACTIVO, ID_ARCHIVADO, ID_SIN_STOCK, ID_VENDIDO].filter(Boolean)
   const p = await db.from('products').update({ is_active: false }).in('id', ids)
   const c = await db.from('categories').update({ is_active: false }).eq('id', CAT_ID)
   const vivos = await db.from('products').select('id').in('id', ids).eq('is_active', true)
@@ -206,6 +234,60 @@ test('la columna de existencia muestra el saldo, y «—» cuando el producto no
   await expect(
     filas(page).first().getByTestId('stock-movement-saldo'),
     'un producto sin control de existencia tiene que mostrar «—»: un 0 afirmaría que se contó y dio cero',
+  ).toHaveText('—')
+})
+
+// ── a quién se le vendió, y una referencia que se puede buscar ─────────────
+test('🔴 una venta muestra el CLIENTE y el número de la venta, no un pedazo de UUID', async ({ page }) => {
+  await loginAsOwner(page)
+  await page.goto('/ventas')
+  await waitPosReady(page)
+  await openShiftIfClosed(page, 0)
+
+  await page.getByPlaceholder('Buscar producto...').fill(VENDIDO)
+  await page.getByTestId('product-card').filter({ hasText: VENDIDO }).first().click()
+
+  await page.getByTestId('cart-customer-search').fill(CLIENTE)
+  const opcion = page.getByTestId('cart-customer-option')
+  await expect(opcion, `buscar «${CLIENTE}» tiene que dejar UNA sola opción`).toHaveCount(1, { timeout: 15_000 })
+  await opcion.click()
+  await expect(page.getByTestId('cart-customer-resumen')).toContainText(CLIENTE)
+
+  // Nequi es el camino más corto que NO es fiado: no pide monto recibido.
+  await cobrarCon(page, 'nequi')
+  const aviso = page.getByText(/Venta #\d+ registrada/)
+  await expect(aviso).toBeVisible({ timeout: 15_000 })
+  // El número sale DEL PROPIO FLUJO —el producto acaba de mostrarlo—, no de
+  // «la última orden», que es una apuesta a que nadie más escriba después.
+  const numero = /Venta #(\d+)/.exec(await aviso.innerText())![1]
+
+  await page.goto('/inventario')
+  await page.getByTestId('inventory-tab-movements').click()
+  await page.getByTestId('mov-producto-buscar').fill(VENDIDO)
+  await page.getByTestId('mov-producto-opcion').filter({ hasText: VENDIDO }).click()
+  await expect(filas(page), 'el producto de este caso tiene que tener su ajuste y su venta').toHaveCount(2)
+
+  // ── EL SUJETO PRIMERO ───────────────────────────────────────────────────
+  // La venta es la fila más nueva (el orden es created_at desc).
+  const venta = filas(page).first()
+  await expect(
+    venta.getByTestId('stock-movement-cliente'),
+    'la venta no dice A QUIÉN se le vendió: `reference_id` es un FK lógico y el ' +
+    'salto lo hace la vista (20260921120000). Si dice «—», el join no resolvió',
+  ).toHaveText(CLIENTE)
+  await expect(
+    venta.getByTestId('stock-movement-referencia'),
+    'la referencia no es la venta que se puede buscar: antes mostraba los 8 ' +
+    'primeros caracteres del UUID, que no aparece en ninguna otra pantalla',
+  ).toHaveText(`Venta #${numero}`)
+
+  // ── CONTROL NEGATIVO ────────────────────────────────────────────────────
+  // El AJUSTE del montaje NO tiene cliente. Sin esto, un defecto que pintara el
+  // mismo nombre en todas las filas pasaría verde: la aserción de arriba sola
+  // no distingue «resolvió esta venta» de «le pone cliente a todo».
+  await expect(
+    filas(page).last().getByTestId('stock-movement-cliente'),
+    'un AJUSTE no tiene a quién venderle: si muestra un cliente, la vista lo está inventando',
   ).toHaveText('—')
 })
 

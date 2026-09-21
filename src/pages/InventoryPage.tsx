@@ -217,6 +217,12 @@ const MOV_META: Record<string, { label: string; icon: React.ReactNode }> = {
   adjustment: { label: 'Ajuste', icon: <SlidersHorizontal size={12} /> },
   return: { label: 'Devolución', icon: <RotateCcw size={12} /> },
   purchase: { label: 'Compra', icon: <ArrowUpCircle size={12} /> },
+  // 🔴 Faltaba, y el filtro «Devoluciones a proveedor» SÍ existe: esas filas
+  //    caían al respaldo y mostraban el valor crudo de la base,
+  //    `purchase_return`, en la pantalla de la clienta. Los dos rótulos dicen
+  //    hacia dónde va la mercancía, que es lo que los distingue: «Devolución»
+  //    entra stock (venta anulada), ésta lo saca.
+  purchase_return: { label: 'Devolución a proveedor', icon: <RotateCcw size={12} /> },
 }
 
 function MovementsTab() {
@@ -300,19 +306,40 @@ function MovementsTab() {
               <th style={{ padding: '10px 16px', fontWeight: 600, textAlign: 'right' }}>Cantidad</th>
               <th style={{ padding: '10px 16px', fontWeight: 600, textAlign: 'right' }}>Existencia</th>
               <th style={{ padding: '10px 16px', fontWeight: 600 }}>Usuario</th>
+              {/* Columna propia y no un renglón dentro de «Referencia»: esa celda
+                  ya significa dos cosas —el documento o la nota— y meterle una
+                  tercera la vuelve ilegible. Vacía en compras y ajustes, que es
+                  la verdad: ahí no hay a quién. */}
+              <th style={{ padding: '10px 16px', fontWeight: 600 }}>Cliente</th>
               <th style={{ padding: '10px 16px', fontWeight: 600 }}>Referencia</th>
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
-              <tr><td colSpan={7} style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--ink-4)' }}>Cargando...</td></tr>
+              <tr><td colSpan={8} style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--ink-4)' }}>Cargando...</td></tr>
             ) : rows.length === 0 ? (
-              <tr><td colSpan={7} style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--ink-4)' }}>Sin movimientos en el período</td></tr>
+              <tr><td colSpan={8} style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--ink-4)' }}>Sin movimientos en el período</td></tr>
             ) : rows.map(m => {
               const meta = MOV_META[m.type] ?? { bg: 'var(--border-2)', fg: 'var(--ink-3)', label: m.type, icon: null }
-              const ref = (m.type === 'sale' || m.type === 'purchase') && m.reference_id
-                ? `#${m.reference_id.slice(0, 8)}`
-                : (m.notes ?? '—')
+              // 🔴 La referencia que se puede BUSCAR, no el UUID. Antes decía
+              //    `#a1b2c3d4` —los primeros 8 caracteres del id— y esa cadena no
+              //    aparece en ninguna otra pantalla del producto: no servía para
+              //    llegar ni a la venta ni a la compra, que es para lo que se
+              //    mira esta columna al cuadrar un descuadre.
+              //    El `#uuid` se CONSERVA de respaldo: `orders.order_number` es
+              //    nullable y hay filas viejas sin número. Un hueco raro pero
+              //    honesto antes que «Venta #—», que afirmaría un número que no
+              //    existe.
+              //    Una devolución a proveedor no entra: su factura no lleva
+              //    número por CHECK, así que sigue mostrando su nota.
+              const ref =
+                (m.type === 'sale' || m.type === 'return') && m.order_number != null
+                  ? `Venta #${m.order_number}`
+                  : m.type === 'purchase' && m.purchase_number != null
+                    ? `Compra #${m.purchase_number}`
+                    : (m.type === 'sale' || m.type === 'purchase') && m.reference_id
+                      ? `#${m.reference_id.slice(0, 8)}`
+                      : (m.notes ?? '—')
               return (
                 <tr key={m.id} data-testid="stock-movement-row" style={{ borderTop: '1px solid var(--border-2)' }}>
                   <td style={{ padding: '11px 16px', color: 'var(--ink-3)', fontVariantNumeric: 'tabular-nums', fontSize: 12 }}>{fmtDateTime(m.created_at)}</td>
@@ -348,7 +375,16 @@ function MovementsTab() {
                     {m.saldo_despues === null ? '—' : m.saldo_despues}
                   </td>
                   <td style={{ padding: '11px 16px', color: 'var(--ink-3)' }}>{m.profiles?.full_name ?? '—'}</td>
-                  <td style={{ padding: '11px 16px', color: 'var(--ink-4)', fontVariantNumeric: 'tabular-nums', fontSize: 12 }}>{ref}</td>
+                  {/* Nulo = esa venta no tenía cliente, y sólo eso: quien ve el
+                      movimiento ve su orden (misma policy). Por eso «—» acá es
+                      un dato y no un «no sé». */}
+                  <td
+                    data-testid="stock-movement-cliente"
+                    style={{ padding: '11px 16px', color: m.customer_name ? 'var(--ink-2)' : 'var(--ink-4)', fontWeight: m.customer_name ? 600 : 400 }}
+                  >
+                    {m.customer_name ?? '—'}
+                  </td>
+                  <td data-testid="stock-movement-referencia" style={{ padding: '11px 16px', color: 'var(--ink-4)', fontVariantNumeric: 'tabular-nums', fontSize: 12 }}>{ref}</td>
                 </tr>
               )
             })}
