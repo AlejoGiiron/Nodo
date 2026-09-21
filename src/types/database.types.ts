@@ -1581,9 +1581,12 @@ export type Database = {
         Row: {
           created_at: string | null
           created_by: string | null
+          customer_name: string | null
           id: string | null
           notes: string | null
+          order_number: number | null
           product_id: string | null
+          purchase_number: number | null
           qty: number | null
           reference_id: string | null
           saldo_despues: number | null
