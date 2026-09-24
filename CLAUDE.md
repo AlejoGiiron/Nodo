@@ -594,6 +594,49 @@ lo mostrara. Un `0x08` es invisible en el editor y en el `git diff`.
 ⚠️ Y si un ancla o un reemplazo tiene que contener un backslash, se construye con `chr(92)` en vez
 de escribirlo: no hay forma de que sobreviva a un escape de más ni a uno de menos.
 
+🔴 **LA VARIANTE MÁS CARA DE ESTA FAMILIA, 2026-09-24: EL DEFECTO NO REAPARECIÓ EN EL TEXTO — REAPARECIÓ
+EN CÓDIGO NUEVO, CONTRA UNA CLASE QUE YA ESTABA BARRIDA, MIENTRAS SE ESCRIBÍA LA CONDICIÓN QUE LO
+PROHIBÍA.**
+
+**El defecto.** En el `onError` de un hook nuevo escribí
+`e instanceof Error ? e.message : String(e)`. **El error de `supabase.rpc()` NO es `instanceof Error`**
+—es un objeto plano con `message`— así que cayó al `String(e)` y el toast mostró **`[object Object]`**.
+El mensaje útil de la RPC —*«abonó 8000, el total nuevo sería 6000 y sobrarían 2000: elegí un producto
+de igual o mayor valor»*— se perdió entero.
+
+> **El código se lee correcto y el TIPO lo desmiente.** `instanceof Error` sobre algo que tiene
+> `message` parece la comprobación prudente; es justo la que no aplica.
+
+🔴 **Y LO QUE LO HACE LA PEOR DE LA FAMILIA ES EL ESTADO DEL REPO, medido:**
+
+```
+grep -rn "instanceof Error" src/ | grep -v .test.   ->  sólo errores.ts (la rama correcta) y mi comentario
+grep -rln "mensajeDeError" src/                     ->  10 archivos ya lo usan
+```
+
+La clase **ya se había medido el 2026-09-01 con una sonda end-to-end**, se encontraron **11 copias**, se
+barrieron todas (R3) y se creó `mensajeDeError` exactamente para esto — con la razón escrita en la
+cabecera de ese archivo, incluido que *probar la clase exportada era un proxy*. **Yo escribí la copia
+12, veintitrés días después.**
+
+⚠️ **Y la vuelta que lo ata a esta sección:** lo escribí **en el mismo turno en que documentaba que el
+mensaje de la RPC tenía que llegar intacto**, y contra una condición que la otra parte había puesto una
+hora antes. El comentario que dice *«reemplazarlo por un "Error al guardar" tiraría justo la parte
+accionable»* está **tres líneas arriba** del código que lo tiraba.
+
+✅ **Lo cazó el caso que asevera EL TEXTO VISIBLE**, no que haya error. Uno que aseverara *«hay un
+error»* habría pasado con `[object Object]` en pantalla.
+
+🔴 **LO ACCIONABLE, Y NO ES «ACORDARSE DE USAR EL HELPER» — ES QUE LA BARRIDA NO DEJÓ GUARD.** Extraer
+`mensajeDeError` cerró las 11 copias y **no impide la 12**: nada se pone rojo cuando alguien escribe
+`instanceof Error` en un archivo nuevo. Es *«enumerar la clase y arreglar las instancias»* con el
+agravante de que acá la clase se barrió BIEN y aun así volvió, porque **una extracción es una
+alternativa, no una prohibición**.
+
+> **Propuesta, medida y no hecha:** un tripwire unitario —o una regla de ESLint— que falle si
+> `instanceof Error` aparece en `src/` fuera de `errores.ts`. Hoy daría **verde** (la enumeración de
+> arriba), y habría dado **rojo** sobre mi hook. Cuesta un archivo y cierra la clase de verdad.
+
 🔴 **2026-09-17: DOS scripts de edición por heredoc otra vez, con la regla de arriba escrita.** El
 barrido dio **0** en los dos, así que no mordió — y es la mitad 2 funcionando cuando la mitad 1 no se
 cumplió. Uno falló por **otra** causa, que conviene sumar a la lista: `useShiftHistory.ts` tiene
