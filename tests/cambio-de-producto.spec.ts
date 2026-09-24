@@ -315,6 +315,38 @@ test('🔴 una venta CON cambio lo dice en el detalle, con el saldo de hoy', asy
   await expect(page.getByTestId('sale-detail-saldo-hoy')).toContainText('13.000')
 })
 
+// ── la pantalla: lo que el cliente tiene HOY, igual que el papel ────────────
+test('🔴 el DETALLE muestra lo que el cliente se llevo, dice que devolvio, y el total vigente', async ({ page }) => {
+  // Caso real, venta #162: el detalle seguia listando OXIMETHANON con total
+  // 939.000 cuando el cliente tenia OXANDRONOM y la venta valia 948.000.
+  const venta = await ventaFiada([{ product_id: ID_A, qty: 1, unit_price: 5000 }])   // 5.000
+  const ab = await db.rpc('register_debt_payment', { p_order_id: venta.id, p_amount: 2000, p_payment_method: 'transfer' })
+  expect(ab.error?.message ?? null).toBeNull()
+  const r = await cambiar(venta.id, 'detalle', [linea('in', ID_A, 1, 5000), linea('out', ID_B, 1, 8000)])
+  expect(r.error?.message ?? null).toBeNull()
+
+  await loginAsOwner(page)
+  await abrirDetalle(page, venta.numero)
+  const lineas = page.getByTestId('sale-detail-item')
+  await expect(lineas, 'el detalle tiene que listar lo que el cliente tiene hoy: una linea').toHaveCount(1)
+  await expect(lineas.first(), 'el detalle no muestra el producto que se llevo').toContainText(PROD_B)
+  await expect(page.getByTestId('sale-detail-total'), 'el total es el vigente: 5.000 − 5.000 + 8.000').toContainText('8.000')
+  // Y lo que se vendio originalmente no desaparece: la franja lo nombra.
+  const resumen = page.getByTestId('sale-detail-cambios-resumen')
+  await expect(resumen).toContainText(`Devolvió 1× ${PROD_A}`)
+  await expect(resumen).toContainText(`se llevó 1× ${PROD_B}`)
+  await expect(page.getByTestId('sale-detail-saldo-hoy')).toContainText('6.000')
+})
+
+test('CONTROL: el DETALLE de una venta SIN cambio sigue igual — sus lineas y su total', async ({ page }) => {
+  const venta = await ventaFiada([{ product_id: ID_A, qty: 2, unit_price: 5000 }])   // 10.000
+  await loginAsOwner(page)
+  await abrirDetalle(page, venta.numero)
+  await expect(page.getByTestId('sale-detail-item')).toHaveCount(1)
+  await expect(page.getByTestId('sale-detail-item').first()).toContainText(`2× ${PROD_A}`)
+  await expect(page.getByTestId('sale-detail-total')).toContainText('10.000')
+})
+
 // ── el papel: lo que el cliente tiene HOY (decidido el 2026-09-24, venta #162) ─
 // 🔴 Se asevera EL HECHO, no la consecuencia: bajo automatizacion no sale
 //    papel, asi que se reemplaza `window.print` por un espia que copia lo que

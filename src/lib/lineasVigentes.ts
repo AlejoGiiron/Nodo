@@ -64,3 +64,44 @@ export function lineasVigentes(originales: LineaDeTicket[], cambios: ItemDeCambi
 
   return vigentes
 }
+
+/** La forma en que `getSaleDetail` trae los cambios. */
+export interface CambioDeLaBase {
+  created_at: string
+  sale_change_items: {
+    direction: 'in' | 'out'
+    product_id: string
+    qty: number
+    unit_price: number
+    products: { name: string } | null
+  }[]
+}
+
+/** Los ítems de todos los cambios, en orden de fecha: el orden en que ocurrieron. */
+export function itemsDeCambio(cambios: CambioDeLaBase[]): ItemDeCambio[] {
+  return [...cambios]
+    .sort((a, b) => a.created_at.localeCompare(b.created_at))
+    .flatMap((c) => c.sale_change_items.map((i) => ({
+      direction: i.direction,
+      productId: i.product_id,
+      qty: i.qty,
+      unitPrice: Number(i.unit_price),
+      name: i.products?.name ?? '—',
+    })))
+}
+
+/**
+ * Qué volvió y qué se llevó, en una frase por lado — para que la pantalla diga
+ * QUÉ cambió además de que algo cambió. Sin esto, mostrar las líneas vigentes
+ * borraría de la vista lo que se vendió originalmente.
+ */
+export function resumenDeCambios(items: ItemDeCambio[]): { devolvio: string; sellevo: string } {
+  const junta = (dir: 'in' | 'out') => {
+    const porNombre = new Map<string, number>()
+    for (const i of items.filter((x) => x.direction === dir)) {
+      porNombre.set(i.name, (porNombre.get(i.name) ?? 0) + i.qty)
+    }
+    return [...porNombre].map(([n, q]) => `${q}× ${n}`).join(', ')
+  }
+  return { devolvio: junta('in'), sellevo: junta('out') }
+}

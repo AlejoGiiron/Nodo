@@ -11,7 +11,7 @@ import {
   type SalesHistoryRow, type CancelledSaleRow,
 } from '@/hooks/useSalesHistory'
 import { printSaleTicket } from '@/lib/printer'
-import { lineasVigentes } from '@/lib/lineasVigentes'
+import { lineasVigentes, itemsDeCambio, resumenDeCambios, type LineaDeTicket } from '@/lib/lineasVigentes'
 import { mensajeDeError } from '@/lib/errores'
 import toast from 'react-hot-toast'
 import { CambioProductoModal } from '@/components/sales/CambioProductoModal'
@@ -157,6 +157,40 @@ function SaleDetailModal({ orderId, onClose }: { orderId: string; onClose: () =>
   }, [sale])
 
   const discount = sale ? Math.max(0, subtotal - sale.total) : 0
+
+  // 🔴 LO QUE EL CLIENTE TIENE HOY, calculado UNA vez: de acá salen la pantalla
+  //    Y el ticket (decidido el 2026-09-24, caso real de la venta #162). Dos
+  //    cálculos serían dos lados del mismo contrato sin nada que los sincronice.
+  //    Sin cambios, `lineasVigentes` devuelve las líneas originales tal cual.
+  //    `order_items` no se reescribe: esto sólo compone para mostrar.
+  const vigentes = useMemo((): { originales: LineaDeTicket[]; lineas: LineaDeTicket[] | null; error: unknown } => {
+    if (!sale) return { originales: [], lineas: [], error: null }
+    const originales = sale.order_items.map((it) => ({
+      productId: it.product_id,
+      qty: it.qty,
+      name: it.products?.name ?? '—',
+      unitPrice: it.unit_price,
+      notes: it.notes,
+      extras: it.order_item_extras.map((e) => ({
+        name: e.extras?.name ?? 'Extra', qty: e.qty, unitPrice: e.unit_price,
+      })),
+    }))
+    try {
+      return {
+        originales,
+        lineas: lineasVigentes(originales, itemsDeCambio(sale.sale_changes)),
+        error: null,
+      }
+    } catch (e) {
+      return { originales, lineas: null, error: e }
+    }
+  }, [sale])
+  const totalVigente = sale ? Number(sale.total) + deltaCambios : 0
+  const resumen = useMemo(() => resumenDeCambios(itemsDeCambio(sale?.sale_changes ?? [])), [sale])
+  // Si no se pudieron componer, la pantalla cae a las originales Y LO DICE (la franja).
+  const filas = vigentes.lineas ?? vigentes.originales
+  // Con líneas vigentes, el total es el vigente; el descuento es el de la venta original.
+  const totalMostrado = vigentes.lineas ? totalVigente : (sale ? Number(sale.total) : 0)
   // 🔴 LA REIMPRESIÓN OMITÍA EL MÉTODO CUANDO NO HABÍA PAGO, y eso dejaba al
   //    comprobante de una venta a CRÉDITO sin decir cómo se cobró. Medido el
   //    2026-09-15: el ticket del POS decía «Fiado» y éste no decía nada — dos
@@ -169,34 +203,11 @@ function SaleDetailModal({ orderId, onClose }: { orderId: string; onClose: () =>
 
   const handleReprint = () => {
     if (!sale) return
-    const originales = sale.order_items.map((it) => ({
-      productId: it.product_id,
-      qty: it.qty,
-      name: it.products?.name ?? '—',
-      unitPrice: it.unit_price,
-      notes: it.notes,
-      extras: it.order_item_extras.map((e) => ({
-        name: e.extras?.name ?? 'Extra', qty: e.qty, unitPrice: e.unit_price,
-      })),
-    }))
-    // 🔴 CON CAMBIOS, EL PAPEL DICE LO QUE EL CLIENTE TIENE HOY (decidido el
-    //    2026-09-24, caso real de la venta #162): las líneas vigentes y el
-    //    total vigente. Sin cambios, `lineasVigentes` devuelve las originales.
-    let items
-    try {
-      items = lineasVigentes(
-        originales,
-        [...cambios]
-          .sort((a, b) => a.created_at.localeCompare(b.created_at))
-          .flatMap((c) => c.sale_change_items.map((i) => ({
-            direction: i.direction, productId: i.product_id, qty: i.qty,
-            unitPrice: Number(i.unit_price), name: i.products?.name ?? '—',
-          }))),
-      )
-    } catch (e) {
-      toast.error(mensajeDeError(e, 'No se pudo armar el comprobante'))
+    if (!vigentes.lineas) {
+      toast.error(mensajeDeError(vigentes.error, 'No se pudo armar el comprobante'))
       return
     }
+    const items = vigentes.lineas
     printSaleTicket({
       sedeName: sede?.name,
       sedeAddress: sede?.address,
@@ -284,10 +295,20 @@ function SaleDetailModal({ orderId, onClose }: { orderId: string; onClose: () =>
                   <strong>
                     Esta venta tiene {cambios.length} cambio{cambios.length !== 1 ? 's' : ''} de producto.
                   </strong>{' '}
-                  Las lineas de abajo son las de la venta original y no cambian.{' '}
+                  {/* 🔴 Las líneas de abajo son las VIGENTES (decidido el 2026-09-24).
+                      Por eso la franja dice QUÉ cambió: sin esto, lo que se vendió
+                      originalmente desaparecería de la vista. */}
+                  <span data-testid="sale-detail-cambios-resumen">
+                    Devolvió {resumen.devolvio} · se llevó {resumen.sellevo}.
+                  </span>{' '}
                   <span data-testid="sale-detail-saldo-hoy" style={{ fontWeight: 700, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>
                     Saldo actual: {formatoCOP(saldoHoy)}
                   </span>
+                  {!vigentes.lineas && (
+                    <div data-testid="sale-detail-cambios-error" style={{ marginTop: 6, color: 'var(--danger)' }}>
+                      {mensajeDeError(vigentes.error, 'No se pudieron componer las líneas de hoy')}. Abajo van las líneas de la venta original.
+                    </div>
+                  )}
                 </div>
               )}
               {/* Meta */}
@@ -309,25 +330,26 @@ function SaleDetailModal({ orderId, onClose }: { orderId: string; onClose: () =>
 
               {/* Items */}
               <div style={{ border: '1px solid var(--border-2)', borderRadius: 10, overflow: 'hidden' }}>
-                {sale.order_items.map((it) => {
-                  const extrasTotal = it.order_item_extras.reduce((a, e) => a + e.unit_price * e.qty, 0)
-                  const lineTotal = it.unit_price * it.qty + extrasTotal
+                {filas.map((it, idx) => {
+                  const extras = it.extras ?? []
+                  const extrasTotal = extras.reduce((a, e) => a + e.unitPrice * e.qty, 0)
+                  const lineTotal = it.unitPrice * it.qty + extrasTotal
                   return (
-                    <div key={it.id} data-testid="sale-detail-item" style={{ padding: '10px 14px', borderBottom: '1px solid var(--surface-2)' }}>
+                    <div key={`${it.productId ?? 'x'}-${idx}`} data-testid="sale-detail-item" style={{ padding: '10px 14px', borderBottom: '1px solid var(--surface-2)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
                         <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--ink)' }}>
-                          {it.qty}× {it.products?.name ?? '—'}
+                          {it.qty}× {it.name}
                         </span>
                         <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>
                           {formatoCOP(lineTotal)}
                         </span>
                       </div>
-                      {it.order_item_extras.length > 0 && (
+                      {extras.length > 0 && (
                         <div data-testid="sale-detail-extras" style={{ marginTop: 3 }}>
-                          {it.order_item_extras.map((e) => (
-                            <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: 'var(--success-on-soft)', paddingLeft: 10 }}>
-                              <span>+ {e.extras?.name ?? 'Extra'} ×{e.qty}</span>
-                              <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatoCOP(e.unit_price * e.qty)}</span>
+                          {extras.map((e, ei) => (
+                            <div key={ei} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: 'var(--success-on-soft)', paddingLeft: 10 }}>
+                              <span>+ {e.name} ×{e.qty}</span>
+                              <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatoCOP(e.unitPrice * e.qty)}</span>
                             </div>
                           ))}
                         </div>
@@ -344,7 +366,7 @@ function SaleDetailModal({ orderId, onClose }: { orderId: string; onClose: () =>
               <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, color: 'var(--ink-2)' }}>
                   <span>Subtotal</span>
-                  <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatoCOP(subtotal)}</span>
+                  <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatoCOP(totalMostrado + discount)}</span>
                 </div>
                 {discount > 0 && (
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, color: 'var(--danger)' }}>
@@ -354,10 +376,22 @@ function SaleDetailModal({ orderId, onClose }: { orderId: string; onClose: () =>
                 )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: 4 }}>
                   <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)' }}>Total</span>
-                  <span style={{ fontSize: 24, fontWeight: 700, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums', letterSpacing: -0.6 }}>
-                    {formatoCOP(sale.total)}
+                  <span data-testid="sale-detail-total" style={{ fontSize: 24, fontWeight: 700, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums', letterSpacing: -0.6 }}>
+                    {formatoCOP(totalMostrado)}
                   </span>
                 </div>
+                {cambios.length > 0 && (
+                  <>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, color: 'var(--ink-2)' }}>
+                      <span>Abonado</span>
+                      <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatoCOP(abonado)}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5, fontWeight: 700, color: 'var(--ink)' }}>
+                      <span>Saldo</span>
+                      <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatoCOP(saldoHoy)}</span>
+                    </div>
+                  </>
+                )}
               </div>
             </>
           )}
