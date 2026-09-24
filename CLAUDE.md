@@ -8286,6 +8286,33 @@ del valor nuevo: el piso pasa a ser **una fila** y se **deriva** del de tres par
 divergir. Sin esa nota, alguien lee «se quitó el mínimo», lo saca del todo y reintroduce el colapso
 a cero — que es justo lo que el mutante acaba de medir.
 
+🔴 **Y EL COMENTARIO QUE SOSTENÍA ESE 351 ES SU PROPIO HALLAZGO: TRES AFIRMACIONES, LAS TRES
+MEDIDAS HOY, LAS TRES FALSAS. Es la proporción más alta de un solo comentario en el proyecto.**
+
+| lo que el comentario afirmaba | lo medido el 2026-09-24 |
+|---|---|
+| *«la lista entra con holgura en los seis viewports»* | el contenido mide **1114px con el buscador abierto**, constante en los seis: no entra en cinco de ellos |
+| *«hoy el mínimo no está conteniendo nada»* | quitarlo da **`h=0` a 600** y **`h=33` a 900** — cero líneas en pantalla |
+| 🔴 *«es una red bajo un piso que ya no se cae»* | debajo de ~1010px **EMPUJABA**: `y=689..715` sobre un viewport de 600 |
+
+🔴 **LA TERCERA NO ES UNA NOTA VIEJA: ES UNA NOTA QUE DESCRIBÍA LO CONTRARIO DE LO QUE HACÍA.** Y esa
+distinción es lo accionable, porque las dos se leen igual y se corrigen distinto:
+
+| | qué dice | qué hace quien la lee |
+|---|---|---|
+| una nota **envejecida** | algo que **fue cierto** y dejó de serlo | razona sobre un mundo anterior — y la fecha invita a dudar |
+| 🔴 una nota **invertida** | algo que **nunca fue cierto**, en el sentido opuesto al real | razona sobre un mundo que **no existió nunca**, y el signo la vuelve activa: *«una red»* invita a dejarla; *«empuja»* obliga a revisarla |
+
+⚠️ **Y una red y un empujón no son grados del mismo eje: son direcciones opuestas.** Quien leyera
+*«red bajo un piso que ya no se cae»* concluiría, correctamente bajo esa premisa, que el 351 es
+**inofensivo** — y por eso nadie lo tocó mientras producía el defecto que la clienta reportó.
+
+⚠️ Corolario sobre dónde buscar esta clase: **las tres afirmaciones eran del mismo párrafo y ninguna
+se podía desmentir leyendo.** Las tres exigían medir —compilar la pantalla, mutar el piso, mirar
+dónde cae la última línea—, así que el comentario acumuló autoridad exactamente igual que uno
+cierto: se leyó muchas veces, sobrevivió a dos re-skins, y cada lectura lo dejó un poco más firme.
+Es el corolario de R4 sobre un comentario de código en vez de sobre un documento.
+
 🔴 **Y EL HALLAZGO ESTRUCTURAL, que es la causa de TRES arreglos anteriores leídos como tres casos:**
 el mínimo de tres filas, el picker compacto y el pie pegajoso fueron **tres constantes movidas para
 que un contenido FIJO entrara en UN viewport**. Ninguno tocó la causa, así que el cuarto viewport
@@ -8410,6 +8437,49 @@ el canal atribuye mal y escribir el mensaje para que se defienda solo.
 **puede decir que no**; acá, que el rojo **está diciendo que sí por la razón que dice**. Hay que trabajar activamente para que dirija; por defecto no
 lo hace. Corolario práctico: al auditar por mutación (R10), **leé el mensaje**, no solo el
 `✓`/`×` — el mutante puede morir y el rojo ser inútil igual.
+
+🔴 **Y UN USO DEL MUTANTE QUE ESTE ARCHIVO NO TENÍA ESCRITO: EL NÚMERO QUE IMPRIME DICE SOBRE QUÉ
+ESTABA DISCRIMINANDO — Y AHÍ SE VE SI EL CASO MIDE LA COSA CORRECTA.** *2026-09-24, la columna del
+Mostrador.*
+
+R10 le pide al mutante **una sola cosa**: que el caso pueda ponerse rojo. Eso contesta *«¿la aserción
+mira al sujeto?»* y nada más. Todo lo que este archivo tiene escrito sobre mutantes es de ese eje —
+el que sobrevive no está probando, el que muere con el mensaje del control dirige mal.
+
+**El caso.** El mutante que quita el piso de la lista del carrito la mató, como se esperaba. Y el
+rojo imprimió:
+
+```
+la lista tiene 0.0px usables y una fila mide 117.3: no se ve NINGUNA línea
+```
+
+> **Esos 117,3 son el hallazgo, y no tienen nada que ver con el mutante.** El caso derivaba «lo que
+> mide una fila» del alto de `cart-item-price`, que es **el precio ADENTRO de la fila**: 25px, no
+> 117. El umbral de «alto usable» era casi **cinco veces más flojo** de lo que el caso afirmaba.
+
+🔴 **LO QUE AGREGA, Y ES UN EJE NUEVO:**
+
+| lo que contesta el mutante | cómo |
+|---|---|
+| **¿la aserción discrimina?** | el caso muere — lo que R10 ya pide |
+| 🔴 **¿sobre QUÉ discrimina?** | **el número que el rojo imprime**, leído como dato y no como confirmación |
+
+⚠️ **Y el segundo no se puede obtener releyendo el caso.** Yo escribí ese locator, lo leí varias
+veces y lo di por correcto: `cart-item-price` **es** la línea, en el sentido en que uno piensa. Lo
+que lo desmintió fue **ver el número junto a otro que ya conocía** —la fila mide 117, está escrito
+en `ALTO_MINIMO_LISTA`— y no cerrar. Es *cruzar contra un número que ya conocías*, aplicado a la
+salida de un mutante en vez de a una sonda.
+
+✅ **LO ACCIONABLE, y cuesta cero porque el mutante ya se corre:**
+
+> **Cuando el mutante mate al caso, LEÉ LOS NÚMEROS DEL ROJO, no sólo su texto.** El mensaje dice si
+> el caso dirige; los números dicen **qué magnitudes está comparando de verdad** — y ahí aparece el
+> instrumento que mide otra cosa.
+
+⚠️ Corolario para escribir el mensaje del rojo: por eso los umbrales van **impresos con sus dos
+lados** —*«tiene X usables y una fila mide Y»*— y no como un veredicto. Un rojo que dijera sólo
+*«la lista no tiene alto usable»* habría muerto igual y **no habría delatado nada**.
+
 
 ---
 
