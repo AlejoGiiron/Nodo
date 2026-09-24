@@ -2487,6 +2487,32 @@ dato: **desconecta una verificación de su sujeto**, y la verificación sigue le
 identificador falso falla CERRADO en cuanto alguien lo ejecuta**, al revés de una cantidad falsa, que
 se suma sin quejarse.
 
+🔴 **SEGUNDA VEZ, UN TURNO DESPUÉS DE ESCRIBIR ESTO — Y LO QUE VALE NO ES LA REINCIDENCIA: ES QUE EL
+MECANISMO ESTABA PUESTO Y FALLÓ POR DÓNDE ESTABA.** *2026-09-24.*
+
+La regla decía *«se imprime en el mismo comando que lo usa»*. **La cumplí al pie de la letra**: el
+`echo "SHA_SUITE=$(git rev-parse --short HEAD)"` iba dentro del mismo comando que lanzaba la suite. Y
+ese comando se mandó **al fondo**, así que su salida se fue al archivo de la tarea y **nunca llegó a
+mis ojos**. Reporté `d9faf0c`; el real era `71fad1e`.
+
+> **Tuve el comando correcto en el lugar equivocado, y el hueco lo llené con algo plausible.**
+
+⚠️ **Por eso la regla literal no alcanzaba: «el mismo comando» es una condición sobre el CÓDIGO, y lo
+que hacía falta era una condición sobre la LECTURA.** Un `echo` dentro de un proceso en segundo plano
+cumple la primera y no la segunda.
+
+✅ **LA VERSIÓN CORREGIDA, y reemplaza a la de arriba:**
+
+> **Un dato que va a sostener una afirmación se imprime DONDE EL QUE AFIRMA LO LEE. Lo que va al
+> fondo no se lee.**
+
+En la práctica: el `git rev-parse` va en una llamada **en primer plano, antes** de lanzar la corrida —
+no adentro de ella. Cuesta una línea más y es la diferencia entre copiar y recordar.
+
+⚠️ Y el corolario general, que sirve para cualquier medición y no sólo para un sha: **si el número va
+a viajar a un mensaje, tiene que pasar por la pantalla de quien escribe el mensaje.** Un valor que
+sólo existe en un archivo de salida está tan lejos como si no se hubiera impreso.
+
 🔴 **SEGUNDA VEZ DEL MISMO FILTRO, Y LA MÁS CARA DE LA CLASE: `order_number` NO ES ÚNICO ENTRE
 SEDES, ASÍ QUE UNA CONSULTA POR NÚMERO DEVUELVE FILAS DE OTRO TENANT — Y EL RESULTADO ERA
 PLAUSIBLE.** *2026-09-17, enumerando las ventas a anular de Muscle Pro.*
