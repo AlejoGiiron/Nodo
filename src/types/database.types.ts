@@ -1364,6 +1364,120 @@ export type Database = {
           },
         ]
       }
+      sale_change_items: {
+        Row: {
+          change_id: string
+          direction: string
+          id: string
+          product_id: string
+          qty: number
+          subtotal: number
+          unit_cost: number | null
+          unit_price: number
+        }
+        Insert: {
+          change_id: string
+          direction: string
+          id?: string
+          product_id: string
+          qty: number
+          subtotal: number
+          unit_cost?: number | null
+          unit_price: number
+        }
+        Update: {
+          change_id?: string
+          direction?: string
+          id?: string
+          product_id?: string
+          qty?: number
+          subtotal?: number
+          unit_cost?: number | null
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sale_change_items_change_id_fkey"
+            columns: ["change_id"]
+            isOneToOne: false
+            referencedRelation: "sale_changes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_change_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "productos_existencia_sin_movimiento"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "sale_change_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sale_changes: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          delta_total: number
+          id: string
+          order_id: string
+          reason: string
+          sede_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          delta_total?: number
+          id?: string
+          order_id: string
+          reason: string
+          sede_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          delta_total?: number
+          id?: string
+          order_id?: string
+          reason?: string
+          sede_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sale_changes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_changes_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_changes_sede_id_fkey"
+            columns: ["sede_id"]
+            isOneToOne: false
+            referencedRelation: "balance_de_sede"
+            referencedColumns: ["sede_id"]
+          },
+          {
+            foreignKeyName: "sale_changes_sede_id_fkey"
+            columns: ["sede_id"]
+            isOneToOne: false
+            referencedRelation: "sedes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sedes: {
         Row: {
           address: string | null
@@ -1922,6 +2036,10 @@ export type Database = {
         Args: { p_org_name: string; p_sede_name: string }
         Returns: Json
       }
+      recalcular_delta_de_cambio: {
+        Args: { p_change_id: string }
+        Returns: undefined
+      }
       recalcular_total_de_orden: {
         Args: { p_order_id: string }
         Returns: undefined
@@ -1941,6 +2059,10 @@ export type Database = {
           p_items: Json
           p_notes?: string
         }
+        Returns: Json
+      }
+      register_sale_change: {
+        Args: { p_items: Json; p_order_id: string; p_reason: string }
         Returns: Json
       }
       register_sale_payment: {

@@ -5689,6 +5689,30 @@ vale el doble que una que empuja»*.
 rompe»* y *«medí si nos enteraríamos»* son dos encargos distintos, y el primero se puede contestar
 entero sin tocar el segundo.
 
+🔴 **SEGUNDA APARICIÓN, 2026-09-24 — Y ESTA VEZ LA PREGUNTA EQUIVOCADA ESTABA ADENTRO DEL CÓDIGO,
+NO EN EL ENCARGO.** *Escribiendo el guard de `register_sale_change`.*
+
+La primera fue una MEDICIÓN que contestó bien una pregunta que no era la que importaba. Ésta es un
+**guard**: la condición `ci.change_id <> v_change_id` —«¿cuánto volvió en cambios ANTERIORES?»— es
+**correcta** para esa pregunta, y **falsa** para la que nadie hizo: *«¿cuánto lleva devuelto esta
+venta EN TOTAL, incluido lo que este documento ya escribió?»*. Los ítems se insertan de a uno en el
+mismo bucle, así que dos líneas `in` del mismo producto **no se veían entre sí**: de una venta con 3
+unidades volvían 4, sin ningún error.
+
+⚠️ **Y lo destapó una pregunta por OTRA COSA.** El encargo fue verificar los **dos cambios
+encadenados** —dos documentos—. Eso estaba bien. Lo que estaba roto era el caso vecino: **dos líneas
+dentro de UN solo documento**, que es peor, porque el encadenado deja dos filas que alguien puede
+mirar y éste pasa entero adentro de una transacción.
+
+> **Un guard escrito sobre la pregunta de al lado se lee idéntico al correcto**: tiene su `where`,
+> su sujeto y su razón. Lo único que lo distingue es **de qué conjunto habla** — y eso no se ve
+> leyendo la condición, se ve preguntando qué filas existen en el momento en que corre.
+
+✅ **Lo accionable, y suma al corolario de arriba:** cuando un guard cuente «lo ya hecho», preguntá
+**si lo que se está haciendo AHORA ya está en ese conteo**. Si la operación escribe de a una fila en
+un bucle, el conteo tiene que incluir las filas que ella misma acaba de escribir — excluirse a sí
+misma es la forma por defecto y casi siempre es la equivocada.
+
 ---
 
 ### 🔴 CRITERIO SIN NÚMERO · UNA OPCIÓN SE ELIGE POR SER SEGURA EN UN EJE, Y NADIE PREGUNTA POR LOS OTROS
