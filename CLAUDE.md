@@ -5964,6 +5964,57 @@ mirar y éste pasa entero adentro de una transacción.
 un bucle, el conteo tiene que incluir las filas que ella misma acaba de escribir — excluirse a sí
 misma es la forma por defecto y casi siempre es la equivocada.
 
+🔴 **TERCERA APARICIÓN, EL MISMO DÍA — Y ACÁ LA PREGUNTA EQUIVOCADA ERA UNA ATRIBUCIÓN.**
+
+La suite se puso roja por el tope de 1000 de Cartera. Pregunté *«¿fue mi spec?»*, medí, y la
+respuesta fue **sí**: dejaba 8 ventas fiadas vivas por corrida, eran 84, y el lab pasó de 971 a
+1.055. Lo reporté así, lo arreglé y lo registré.
+
+> **La pregunta que no se hizo era «¿fue SÓLO mi spec?». Y la respuesta es no: de las 986 órdenes
+> con deuda, 838 eran residuo de fixture.** Mi pila de 84 fue la última gota de una de 750 que
+> llevaba semanas creciendo.
+
+🔴 **Y EL CONTEO QUE LO ESCONDÍA TAMBIÉN ERA MÍO:** conté `customer_name like 'E2E CambioCli%'` —**mi
+prefijo**—, porque la pregunta que me estaba haciendo era sobre mi spec. La sonda cuenta los **tres**
+prefijos de fixture del repo, y por eso vio diez veces más. **El instrumento heredó el recorte de la
+pregunta.**
+
+⚠️ **Lo que lo hace la más cara de las tres:** las otras dos dejaban un guard flojo o un dato sin
+verificar. **Ésta dejaba un plan.** Arreglar sólo mi `afterAll` —que es exactamente lo que la primera
+respuesta indicaba— habría dejado el lab **a pocas corridas de cruzar otra vez**, y el próximo rojo
+habría aparecido en otro archivo ajeno, semanas después, sin nada que lo conectara con nada.
+
+✅ **LO ACCIONABLE, y suma a las dos de arriba:** ante una atribución que da **sí**, preguntá
+**«¿y alcanza con eso?»** antes de cerrarla. Un *sí* bien medido sobre la causa propia **se siente
+como el final de la investigación**, y es justo donde conviene seguir: la propia contribución es la
+que uno sabe buscar, y por eso es la que encuentra primero.
+
+---
+
+### 🔴 CRITERIO SIN NÚMERO · LA SUITE NO PUEDE SER EL DETECTOR DE RESIDUO — Y LA EVIDENCIA ES QUE PASÓ VERDE A CATORCE DEL TOPE
+
+*2026-09-24, midiendo de dónde salieron seis corridas en una sola tanda.*
+
+📋 **La cuenta, medida corrida por corrida:** seis corridas de la suite entera, unas **dos horas de
+reloj**, y **cero defectos de código**. Lo que encontraron: residuo de fixture **dos veces**, el
+entorno una, el puerto una, y dos de proceso (un `lint` corrido tarde y una redundante).
+
+🔴 **Y LA EVIDENCIA QUE CIERRA LA DISCUSIÓN NO ES UN ROJO: ES UN VERDE.** La séptima corrida pasó
+**354 passed · 0 failed**, y al correr la sonda inmediatamente después el lab estaba **a 14 órdenes
+del tope de 1000**, con 838 de residuo adentro.
+
+> **No falló: PASÓ — y el laboratorio estaba a una corrida de romperse.** Una suite verde no dice
+> nada sobre el estado del lab, porque sólo lo mira de refilón y sólo cuando algo ya cruzó un límite.
+
+⚠️ **Por eso el problema no es que tarde: es que detecta la CRUZADA y no la ACUMULACIÓN.** El aviso
+llega desacoplado de la causa —ochenta y cuatro ventas estuvieron diez corridas sin decir nada— y
+quien lo recibe no tiene forma de saber cuál de las diez lo dejó.
+
+✅ **Lo accionable ya existe: `pnpm pre`** (puerto → `tsc` → `lint` → `test:unit` → sonda), que corre
+en segundos y **avisa antes del cruce** —a 900 de 1000, no a 1001—. Su primera corrida encontró las
+838. ⚠️ Y su límite va escrito adentro: mide lo que **ya sabemos** que ensucia, así que un verde dice
+que esas cinco formas están bien, **no** que el lab esté limpio.
+
 ---
 
 ### 🔴 CRITERIO SIN NÚMERO · UNA OPCIÓN SE ELIGE POR SER SEGURA EN UN EJE, Y NADIE PREGUNTA POR LOS OTROS
