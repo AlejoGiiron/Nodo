@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { loginAsOwner } from './helpers/auth'
 import { closeShiftIfOpen, openShiftIfClosed } from './helpers/shift'
-import { waitPosReady, addPosProduct, abrirCobro } from './helpers/pos'
+import { waitPosReady, addPosProduct, abrirCobro, abrirDescuento } from './helpers/pos'
 
 // "$ 12.000" → 12000
 function parseCOP(text: string): number {
@@ -26,7 +26,7 @@ test.describe('POS — venta y carrito', () => {
     await addPosProduct(page)
 
     const before = parseCOP(await page.getByTestId('cart-total').innerText())
-    await page.getByRole('button', { name: '10%' }).click()
+    await abrirDescuento(page, '10%')
 
     // La fila de totales "Descuento (10%)" confirma que el descuento se aplicó.
     await expect(page.getByText('Descuento (10%)')).toBeVisible()

@@ -84,3 +84,35 @@ export async function cobrarCon(page: Page, medio: string): Promise<void> {
   await page.getByTestId(`pay-method-${medio}`).click()
   await page.getByTestId('checkout-continue').click()
 }
+
+/**
+ * Abre la sección de descuento del carrito y elige su tipo.
+ *
+ * 🔴 POR QUÉ ES UN HELPER Y NO DOS LÍNEAS EN CADA SPEC: el descuento pasó a
+ *    estar PLEGADO detrás de `cart-descuento-toggle` (2026-09-24, al bajar el
+ *    pie de la columna de 436px a 241 — medido: **0 de 150** ventas de la
+ *    clienta llevan descuento). Ese cambio rompió **cinco sitios en tres
+ *    archivos**, y los tres rojos decían lo mismo: `waiting for
+ *    getByRole('button', { name: '$' })`.
+ *
+ * > **Un camino repetido N veces es R1 dentro de la suite**, y éste ya se
+ * > movió una vez: con el helper, el próximo movimiento es una edición.
+ *
+ * ⚠️ Y el toggle SÓLO existe mientras no haya descuento aplicado —`descuentoAbierto
+ *    || discountAmt > 0`, a propósito: un descuento aplicado no se esconde—. Por
+ *    eso el helper pregunta por el botón de tipo ANTES de tocar el toggle, en vez
+ *    de clickear a ciegas: si la sección ya está abierta, clickear el toggle la
+ *    CERRARÍA.
+ */
+export async function abrirDescuento(page: Page, tipo: '$' | string): Promise<void> {
+  const botonTipo = page.getByRole('button', { name: tipo, exact: true })
+  if (!(await botonTipo.isVisible().catch(() => false))) {
+    await page.getByTestId('cart-descuento-toggle').click()
+  }
+  await expect(
+    botonTipo,
+    `la sección de descuento tiene que abrir y ofrecer «${tipo}»: desde 2026-09-24 ` +
+    'está plegada detrás de `cart-descuento-toggle`',
+  ).toBeVisible({ timeout: 10_000 })
+  await botonTipo.click()
+}

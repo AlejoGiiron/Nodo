@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { loginAsOwner, ownerCreds } from './helpers/auth'
-import { waitPosReady, addPosProduct, cobrarCon, POS_PRODUCTO } from './helpers/pos'
+import { waitPosReady, addPosProduct, cobrarCon, POS_PRODUCTO, abrirDescuento } from './helpers/pos'
 import { openShiftIfClosed } from './helpers/shift'
 
 // ============================================================================
@@ -242,7 +242,7 @@ test('🔴 el descuento sigue siendo una rebaja SOBRE lo pactado', async ({ page
 
   await page.getByTestId('cart-item-price').fill(String(PACTADO))
   await page.getByTestId('cart-item-price').blur()
-  await page.getByRole('button', { name: `${DESCUENTO}%` }).click()
+  await abrirDescuento(page, `${DESCUENTO}%`)
 
   const esperado = PACTADO - Math.round(PACTADO * DESCUENTO / 100)
   expect(

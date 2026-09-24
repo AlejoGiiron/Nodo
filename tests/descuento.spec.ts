@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { loginAsOwner } from './helpers/auth'
-import { cobrarCon } from './helpers/pos'
+import { cobrarCon, abrirDescuento } from './helpers/pos'
 import { openShiftIfClosed, closeShiftIfOpen } from './helpers/shift'
 
 // Descuentos en el POS. Corre en LAB.
@@ -95,7 +95,7 @@ test.describe.serial('Descuentos', () => {
 
     await addProductPOS(page)
     // 4.000 fijos sobre 18.000 → total 14.000.
-    await page.getByRole('button', { name: '$', exact: true }).click()
+    await abrirDescuento(page, '$')
     await page.getByTestId('discount-amount').fill('4000')
     await expect(page.getByTestId('cart-total')).toContainText('14.000')
 
@@ -114,7 +114,7 @@ test.describe.serial('Descuentos', () => {
     await openShiftIfClosed(page, 0)
 
     await addProductPOS(page)
-    await page.getByRole('button', { name: '10%', exact: true }).click()
+    await abrirDescuento(page, '10%')
 
       const n = await payNequiAndFinish(page)
     await page.getByRole('button', { name: 'Nueva venta' }).click()
@@ -137,7 +137,7 @@ test.describe.serial('Descuentos', () => {
     // ⚠️ La versión anterior de este test afirmaba que el INPUT se clampeaba a
     //    "18.000". Era falso en el POS —venía de la caja de Mesas, que sí
     //    formateaba— y se coló al migrar el test sin poder ejecutarlo.
-    await page.getByRole('button', { name: '$', exact: true }).click()
+    await abrirDescuento(page, '$')
     await page.getByTestId('discount-amount').fill('25000')
 
       // El re-skin sacó el símbolo de moneda de las cifras (§2 del design system:
