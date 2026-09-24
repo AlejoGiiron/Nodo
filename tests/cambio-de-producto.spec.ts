@@ -49,6 +49,12 @@ let ID_CLIENTE = ''
 //    que nadie eligio — que es exactamente lo que el spec del cierre con
 //    fecha reclama cuando encuentra una ajena.
 let JORNADA_MIA: string | null = null
+// 🔴 Las ventas que crea este spec quedan PENDIENTES para siempre si nadie las
+//    cierra, y cada corrida suma ocho. No es residuo inerte: `getDebts` trae
+//    las ordenes con deuda SIN PAGINAR, asi que al pasar de 1000 el KPI de
+//    Cartera se topa — y este spec empujo a LAB de ~971 a 1.055. El defecto es
+//    del producto (deuda 128), pero quien lo hizo alcanzable fue esta fixture.
+const VENTAS: string[] = []
 
 async function ensureShift(): Promise<void> {
   const abierta = (await db.from('jornadas').select('id').eq('sede_id', SEDE).is('closed_at', null).maybeSingle()).data
@@ -81,6 +87,7 @@ async function ventaFiada(items: { product_id: string; qty: number; unit_price: 
     p_items: items.map((i) => ({ ...i, extras: [] })),
   })
   expect(it.error?.message ?? null, 'no se pudieron agregar los items').toBeNull()
+  VENTAS.push(o.data!.id as string)
   return { id: o.data!.id as string, numero: o.data!.order_number as number, total }
 }
 
@@ -124,7 +131,27 @@ test.afterAll(async () => {
   await db.from('products').update({ is_active: false }).in('id', ids)
   await db.from('categories').update({ is_active: false }).eq('id', CAT)
   await db.from('customers').update({ is_active: false }).eq('id', ID_CLIENTE)
-  // 🔴 LA JORNADA PRIMERO, y es lo que esta corrida costo: sin esto quedaba
+  // 🔴 LAS VENTAS PRIMERO: anuladas, que es lo que de verdad fueron —fixture,
+  //    no ventas—. Sin esto se quedan en Cartera para siempre y empujan a la
+  //    sede contra el tope de 1000 de `getDebts`.
+  //    Se ANULAN por `update` y no por `register_sale_void`: el arnes no
+  //    comparte camino con el sujeto, y la RPC ademas exige que la venta sea
+  //    de la jornada abierta, que es justo lo que la limpieza no puede
+  //    garantizar cuando corre al final.
+  if (VENTAS.length > 0) {
+    await db.from('orders').update({
+      cancelled_at: new Date().toISOString(),
+      cancel_reason: 'fixture de cambio-de-producto.spec',
+    }).in('id', VENTAS)
+    const vivas = await db.from('orders').select('id')
+      .in('id', VENTAS).is('cancelled_at', null)
+    expect(
+      [vivas.error?.message, (vivas.data ?? []).length],
+      `LIMPIEZA de cambio-de-producto.spec: quedaron ${(vivas.data ?? []).length} ventas VIVAS en Cartera`,
+    ).toEqual([undefined, 0])
+  }
+
+  // 🔴 LA JORNADA, y es lo que otra corrida costo: sin esto quedaba
   //    ABIERTA y `cierre-con-fecha.spec` abortaba — 1 failed y 7 casos SIN
   //    MEDIR, en un archivo que no habla de cambios de producto. Un spec que
   //    no limpia no falla solo: cambia lo que ven los demas.
