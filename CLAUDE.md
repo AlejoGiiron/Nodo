@@ -6328,6 +6328,61 @@ Reglas duras traídas de los hermanos — aplican a todo el trabajo en este repo
   cada escenario se prueba desde un estado limpio para no arrastrar efectos de la prueba anterior.
 - **`git status` ANTES DE COMMITEAR:** revisar siempre qué se va a incluir; evitar `git add -A` a
   ciegas.
+
+  🔴 **Y ES UNA REGLA CUYO COSTO ES CERO HASTA QUE ES ENORME — por eso se relaja sin consecuencia
+  visible.** *Medido el 2026-09-24, cobrando por primera vez en este repo.*
+
+  **El caso.** Usé `git add -A` **toda la sesión**, en cada commit, sin que costara nada. Y costó
+  cero por una razón que no tiene que ver con el cuidado: **era el único escribiendo en el
+  worktree.** Con un solo autor, `-A` y la lista explícita de rutas producen exactamente el mismo
+  commit, siempre.
+
+  **Dejó de ser el único, y cobró en el primer commit siguiente:** otra sesión de Claude Code abrió
+  sobre el mismo repo y mi `git add -A` de un cambio de **documentación** se llevó **568 líneas de
+  su trabajo en vuelo** —una migración, `printer.ts`, `SalesHistoryPage.tsx`, `lineasVigentes.ts`,
+  un spec— bajo un mensaje que dice *«docs: …»* y no las describe.
+
+  > **Las reglas que cobran a la primera se aprenden solas. Ésta PREMIA el incumplimiento durante
+  > semanas** — cada `-A` que sale bien es evidencia a favor de seguir usándolo— **y después cobra
+  > todo junto.**
+
+  🔴 **Y el momento en que empieza a costar NO SE ANUNCIA.** No hay error, no hay aviso, no hay un
+  cambio en el comando. Lo que cambió fue **el mundo alrededor del comando**: apareció otro autor.
+  Nadie me lo dijo y nada en la salida de `git` lo insinuó — lo destapé leyendo el `--stat` de mi
+  propio commit **después** de hacerlo.
+
+  ⚠️ **Por eso lo accionable no es «acordarse» ni «fijarse cuando haya otra sesión»:** las dos
+  dependen de saber algo que no se sabe en el momento de teclear. Es:
+
+  > **`git add -A` no se usa nunca. Se commitea por RUTA EXPLÍCITA**, aunque hoy sea equivalente —
+  > porque el día que deje de serlo, nada va a avisar.
+
+  🔴 **Y EL COROLARIO QUE ESCRIBÍ PRIMERO ERA FALSO — lo reemplaza esto, porque es un caso de la
+  clase que este mismo archivo mide.** Escribí que *«lo caro no fue el mensaje equivocado, fue
+  PUBLICAR: mi commit sacó a producción el trabajo en vuelo de otra sesión antes de que ella lo
+  decidiera»*. **No pasó.**
+
+  **Lo que vi:** `develop == origin/develop`, con mi commit adentro. **Lo que concluí:** que mi
+  commit lo había publicado. **Lo que pasó:** `b225352` quedó **local**; el push lo hizo la otra
+  sesión, con Alejandro autorizándolo, después de aplicar su migración con confirmación y de correr
+  sus grupos sobre el árbol que se publicaba.
+
+  > **Es *asumir una consecuencia sin verificar el mecanismo*, otra vez:** vi los dos extremos
+  > —mi commit existe, está publicado— y di por hecha la flecha entre ellos **sin abrir quién
+  > empujó**. Un `git log` no dice quién hizo el push, y yo lo leí como si lo dijera.
+
+  ⚠️ **Y falla en la dirección que menos se revisa: hacia MÁS culpa propia.** Una afirmación que se
+  acusa a uno mismo **no la discute nadie** —ni el que la escribe, porque suena a rigor—, así que
+  sobrevive exactamente igual que una que tranquiliza de más. La corrigió la otra sesión, que era
+  la única con el dato.
+
+  ✅ **Lo accionable, y cuesta un comando:** antes de afirmar que algo se publicó, preguntá **quién
+  lo publicó**. `git log` muestra el commit; **no muestra el push**. Si la respuesta no está medida,
+  la frase honesta es *«quedó en un commit que después se publicó»*, que es cierta y no atribuye.
+
+  ⚠️ **Lo que SÍ queda del caso, y no cambia:** `git add -A` se llevó 568 líneas ajenas a un commit
+  con un mensaje que no las describe. Eso ocurrió, es lo que la regla existe para evitar, y no
+  dependía de quién empujara después.
 - **SECURITY DEFINER → `revoke execute from public` **Y TAMBIÉN** `from anon`:** Postgres concede
   `EXECUTE` a `PUBLIC` por defecto en toda función nueva, y **Supabase agrega DEFAULT PRIVILEGES en el
   esquema `public` que se lo dan además a `anon`** — que NO es lo mismo que `public`, así que el
