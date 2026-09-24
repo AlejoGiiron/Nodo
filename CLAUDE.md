@@ -1588,6 +1588,43 @@ el control de alguno de los anteriores?** Si lo es, no puede ir detrás de él.
 a los que pasaron. Y entra al cruce: `passed + failed + skipped + did not run` tiene que dar el
 último `[N/N]` emitido.
 
+🔴 **Y EL REPORTER `json` NO ARREGLA ESTO — COLAPSA LOS DOS ESTADOS EN UNO.** *2026-09-24, la
+primera corrida que usó el remedio de R8.*
+
+El `line` cuenta los `did not run` y **no los nombra**, que es por lo que R8 prescribe agregar el
+`json`. Corrido con los dos, sobre la misma corrida:
+
+| reporter | qué dice |
+|---|---|
+| `line` | **15 skipped · 2 did not run** |
+| `json` | **17 skipped** — y ningún `did not run` |
+
+> **El `json` mete a los `did not run` adentro de `skipped`.** Así que el instrumento que se agregó
+> para poder nombrarlos **borra justamente la distinción** que hacía falta: un caso que alguien
+> decidió saltear y uno que la suite no llegó a ejecutar quedan con el mismo `status`.
+
+⚠️ Es *un valor que significa dos cosas no es un dato*, cometido por el instrumento y no por el
+producto — y con el agravante de que el conteo **sigue cerrando**: 360 + 1 + 17 = 378, igual que
+360 + 1 + 15 + 2. **Ninguna verificación aritmética lo destapa.**
+
+✅ **EL DISCRIMINADOR NO ES EL ESTADO: ES LA ANOTACIÓN.** Un `skip` legítimo se declara con su
+motivo —`test.skip(!key, 'Requiere E2E_GCENTRO_HMAC_SECRET')`— y el `json` lo trae en
+`annotations`. Un `did not run` **no tiene motivo**, porque nadie lo decidió:
+
+```js
+const noCorrieron = skipped.filter(t => !(t.annotations ?? []).some(a => a.description))
+```
+
+Con eso quedaron nombrados los dos de esta corrida —`inventario.spec.ts:148` y `:173`— en vez de
+deducirlos por firma.
+
+⚠️ **Lo accionable, y es la regla general:** cuando un instrumento devuelva un conteo que no cierra
+con otro instrumento sobre **la misma corrida**, el que tiene razón no es el más nuevo — es el que
+**distingue más estados**. Y la salida no es elegir uno: es encontrar **qué campo conserva la
+distinción que el otro colapsó**. Acá el `line` distingue y no nombra; el `json` nombra y no
+distingue. **Los dos juntos, leyendo la anotación, dan las dos cosas.**
+
+
 ⚠️ Y el complemento, que es lo que convierte el conteo en evidencia: **cruzarlo con un número que ya
 conocías**. `202 passed + 17 skipped = 219`, que tiene que ser **el último número de test emitido**.
 Si no cierra, una de las dos cuentas está mal — y averiguar cuál es el trabajo.
@@ -7514,6 +7551,54 @@ attempting click action — 2 × waiting for element to be visible, enabled and 
 ⚠️ **Y por eso la lectura del artefacto tiene un paso más de lo que decía esta nota:** no alcanza con
 *"¿qué locator se esperaba?"* — hay que mirar **en qué estado lo encontró**. «No lo encontré» y «lo
 encontré apagado» son diagnósticos opuestos y el mensaje de arriba es el mismo.
+
+🔴 **TERCERA VEZ, 2026-09-24 — Y ES UN DIAGNÓSTICO DE OTRA CAPA: «LO ENCONTRÉ EN VUELO».** Las dos
+anteriores son **estados del DOM** —el elemento no está, el elemento está apagado— y se contestan
+mirando la página. Ésta es un **estado de la RED**, y la página se ve perfecta.
+
+**El caso.** `inventario.spec.ts:123` murió en `saveProductAndClose`, esperando que el modal de
+producto cerrara. El artefacto muestra el modal **completo y correcto** —nombre, categoría,
+tipo, extras— y su pie:
+
+```
+- button "Cancelar"
+- button "Guardando..." [disabled]
+```
+
+> **El clic entró, la mutación salió, y no volvió.** No falta ningún elemento y ninguno está
+> deshabilitado por una validación: el formulario está esperando una respuesta que nunca llegó.
+
+📋 **LOS TRES, Y LO QUE LOS SEPARA — la pregunta que contesta cada uno es distinta:**
+
+| lo que dice el artefacto | qué pasó | dónde está la causa |
+|---|---|---|
+| `waiting for <locator>` | **no lo encontré** — el elemento no existe | el DOM: cambió la pantalla |
+| `locator resolved to <button disabled …>` | **lo encontré apagado** — existe y no es accionable | el DOM: el producto lo deshabilitó |
+| 🔴 **el control en su estado PENDIENTE** (`"Guardando..."`) | **lo encontré en vuelo** — la acción salió y no volvió | **la red**: la petición se colgó |
+
+🔴 **Y EL DISCRIMINADOR QUE LO SEPARA DE UN DEFECTO DEL PRODUCTO ES UNA LÍNEA DEL CÓDIGO, no una
+corrida:**
+
+> **Si el manejador tiene `finally { setSaving(false) }`, un error HABRÍA RESETEADO el botón.** Que
+> siga diciendo «Guardando…» no significa que la petición falló: significa que **no volvió**.
+
+⚠️ **Las dos lecturas mandan a lugares opuestos.** *«Falló el guardado»* manda a leer la RPC, los
+guards y los permisos — donde no hay nada. *«No volvió»* manda a mirar si se reproduce, que es lo
+único que discrimina entre una cuelga y un defecto. Acá el spec corrido solo dio **6 passed** sin
+tocar nada.
+
+✅ **LO ACCIONABLE, y es un paso antes de diagnosticar:** ante un timeout, mirá **el estado del
+control en el artefacto**, y si está en su forma PENDIENTE, abrí el manejador y buscá el `finally`.
+Con `finally`, el rojo es de la red; **sin `finally`, es un defecto del producto** — y uno caro: un
+botón que se queda en «Guardando…» después de un error deja a la persona esperando algo que ya no
+va a pasar.
+
+⚠️ Corolario sobre qué NO prueba la re-corrida: que pase sola **no lo convierte en flake por sí
+misma** —este archivo ya tiene medido que *un rojo que se apaga al tocar otra cosa es una pregunta,
+no una confirmación*—. Lo que lo sostiene acá son tres mediciones, no la re-corrida: el spec **no
+estaba entre los rojos del árbol anterior**, el diff del helper entre los dos shas **no borra una
+sola línea** (es append puro), y el `finally` existe.
+
 
 ---
 
