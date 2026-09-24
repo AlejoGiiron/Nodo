@@ -1710,6 +1710,51 @@ descartar quince minutos de suite cuesta menos que interpretar un resultado que 
 `src/`, **el resultado se descarta sin mirarlo**. No se salva ningún caso: no hay forma de saber
 cuáles corrieron contra qué.
 
+🔴 **Y LA FORMA GRAVE DEL MISMO CRITERIO: EL QUE EDITA PUEDE NO SER VOS — DOS SESIONES SOBRE UN
+MISMO WORKTREE.** *Medido el 2026-09-24. **No es un accidente: es un modo de trabajo que nadie
+decidió**, y por eso se anota como riesgo y no como incidente.*
+
+El criterio de arriba supone que **el que corre la suite y el que edita son la misma persona**, así
+que alcanza con una regla de disciplina: *mientras la suite corre, no toco `src/`*. Ese supuesto
+dejó de valer el día que dos sesiones de Claude Code abrieron sobre el mismo repo.
+
+> **Una regla que uno cumple sobre sí mismo no protege de un segundo autor.** El otro no sabe que
+> hay una suite corriendo, y nada en el repo se lo dice.
+
+📋 **LO MEDIDO, y es lo único que salvó la corrida:**
+
+```
+la suite terminó de escribir su archivo   14:36:33
+la primera escritura de la otra sesión    14:36:45   (+12 s)
+```
+
+🔴 **Doce segundos.** Si hubieran solapado, los cinco números habrían descrito **un árbol que nadie
+tenía** — ni el mío ni el suyo— y no habría forma de saber cuáles casos corrieron contra qué. El
+resultado no sería un falso rojo ni un falso verde: sería **un número sin sujeto**.
+
+⚠️ **Y no es sólo la suite: ROMPE TAMBIÉN LAS MEDICIONES POSTERIORES.** Después del rojo medí *«0
+extras de fixture activos»* y lo usé como evidencia de que una escritura no había llegado. Entre la
+suite y mi sonda, **la otra sesión corrió sus grupos y el `global-setup` purgó la fixture**. El
+instrumento estaba bien; **el mundo que medía ya no era el que la pregunta suponía**, y la
+conclusión que salió de ahí era falsa.
+
+📋 **Los tres recursos que se comparten, enumerados, porque no son obvios:**
+
+| qué | qué pasa si los dos lo usan |
+|---|---|
+| el **worktree** | una suite mide un árbol que el otro está mutando · `git add -A` se lleva trabajo ajeno |
+| el **puerto 5180** | la segunda corrida aborta escribiendo tres líneas, indistinguible de una corrida perfecta |
+| **el laboratorio** (la sede LAB) | las limpiezas y la purga del `global-setup` del otro **borran el estado que uno está por medir** |
+
+✅ **LO ACCIONABLE, y es coordinación explícita porque no hay mecanismo:** avisarse **antes** de
+lanzar cualquier corrida de Playwright, y decir cuándo terminó. `puerto-libre` detecta el choque de
+puerto —ya lo hace— pero **no detecta las otras dos**: un worktree mutado y un lab purgado no dan
+error, dan un número.
+
+⚠️ Y el corolario sobre cómo se lee un resultado a partir de ahora: **«el árbol estaba limpio al
+lanzar» dejó de ser suficiente.** Hay que poder decir también que **nadie más escribió mientras
+corría** — y hoy eso sólo se sabe comparando mtimes después, que es tarde.
+
 ---
 
 ### 🔴 CRITERIO SIN NÚMERO · CÓMO SE APLICA Y SE REVIERTE UN MUTANTE (arnés, no test)
