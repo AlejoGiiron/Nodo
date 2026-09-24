@@ -827,6 +827,12 @@ nada que arreglar de nuestro lado —la notificación reporta el exit del shell 
 el shell—; lo único que queda es **no leerla nunca** y escribir el código adentro del archivo. Una
 regla cuya causa está afuera del repo no se cierra: se cumple.
 
+🔴 **OCTAVA VEZ, 2026-09-24.** La notificación de la tarea en segundo plano dijo **`exit code 0`**
+sobre un archivo que decía **`suite_exit=1`**, con **1 failed y 7 did not run** adentro. Nada nuevo
+en la forma — y ése es el punto: **van ocho, y las ocho se habrían leído como un verde.** Lo único
+que las separó del reporte falso fue abrir el archivo, que es lo que esta regla pide y lo único que
+sigue funcionando.
+
 → **Evidencia:** repo de Vento, `docs/BITACORA.md` → *"Trampas de TERMINAL — el síntoma no señala
 la causa"*.
 
@@ -2748,6 +2754,43 @@ habla de nada de lo que lo causó.
 2. 🔴 **La limpieza no puede ser el último CASO de un `describe.serial`.** Un caso es lo primero que
    se saltea; `afterAll` corre igual cuando los casos fallan. Es la misma regla que ya está escrita
    para el arnés —*su trabajo es existir cuando lo demás no*— aplicada al orden de ejecución.
+
+🔴 **CUARTA APARICIÓN, 2026-09-24 — Y ES DE OTRA ESPECIE: NO FUE RESIDUO QUE SE ACUMULA, FUE UN
+RECURSO ÚNICO TOMADO.**
+
+Las tres anteriores son **residuo**: un producto que quedó activo, una orden fechada mañana, una
+limpieza que no corrió. Ensucian, y lo que ensucian se ve como ruido — algo de más.
+
+> **Acá no sobró nada: FALTÓ UN RECURSO.** `cambio-de-producto.spec` abría una jornada y no la
+> cerraba. **Hay UNA sola abierta por sede**, así que el spec siguiente no pudo abrir la suya y
+> abortó. No es que viera un mundo sucio: es que no había mundo donde trabajar.
+
+🔴 **Y EL COSTO ES ASIMÉTRICO, que es lo que lo hace caro:** **1 rojo que señala** —con su mensaje,
+en el archivo correcto— **y 7 casos que NI CORRIERON**, en un archivo ajeno que no habla del tema.
+El rojo se arregla; los siete desaparecen del resumen de la corrida siguiente sin que nadie haya
+comprobado que pasan.
+
+✅ **LO ACCIONABLE, y es una categoría nueva de limpieza:**
+
+> **Cuando un spec toma un RECURSO ÚNICO de la sede, su limpieza no es higiene: es la condición de
+> que el siguiente exista.** La jornada abierta es el único que conocemos hoy — una por sede, y
+> cinco RPC la exigen para operar.
+
+⚠️ Y se cierra **sólo la que uno abrió**, nunca la que estaba. Cerrar una ajena deja el lab en un
+estado que nadie eligió, que es exactamente lo que el spec damnificado reclama cuando la encuentra.
+
+🔴 **EL MÉTODO QUE LO RESOLVIÓ VA CON EL CASO, PORQUE LA PRIMERA HIPÓTESIS ERA FALSA.** Supuse que
+había quedado una jornada viva de la corrida fallida; lo medí y dio **abiertas = 0**. La causa real
+se probó con un mutante — saltear el cierre — y ahí está lo que vale registrar:
+
+> **Un mutante que reproduce el MISMO ROJO prueba menos que uno que reproduce el MISMO PATRÓN DE
+> FALLOS.** Acá reprodujo la firma exacta —**1 failed · 7 did not run**—, y ésa es la diferencia
+> entre causalidad y coincidencia: muchas cosas pueden poner rojo a un spec; muy pocas ponen rojo a
+> ése y dejan sin correr a esos siete.
+
+⚠️ Corolario para leer un resumen: **los cinco números son una FIRMA, no un marcador.** Dos corridas
+con «1 failed» pueden no tener nada que ver; dos con «1 failed y 7 did not run» en los mismos
+archivos, casi seguro que sí.
 
 ---
 
