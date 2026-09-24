@@ -44,12 +44,18 @@ let CAT = ''
 let ID_A = ''
 let ID_B = ''
 let ID_CLIENTE = ''
+// 🔴 La jornada que ABRE este spec, si la abre. Solo se cierra ESA: hay una
+//    sola abierta por sede, y cerrar la de otro dejaria el lab en un estado
+//    que nadie eligio — que es exactamente lo que el spec del cierre con
+//    fecha reclama cuando encuentra una ajena.
+let JORNADA_MIA: string | null = null
 
 async function ensureShift(): Promise<void> {
   const abierta = (await db.from('jornadas').select('id').eq('sede_id', SEDE).is('closed_at', null).maybeSingle()).data
   if (abierta) return
   const ins = await db.from('jornadas').insert({ sede_id: SEDE, opened_by: OWNER, opening_amount: 0 }).select('id').single()
   expect(ins.error?.message ?? null, 'no se pudo abrir jornada para la fixture').toBeNull()
+  JORNADA_MIA = ins.data!.id as string
 }
 
 /** Una venta A CRÉDITO: queda `pending`, sin pago. */
@@ -118,6 +124,20 @@ test.afterAll(async () => {
   await db.from('products').update({ is_active: false }).in('id', ids)
   await db.from('categories').update({ is_active: false }).eq('id', CAT)
   await db.from('customers').update({ is_active: false }).eq('id', ID_CLIENTE)
+  // 🔴 LA JORNADA PRIMERO, y es lo que esta corrida costo: sin esto quedaba
+  //    ABIERTA y `cierre-con-fecha.spec` abortaba — 1 failed y 7 casos SIN
+  //    MEDIR, en un archivo que no habla de cambios de producto. Un spec que
+  //    no limpia no falla solo: cambia lo que ven los demas.
+  if (JORNADA_MIA) {
+    await db.from('jornadas').update({
+      closed_at: new Date().toISOString(), closed_by: OWNER, closing_amount: 0,
+    }).eq('id', JORNADA_MIA)
+    const j = await db.from('jornadas').select('closed_at').eq('id', JORNADA_MIA).single()
+    expect(
+      j.data?.closed_at ?? null,
+      `LIMPIEZA de cambio-de-producto.spec: quedo ABIERTA la jornada ${JORNADA_MIA}, y el proximo spec que necesite abrir la suya va a abortar`,
+    ).not.toBeNull()
+  }
   const vivos = await db.from('products').select('id').in('id', ids).eq('is_active', true)
   const cli = await db.from('customers').select('is_active').eq('id', ID_CLIENTE).single()
   expect(
@@ -176,9 +196,12 @@ test('🔴 el movimiento del cambio enlaza a la VENTA — dos saltos, no uno', a
   expect(movs.data?.length, 'el cambio tiene que escribir dos movimientos: uno que entra y otro que sale').toBe(2)
 
   for (const m of movs.data!) {
-    // 🔴 EL DISCRIMINADOR. Con la vista a mitad de camino —resolviendo solo el
-    //    salto movimiento→documento— esto vendria NULO y la pantalla pintaria
-    //    el `#uuid`. Exigir el NUMERO DE LA VENTA prueba los dos saltos.
+    // 🔴 EL DISCRIMINADOR, Y ESTA MEDIDO: sobre los movimientos `sale_change`
+    //    de LAB, la vista de DOS saltos resuelve el numero y un solo salto
+    //    resolveria **0 de 26** — `left join orders on id = reference_id` no
+    //    matchea nunca, porque ese id es el del CAMBIO, no el de la orden.
+    //    Por eso la asercion exige EL NUMERO DE LA VENTA y no algo mas blando:
+    //    «apunta a algo» pasaria igual con la vista a mitad de camino.
     expect(
       m.order_number,
       'el movimiento del cambio no llega hasta la venta: la vista se quedo en un salto',
