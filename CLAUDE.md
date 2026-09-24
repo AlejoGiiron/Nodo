@@ -6805,6 +6805,53 @@ negativo publica algo sin medir. Es la dirección del fallo aplicada al verifica
 > **Si las tres se cumplen, `git diff --stat <sha> -- src/ tests/` vacío alcanza.
 > Si alguna NO se cumple, se re-corre la suite.** No hay tercera opción ni juicio intermedio.
 
+🔴 **SEGUNDA EXCEPCIÓN A LA 4, fijada el 2026-09-24: UN DIFF QUE TYPESCRIPT BORRA.** Escrita con sus
+condiciones verificables por la misma razón que la primera — para que no sea un juicio que alguien
+repite mal el día que le conviene.
+
+| # | la condición | cómo se comprueba |
+|---|---|---|
+| a | el diff sobre `src/` y `tests/` es **sólo imports o anotaciones de tipo** | se LEE el diff entero, no el `--stat` |
+| b | **ninguna línea de runtime cambia** — no toca expresiones ni sentencias | `git diff -U0 … \| grep '^[+-]' \| grep -vcE '^[+-]\s*(import\|export type\|type \|//)'` → **0** |
+| c | `tsc` y `lint` en **cero después** | ejecutados, no recordados |
+
+> **Si las tres se cumplen, la corrida anterior sigue describiendo lo que se publica** — porque lo
+> que cambió lo borra el compilador. Si alguna no, se re-corre.
+
+⚠️ **EL LÍMITE, DICHO PORQUE ES POR DONDE SE VA A ESTIRAR: esto NO cubre «el cambio es chico» ni «es
+sólo formato».** Un formateador puede reordenar argumentos, partir una expresión o mover un `return`,
+y eso es runtime. Son **imports y tipos, que TypeScript borra**, y nada más.
+
+📋 Caso que la estrenó: un `type Page` importado y nunca usado en un spec. Diff de **una línea**,
+líneas de runtime tocadas **0**. Re-correr 22 minutos por eso es lo que vuelve impracticable a una
+regla — y una regla impracticable se saltea entera, que es peor que acotarla.
+
+🔴 **Y LO QUE VALE MÁS QUE EL IMPORT ES POR QUÉ LLEGÓ A LA PUERTA: `tsc` NO MIRA `tests/`. NADA.**
+*Medido el 2026-09-24, y es más fuerte de lo que creíamos.*
+
+```
+tsconfig.json  ->  "include": ["src", "vite.config.ts"]
+pnpm exec tsc --noEmit --listFiles | grep -c "/tests/"   ->   0
+```
+
+Durante el desarrollo del spec corrí `tsc` después de cada edición y leí su **0** como respaldo.
+**El compilador nunca abrió el archivo.** No es que no encontrara el problema: no tenía el archivo
+entre sus entradas.
+
+> **Un «tsc verde» después de editar SÓLO `tests/` es una tautología.** Es el corolario de R4 en su
+> forma más barata de cazar y la que más veces se repitió esta sesión: *una verificación que no podía
+> haber salido mal no es una verificación*.
+
+⚠️ **Y la consecuencia sobre la cobertura de `tests/`: ESLint es el único verificador que lo mira.**
+Lo que ESLint no chequee en un spec, no lo chequea nadie hasta que el caso corre — y un caso corre
+veinte minutos después, o no corre.
+
+✅ **LO ACCIONABLE, y no es «acordarse de correr lint»: es que dejen de ser dos pasos.**
+
+> **`tsc` y `lint` van JUNTOS, siempre. No son dos verificaciones: es una.** Miran cosas distintas y
+> ninguna cubre a la otra — y sobre `tests/`, la que cubre es la que se saltea, porque la otra
+> devuelve un verde que se siente igual.
+
 🔴 **Y EL DATO INCÓMODO VA ACÁ, NO EN UNA NOTA APARTE: LA BASE SÍ CAMBIÓ DESPUÉS DE MEDIR.** No es
 que no haya cambiado nada — cambió. **Lo que la hace aceptable es DÓNDE cambió**, y las tres
 condiciones de arriba son exactamente la forma de comprobar ese «dónde». Escribirlo como *«no
