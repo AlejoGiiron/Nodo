@@ -5647,6 +5647,39 @@ nadie tenía forma de ver que una podía avanzar.
 
 ---
 
+### 🔴 CRITERIO SIN NÚMERO · SI UNA CAPACIDAD NECESITA QUE OTRA COSA LA REFLEJE, PUBLICARLA PRIMERO ES PEOR QUE NO PUBLICARLA
+
+*2026-09-24, ordenando la salida del cambio de producto en una venta. **No es una preferencia de
+orden: el otro orden produce una mentira nueva.***
+
+El caso: la RPC del cambio ya existía y la pantalla que la llama era lo único que le faltaba a la
+clienta. Lo natural era publicar la pantalla primero —es lo que resuelve su problema— y dejar para
+después que la Cartera aprendiera a mirar el documento nuevo.
+
+> **Publicada así, ella registra el cambio, el stock se mueve, y Cartera le sigue mostrando el saldo
+> viejo.** El sistema PARECE haber funcionado, y el número con el que le cobra al cliente queda mal.
+
+🔴 **Y eso es PEOR que el estado anterior, que es lo contraintuitivo.** Antes del cambio ella sabía
+que el sistema no podía hacerlo: el problema estaba afuera, en una nota o en la cabeza de alguien.
+Después, el problema está **adentro y con aspecto de resuelto** — y un número que el producto afirma
+se revisa menos que uno que nadie afirmó.
+
+⚠️ **Es la familia de la CONFIRMACIÓN FALSA**, en el eje del calendario en vez del de la pantalla:
+no produce una acción equivocada, produce **la ausencia de la revisión correcta**. Nadie audita un
+saldo que el sistema acaba de mostrar con toda naturalidad.
+
+✅ **LO ACCIONABLE, y es una pregunta al ordenar una entrega:**
+
+> **¿Qué otra cosa tiene que MIRAR lo que esta capacidad escribe?** Si algo lo tiene que reflejar y
+> todavía no lo hace, eso no es «la parte que sigue»: es un PRERREQUISITO, y publicar sin él no es
+> una entrega parcial — es introducir un dato que miente.
+
+⚠️ Corolario para estimar: el reflejo suele ser mucho más barato que la capacidad —acá fueron dos
+líneas en `deriveDebt` contra una pantalla entera—, así que el orden correcto **no cuesta tiempo,
+sólo cuesta no empezar por lo vistoso.**
+
+---
+
 ### 🔴 CRITERIO SIN NÚMERO · LA RESPUESTA CORRECTA A LA PREGUNTA EQUIVOCADA TRANQUILIZA IGUAL QUE LA CORRECTA
 
 *2026-09-16, enumerando qué limpiezas rompe la tanda A de la deuda 114. **Es la hermana del criterio
