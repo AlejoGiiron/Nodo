@@ -338,6 +338,20 @@ test('🔴 el DETALLE muestra lo que el cliente se llevo, dice que devolvio, y e
   await expect(page.getByTestId('sale-detail-saldo-hoy')).toContainText('6.000')
 })
 
+test('🔴 la FILA de la lista del Historial muestra el total vigente, no el del documento', async ({ page }) => {
+  // Caso real, venta #162: el detalle ya decia 948.000 y la lista seguia en 939.000.
+  const venta = await ventaFiada([{ product_id: ID_A, qty: 1, unit_price: 5000 }])   // 5.000
+  const r = await cambiar(venta.id, 'fila', [linea('in', ID_A, 1, 5000), linea('out', ID_B, 1, 8000)])
+  expect(r.error?.message ?? null).toBeNull()
+  await loginAsOwner(page)
+  await page.goto('/historial')
+  await page.getByTestId('sales-search').fill(String(venta.numero))
+  const fila = page.getByTestId('sale-row').filter({ hasText: `#${venta.numero}` }).first()
+  await expect(fila, 'la fila de la venta tiene que aparecer').toBeVisible({ timeout: 15_000 })
+  await expect(fila, 'la lista muestra el total del documento original: 5.000 en vez de 8.000').toContainText('8.000')
+  await expect(fila).not.toContainText('5.000')
+})
+
 test('CONTROL: el DETALLE de una venta SIN cambio sigue igual — sus lineas y su total', async ({ page }) => {
   const venta = await ventaFiada([{ product_id: ID_A, qty: 2, unit_price: 5000 }])   // 10.000
   await loginAsOwner(page)

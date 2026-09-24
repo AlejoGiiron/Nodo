@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { lineasVigentes, type LineaDeTicket, type ItemDeCambio } from './lineasVigentes'
+import { lineasVigentes, totalVigente, type LineaDeTicket, type ItemDeCambio } from './lineasVigentes'
 
 // El caso real que abrió esto: venta #162, cinco líneas, vuelve OXIMETHANON y
 // se lleva OXANDRONOM. El ticket reimpreso seguía diciendo OXIMETHANON.
@@ -63,5 +63,18 @@ describe('lineasVigentes — lo que el cliente tiene hoy', () => {
   it('🔴 si lo que vuelve no está en la venta, LANZA en vez de imprimir algo que no cuadra', () => {
     expect(() => lineasVigentes([L('a', 'A', 1, 5000)], [C('in', 'a', 'A', 2, 5000)]))
       .toThrow(/devuelve 2 de «A»/)
+  })
+})
+
+describe('totalVigente — el total de hoy de una venta', () => {
+  it('🔴 venta #162: 939.000 del documento + 9.000 del cambio', () => {
+    expect(totalVigente({ total: 939000, sale_changes: [{ delta_total: 9000 }] })).toBe(948000)
+  })
+  it('suma TODOS los cambios, no el ultimo', () => {
+    expect(totalVigente({ total: 10000, sale_changes: [{ delta_total: 3000 }, { delta_total: -1000 }] })).toBe(12000)
+  })
+  it('CONTROL: sin cambios es el total del documento', () => {
+    expect(totalVigente({ total: 5000, sale_changes: [] })).toBe(5000)
+    expect(totalVigente({ total: 5000 })).toBe(5000)
   })
 })

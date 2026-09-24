@@ -105,3 +105,13 @@ export function resumenDeCambios(items: ItemDeCambio[]): { devolvio: string; sel
   }
   return { devolvio: junta('in'), sellevo: junta('out') }
 }
+
+/**
+ * EL TOTAL DE HOY de una venta: el del documento más los deltas de sus cambios.
+ * Una sola función para la fila de la lista, el detalle y el ticket: el caso
+ * real que la abrió (venta #162) fue la lista mostrando 939.000 con el detalle
+ * ya diciendo 948.000 — dos lugares calculando el mismo número por separado.
+ */
+export function totalVigente(venta: { total: number; sale_changes?: { delta_total: number }[] | null }): number {
+  return Number(venta.total) + (venta.sale_changes ?? []).reduce((s, c) => s + Number(c.delta_total), 0)
+}

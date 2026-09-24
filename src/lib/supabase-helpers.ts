@@ -691,6 +691,8 @@ export interface SalesHistoryRow {
   cancel_reason: string | null
   payments: { method: Enums<'payment_method'>; amount: number }[]
   profiles: { full_name: string | null } | null
+  /** Deltas de los cambios de producto: la fila muestra el total VIGENTE (`totalVigente`), no el del documento. */
+  sale_changes: { delta_total: number }[]
 }
 
 export const getSalesHistory = ({
@@ -709,7 +711,7 @@ export const getSalesHistory = ({
   const paymentsSel = real ? 'payments!inner(method, amount)' : 'payments(method, amount)'
   const select =
     `id, order_number, created_at, canal, customer_name, total, payment_status, cancelled_at, cancel_reason, ` +
-    `${paymentsSel}, profiles!orders_created_by_fkey(full_name)`
+    `${paymentsSel}, profiles!orders_created_by_fkey(full_name), sale_changes(delta_total)`
 
   let q = supabase
     .from('orders')
@@ -819,7 +821,7 @@ export const getCancelledSales = (sedeId: string, from?: string, to?: string) =>
       `id, order_number, created_at, canal, customer_name, total, payment_status, ` +
         `cancelled_at, cancel_reason, ` +
         `payments(method, amount), profiles!orders_created_by_fkey(full_name), ` +
-        `canceller:profiles!orders_cancelled_by_fkey(full_name)`,
+        `canceller:profiles!orders_cancelled_by_fkey(full_name), sale_changes(delta_total)`,
     )
     .eq('sede_id', sedeId)
     .not('order_number', 'is', null)

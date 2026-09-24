@@ -11,7 +11,7 @@ import {
   type SalesHistoryRow, type CancelledSaleRow,
 } from '@/hooks/useSalesHistory'
 import { printSaleTicket } from '@/lib/printer'
-import { lineasVigentes, itemsDeCambio, resumenDeCambios, type LineaDeTicket } from '@/lib/lineasVigentes'
+import { lineasVigentes, itemsDeCambio, resumenDeCambios, totalVigente as totalVigenteDe, type LineaDeTicket } from '@/lib/lineasVigentes'
 import { mensajeDeError } from '@/lib/errores'
 import toast from 'react-hot-toast'
 import { CambioProductoModal } from '@/components/sales/CambioProductoModal'
@@ -185,7 +185,7 @@ function SaleDetailModal({ orderId, onClose }: { orderId: string; onClose: () =>
       return { originales, lineas: null, error: e }
     }
   }, [sale])
-  const totalVigente = sale ? Number(sale.total) + deltaCambios : 0
+  const totalVigente = sale ? totalVigenteDe(sale) : 0
   const resumen = useMemo(() => resumenDeCambios(itemsDeCambio(sale?.sale_changes ?? [])), [sale])
   // Si no se pudieron componer, la pantalla cae a las originales Y LO DICE (la franja).
   const filas = vigentes.lineas ?? vigentes.originales
@@ -218,7 +218,7 @@ function SaleDetailModal({ orderId, onClose }: { orderId: string; onClose: () =>
       // Sin dato no va la línea: ver la nota de `customerName` en printer.ts.
       customerName: sale.customer_name,
       createdAt: sale.created_at,
-      total: Number(sale.total) + deltaCambios,
+      total: totalVigente,
       cambio: cambios.length > 0 ? { cantidad: cambios.length, abonado, saldoActual: saldoHoy } : null,
       items,
     })
@@ -753,7 +753,7 @@ export function SalesHistoryPage() {
                     )}
                   </span>
                   <span style={{ textAlign: 'right', fontSize: 14, fontWeight: 700, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>
-                    {formatoCOP(row.total)}
+                    {formatoCOP(totalVigenteDe(row))}
                   </span>
                 </button>
               )
