@@ -324,7 +324,7 @@ async function ticketReimpreso(page: Page): Promise<string> {
     const w = window as unknown as { __ticket: string | null }
     w.__ticket = null
     window.print = () => {
-      w.__ticket = document.getElementById('nodo-sale-ticket-content')?.innerText ?? ''
+      w.__ticket = document.getElementById('nodo-sale-ticket-content')?.textContent ?? ''
     }
   })
   await page.getByTestId('sale-reprint').click()

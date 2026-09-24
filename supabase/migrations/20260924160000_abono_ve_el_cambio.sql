@@ -51,7 +51,7 @@
 --      3 · la suma de `sale_changes.delta_total` antes de calcular el saldo;
 --      4 · el saldo posterior, que decide `paid` vs `partial`, con el mismo delta.
 --
--- ⚠️ LO QUE ESTO NO CUBRE, anotado en DEUDAS.md:
+-- ⚠️ LO QUE ESTO NO CUBRE, anotado como deuda 132:
 --    `register_sale_void` tampoco sabe de `sale_changes`: anular una venta con
 --    cambio devuelve al stock las líneas ORIGINALES y no lo que salió con el
 --    cambio. Queda esperando la decisión de si se rechaza o se revierte.
