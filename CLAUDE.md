@@ -5314,6 +5314,24 @@ no auditando la deuda.
 una fuente, **contá**. Un «lo nombra dos veces» es un conteo, y *un número sin comando es una
 opinión con dígitos* — también cuando el número es 2.
 
+🔴 **Y LA MISMA FORMA SOBRE UNA FIRMA DE API, 2026-09-24 — la variante más barata de cazar y la que
+más se repite.** Escribiendo una fixture llamé a `register_debt_payment` con `p_method`. El parámetro
+se llama `p_payment_method`, y está escrito en `supabase-helpers.ts`, a un `grep` de distancia. No lo
+leí: lo **recordé**.
+
+> **Recordar una firma es citar sin abrir**, con el agravante de que una firma recordada *se siente
+> verificada* — uno la escribió alguna vez.
+
+✅ **Lo que la hace la barata de la familia: la caza la EJECUCIÓN, en el acto.** PostgREST contesta
+*«Could not find the function … in the schema cache»* y nombra los parámetros que recibió. No hay
+intervalo, no hay número plausible, no hay que cruzar nada. Por eso no necesita un mecanismo nuevo:
+necesita correr el caso antes de creerle, que es lo que el procedimiento ya pide.
+
+⚠️ Corolario, y es lo que la separa de un descuido: **las firmas de las RPC son el lado del contrato
+que más se recuerda y menos se abre**, porque el nombre de la función sí se recuerda bien. Al escribir
+una llamada nueva a una RPC, el `grep` de su nombre en `supabase-helpers.ts` cuesta lo mismo que
+tipearla de memoria.
+
 🔴 **EL ÚLTIMO CASO ES DE OTRA ESPECIE: LOS DEMÁS DESCRIBÍAN MAL EL ALCANCE; ÉSE DESCRIBÍA MAL LA
 DIRECCIÓN.**
 
