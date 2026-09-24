@@ -8,6 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint .",
+    "pre": "node scripts/puerto-libre.mjs && pnpm typecheck && pnpm lint && pnpm test:unit && node scripts/residuo.mjs",
+    "residuo": "node scripts/residuo.mjs",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
     "typecheck": "tsc --noEmit",

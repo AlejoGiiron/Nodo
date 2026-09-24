@@ -594,6 +594,41 @@ lo mostrara. Un `0x08` es invisible en el editor y en el `git diff`.
 ⚠️ Y si un ancla o un reemplazo tiene que contener un backslash, se construye con `chr(92)` en vez
 de escribirlo: no hay forma de que sobreviva a un escape de más ni a uno de menos.
 
+### 🔴 CRITERIO SIN NÚMERO · EL CÓDIGO SE LEE CORRECTO Y LA CAPA DE ABAJO LO DESMIENTE — Y CUANDO UN INSTRUMENTO YA ACERTÓ, LA AUTORIDAD SE INVIERTE HACIA ÉL
+
+*Dos casos en un solo turno, 2026-09-24. Se escriben juntos porque separados parecen anécdotas de
+tecnologías distintas y juntos son la misma forma.*
+
+| # | el código | lo que lo desmiente |
+|---|---|---|
+| 1 | `e instanceof Error ? e.message : String(e)` | el error de `supabase.rpc()` **no es instancia de `Error`** — objeto plano con `message`. Salió `[object Object]` |
+| 2 | `server.listen(5180, '127.0.0.1')` para ver si el puerto está tomado | el `webServer` escucha en **`[::1]`** — IPv6 y IPv4 **son direcciones distintas y no chocan**. Dijo «libre» con el puerto ocupado |
+
+> **Los dos se leen como la comprobación prudente.** `instanceof Error` sobre algo que tiene
+> `message`; enlazar el loopback para ver si el puerto está libre. Ninguna lectura del código los
+> delata: lo que falla está **una capa más abajo** —el tipo real en uno, la pila de red en el otro—.
+
+🔴 **Y EL SEGUNDO LO DESTAPÓ SU CONTROL POSITIVO EN VIVO, no un razonamiento:** correr el chequeo
+**con la suite andando**, o sea con el puerto tomado. Dijo `libre`. Era **un verificador que no podía
+dar rojo justo en el caso que existe para cazar** — el corolario de R4 cometido en el instrumento
+recién escrito para cerrar otra falla de instrumento.
+
+✅ **LA CORRECCIÓN, Y SU RAZÓN ES LO REUTILIZABLE:**
+
+> **Cuando un instrumento falla y OTRO ya acertó sobre el mismo hecho, la autoridad se INVIERTE hacia
+> el que acertó — no se arregla el que falló.**
+
+En el diagnóstico del puerto huérfano, media hora antes, quien vio la verdad fue `netstat`: mostró el
+`LISTENING` en `[::1]` con su PID. Así que el chequeo pasó a mandar con `netstat` y la prueba de
+enlace quedó de respaldo —y sin host, que choca con cualquier familia—. Arreglar el `listen` habría
+dejado la misma pregunta abierta: *¿y si hay otra interfaz?*
+
+⚠️ Corolario para escribir un instrumento nuevo: **si ya hubo un diagnóstico que funcionó, el
+instrumento se construye alrededor de ÉL.** Escribir uno nuevo «más limpio» y descubrir después que
+no discrimina es pagar dos veces por lo mismo.
+
+---
+
 🔴 **LA VARIANTE MÁS CARA DE ESTA FAMILIA, 2026-09-24: EL DEFECTO NO REAPARECIÓ EN EL TEXTO — REAPARECIÓ
 EN CÓDIGO NUEVO, CONTRA UNA CLASE QUE YA ESTABA BARRIDA, MIENTRAS SE ESCRIBÍA LA CONDICIÓN QUE LO
 PROHIBÍA.**
