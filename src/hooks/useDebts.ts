@@ -15,7 +15,16 @@ export interface Debt {
   id: string
   order_number: number | null
   created_at: string
+  /**
+   * Lo que la venta vale HOY: el documento original mas los cambios de
+   * producto. Es lo que hay que cobrar, y por eso es este el que lleva el
+   * nombre corto — el unico consumidor es la columna «Total» de Cartera.
+   */
   total: number
+  /** Lo que decia el documento el dia que se vendio. La historia no se reescribe. */
+  totalOriginal: number
+  /** Cuanto movieron los cambios de producto. 0 = no hubo ninguno. */
+  deltaCambios: number
   abonado: number
   saldo: number
   payment_status: string             // 'pending' | 'partial'
@@ -27,13 +36,22 @@ export interface Debt {
 
 const deriveDebt = (row: DebtRow): Debt => {
   const abonado = (row.debt_payments ?? []).reduce((s, p) => s + p.amount, 0)
+  // 🔴 Desde 20260924120000 el saldo es `total + Σ deltas − abonos`. Sin esto
+  //    la cartera muestra el total del documento ORIGINAL: un numero plausible
+  //    que hace que le cobre al cliente el producto que ya devolvio.
+  const deltaCambios = (row.sale_changes ?? []).reduce((s, c) => s + Number(c.delta_total), 0)
+  const totalActual = Number(row.total) + deltaCambios
   return {
     id: row.id,
     order_number: row.order_number,
     created_at: row.created_at,
-    total: row.total,
+    total: totalActual,
+    totalOriginal: Number(row.total),
+    deltaCambios,
     abonado,
-    saldo: Math.max(0, row.total - abonado),
+    // El clamp a 0 lo protege de un saldo negativo. Hoy no puede venir de un
+    // cambio: `register_sale_change` RECHAZA si quedaria pagada de mas.
+    saldo: Math.max(0, totalActual - abonado),
     payment_status: row.payment_status,
     plazo_dias: row.plazo_dias ?? null,
     customerId: row.customer_id,

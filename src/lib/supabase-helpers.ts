@@ -1435,6 +1435,8 @@ export interface DebtRow {
   customer_name: string | null
   customers: { name: string } | null
   debt_payments: { amount: number }[]
+  /** Cambios de producto registrados sobre esta venta (20260924120000). */
+  sale_changes: { delta_total: number }[]
 }
 
 // Órdenes a fiado pendientes/parciales de la sede, con sus abonos. El saldo se
@@ -1446,8 +1448,12 @@ export const getDebts = (sedeId: string) =>
       // `plazo_dias` es el plazo CONGELADO de esta venta (deuda 46). No se lee
       // del cliente: renegociarlo no puede mover el vencimiento de una venta
       // vieja, y esta consulta es justamente la que lo calcularía distinto.
+      // 🔴 `sale_changes(delta_total)` NO es un adorno: desde 20260924120000 el
+      // saldo de una venta es `total + Σ deltas − abonos`. Sin este embebido la
+      // cartera muestra el total del documento original —un numero plausible—
+      // y ella le cobra al cliente el precio del producto que ya devolvio.
       'id, order_number, created_at, total, payment_status, customer_id, customer_name, ' +
-        'plazo_dias, customers(name), debt_payments(amount)',
+        'plazo_dias, customers(name), debt_payments(amount), sale_changes(delta_total)',
     )
     .eq('sede_id', sedeId)
     .in('payment_status', ['pending', 'partial'])

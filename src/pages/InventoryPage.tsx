@@ -225,6 +225,20 @@ const MOV_META: Record<string, { label: string; icon: React.ReactNode }> = {
   purchase_return: { label: 'Devolución a proveedor', icon: <RotateCcw size={12} /> },
 }
 
+/**
+ * El documento al que apunta un movimiento, si apunta a alguno.
+ *
+ * 🔴 El MAPA es de tipo -> QUÉ DOCUMENTO, no de tipo -> si tiene enlace. Un
+ * tipo que nadie enseñe acá no desaparece del enlace: cae al `#uuid`, que
+ * degrada VISIBLE. Es el mismo modelo que `MOV_META` dos líneas abajo, y el
+ * contrario del `if` enumerado que tenía antes, que degradaba callado.
+ */
+function numeroDeDocumento(m: { type: string; order_number: number | null; purchase_number: number | null }): string | null {
+  if (m.order_number != null) return `Venta #${m.order_number}`
+  if (m.purchase_number != null) return `Compra #${m.purchase_number}`
+  return null
+}
+
 function MovementsTab() {
   const [type, setType] = useState<StockMovementType | null>(null)
   // null = todos los productos. Es el estado por defecto y el ✕ del chip vuelve acá.
@@ -332,14 +346,15 @@ function MovementsTab() {
               //    existe.
               //    Una devolución a proveedor no entra: su factura no lleva
               //    número por CHECK, así que sigue mostrando su nota.
-              const ref =
-                (m.type === 'sale' || m.type === 'return') && m.order_number != null
-                  ? `Venta #${m.order_number}`
-                  : m.type === 'purchase' && m.purchase_number != null
-                    ? `Compra #${m.purchase_number}`
-                    : (m.type === 'sale' || m.type === 'purchase') && m.reference_id
-                      ? `#${m.reference_id.slice(0, 8)}`
-                      : (m.notes ?? '—')
+              // 🔴 SE DERIVA DE `reference_id`, NO SE ENUMERAN TIPOS (deuda 121).
+              //    La pregunta es «¿este movimiento apunta a un documento?», y el
+              //    tipo sólo decide A CUÁL — eso sí es un mapa, y lleva fallback.
+              //    ⚠️ La versión anterior enumeraba (`type === 'sale' || 'return'`),
+              //    que es EXACTAMENTE lo que la deuda advertía que no se hiciera:
+              //    «deja el mismo defecto esperando al próximo valor del CHECK».
+              //    El próximo valor llegó tres días después (`sale_change`) y la
+              //    enumeración quedó incompleta sola. Derivando, ya no espera a nadie.
+              const ref = numeroDeDocumento(m) ?? (m.reference_id ? `#${m.reference_id.slice(0, 8)}` : (m.notes ?? '—'))
               return (
                 <tr key={m.id} data-testid="stock-movement-row" style={{ borderTop: '1px solid var(--border-2)' }}>
                   <td style={{ padding: '11px 16px', color: 'var(--ink-3)', fontVariantNumeric: 'tabular-nums', fontSize: 12 }}>{fmtDateTime(m.created_at)}</td>
