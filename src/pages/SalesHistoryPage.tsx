@@ -107,7 +107,17 @@ function SaleDetailModal({ orderId, onClose }: { orderId: string; onClose: () =>
   const voidBlockedReason = !shiftOpen
     ? 'No hay un turno de caja abierto'
     : !inCurrentShift
-      ? 'Esta venta pertenece a un turno cerrado y no puede anularse; para corregirla se necesita una devolución'
+      // 🔴 ANTES DECÍA «para corregirla se necesita una devolución», Y ESA
+      //    DEVOLUCIÓN NO EXISTE: no hay RPC, ni tipo de movimiento, ni pantalla
+      //    —`sale_return` da cero en todo el repo (medido el 2026-09-24)—.
+      //    No era vocabulario desalineado: era una INSTRUCCIÓN FALSA, dada en el
+      //    momento exacto en que alguien tiene el problema. Manda a buscar algo
+      //    que no está, y quien lo busca no puede saber si el error es suyo.
+      //    Misma clase que el aviso que mandaba a «Fiado → Cuentas por cobrar»,
+      //    y peor: aquél describía mal, éste ordena.
+      // ⚠️ El texto nuevo dice lo que HAY: que no se puede desde acá y por qué.
+      //    El día que exista el camino real, este mensaje es uno de sus lados.
+      ? 'Esta venta es de un turno ya cerrado: anularla reescribiría un arqueo firmado. Hoy no se puede corregir desde el sistema — anotá el número de la venta y qué habría que cambiarle, y pedilo por soporte.'
       : ''
 
   const confirmVoid = () => {

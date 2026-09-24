@@ -309,7 +309,7 @@ test.describe.serial('Anulación de ventas', () => {
     await voidRpc(await db(), id)
   })
 
-  test('rechazo: turno cerrado → RPC niega (devolución) + botón deshabilitado con tooltip', async ({ page }) => {
+  test('rechazo: turno cerrado → RPC niega + botón deshabilitado con un tooltip que NO promete una salida inexistente', async ({ page }) => {
     // Venta en un turno, luego se cierra y se abre otro → la venta es de un turno cerrado.
     await ensureShift()
     const { id, number } = await createSale({ items: [{ product_id: P_SIMPLE, qty: 1, unit_price: 5000 }], total: 5000 })
@@ -328,7 +328,24 @@ test.describe.serial('Anulación de ventas', () => {
     const btn = page.getByTestId('sale-void-button')
     await expect(btn).toBeVisible()
     await expect(btn).toBeDisabled()
-    await expect(btn).toHaveAttribute('title', /turno cerrado.*devolución/)
+    // 🔴 ESTA ASERCIÓN CLAVABA LA MENTIRA. Pedía que el tooltip dijera
+    //    «devolución», y esa devolución NO EXISTE: no hay RPC, ni tipo de
+    //    movimiento, ni pantalla (`sale_return` da cero en el repo, medido el
+    //    2026-09-24). O sea que el caso estaba en verde CUSTODIANDO una
+    //    instrucción falsa — el test le daba respaldo al defecto.
+    // ⚠️ Ahora asevera las dos mitades de un aviso honesto: que NO se puede, y
+    //    que no manda a ningún lado inventado. El control negativo es lo que
+    //    impide que alguien vuelva a prometer una salida que no está.
+    const tooltip = await btn.getAttribute('title') ?? ''
+    expect(tooltip, 'el tooltip tiene que decir que hoy no se puede corregir desde el sistema')
+      .toMatch(/turno ya cerrado/i)
+    expect(tooltip, 'y decir qué hacer en su lugar, sin nombrar una pantalla que no existe')
+      .toMatch(/no se puede corregir desde el sistema/i)
+    expect(
+      tooltip,
+      'CONTROL NEGATIVO: no puede volver a ofrecer una «devolución» de venta mientras esa ' +
+      'operación no exista. Si algún día existe, este rojo dice que hay que reescribir el aviso',
+    ).not.toMatch(/devoluci/i)
   })
 
   test('rechazo: re-anular una venta ya anulada → niega', async () => {
