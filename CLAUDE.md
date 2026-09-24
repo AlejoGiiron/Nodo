@@ -633,9 +633,33 @@ error»* habría pasado con `[object Object]` en pantalla.
 agravante de que acá la clase se barrió BIEN y aun así volvió, porque **una extracción es una
 alternativa, no una prohibición**.
 
-> **Propuesta, medida y no hecha:** un tripwire unitario —o una regla de ESLint— que falle si
-> `instanceof Error` aparece en `src/` fuera de `errores.ts`. Hoy daría **verde** (la enumeración de
-> arriba), y habría dado **rojo** sobre mi hook. Cuesta un archivo y cierra la clase de verdad.
+✅ **HECHO en la misma tanda:** `src/lib/errores-instanceof.test.ts`. Verde hoy, y **verificado contra
+el caso real**: reintroducido el defecto en el hook, el tripwire se pone rojo **nombrando el archivo**
+y diciendo qué usar. Ignora comentarios a propósito —este archivo, `errores.ts` y el hook NOMBRAN el
+patrón para explicarlo—, que es la cuarta aparición de *«la coincidencia vive dentro del comentario
+que documenta la deuda»*, atajada en el detector y no con cuidado.
+
+🔴 **Y ES LA PRIMERA VEZ QUE «ENTENDER LA CLASE NO LA BARRE» SE CONTESTA CON UN MECANISMO.** Esa frase
+tiene ocho apariciones en este archivo y ninguna tenía solución: todas terminaban en un criterio. **Un
+criterio se lee; un tripwire se ejecuta.**
+
+✅ **LO ACCIONABLE QUE VALE MÁS QUE ESTE CASO, y es una pregunta que faltaba:**
+
+> **Al barrer una clase, la pregunta no es «¿quedaron copias?» — es «¿QUÉ IMPIDE LA PRÓXIMA?».** Las
+> 11 se cerraron. La 12 no tenía nada enfrente.
+
+📋 **Y aplicada al repo, medida el 2026-09-24, da TRES categorías y no dos — que es lo que la vuelve
+útil:**
+
+| estado | clases |
+|---|---|
+| **barrida Y con tripwire** | catálogo de permisos · censo de PII · fondo de modales · scroll de modales · `service_role` del arnés · atajos |
+| **barrida SIN tripwire** | `restaurant_id` (**0 vivas**) · el emerald de la 88 (**0 vivas en código**: lo único que queda es `src/design-system.md`, que es el de Vento y se conserva a propósito) |
+| 🔴 **NI barrida NI tripwire** | `formatCOP`: **11 definiciones locales vivas**, conviviendo con el `formatoCOP` compartido de `src/lib/formato.ts` |
+
+⚠️ **La tercera fila es el hallazgo.** El candidato que se sospechaba —el emerald— está limpio; el que
+nadie nombraba tiene once copias. **Preguntar «¿qué impide la próxima?» encontró una clase que ni
+siquiera había tenido primera pasada**, y la encontró porque obliga a mirar el estado, no el recuerdo.
 
 🔴 **2026-09-17: DOS scripts de edición por heredoc otra vez, con la regla de arriba escrita.** El
 barrido dio **0** en los dos, así que no mordió — y es la mitad 2 funcionando cuando la mitad 1 no se
