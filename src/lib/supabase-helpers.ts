@@ -368,6 +368,38 @@ export const setCapitalInicial = (
     .update({ capital_inicial: capital, capital_inicial_desde: desde })
     .eq('id', sedeId)
 
+/** Lo que devuelve `register_sale_change` (20260924120000). */
+export interface SaleChangeResult {
+  change_id: string
+  order_number: number
+  delta: number
+  total_nuevo: number
+  abonado: number
+  saldo: number
+}
+
+export interface SaleChangeItem {
+  /** `in` = vuelve a la tienda · `out` = se lo lleva el cliente. */
+  direction: 'in' | 'out'
+  product_id: string
+  qty: number
+  unit_price: number
+}
+
+/**
+ * Cambia productos de una venta a crédito: un DOCUMENTO NUEVO, no una edición.
+ *
+ * ⚠️ La venta no se reescribe — `order_items` queda intacto — porque esto no es
+ * un error de digitación: el cliente de verdad se llevó una cosa y de verdad
+ * volvió y se llevó otra.
+ */
+export const registerSaleChange = (orderId: string, motivo: string, items: SaleChangeItem[]) =>
+  supabase.rpc('register_sale_change', {
+    p_order_id: orderId,
+    p_reason: motivo,
+    p_items: items as unknown as Json,
+  })
+
 export interface ProductoBuscado {
   id: string
   name: string
@@ -726,8 +758,14 @@ export interface SaleDetailRow {
   payments: { method: Enums<'payment_method'>; amount: number }[]
   profiles: { full_name: string | null } | null
   canceller: { full_name: string | null } | null   // quién anuló (orders_cancelled_by_fkey)
+  /** Abonos de una venta a crédito. Hacen falta para el SALDO DE HOY del detalle. */
+  debt_payments: { amount: number }[]
+  /** Cambios de producto posteriores (20260924120000). Vacío = la venta no se tocó. */
+  sale_changes: { id: string; delta_total: number; reason: string; created_at: string }[]
   order_items: {
     id: string
+    /** Lo necesita el CAMBIO DE PRODUCTO: la RPC identifica por producto, no por línea. */
+    product_id: string
     qty: number
     unit_price: number
     notes: string | null
@@ -748,10 +786,12 @@ export const getSaleDetail = (orderId: string) =>
       id, order_number, created_at, canal, customer_name, customer_phone, notes, total, payment_status,
       cancelled_at, cancel_reason,
       payments(method, amount),
+      debt_payments(amount),
+      sale_changes(id, delta_total, reason, created_at),
       profiles!orders_created_by_fkey(full_name),
       canceller:profiles!orders_cancelled_by_fkey(full_name),
       order_items(
-        id, qty, unit_price, notes,
+        id, product_id, qty, unit_price, notes,
         products(name),
         order_item_extras(id, qty, unit_price, extras(name))
       )

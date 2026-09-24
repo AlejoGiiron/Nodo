@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { loginAsOwner, ownerCreds } from './helpers/auth'
@@ -180,6 +180,107 @@ test('🔴 la CARTERA muestra el saldo CON el cambio, no el del documento origin
     'la cartera muestra el saldo del documento ORIGINAL: sin mirar el cambio le cobra ' +
     'al cliente el producto que ya devolvio',
   ).toContainText('10.000')
+})
+
+// ── 1 · la pantalla, que es lo unico que le sirve a ella ────────────────────
+async function abrirDetalle(page: Page, numero: number) {
+  await page.goto('/historial')
+  await page.getByTestId('sales-search').fill(String(numero))
+  await page.getByTestId('sale-row').filter({ hasText: String(numero) }).first().click()
+  await expect(page.getByTestId('sale-detail-modal')).toBeVisible({ timeout: 15_000 })
+}
+
+test('🔴 desde el detalle de la venta, la pantalla registra el cambio y el saldo queda bien', async ({ page }) => {
+  const venta = await ventaFiada([{ product_id: ID_A, qty: 2, unit_price: 5000 }])   // 10.000
+  await loginAsOwner(page)
+  await abrirDetalle(page, venta.numero)
+
+  await page.getByTestId('sale-cambio-button').click()
+  await expect(page.getByTestId('cambio-modal')).toBeVisible()
+
+  // Vuelve 1 de A y se lleva 1 de B a 8.000.
+  await page.getByTestId('cambio-vuelve-qty').first().fill('1')
+  await page.getByTestId('mov-producto-buscar').fill(PROD_B)
+  await page.getByTestId('mov-producto-opcion').filter({ hasText: PROD_B }).first().click()
+  await page.getByTestId('cambio-sale-precio').fill('8000')
+  await page.getByTestId('cambio-motivo').fill('el cliente lo cambio')
+
+  // El numero con el que ella confirma, ANTES de guardar: 10.000 − 5.000 + 8.000.
+  await expect(
+    page.getByTestId('cambio-total-nuevo'),
+    'la pantalla tiene que mostrar en cuanto queda la venta antes de confirmar',
+  ).toContainText('13.000')
+
+  await page.getByTestId('cambio-confirmar').click()
+  await expect(page.getByText(/Cambio registrado/)).toBeVisible({ timeout: 15_000 })
+
+  // SUJETO: lo que quedo en la base, que es lo unico que despues se cobra.
+  const chg = await db.from('sale_changes').select('delta_total').eq('order_id', venta.id)
+  expect(chg.data?.length, 'la pantalla no registro el cambio').toBe(1)
+  expect(Number(chg.data![0].delta_total), 'el delta tiene que ser +3.000').toBe(3000)
+})
+
+// ── la franja: las DOS mitades, o «siempre la muestra» pasa verde ───────────
+test('🔴 una venta CON cambio lo dice en el detalle, con el saldo de hoy', async ({ page }) => {
+  const venta = await ventaFiada([{ product_id: ID_A, qty: 2, unit_price: 5000 }])   // 10.000
+  const r = await cambiar(venta.id, 'franja', [linea('in', ID_A, 1, 5000), linea('out', ID_B, 1, 8000)])
+  expect(r.error?.message ?? null).toBeNull()
+
+  await loginAsOwner(page)
+  await abrirDetalle(page, venta.numero)
+  await expect(
+    page.getByTestId('sale-detail-cambios'),
+    'las lineas de abajo son las ORIGINALES: sin el aviso, la pantalla muestra un total que nadie va a cobrar',
+  ).toBeVisible()
+  // 10.000 − 5.000 + 8.000, sin abonos.
+  await expect(page.getByTestId('sale-detail-saldo-hoy')).toContainText('13.000')
+})
+
+test('🔴 CONTROL: una venta SIN cambio no muestra la franja', async ({ page }) => {
+  // Sin esta mitad, una franja que se pintara SIEMPRE pasaria el caso de
+  // arriba igual — y dejaria de informar, que es lo que la hace util.
+  const venta = await ventaFiada([{ product_id: ID_A, qty: 1, unit_price: 5000 }])
+  await loginAsOwner(page)
+  await abrirDetalle(page, venta.numero)
+  await expect(page.getByTestId('sale-detail-item').first()).toBeVisible()
+  await expect(
+    page.getByTestId('sale-detail-cambios'),
+    'una venta que nadie toco no puede avisar que tiene cambios',
+  ).toHaveCount(0)
+})
+
+// ── el mensaje de la RPC llega INTACTO a la pantalla ────────────────────────
+test('🔴 el rechazo de la RPC llega ENTERO a la pantalla: los tres numeros y la salida', async ({ page }) => {
+  // 🔴 ES EL CASO QUE IMPIDE QUE ALGUIEN «MEJORE» EL MANEJO DE ERRORES CON UN
+  //    GENERICO. Aseverar «hay un error» pasaria igual con un «Error al
+  //    guardar», y ahi se pierde lo unico accionable: cuanto abono, en cuanto
+  //    quedaria, cuanto sobra, y que puede hacer.
+  const venta = await ventaFiada([{ product_id: ID_A, qty: 2, unit_price: 5000 }])   // 10.000
+  const ab = await db.rpc('register_debt_payment', { p_order_id: venta.id, p_amount: 8000, p_payment_method: 'transfer' })
+  expect(ab.error?.message ?? null).toBeNull()
+
+  await loginAsOwner(page)
+  await abrirDetalle(page, venta.numero)
+  await page.getByTestId('sale-cambio-button').click()
+  await page.getByTestId('cambio-vuelve-qty').first().fill('1')
+  await page.getByTestId('mov-producto-buscar').fill(PROD_B)
+  await page.getByTestId('mov-producto-opcion').filter({ hasText: PROD_B }).first().click()
+  await page.getByTestId('cambio-sale-precio').fill('1000')
+  await page.getByTestId('cambio-motivo').fill('cambio por algo mas barato')
+  await page.getByTestId('cambio-confirmar').click()
+
+  const aviso = page.getByText(/pagada de mas/i)
+  await expect(aviso, 'el rechazo tiene que llegar a la pantalla').toBeVisible({ timeout: 15_000 })
+  const texto = await aviso.innerText()
+  expect(texto, 'lo abonado').toContain('8000')
+  expect(texto, 'en cuanto quedaria').toContain('6000')
+  expect(texto, 'cuanto sobra').toContain('2000')
+  expect(texto, 'y que puede hacer: negar sin nombrar la salida es el defecto que sacamos esta semana')
+    .toMatch(/igual o mayor valor/i)
+
+  // CONTROL: rechazar no deja nada escrito.
+  const q = await db.from('sale_changes').select('id').eq('order_id', venta.id)
+  expect(q.data?.length, 'un rechazo no puede dejar el documento a medias').toBe(0)
 })
 
 // ── 5 · el enlace, con sus dos saltos ───────────────────────────────────────

@@ -99,6 +99,18 @@ export interface SaleTicketData {
    */
   customerName?: string | null
   createdAt: string
+  /**
+   * 🔴 LO MÍNIMO PARA QUE EL PAPEL NO CONTRADIGA A LA PANTALLA. Una venta con
+   * un cambio posterior conserva sus líneas —son ciertas, eso se vendió ese
+   * día— pero su TOTAL ya no es lo que se debe. Sin esta marca, quien recibe
+   * el papel lee un número que nadie va a cobrar.
+   *
+   * ⚠️ Va el HECHO y el SALDO, no el detalle del cambio. El detalle espera a
+   * la deuda 108: este ticket ya no reconcilia —no tiene Subtotal, Descuento
+   * ni Vuelto— y agregarle una sección haría la contradicción peor, porque
+   * quien sume y no le dé no sabría si le falta el descuento o el cambio.
+   */
+  cambio?: { cantidad: number; saldoActual: number } | null
   items: {
     qty: number
     name: string
@@ -160,6 +172,13 @@ export function buildSaleTicketHtml(data: SaleTicketData): string {
       <span>TOTAL</span><span>${formatCOP(data.total)}</span>
     </div>
     ${methodLabel ? `<div style="display:flex;justify-content:space-between;font-size:11px;margin-top:2px"><span>${methodLabel}</span></div>` : ''}
+    ${data.cambio ? `
+      <div style="border-top:1px dashed #000;margin:6px 0"></div>
+      <div style="font-size:11px;text-align:center">
+        <div style="font-weight:700">ESTA VENTA TIENE ${data.cambio.cantidad} CAMBIO${data.cambio.cantidad !== 1 ? 'S' : ''} POSTERIOR${data.cambio.cantidad !== 1 ? 'ES' : ''}</div>
+        <div style="margin-top:2px">El total de arriba es el de la venta original.</div>
+        <div style="margin-top:2px;font-weight:700">Saldo actual: ${formatCOP(data.cambio.saldoActual)}</div>
+      </div>` : ''}
     <div style="border-top:1px dashed #000;margin:8px 0"></div>
     <div style="text-align:center;font-size:11px">¡Gracias por su compra!</div>
   `

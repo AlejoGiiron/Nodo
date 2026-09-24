@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import {
   Search, X, ChevronLeft, ChevronRight, Printer, Receipt,
-  Store, MessageCircle, Phone, Calendar, Ban, AlertTriangle,
+  Store, MessageCircle, Phone, Calendar, Ban, AlertTriangle, ArrowLeftRight,
 } from 'lucide-react'
 import { useSedeConfig } from '@/hooks/useSedeConfig'
 import { usePermissions } from '@/hooks/usePermissions'
@@ -11,6 +11,7 @@ import {
   type SalesHistoryRow, type CancelledSaleRow,
 } from '@/hooks/useSalesHistory'
 import { printSaleTicket } from '@/lib/printer'
+import { CambioProductoModal } from '@/components/sales/CambioProductoModal'
 import {
   ETIQUETA_DE_METODO, OPCIONES_DE_FILTRO, etiquetaDeCobro, esMetodoReal,
   type ValorDeFiltro,
@@ -92,6 +93,14 @@ function SaleDetailModal({ orderId, onClose }: { orderId: string; onClose: () =>
   const voidMutation = useVoidSale()
   const [voiding, setVoiding] = useState(false)   // diálogo de motivo abierto
   const [reason, setReason] = useState('')
+  const [cambiando, setCambiando] = useState(false)
+  // 🔴 EL SALDO DE HOY, y es el numero con el que ella cobra: el total del
+  //    documento MAS los cambios posteriores MENOS lo abonado. Sin esto el
+  //    detalle muestra el total original y ella cobra el producto devuelto.
+  const cambios = sale?.sale_changes ?? []
+  const deltaCambios = cambios.reduce((a, c) => a + Number(c.delta_total), 0)
+  const abonado = (sale?.debt_payments ?? []).reduce((a, p) => a + Number(p.amount), 0)
+  const saldoHoy = sale ? Number(sale.total) + deltaCambios - abonado : 0
 
   // Elegibilidad de anulación (misma lógica que las guardas de la RPC; la RPC
   // re-valida server-side, esto es solo conveniencia de UI):
@@ -103,6 +112,14 @@ function SaleDetailModal({ orderId, onClose }: { orderId: string; onClose: () =>
     !!sale && !!currentShift &&
     new Date(sale.created_at).getTime() >= new Date(currentShift.opened_at).getTime()
   const voidEligible = shiftOpen && inCurrentShift
+  // 🔴 EL CAMBIO DE PRODUCTO NO PIDE TURNO ABIERTO NI QUE LA VENTA SEA DE HOY,
+  //    y no es un olvido: en una venta a crédito no pagada NO SE MUEVE PLATA
+  //    —cambia qué se vendió y cuánto se debe—, así que el guard del arqueo
+  //    no tiene nada que proteger. La venta fiada aportó CERO efectivo a su
+  //    jornada. El recorte es OTRO: sólo ventas que todavía deben.
+  const puedeCambiar =
+    canVoid && !isVoided && !!sale &&
+    (sale.payment_status === 'pending' || sale.payment_status === 'partial')
   // Tooltip = mensaje EXACTO de la RPC según el motivo del bloqueo.
   const voidBlockedReason = !shiftOpen
     ? 'No hay un turno de caja abierto'
@@ -160,6 +177,9 @@ function SaleDetailModal({ orderId, onClose }: { orderId: string; onClose: () =>
       customerName: sale.customer_name,
       createdAt: sale.created_at,
       total: sale.total,
+      // El papel no puede decir lo contrario que la pantalla: si hubo cambios,
+      // el TOTAL de arriba es el original y el saldo real es otro.
+      cambio: cambios.length > 0 ? { cantidad: cambios.length, saldoActual: saldoHoy } : null,
       items: sale.order_items.map((it) => ({
         qty: it.qty,
         name: it.products?.name ?? '—',
@@ -231,6 +251,24 @@ function SaleDetailModal({ orderId, onClose }: { orderId: string; onClose: () =>
             </div>
           ) : (
             <>
+              {/* 🔴 LA FRANJA. Las lineas de abajo son las ORIGINALES y no se
+                  tocan —eso fue lo que se vendio ese dia—, asi que sin este
+                  aviso la pantalla muestra un total que ya nadie va a cobrar.
+                  Mismo criterio que la compra editada, que tambien LO DICE. */}
+              {cambios.length > 0 && (
+                <div
+                  data-testid="sale-detail-cambios"
+                  style={{ background: 'var(--attention)', border: '1px solid var(--border)', borderRadius: 10, padding: '11px 13px', marginBottom: 14, fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.5 }}
+                >
+                  <strong>
+                    Esta venta tiene {cambios.length} cambio{cambios.length !== 1 ? 's' : ''} de producto.
+                  </strong>{' '}
+                  Las lineas de abajo son las de la venta original y no cambian.{' '}
+                  <span data-testid="sale-detail-saldo-hoy" style={{ fontWeight: 700, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>
+                    Saldo actual: {formatoCOP(saldoHoy)}
+                  </span>
+                </div>
+              )}
               {/* Meta */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 16, fontSize: 12.5, color: 'var(--ink-2)' }}>
                 {sale.customer_name && <div>Cliente: <span style={{ fontWeight: 600, color: 'var(--ink)' }}>{sale.customer_name}</span>{sale.customer_phone ? ` · ${sale.customer_phone}` : ''}</div>}
@@ -308,7 +346,22 @@ function SaleDetailModal({ orderId, onClose }: { orderId: string; onClose: () =>
         <div style={{ padding: '14px 22px', borderTop: '1px solid var(--border-2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
           {/* Anular: solo con permiso y venta aún no anulada. Deshabilitado (no
               oculto) cuando no es del turno actual, con el motivo en el tooltip. */}
-          <div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {puedeCambiar && sale && (
+              <button
+                data-testid="sale-cambio-button"
+                title="El cliente devolvió algo y se llevó otra cosa"
+                onClick={() => setCambiando(true)}
+                style={{
+                  padding: '11px 18px', borderRadius: 9,
+                  border: '1.5px solid var(--border)', background: 'var(--surface)',
+                  cursor: 'pointer', fontSize: 13, fontWeight: 600, color: 'var(--ink-2)',
+                  display: 'flex', alignItems: 'center', gap: 6,
+                }}
+              >
+                <ArrowLeftRight size={14} /> Cambiar producto
+              </button>
+            )}
             {canVoid && !isVoided && sale && (
               <button
                 data-testid="sale-void-button"
@@ -345,6 +398,10 @@ function SaleDetailModal({ orderId, onClose }: { orderId: string; onClose: () =>
         </div>
 
         {/* Diálogo de anulación — motivo OBLIGATORIO + confirmación explícita */}
+        {cambiando && sale && (
+          <CambioProductoModal sale={sale} onClose={() => setCambiando(false)} />
+        )}
+
         {voiding && sale && (
           <div
             style={{ position: 'absolute', inset: 0, background: 'var(--overlay)', display: 'grid', placeItems: 'center', zIndex: 60 }}
