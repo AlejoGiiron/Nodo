@@ -2391,6 +2391,35 @@ leído como **30 órdenes perdidas**.
 MATCHEÓ junto al total.** Una línea más en la sonda —la lista de nombres— y el singular no se
 escribe, porque se ven dos.
 
+🔴 **Y LA PRIMERA DE LA FAMILIA DONDE EL VALOR NO ES UNA CANTIDAD SINO UN IDENTIFICADOR: UN SHA
+INVENTADO.** *2026-09-24.*
+
+Al reportar una corrida escribí que se había lanzado sobre `19a01ac`. **Ese commit no existe**: el sha
+lo tecleé de memoria en vez de copiarlo de la salida de `git`. El real era `f8016d4`.
+
+📋 **La familia, para verla junta:** `62` (42 productos + 20 clientes), `157` (127 + 30 de dos sedes),
+`43` (ocurrencias del token contadas como columnas), y las «tres apariciones» de la deuda 125 cuando
+eran dos. **Todas son CANTIDADES.**
+
+> 🔴 **Y por eso ésta es peor: una cantidad tiene RANGO PLAUSIBLE.** Un «43 columnas» puede sonarle
+> raro a alguien; un «62» se puede desagregar. **Un sha no tiene rango.** `19a01ac` y `f8016d4` son
+> indistinguibles para cualquier lector: siete caracteres hexadecimales, la forma correcta, ninguna
+> señal. **No hay lectura que lo sospeche — sólo usarlo.**
+
+⚠️ Y lo que lo agrava: un sha va justamente en las frases que después se citan como evidencia —*«la
+suite corrió sobre X»*, *«el diff contra X está vacío»*—. Un identificador falso ahí no desinforma un
+dato: **desconecta una verificación de su sujeto**, y la verificación sigue leyéndose como hecha.
+
+✅ **LO ACCIONABLE, y es de una línea:**
+
+> **Un sha se COPIA de la salida de `git`, nunca se escribe de memoria.** Y si va a sostener una
+> afirmación —qué árbol se midió, contra qué se diffea— se imprime en el mismo comando que lo usa,
+> no en la prosa de después.
+
+✅ Lo cazó intentar usarlo: `fatal: bad revision '19a01ac'`. Es la mitad buena de esta clase — **un
+identificador falso falla CERRADO en cuanto alguien lo ejecuta**, al revés de una cantidad falsa, que
+se suma sin quejarse.
+
 🔴 **SEGUNDA VEZ DEL MISMO FILTRO, Y LA MÁS CARA DE LA CLASE: `order_number` NO ES ÚNICO ENTRE
 SEDES, ASÍ QUE UNA CONSULTA POR NÚMERO DEVUELVE FILAS DE OTRO TENANT — Y EL RESULTADO ERA
 PLAUSIBLE.** *2026-09-17, enumerando las ventas a anular de Muscle Pro.*
@@ -6825,6 +6854,15 @@ y eso es runtime. Son **imports y tipos, que TypeScript borra**, y nada más.
 📋 Caso que la estrenó: un `type Page` importado y nunca usado en un spec. Diff de **una línea**,
 líneas de runtime tocadas **0**. Re-correr 22 minutos por eso es lo que vuelve impracticable a una
 regla — y una regla impracticable se saltea entera, que es peor que acotarla.
+
+✅ **Y ES LA PRIMERA EXCEPCIÓN DEL PROYECTO QUE SE ESCRIBE Y SE COMPRUEBA EN EL MISMO TURNO.** Se
+publicó razonando que el compilador borra los imports de tipo, y la corrida que había quedado lanzada
+—sobre el código publicado, `git diff` vacío contra él— cerró con **los mismos cinco números**:
+350 passed · 0 failed · 0 flaky · 15 skipped · 0 did not run.
+
+⚠️ Eso no convierte al razonamiento en innecesario —la excepción vale por lo que dice, no por esta
+corrida— pero sí la separa de las excepciones que se escriben y nadie mide nunca. **Una excepción con
+una medición al lado es una regla; sin ella es un permiso.**
 
 🔴 **Y LO QUE VALE MÁS QUE EL IMPORT ES POR QUÉ LLEGÓ A LA PUERTA: `tsc` NO MIRA `tests/`. NADA.**
 *Medido el 2026-09-24, y es más fuerte de lo que creíamos.*
