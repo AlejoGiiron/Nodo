@@ -1866,6 +1866,7 @@ estábamos contando.*
 | una marca en `window` + apretar **F5**, para medir `preventDefault` | que el atajo le gana al navegador | **nada**: Chromium bajo automatización **no ejecuta la acción de navegador** de las teclas de función, así que la página no se recargaba de ninguna forma y la marca sobrevivía siempre | **el mutante**: quitado el `preventDefault`, el caso siguió VERDE |
 | `grep -cE '^  ok  [0-9]+'` sobre la salida de la suite | cuántos tests pasaron | asumía **dos espacios fijos**; el reporter **alinea el número por ancho**, así que `ok 1`, `ok  99` y `ok 219` no coinciden con el patrón. Contó **89 de 202** | **cruzando**: 89 no cerraba con las 202 del resumen. Con `^  ok +[0-9]+`: 202 + 17 skipped = **219**, el último número de test emitido |
 | `console.log('%-32s', x)` en un cargador | alinear una columna del informe | **nada**: Node soporta `%s %d %i %f %j %o %O %c` y **NO anchos** — imprimió `%-32s` LITERAL y corrió el resto de los campos | **mirando la salida** en el `--dry-run`, antes de correr contra la base |
+| el alto de `cart-item-price`, como «lo que mide una fila» | si entra una línea del carrito | el alto del **PRECIO adentro de la fila**: **25px** donde la fila mide **117** — un umbral casi cinco veces más flojo de lo que el caso decía | **leyendo el número que imprimió el MUTANTE**, no releyendo el código: el rojo dijo «una fila mide 25» |
 
 🔴 **CUARTA VEZ QUE UN INSTRUMENTO MIENTE SOBRE SU PROPIO FORMATO DE SALIDA, y las cuatro son la
 misma forma: un supuesto sobre CÓMO SE IMPRIME, que el texto del comando no menciona.** *2026-09-14.*
@@ -8202,6 +8203,95 @@ construimos* no podía encontrar.
 ⚠️ **Y el corolario sobre el material de referencia:** las capturas de `docs/reskin-referencia/`
 (1,1 MB) se justificaron acá. No sirven para verificar el código; sirven para **saber cómo debería
 verse**, que es la única forma de notar que algo se ve mal.
+---
+
+### 🔴 CRITERIO SIN NÚMERO · UN COMPORTAMIENTO DEL NAVEGADOR PUEDE ESTAR SOSTENIENDO UNA PROMESA DEL PRODUCTO — Y AL ARREGLAR EL DEFECTO, EL SPEC EMPEORA
+
+*2026-09-24, la columna del Mostrador. **Primera vez en el proyecto que un arreglo correcto pone
+MÁS rojo un spec que el defecto**, y la causa no estaba en ninguno de los dos.*
+
+**El caso.** La clienta reportó que al abrir el buscador de cliente **no se ve ninguna línea del
+carrito** — «está cobrando a ciegas». Al medirlo apareció que el defecto **no lo introducía el
+buscador**: a 600px con el buscador CERRADO la lista ya se salía (arrancaba en 293, medía 351,
+terminaba en 644 sobre 600). Lo que hacía el foco en el campo era disparar el **scroll automático
+de la columna** —medido: `scrollTop` 0 → 116— y eso volvía el problema visible.
+
+> **El auto-scroll del foco estaba COMPENSANDO el defecto.** No lo escondía del todo: lo movía. Y
+> mientras compensaba, ningún caso escrito sobre «se ven las tres líneas» se ponía rojo.
+
+🔴 **Y LA SEÑAL QUE LO DESTAPÓ ES LA CONTRAINTUITIVA: al arreglar el layout, el spec EMPEORÓ.** Con
+el cromo achicado la columna dejó de desbordar, así que **el navegador dejó de scrollear** — y las
+líneas que el scroll automático traía a pantalla dejaron de venir solas. Un arreglo que reduce el
+problema y sube el número de rojos no es una regresión: está diciendo que **algo que no era nuestro
+estaba haciendo parte del trabajo**.
+
+⚠️ **Por qué no lo caza ninguna técnica de este archivo.** El mutante prueba que el caso mira al
+sujeto; el control negativo, que el instrumento discrimina; el cruce, que el número cierra. **Acá el
+caso miraba al sujeto, el instrumento discriminaba y el número cerraba** — y el verde lo producía un
+tercero que no aparece en el código ni en el test: el `scrollIntoView` implícito del foco.
+
+📋 **LOS OTROS DE LA FAMILIA, que este archivo ya tiene medidos, para verlos juntos:**
+
+| el tercero que contestaba | qué producía |
+|---|---|
+| Playwright honra `aria-disabled` y no despacha el click | un **verde** que medía al framework |
+| Chromium bajo automatización no ejecuta la acción de F5 | un **verde** sobre un `preventDefault` borrado |
+| Tailwind emite `@keyframes pulse` sin que la config lo diga | una afirmación falsa **a favor** |
+| 🔴 **el auto-scroll del foco trae la línea a pantalla** | un **verde** sobre un layout que no entra |
+
+**Los cuatro son el entorno haciendo algo que nadie le pidió.** Los tres primeros contestan por el
+producto; **éste trabaja por el producto**, que es peor: no falsea una aserción puntual, **sostiene
+una promesa entera** y la suelta el día que alguien mejora el layout.
+
+✅ **LO ACCIONABLE, y es una pregunta al escribir una aserción sobre lo que se VE:**
+
+> **¿Qué tiene que hacer el navegador para que esto sea cierto?** Si la respuesta incluye un
+> scroll, un foco, un reflow o una animación, la aserción está midiendo al navegador tanto como al
+> producto — y hay que **fijar ese lado**: scrollear explícitamente el contenedor que corresponde, y
+> aseverar contra su caja, no contra lo que quedó en pantalla.
+
+Acá el spec scrollea **la lista** —no la columna— y asevera geométricamente contra la
+**intersección de la lista con el viewport**. Con eso el auto-scroll de la columna deja de poder
+contestar.
+
+---
+
+#### 🔴 LAS DOS HIPÓTESIS QUE ESTO FALSIFICÓ — VAN ACÁ REEMPLAZANDO LO QUE SE ACEPTÓ, NO AL LADO
+
+*Las dos se propusieron con su razón, las dos se aprobaron, y las dos se cayeron al medir. Se
+escriben juntas porque **lo que las une es la causa, no el tema**.*
+
+| lo que se afirmó y se aceptó | lo que la medición dijo |
+|---|---|
+| *«en la columna lo único elástico es el carrito, así que el resto empuja y la lista cede»* | 🔴 **no cede NADA.** El contenido mide 937px cerrado y **1114 abierto — constante en los seis altos**, y la lista **351 siempre**. Lo único que pasaba es que scrolleaba la columna entera |
+| *«sacarle el piso a la lista lo arregla: sin mínimo, cede»* | 🔴 **colapsa a CERO.** Medido con el mutante: `h=0` a 600 y `h=33` a 900 — la cajera veía **cero** líneas, que es el reporte original amplificado |
+
+> **Las dos eran hipótesis razonables sobre ELASTICIDAD, y la elasticidad no existía en ningún
+> lado.** No fallaron en la dirección ni en el tamaño: fallaron en suponer que había un mecanismo
+> —algo que cediera— donde sólo había un contenido fijo y un contenedor que scrollea.
+
+⚠️ **Y por eso las dos se contradicen entre sí y las dos se sentían correctas:** la primera decía
+que la lista ya cedía, la segunda que cedería si la soltábamos. Cuando dos hipótesis opuestas suenan
+las dos bien, lo compartido —acá, que algo cede— es lo que hay que medir primero.
+
+✅ **Lo que quedó, con su aritmética, porque no es aflojar:** «ves tres» tiene un **piso de viewport
+implícito de ~1010px** con el buscador abierto (cromo 554 = encabezado 69 · picker 244 · pie 241),
+así que en cualquier pantalla más chica **es falsa, y falsa en silencio**. «Ves lo que cabe y llegás
+al resto» es cierta a 600 **y** a 1080. Y achicar más el cromo no era una salida: para que tres
+filas entren a 600, 554 tendría que bajar a **144**, y no hay de dónde sacar 410px de encabezado,
+buscador y pie.
+
+⚠️ **El mínimo de 351 se REEMPLAZA, no se borra**, y la razón está escrita en `POSPage.tsx` al lado
+del valor nuevo: el piso pasa a ser **una fila** y se **deriva** del de tres para que no puedan
+divergir. Sin esa nota, alguien lee «se quitó el mínimo», lo saca del todo y reintroduce el colapso
+a cero — que es justo lo que el mutante acaba de medir.
+
+🔴 **Y EL HALLAZGO ESTRUCTURAL, que es la causa de TRES arreglos anteriores leídos como tres casos:**
+el mínimo de tres filas, el picker compacto y el pie pegajoso fueron **tres constantes movidas para
+que un contenido FIJO entrara en UN viewport**. Ninguno tocó la causa, así que el cuarto viewport
+volvió a romper. Lo que cierra la clase no es una constante mejor: es que el spec barra **seis
+altos**, para que el arreglo siguiente no pueda volver a ser un número que sirve en el que medimos.
+
 
 **🔴 UN ROJO QUE NO NOMBRA QUÉ CAMBIÓ CUESTA EL DIAGNÓSTICO ENTERO DE NUEVO.**
 *Medido el 2026-08-31, escribiendo el tripwire del catálogo de permisos.*

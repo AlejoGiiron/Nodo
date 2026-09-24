@@ -621,20 +621,59 @@ function TotalRow({ label, value, tono = 'normal' }: {
  * precio editable y stepper— asi que tres filas son 351. Tres y no una porque
  * una venta de mostrador tipica lleva tres o cuatro items.
  *
- * 🔴 SOBREVIVE A LA VUELTA AL MODAL (2026-09-03) AUNQUE SU DEFECTO YA NO PUEDA
- *    OCURRIR, y esa es exactamente su categoria: **el tripwire que no se puede
- *    matar**. El colapso a cero lo causaba el panel de cobro en linea comiendose
- *    485px fijos; con el cobro en modal el panel volvio a ~180px y la lista
- *    entra con holgura en los seis viewports. O sea que hoy el minimo **no esta
- *    conteniendo nada**: es una red bajo un piso que ya no se cae.
- *    Se queda igual, y la razon es que el defecto no era del cobro en linea
- *    sino de la CLASE «un panel de alto fijo en una columna flex deja a su
- *    hermano en cero» — que vuelve con cualquier bloque que crezca ahi.
+ * 🔴 SOBREVIVIO A LA VUELTA AL MODAL (2026-09-03) con esta razon escrita: que
+ *    su defecto «ya no puede ocurrir», que la lista «entra con holgura en los
+ *    seis viewports» y que el minimo «no esta conteniendo nada: es una red bajo
+ *    un piso que ya no se cae».
+ *
+ *    🔴 **LAS TRES ERAN FALSAS, y se midieron el 2026-09-24 — reemplazan a lo
+ *    de arriba, no van al lado:**
+ *
+ *    · La lista NO entraba con holgura. El contenido de la columna mide 937px
+ *      con el buscador de cliente cerrado y **1114 abierto**, constante en los
+ *      seis altos: a 600, 640, 700, 768 y 900 no entra. Lo que pasaba es que
+ *      scrolleaba la columna entera.
+ *    · El minimo SI estaba conteniendo: quitarlo da `h=0` a 600 y `h=33` a 900
+ *      —cero lineas en pantalla—, medido con el mutante.
+ *    · Y no era una red: **debajo de ~1010px de viewport EMPUJABA**. Forzar 351
+ *      donde solo caben 115 no muestra tres filas, saca la ultima del viewport
+ *      (medida con el mutante: `y=689..715` sobre un viewport de 600). La
+ *      clienta lo reporto como «no veo ninguna linea del carrito».
+ *
+ *    La CLASE que la nota vieja identifica sigue siendo cierta y es lo unico
+ *    que se conserva: «un panel de alto fijo en una columna flex deja a su
+ *    hermano en cero», y vuelve con cualquier bloque que crezca ahi.
  *
  * ⚠️ Si la fila cambia de alto, este numero deja de significar «tres filas». Se
  *    remide contando el paso entre dos `cart-item-price` consecutivos.
  */
 const ALTO_MINIMO_LISTA = 351
+
+/**
+ * 🔴 EL PISO DE LA LISTA DEL CARRITO — UNA FILA, Y SE REEMPLAZA AL DE TRES, NO
+ *    SE BORRA. Leer esto antes de tocarlo.
+ *
+ * `ALTO_MINIMO_LISTA` (351 = tres filas) era el piso, y **existía por una razón
+ * que sigue siendo cierta**: sin piso, la lista COLAPSA A CERO. Medido el
+ * 2026-09-24 al probar exactamente eso — `h=0` a 600px y `h=33` a 900. La
+ * cajera veía CERO líneas. Quien lea «se quitó el mínimo» y lo saque del todo
+ * reintroduce ese colapso.
+ *
+ * ⚠️ LO QUE CAMBIÓ NO ES QUE SOBRE EL PISO: ES QUE TRES FILAS ERAN UNA PROMESA
+ *    CON UN VIEWPORT IMPLÍCITO. Medido: con el buscador de cliente abierto, el
+ *    cromo de la columna suma 554px (encabezado 69 · picker 244 · pie 241), así
+ *    que tres filas exigen **~1010px de alto**. Debajo de eso, forzar 351 no
+ *    mostraba tres: empujaba la lista fuera del viewport y no se veía NINGUNA.
+ *
+ *    «Ves tres» es falsa en cualquier pantalla más chica, y falsa EN SILENCIO.
+ *    «Ves lo que cabe y llegás al resto» es cierta a 600 y a 1080 — y es lo que
+ *    se pidió: que funcione sin importar el tamaño.
+ *
+ * Así que el piso baja a UNA fila y se DERIVA del de tres, para que no puedan
+ * divergir. Lo que garantiza ver más de una es el espacio disponible, y lo que
+ * garantiza llegar al resto es el `overflow: auto` de la lista.
+ */
+const ALTO_MINIMO_UNA_FILA = Math.round(ALTO_MINIMO_LISTA / 3)
 
 function CartPanel({
   subtotal,
@@ -742,6 +781,11 @@ function CartPanel({
     { id: 'whatsapp'  as Canal, label: 'WhatsApp',  icon: <MessageCircle size={17} />,  bg: 'var(--success-soft)', fg: 'var(--success-on-soft)' },
     { id: 'telefono'  as Canal, label: 'Teléfono',  icon: <Phone size={17} />,          bg: 'var(--action-soft)', fg: 'var(--action-on-soft)' },
   ]
+  // 🔴 El descuento arranca COLAPSADO. Medido sobre la sede real el 2026-09-24:
+  //    **0 de 150 ventas** tienen descuento —ninguna, y tampoco las 40 desde que
+  //    ella usa Nodo—. Negocia editando el precio de la línea, no descontando.
+  //    Así que sus 180px de alto fijo eran el 41% del pie para algo que no pasa.
+  const [descuentoAbierto, setDescuentoAbierto] = useState(false)
   const current = canales.find((t) => t.id === canal)!
 
   return (
@@ -878,7 +922,7 @@ function CartPanel({
         )}
       </div>
 
-      <div style={{ flex: 1, overflow: 'auto', minHeight: ALTO_MINIMO_LISTA }}>
+      <div data-testid="cart-lista" style={{ flex: 1, overflow: 'auto', minHeight: ALTO_MINIMO_UNA_FILA }}>
         {items.length === 0 ? (
           <div style={{ padding: 50, textAlign: 'center', color: 'var(--ink-4)', fontSize: 13.5 }}>
             <div style={{
@@ -930,8 +974,37 @@ function CartPanel({
         background: 'var(--surface)', flexShrink: 0,
       }}>
 
-      {/* Discount — requiere permiso pos.descuento */}
-      {can('pos.descuento') && (
+      {/* ── LO QUE NO SE USA EN TODA VENTA NO OCUPA ALTO FIJO ─────────────
+          🔴 Ésta es la regla del layout de la columna, no una decisión estética.
+          El pie medía 436px —descuento 180 · «En espera» 48 · totales 209— y al
+          carrito le quedaban 33px a 900px de alto: era el elemento MÁS CHICO de
+          su propia columna, siendo lo único que el brief dice que no se negocia.
+          Las dos acciones excepcionales pasan a una fila de ~40px, a un clic. */}
+      <div style={{ padding: '10px 22px', borderTop: '1px solid var(--border-2)', display: 'flex', gap: 8 }}>
+        {can('pos.descuento') && (
+          <Button
+            variant="secondary" size="sm"
+            data-testid="cart-descuento-toggle"
+            onClick={() => setDescuentoAbierto((v) => !v)}
+          >
+            <Percent size={14} /> Descuento{discountAmt > 0 ? ` · ${formatCOP(discountAmt)}` : ''}
+          </Button>
+        )}
+        <Button
+          variant="secondary" size="sm"
+          disabled={items.length === 0}
+          onClick={onHold}
+          title="Poner la venta en espera"
+        >
+          <Pause size={15} /> En espera
+        </Button>
+      </div>
+
+      {/* ⚠️ `|| discountAmt > 0` NO es una comodidad: si ya hay un descuento
+          aplicado, esconderlo detrás de un clic lo volvería invisible — y un
+          descuento que no se ve es plata que nadie revisa. Colapsa lo que NO
+          está en uso, nunca lo que sí. */}
+      {can('pos.descuento') && (descuentoAbierto || discountAmt > 0) && (
       <div style={{ padding: '12px 22px', borderTop: '1px solid var(--border-2)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 9 }}>
           <Percent size={13} color="var(--ink-2)" />
@@ -1067,24 +1140,6 @@ function CartPanel({
       </div>
       )}
 
-      {/* ── En espera ─────────────────────────────────────────────────────
-          Queda AFUERA del panel de cobro, sobre superficie clara. La maqueta
-          pone en la tinta solo lo que lleva a cobrar; y un secundario sobre
-          --ink necesitaría un token de borde on-dark que la skill no define
-          (§8: lo que no está, se pregunta). No se inventa. */}
-      <div style={{ padding: '12px 22px 0' }}>
-        <Button
-          variant="secondary"
-          size="sm"
-          block
-          disabled={items.length === 0}
-          onClick={onHold}
-          title="Poner la venta en espera"
-        >
-          <Pause size={15} /> En espera
-        </Button>
-      </div>
-
       {/* ── Panel de cobro ────────────────────────────────────────────────
           Sobre --ink, con los tokens --on-dark-*. El total a cobrar es el
           ÚNICO número grande del producto (regla 7.4, --fs-total 44/700):
@@ -1093,7 +1148,10 @@ function CartPanel({
         <div style={{
           background: 'var(--ink)', borderRadius: 'var(--r-3)', padding: 16,
         }}>
-          <TotalRow label="Subtotal" value={subtotal} />
+          {/* 🔴 Sólo cuando DIFIERE del total. Un «Subtotal» igual al «Total a
+              cobrar» no informa nada y ocupa una fila en la columna donde el
+              alto es el recurso escaso. */}
+          {discountAmt > 0 && <TotalRow label="Subtotal" value={subtotal} />}
           {discountAmt > 0 && (
             <TotalRow
               label={`Descuento${discountType === 'pct' ? ` (${discount}%)` : ''}`}

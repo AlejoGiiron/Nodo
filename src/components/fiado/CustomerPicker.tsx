@@ -139,8 +139,18 @@ export function CustomerPicker({
         )}
       </div>
 
+      {/* 🔴 EL ALTO DE LA LISTA SE DERIVA DEL VIEWPORT, NO ES LA CONSTANTE 180 —
+          y no es estilo: es el ORDEN DE CESIÓN del Mostrador. Cuando falta alto,
+          lo que se ABRE cede; lo que se está USANDO, no. Ver qué se está
+          vendiendo es el cuello de botella del brief.
+          ⚠️ NO RESTAURAR `maxHeight: 180` «por consistencia»: ese número fijo,
+          sumado al piso de 351px del carrito, es lo que dejó a la clienta
+          cobrando sin ver una sola línea (2026-09-24, medido a 600 y 700px).
+          `24vh` es el reparto y `180px` el techo, para que no crezca de más en
+          pantallas grandes. La lista conserva su scroll propio, así que
+          achicarla no esconde clientes: los deja a un gesto. */}
       {listaVisible && (
-      <div style={{ marginTop: 8, maxHeight: 180, overflowY: 'auto', border: '1px solid var(--border-2)', borderRadius: 9 }}>
+      <div style={{ marginTop: 8, maxHeight: 'min(180px, 24vh)', overflowY: 'auto', border: '1px solid var(--border-2)', borderRadius: 9 }}>
         {filtered.length === 0 ? (
           <div style={{ padding: '20px 12px', textAlign: 'center', color: 'var(--ink-4)', fontSize: 12.5 }}>
             {customers.length === 0 ? 'Aún no hay clientes. Crea el primero.' : 'Sin coincidencias.'}
