@@ -11,6 +11,9 @@ import {
   type SalesHistoryRow, type CancelledSaleRow,
 } from '@/hooks/useSalesHistory'
 import { printSaleTicket } from '@/lib/printer'
+import { lineasVigentes } from '@/lib/lineasVigentes'
+import { mensajeDeError } from '@/lib/errores'
+import toast from 'react-hot-toast'
 import { CambioProductoModal } from '@/components/sales/CambioProductoModal'
 import {
   ETIQUETA_DE_METODO, OPCIONES_DE_FILTRO, etiquetaDeCobro, esMetodoReal,
@@ -166,6 +169,34 @@ function SaleDetailModal({ orderId, onClose }: { orderId: string; onClose: () =>
 
   const handleReprint = () => {
     if (!sale) return
+    const originales = sale.order_items.map((it) => ({
+      productId: it.product_id,
+      qty: it.qty,
+      name: it.products?.name ?? '—',
+      unitPrice: it.unit_price,
+      notes: it.notes,
+      extras: it.order_item_extras.map((e) => ({
+        name: e.extras?.name ?? 'Extra', qty: e.qty, unitPrice: e.unit_price,
+      })),
+    }))
+    // 🔴 CON CAMBIOS, EL PAPEL DICE LO QUE EL CLIENTE TIENE HOY (decidido el
+    //    2026-09-24, caso real de la venta #162): las líneas vigentes y el
+    //    total vigente. Sin cambios, `lineasVigentes` devuelve las originales.
+    let items
+    try {
+      items = lineasVigentes(
+        originales,
+        [...cambios]
+          .sort((a, b) => a.created_at.localeCompare(b.created_at))
+          .flatMap((c) => c.sale_change_items.map((i) => ({
+            direction: i.direction, productId: i.product_id, qty: i.qty,
+            unitPrice: Number(i.unit_price), name: i.products?.name ?? '—',
+          }))),
+      )
+    } catch (e) {
+      toast.error(mensajeDeError(e, 'No se pudo armar el comprobante'))
+      return
+    }
     printSaleTicket({
       sedeName: sede?.name,
       sedeAddress: sede?.address,
@@ -176,19 +207,9 @@ function SaleDetailModal({ orderId, onClose }: { orderId: string; onClose: () =>
       // Sin dato no va la línea: ver la nota de `customerName` en printer.ts.
       customerName: sale.customer_name,
       createdAt: sale.created_at,
-      total: sale.total,
-      // El papel no puede decir lo contrario que la pantalla: si hubo cambios,
-      // el TOTAL de arriba es el original y el saldo real es otro.
-      cambio: cambios.length > 0 ? { cantidad: cambios.length, saldoActual: saldoHoy } : null,
-      items: sale.order_items.map((it) => ({
-        qty: it.qty,
-        name: it.products?.name ?? '—',
-        unitPrice: it.unit_price,
-        notes: it.notes,
-        extras: it.order_item_extras.map((e) => ({
-          name: e.extras?.name ?? 'Extra', qty: e.qty, unitPrice: e.unit_price,
-        })),
-      })),
+      total: Number(sale.total) + deltaCambios,
+      cambio: cambios.length > 0 ? { cantidad: cambios.length, abonado, saldoActual: saldoHoy } : null,
+      items,
     })
   }
 

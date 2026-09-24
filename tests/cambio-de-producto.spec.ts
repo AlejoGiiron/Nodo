@@ -209,6 +209,58 @@ test('🔴 la CARTERA muestra el saldo CON el cambio, no el del documento origin
   ).toContainText('10.000')
 })
 
+// ── 3b · el ABONO ve el documento nuevo ─────────────────────────────────────
+// 🔴 EL LADO QUE LA MIGRACION DEL CAMBIO NO ENUMERO. Aquella movio la formula
+//    del saldo en la cartera, el balance y el detalle, y `register_debt_payment`
+//    siguio calculando `total − abonos`. Reportado por la clienta el 2026-09-24
+//    sobre la venta #162: Cartera decia 478.000 y el abono de 478.000 se
+//    rechazaba por «excede el saldo (469.000)».
+//    Son DOS casos y no uno porque fallan en direcciones opuestas: el primero
+//    RECHAZA de mas (se ve, ella lo reporto); el segundo ACEPTA de menos y
+//    marca la venta pagada con plata pendiente — y ese no lo reporta nadie.
+test('🔴 el ABONO acepta el saldo DE HOY entero, y la venta queda pagada', async () => {
+  const venta = await ventaFiada([{ product_id: ID_A, qty: 2, unit_price: 5000 }])   // 10.000
+  const ab = await db.rpc('register_debt_payment', { p_order_id: venta.id, p_amount: 3000, p_payment_method: 'transfer' })
+  expect(ab.error?.message ?? null, 'no se pudo abonar en la fixture').toBeNull()
+  const r = await cambiar(venta.id, 'abono despues del cambio', [linea('in', ID_A, 1, 5000), linea('out', ID_B, 1, 8000)])
+  expect(r.error?.message ?? null, 'el cambio no se pudo registrar').toBeNull()
+  // Saldo de hoy: 10.000 + 3.000 − 3.000 = 10.000. El viejo seria 7.000.
+
+  // CONTROL: un peso de mas sigue rechazado, y el mensaje nombra el saldo DE HOY.
+  // Sin esto, un guard borrado pasaria el sujeto de abajo igual.
+  const exceso = await db.rpc('register_debt_payment', { p_order_id: venta.id, p_amount: 10001, p_payment_method: 'transfer' })
+  expect(exceso.error?.message ?? '', 'un abono mayor al saldo de hoy tiene que rechazarse').toMatch(/excede el saldo pendiente \(10000/)
+
+  // SUJETO.
+  const todo = await db.rpc('register_debt_payment', { p_order_id: venta.id, p_amount: 10000, p_payment_method: 'transfer' })
+  expect(
+    todo.error?.message ?? null,
+    'el abono no ve el cambio: rechaza el saldo que Cartera le muestra (caso real, venta #162)',
+  ).toBeNull()
+  expect((todo.data as { new_status: string }).new_status).toBe('paid')
+})
+
+test('🔴 abonar el saldo VIEJO no marca la venta pagada: todavia debe el delta del cambio', async () => {
+  const venta = await ventaFiada([{ product_id: ID_A, qty: 2, unit_price: 5000 }])   // 10.000
+  const ab = await db.rpc('register_debt_payment', { p_order_id: venta.id, p_amount: 3000, p_payment_method: 'transfer' })
+  expect(ab.error?.message ?? null).toBeNull()
+  const r = await cambiar(venta.id, 'saldo viejo', [linea('in', ID_A, 1, 5000), linea('out', ID_B, 1, 8000)])
+  expect(r.error?.message ?? null).toBeNull()
+
+  // 7.000 es el saldo del documento ORIGINAL. Hoy debe 10.000.
+  const viejo = await db.rpc('register_debt_payment', { p_order_id: venta.id, p_amount: 7000, p_payment_method: 'transfer' })
+  expect(viejo.error?.message ?? null, 'un abono menor al saldo tiene que entrar').toBeNull()
+  const res = viejo.data as { new_status: string; saldo_restante: number }
+  // 🔴 El sujeto es el ESTADO, no el mensaje: con el calculo viejo este abono
+  //    deja la venta `paid` y la saca de Cartera con 3.000 pendientes, sin error.
+  expect(
+    [res.new_status, Number(res.saldo_restante)],
+    'la venta quedo PAGADA con el delta del cambio sin cobrar: desaparece de Cartera debiendo plata',
+  ).toEqual(['partial', 3000])
+  const o = await db.from('orders').select('payment_status').eq('id', venta.id).single()
+  expect(o.data?.payment_status, 'y en la base tambien').toBe('partial')
+})
+
 // ── 1 · la pantalla, que es lo unico que le sirve a ella ────────────────────
 async function abrirDetalle(page: Page, numero: number) {
   await page.goto('/historial')
@@ -261,6 +313,52 @@ test('🔴 una venta CON cambio lo dice en el detalle, con el saldo de hoy', asy
   ).toBeVisible()
   // 10.000 − 5.000 + 8.000, sin abonos.
   await expect(page.getByTestId('sale-detail-saldo-hoy')).toContainText('13.000')
+})
+
+// ── el papel: lo que el cliente tiene HOY (decidido el 2026-09-24, venta #162) ─
+// 🔴 Se asevera EL HECHO, no la consecuencia: bajo automatizacion no sale
+//    papel, asi que se reemplaza `window.print` por un espia que copia lo que
+//    se iba a imprimir, en el instante en que se imprime.
+async function ticketReimpreso(page: Page): Promise<string> {
+  await page.evaluate(() => {
+    const w = window as unknown as { __ticket: string | null }
+    w.__ticket = null
+    window.print = () => {
+      w.__ticket = document.getElementById('nodo-sale-ticket-content')?.innerText ?? ''
+    }
+  })
+  await page.getByTestId('sale-reprint').click()
+  await expect.poll(() => page.evaluate(() => (window as unknown as { __ticket: string | null }).__ticket))
+    .not.toBeNull()
+  const texto = await page.evaluate(() => (window as unknown as { __ticket: string }).__ticket)
+  // CONTROL de la propia lectura: con '' todas las aserciones de «no dice X» pasan sin mirar nada.
+  expect(texto, 'el ticket se leyo VACIO: el caso no esta mirando nada').toContain(`Venta #`)
+  return texto
+}
+
+test('🔴 el ticket REIMPRESO dice lo que el cliente se llevo, no lo que devolvio', async ({ page }) => {
+  const venta = await ventaFiada([{ product_id: ID_A, qty: 1, unit_price: 5000 }])   // 5.000
+  const ab = await db.rpc('register_debt_payment', { p_order_id: venta.id, p_amount: 2000, p_payment_method: 'transfer' })
+  expect(ab.error?.message ?? null).toBeNull()
+  const r = await cambiar(venta.id, 'ticket', [linea('in', ID_A, 1, 5000), linea('out', ID_B, 1, 8000)])
+  expect(r.error?.message ?? null).toBeNull()
+
+  await loginAsOwner(page)
+  await abrirDetalle(page, venta.numero)
+  const t = await ticketReimpreso(page)
+  expect(t, 'el ticket no trae el producto que se llevo').toContain(PROD_B)
+  expect(t, 'el ticket sigue imprimiendo el producto que DEVOLVIO (caso real, venta #162)').not.toContain(PROD_A)
+  expect(t, 'el total impreso es el vigente: 5.000 − 5.000 + 8.000').toContain('8.000')
+  expect(t, 'y el saldo: 8.000 − 2.000 abonados').toContain('6.000')
+})
+
+test('CONTROL: el ticket de una venta SIN cambio sigue con sus lineas originales', async ({ page }) => {
+  const venta = await ventaFiada([{ product_id: ID_A, qty: 1, unit_price: 5000 }])
+  await loginAsOwner(page)
+  await abrirDetalle(page, venta.numero)
+  const t = await ticketReimpreso(page)
+  expect(t).toContain(PROD_A)
+  expect(t, 'una venta que nadie toco no habla de cambios').not.toMatch(/cambio de producto/i)
 })
 
 test('🔴 CONTROL: una venta SIN cambio no muestra la franja', async ({ page }) => {

@@ -100,17 +100,21 @@ export interface SaleTicketData {
   customerName?: string | null
   createdAt: string
   /**
-   * 🔴 LO MÍNIMO PARA QUE EL PAPEL NO CONTRADIGA A LA PANTALLA. Una venta con
-   * un cambio posterior conserva sus líneas —son ciertas, eso se vendió ese
-   * día— pero su TOTAL ya no es lo que se debe. Sin esta marca, quien recibe
-   * el papel lee un número que nadie va a cobrar.
+   * Una venta con cambios de producto posteriores. Cuando viene, `items` y
+   * `total` son LO QUE EL CLIENTE TIENE HOY (`lineasVigentes`), no el documento
+   * original — y el papel lo dice, con lo abonado y el saldo.
    *
-   * ⚠️ Va el HECHO y el SALDO, no el detalle del cambio. El detalle espera a
-   * la deuda 108: este ticket ya no reconcilia —no tiene Subtotal, Descuento
-   * ni Vuelto— y agregarle una sección haría la contradicción peor, porque
-   * quien sume y no le dé no sabría si le falta el descuento o el cambio.
+   * 🔴 DECIDIDO EL 2026-09-24, y reemplaza a la versión anterior: antes el
+   *    ticket imprimía las líneas ORIGINALES con una nota «el total de arriba es
+   *    el de la venta original». La clienta lo leyó como un error —«sigue OXI y
+   *    es OXA»— y tenía razón: un comprobante que se entrega tiene que decir qué
+   *    se llevó el cliente. `order_items` sigue sin tocarse; esto sólo compone.
+   * ⚠️ La razón vieja —«agregar el detalle haría la contradicción peor, porque
+   *    quien sume y no le dé no sabría si falta el descuento o el cambio»—
+   *    CADUCÓ con este cambio: ya no hay dos capas en el papel, hay una sola, la
+   *    vigente, y el total impreso es el que se cobra.
    */
-  cambio?: { cantidad: number; saldoActual: number } | null
+  cambio?: { cantidad: number; abonado: number; saldoActual: number } | null
   items: {
     qty: number
     name: string
@@ -175,9 +179,13 @@ export function buildSaleTicketHtml(data: SaleTicketData): string {
     ${data.cambio ? `
       <div style="border-top:1px dashed #000;margin:6px 0"></div>
       <div style="font-size:11px;text-align:center">
-        <div style="font-weight:700">ESTA VENTA TIENE ${data.cambio.cantidad} CAMBIO${data.cambio.cantidad !== 1 ? 'S' : ''} POSTERIOR${data.cambio.cantidad !== 1 ? 'ES' : ''}</div>
-        <div style="margin-top:2px">El total de arriba es el de la venta original.</div>
-        <div style="margin-top:2px;font-weight:700">Saldo actual: ${formatCOP(data.cambio.saldoActual)}</div>
+        <div>Incluye ${data.cambio.cantidad} cambio${data.cambio.cantidad !== 1 ? 's' : ''} de producto</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:4px">
+        <span>Abonado</span><span>${formatCOP(data.cambio.abonado)}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-weight:700;font-size:12px;margin-top:2px">
+        <span>SALDO</span><span>${formatCOP(data.cambio.saldoActual)}</span>
       </div>` : ''}
     <div style="border-top:1px dashed #000;margin:8px 0"></div>
     <div style="text-align:center;font-size:11px">¡Gracias por su compra!</div>

@@ -761,7 +761,14 @@ export interface SaleDetailRow {
   /** Abonos de una venta a crédito. Hacen falta para el SALDO DE HOY del detalle. */
   debt_payments: { amount: number }[]
   /** Cambios de producto posteriores (20260924120000). Vacío = la venta no se tocó. */
-  sale_changes: { id: string; delta_total: number; reason: string; created_at: string }[]
+  sale_changes: {
+    id: string; delta_total: number; reason: string; created_at: string
+    /** Lo que volvió y lo que se llevó: el ticket reimpreso compone con esto lo que el cliente tiene hoy. */
+    sale_change_items: {
+      direction: 'in' | 'out'; product_id: string; qty: number; unit_price: number
+      products: { name: string } | null
+    }[]
+  }[]
   order_items: {
     id: string
     /** Lo necesita el CAMBIO DE PRODUCTO: la RPC identifica por producto, no por línea. */
@@ -787,7 +794,8 @@ export const getSaleDetail = (orderId: string) =>
       cancelled_at, cancel_reason,
       payments(method, amount),
       debt_payments(amount),
-      sale_changes(id, delta_total, reason, created_at),
+      sale_changes(id, delta_total, reason, created_at,
+        sale_change_items(direction, product_id, qty, unit_price, products(name))),
       profiles!orders_created_by_fkey(full_name),
       canceller:profiles!orders_cancelled_by_fkey(full_name),
       order_items(

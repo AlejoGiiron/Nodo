@@ -120,3 +120,33 @@ describe('ticket de venta — lo que el papel AFIRMA', () => {
     expect(html).toContain('Crédito')
   })
 })
+
+describe('ticket de una venta CON cambio de producto', () => {
+  // Caso real, venta #162: el ticket reimpreso seguía diciendo el producto que
+  // volvió. Las líneas y el total que llegan acá ya son los VIGENTES
+  // (`lineasVigentes`); lo que se asevera es que el papel lo diga y cierre.
+  const CON_CAMBIO: SaleTicketData = {
+    ...VENTA,
+    method: 'Crédito (parcial)',
+    items: [{ qty: 1, name: 'OXANDRONOM 100 TABS', unitPrice: 178000 }],
+    total: 948000,
+    cambio: { cantidad: 1, abonado: 470000, saldoActual: 478000 },
+  }
+
+  it('🔴 dice que incluye el cambio, con lo abonado y el saldo', () => {
+    const html = buildSaleTicketHtml(CON_CAMBIO)
+    expect(html).toContain('OXANDRONOM 100 TABS')
+    expect(html).toMatch(/Incluye 1 cambio de producto/)
+    expect(html).toContain('470.000')
+    expect(html).toContain('478.000')
+    expect(html).toContain('948.000')
+    // 🔴 La frase vieja afirmaba que el total era el ORIGINAL. Ahora es mentira.
+    expect(html, 'el total impreso ya es el vigente').not.toMatch(/venta original/i)
+  })
+
+  it('CONTROL: una venta sin cambio no habla de cambios, abonos ni saldo', () => {
+    const html = buildSaleTicketHtml(VENTA)
+    expect(html).not.toMatch(/cambio de producto/i)
+    expect(html).not.toMatch(/SALDO|Abonado/)
+  })
+})
