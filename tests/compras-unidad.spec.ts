@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { loginAsOwner, ownerCreds } from './helpers/auth'
 import { openShiftIfClosed } from './helpers/shift'
+import { crearCategoria, crearProducto as sembrarProducto, crearProveedor, desactivar } from './helpers/fixture'
 
 // ============================================================================
 // UNIDAD DE COMPRA Y FACTOR DE EQUIVALENCIA — deuda 43.
@@ -39,6 +40,23 @@ const CON_FACTOR = `E2E ConFactor ${SUFFIX}`
 const SIN_FACTOR = `E2E SinFactor ${SUFFIX}`
 const PROVEEDOR = `E2E ProvUnd ${SUFFIX}`
 
+// Ids de lo sembrado por API (deuda 131). Los casos siguen buscando por NOMBRE.
+let ID_CAT = ''
+let ID_CON = ''
+let ID_SIN = ''
+let ID_PROV = ''
+
+// 🔴 ESTE ARCHIVO NO TENÍA LIMPIEZA — ninguna, ni como caso ni como hook. Su
+//    fixture quedaba activa para siempre, y la sonda de residuo la venía viendo:
+//    las categorías `E2E UndCompra` seguían activas corridas después.
+// ⚠️ Va en `afterAll` y no como caso: un caso es lo primero que se saltea cuando
+//    otro falla (deuda 129), y `afterAll` corre igual. Asevera el ESTADO.
+test.afterAll(async () => {
+  await desactivar('suppliers', [ID_PROV])
+  await desactivar('products', [ID_CON, ID_SIN])
+  await desactivar('categories', [ID_CAT])
+})
+
 let db: SupabaseClient
 
 test.beforeAll(async () => {
@@ -52,18 +70,6 @@ test.beforeAll(async () => {
 })
 
 // ── Helpers ───────────────────────────────────────────────────────
-
-async function crearProducto(page: Page, name: string) {
-  await page.goto('/productos')
-  await page.getByRole('button', { name: 'Nuevo producto' }).click()
-  await page.getByTestId('producto-nombre').fill(name)
-  await page.getByTestId('producto-precio').fill('1000')
-  await page.getByTestId('product-category-select').selectOption({ label: CAT })
-  // Nace controlando existencia (2026-09-17): no se toca el interruptor.
-  await expect(page.getByTestId('product-stock-tracking')).toHaveAttribute('aria-checked', 'true')
-  await page.getByRole('button', { name: 'Crear producto' }).click()
-  await expect(page.getByText(name)).toBeVisible()
-}
 
 /** Lee stock y costo de la BASE, no de la pantalla: son las cifras que importan. */
 async function leerProducto(name: string): Promise<{ stock: number; costo: number | null }> {
@@ -110,27 +116,21 @@ async function comprar(
 // ── Suite ─────────────────────────────────────────────────────────
 
 test.describe('Compras · unidad de compra y factor', () => {
-  test('setup: categoría, dos productos y proveedor', async ({ page }) => {
-    await loginAsOwner(page)
+  // 🔴 Sembrado POR API (deuda 131). La pregunta obligatoria se contestó
+  //    abriendo el `crearProducto` local que reemplaza: precio 1000, categoría, y
+  //    una ASERCIÓN de que el seguimiento nace prendido —no un clic—. Respuesta:
+  //    nada de paso.
+  // ⚠️ Y los controles de abajo NO se borran aunque el helper ya los haga: acá
+  //    son del CASO, con su razón escrita —si el par no arranca en cero y sin
+  //    costo, el promedio ponderado da otro número y el test miente por la
+  //    fixture—. Que el andamio se verifique a sí mismo no releva al caso de
+  //    verificar lo que su medición necesita.
+  test('setup: categoría, dos productos y proveedor', async () => {
+    ID_CAT = await crearCategoria(CAT)
+    ID_CON = await sembrarProducto({ nombre: CON_FACTOR, precio: 1000, categoria: ID_CAT })
+    ID_SIN = await sembrarProducto({ nombre: SIN_FACTOR, precio: 1000, categoria: ID_CAT })
+    ID_PROV = await crearProveedor(PROVEEDOR)
 
-    await page.goto('/productos')
-    await page.getByRole('button', { name: 'Nueva categoría' }).click()
-    await page.getByTestId('categoria-nombre').fill(CAT)
-    await page.getByRole('button', { name: 'Crear categoría' }).click()
-    await expect(page.getByRole('button', { name: new RegExp(CAT) })).toBeVisible()
-
-    await crearProducto(page, CON_FACTOR)
-    await crearProducto(page, SIN_FACTOR)
-
-    await page.goto('/compras')
-    await page.getByTestId('purchases-tab-suppliers').click()
-    await page.getByTestId('new-supplier-btn').click()
-    await page.getByTestId('supplier-name').fill(PROVEEDOR)
-    await page.getByTestId('supplier-save').click()
-    await expect(page.getByTestId('supplier-form-modal')).toHaveCount(0)
-
-    // Los dos arrancan en cero y sin costo: si no, el promedio ponderado de más
-    // abajo daría otro número y el test mentiría por la fixture, no por el código.
     for (const n of [CON_FACTOR, SIN_FACTOR]) {
       const p = await leerProducto(n)
       expect(p.stock, `${n} arranca en stock 0`).toBe(0)

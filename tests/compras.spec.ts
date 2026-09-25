@@ -1,36 +1,18 @@
 import { test, expect, type Page } from '@playwright/test'
 import { loginAsOwner, loginAsCashier } from './helpers/auth'
 import { openShiftIfClosed, closeShiftIfOpen } from './helpers/shift'
+import { crearCategoria, crearProducto, crearProveedor, desactivar } from './helpers/fixture'
 
 const SUFFIX = Date.now().toString().slice(-6)
 const CAT = `E2E Compras ${SUFFIX}`
 const INSUMO = `E2E Insumo ${SUFFIX}`         // producto simple con inventario
+let ID_CAT = ''
+let ID_INSUMO = ''
+let ID_PROVEEDOR = ''
+
 const PROVEEDOR = `E2E Proveedor ${SUFFIX}`
 
 // ── Helpers ───────────────────────────────────────────────────────
-
-async function createSimpleTracked(page: Page, name: string, price: string) {
-  await page.goto('/productos')
-  await page.getByRole('button', { name: 'Nuevo producto' }).click()
-  await page.getByTestId('producto-nombre').fill(name)
-  await page.getByTestId('producto-precio').fill(price)
-  await page.getByTestId('product-category-select').selectOption({ label: CAT })
-  // kind 'simple' es el default, y desde el 2026-09-17 también el control de
-  // inventario: no se toca el interruptor.
-  await expect(page.getByTestId('product-stock-tracking')).toHaveAttribute('aria-checked', 'true')
-  await page.getByRole('button', { name: 'Crear producto' }).click()
-  await expect(page.getByText(name)).toBeVisible()
-}
-
-async function createSupplier(page: Page, name: string) {
-  await page.goto('/compras')
-  await page.getByTestId('purchases-tab-suppliers').click()
-  await page.getByTestId('new-supplier-btn').click()
-  await page.getByTestId('supplier-name').fill(name)
-  await page.getByTestId('supplier-save').click()
-  await expect(page.getByTestId('supplier-form-modal')).toHaveCount(0)
-  await expect(page.getByTestId('supplier-row').filter({ hasText: name })).toBeVisible()
-}
 
 // Registra una compra de UN ítem.
 // ⚠️ Ya NO hay método de pago (`invoice-payment-method` no existe): la deuda 26
@@ -74,19 +56,19 @@ async function readStock(page: Page, name: string): Promise<number> {
 // ── Suite ─────────────────────────────────────────────────────────
 
 test.describe.serial('Compras / Proveedores', () => {
+  // 🔴 Sembrado POR API (deuda 131). La pregunta obligatoria —*¿qué hace este
+  //    setup de paso que sea parte del escenario?*— se contestó abriendo las dos
+  //    funciones que reemplaza: `createSimpleTracked` sólo asevera que el
+  //    seguimiento nace prendido (el helper lo verifica releyendo la fila) y
+  //    `createSupplier` llena **sólo el nombre**. Respuesta: nada.
+  // ⚠️ El control de que el insumo arranca en 0 se conserva POR LA PANTALLA,
+  //    porque `readStock` es el instrumento de los casos siguientes.
   test('setup: categoría, insumo y proveedor', async ({ page }) => {
+    ID_CAT = await crearCategoria(CAT)
+    ID_INSUMO = await crearProducto({ nombre: INSUMO, precio: 1000, categoria: ID_CAT })
+    ID_PROVEEDOR = await crearProveedor(PROVEEDOR)
+
     await loginAsOwner(page)
-
-    await page.goto('/productos')
-    await page.getByRole('button', { name: 'Nueva categoría' }).click()
-    await page.getByTestId('categoria-nombre').fill(CAT)
-    await page.getByRole('button', { name: 'Crear categoría' }).click()
-    await expect(page.getByRole('button', { name: new RegExp(CAT) })).toBeVisible()
-
-    await createSimpleTracked(page, INSUMO, '1000')
-    await createSupplier(page, PROVEEDOR)
-
-    // El insumo arranca en stock 0.
     expect(await readStock(page, INSUMO)).toBe(0)
   })
 
@@ -182,23 +164,10 @@ test.describe.serial('Compras / Proveedores', () => {
     await page.goto('/ventas')
     await closeShiftIfOpen(page)
 
-    // Desactivar el proveedor (soft; admite tener facturas).
-    await page.goto('/compras')
-    await page.getByTestId('purchases-tab-suppliers').click()
-    await page.getByTestId('supplier-row').filter({ hasText: PROVEEDOR }).getByTestId('supplier-deactivate').click()
-    await expect(page.getByTestId('supplier-row').filter({ hasText: PROVEEDOR })).toHaveCount(0)
-
-    // Desactivar el insumo.
-    await page.goto('/productos')
-    await page.getByPlaceholder('Buscar producto...').fill(INSUMO)
-    await page.getByTitle('Desactivar', { exact: true }).first().click()
-    await page.getByRole('button', { name: 'Sí, desactivar' }).click()
-    await expect(page.getByText(/Sin resultados/)).toBeVisible()
-
-    // Desactivar la categoría.
-    await page.getByRole('button', { name: new RegExp(CAT) }).getByTitle('Editar categoría').click()
-    await page.getByRole('switch').click()
-    await page.getByRole('button', { name: 'Guardar cambios' }).click()
-    await expect(page.getByRole('button', { name: new RegExp(CAT) })).toHaveCount(0)
+    // 🔴 POR API (deuda 131). El proveedor se DESACTIVA, no se borra —admite
+    //    tener facturas—, que es lo mismo que hacía el botón de la pantalla.
+    await desactivar('suppliers', [ID_PROVEEDOR])
+    await desactivar('products', [ID_INSUMO])
+    await desactivar('categories', [ID_CAT])
   })
 })

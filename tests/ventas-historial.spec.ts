@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test'
 import { loginAsOwner } from './helpers/auth'
 import { cobrarEnEfectivo } from './helpers/pos'
 import { openShiftIfClosed, closeShiftIfOpen } from './helpers/shift'
-import { saveProductAndClose } from './helpers/product'
+import { crearCategoria, crearProducto, crearExtra, asignarExtras, desactivar } from './helpers/fixture'
 
 // ⚠️  Suite para el LABORATORIO (opción C). NO correr contra producción.
 // En un Supabase de laboratorio recién sembrado, la primera venta de la sede
@@ -15,6 +15,12 @@ const P_SIMPLE = `E2E HistProd ${SUFFIX}`   // producto sin extras
 const P_BASE = `E2E HistBase ${SUFFIX}`     // producto con un extra
 const E_LIBRE = `E2E HistExtra ${SUFFIX}`   // extra sin vínculo de stock
 
+// Ids de lo sembrado por API (deuda 131). Los casos siguen buscando por NOMBRE.
+let ID_CAT = ''
+let ID_SIMPLE = ''
+let ID_BASE = ''
+let ID_EXTRA = ''
+
 // "Venta #12" → 12
 function parseVentaNumber(text: string): number {
   const m = text.match(/#(\d+)/)
@@ -23,26 +29,6 @@ function parseVentaNumber(text: string): number {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────
-
-async function createProduct(page: Page, name: string, price: string) {
-  await page.goto('/productos')
-  await page.getByRole('button', { name: 'Nuevo producto' }).click()
-  await page.getByTestId('producto-nombre').fill(name)
-  await page.getByTestId('producto-precio').fill(price)
-  await page.getByTestId('product-category-select').selectOption({ label: CAT })
-  await saveProductAndClose(page)
-  await expect(page.getByText(name)).toBeVisible()
-}
-
-async function createExtra(page: Page, name: string, price: string) {
-  await page.goto('/configuracion')
-  await page.getByRole('button', { name: 'Extras', exact: true }).click()
-  await page.getByTestId('extra-new').click()
-  await page.getByTestId('extra-name').fill(name)
-  await page.getByTestId('extra-price').fill(price)
-  await page.getByTestId('extra-save').click()
-  await expect(page.getByTestId('extra-row').filter({ hasText: name })).toBeVisible()
-}
 
 // Vende un producto SIN extras al contado y devuelve el número de venta asignado.
 async function sellSimple(page: Page, productName: string): Promise<number> {
@@ -91,26 +77,16 @@ test.describe.serial('Numeración e historial de ventas', () => {
   let secondNum = 0
   let extraNum = 0
 
-  test('setup: categoría, productos y extra', async ({ page }) => {
-    await loginAsOwner(page)
-
-    await page.goto('/productos')
-    await page.getByRole('button', { name: 'Nueva categoría' }).click()
-    await page.getByTestId('categoria-nombre').fill(CAT)
-    await page.getByRole('button', { name: 'Crear categoría' }).click()
-    await expect(page.getByRole('button', { name: new RegExp(CAT) })).toBeVisible()
-
-    await createProduct(page, P_SIMPLE, '10000')
-    await createProduct(page, P_BASE, '12000')
-    await createExtra(page, E_LIBRE, '2000')
-
-    // Asignar el extra a P_BASE.
-    await page.goto('/productos')
-    await page.getByPlaceholder('Buscar producto...').fill(P_BASE)
-    await page.getByTitle('Editar', { exact: true }).first().click()
-    await page.getByTestId('product-extra-option').filter({ hasText: E_LIBRE }).click()
-    await saveProductAndClose(page)
-    await expect(page.getByTestId('catalogo-row').filter({ hasText: P_BASE })).toBeVisible()
+  // 🔴 Sembrado POR API (deuda 131). Pregunta obligatoria: los dos helpers
+  //    locales que reemplaza sólo llenaban nombre y precio, y la asignación del
+  //    extra es una fila en `product_extras` que el helper crea y asevera.
+  //    Respuesta: nada de paso.
+  test('setup: categoría, productos y extra', async () => {
+    ID_CAT = await crearCategoria(CAT)
+    ID_SIMPLE = await crearProducto({ nombre: P_SIMPLE, precio: 10000, categoria: ID_CAT })
+    ID_BASE = await crearProducto({ nombre: P_BASE, precio: 12000, categoria: ID_CAT })
+    ID_EXTRA = await crearExtra(E_LIBRE, 2000)
+    await asignarExtras(ID_BASE, [ID_EXTRA])
   })
 
   test('la venta recibe número y la siguiente es consecutiva (#N, #N+1)', async ({ page }) => {
@@ -160,26 +136,10 @@ test.describe.serial('Numeración e historial de ventas', () => {
     await page.goto('/ventas')
     await closeShiftIfOpen(page)
 
-    // Desactivar extra.
-    await page.goto('/configuracion')
-    await page.getByRole('button', { name: 'Extras', exact: true }).click()
-    const row = page.getByTestId('extra-row').filter({ hasText: E_LIBRE })
-    await row.getByTitle('Desactivar').click()
-    await expect(row).toContainText('Inactivo')
+    // 🔴 POR API (deuda 131).
+    await desactivar('extras', [ID_EXTRA])
+    await desactivar('products', [ID_SIMPLE, ID_BASE])
 
-    // Desactivar productos.
-    for (const name of [P_SIMPLE, P_BASE]) {
-      await page.goto('/productos')
-      await page.getByPlaceholder('Buscar producto...').fill(name)
-      await page.getByTitle('Desactivar', { exact: true }).first().click()
-      await page.getByRole('button', { name: 'Sí, desactivar' }).click()
-      await expect(page.getByText(/Sin resultados/)).toBeVisible()
-    }
-
-    // Desactivar categoría.
-    await page.getByRole('button', { name: new RegExp(CAT) }).getByTitle('Editar categoría').click()
-    await page.getByRole('switch').click()
-    await page.getByRole('button', { name: 'Guardar cambios' }).click()
-    await expect(page.getByRole('button', { name: new RegExp(CAT) })).toHaveCount(0)
+    await desactivar('categories', [ID_CAT])
   })
 })

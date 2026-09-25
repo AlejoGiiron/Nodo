@@ -7744,6 +7744,122 @@ funcionando?* Si la respuesta es no, el andamio va por otro camino — acá, un
 `update` directo que el trigger estampa con `now()`, que para cerrar una jornada
 de laboratorio alcanza y sobra.
 
+---
+
+### 🔴 CRITERIO SIN NÚMERO · AL MOVER UN ANDAMIO DE UI A API, LA PREGUNTA OBLIGATORIA ES «¿QUÉ HACE ESTE SETUP **DE PASO** QUE SEA PARTE DEL ESCENARIO?» — Y SE PAGÓ DOS VECES EN DOS TANDAS
+
+*2026-09-24, migrando la fixture por API (deuda 131). **Dos de dos**: en las dos primeras tandas la
+respuesta NO fue «nada», así que deja de ser una precaución y pasa a ser un paso del procedimiento.*
+
+Un setup por UI se lee como **un medio**: clickea para que las filas existan. Y en el camino hace
+cosas que **nadie escribió como escenario** y de las que el archivo depende.
+
+| tanda | qué hacía de paso | qué habría pasado al saltearlo |
+|---|---|---|
+| **1** · `extras-pos` | cargaba la existencia con `setStock`, o sea **`adjust_stock`** | insertar `stock_qty` por la tabla **habría funcionado** y habría sembrado **existencia sin movimiento** — la desalineación que este proyecto ya midió en **269 de 1.537 productos** |
+| **2** · `inventario` | armaba la **RECETA** (`product_components`) clickeando `recipe-add-*` | el archivo se llama *«Inventario por recetas»*: sin receta, **el compuesto no descuenta nada** y los casos medirían un producto sin receta con el nombre de uno con receta |
+
+🔴 **Y las dos fallan hacia el mismo lado, que es el que no levanta la mano: EL ATAJO FUNCIONA.** No
+hay error, no hay fila faltante, no hay rojo. Hay un escenario que se parece al pedido y no lo es —
+y los casos que corren encima **miden algo distinto de lo que dicen medir**, en verde.
+
+✅ **EL PASO, y va antes de escribir una línea del helper:**
+
+> **Abrí el setup viejo y preguntá, por cada acción: ¿esto está para que la fila exista, o para que
+> el escenario signifique algo?** Lo segundo **va al helper con su control** — no se descarta y no
+> se deja «para después».
+
+⚠️ Y el corolario sobre dónde buscar: lo que se hace de paso casi nunca está en el nombre del caso.
+Estaba en una función auxiliar (`setStock`) y en tres clics de un modal (`recipe-add-*`). **El
+nombre decía «setup: categoría, insumo y producto compuesto con receta»** — y la palabra «receta»
+estaba ahí, a la vista, sin que nada dijera que era el sujeto y no un adorno del título.
+
+🔴 **Y UNA FORMA PROPIA DE ESTA MIGRACIÓN: AL SACAR UN PASO POR UI SE SACA LA NAVEGACIÓN QUE OTRO
+PASO USABA SIN PEDIRLA.** *2026-09-24, tanda 2 de la deuda 131. Defecto propio, cazado por la
+medición.*
+
+**El caso.** La limpieza de `ventas-historial` desactivaba extra, productos y categoría por la
+pantalla. Al pasar los dos primeros a API borré el bucle… y con él **el `page.goto('/productos')`
+que estaba adentro**. El paso de la categoría seguía por UI y buscaba su botón **en la pantalla que
+hubiera quedado** — la de ventas. Timeout de 31 s, **tres de tres corridas**.
+
+> **La navegación no era de ese paso: era del anterior.** Nadie la escribió como dependencia porque
+> en un flujo por UI el «estado actual de la página» es un implícito que no se declara en ninguna
+> parte.
+
+⚠️ **Y lo que lo hace fácil de cometer es que lo borrado se ve REPETITIVO.** Un bucle de tres pasos
+idénticos se lee como «lo mismo tres veces», así que se reemplaza entero — y lo que estaba adentro
+por casualidad se va con él. El `goto` no era parte de la repetición: era el preámbulo de lo que
+venía después.
+
+✅ **Lo que lo cazó fue la medición de la tanda, no un repaso:** `31,0 · 30,9 · 31,0` contra los
+13,9 de antes. **Un fallo consistente y con un número absurdo es más fácil de leer que uno
+intermitente** — y acá el número decía «tope de 30», no «se rompió algo».
+
+✅ **LO ACCIONABLE, y es una pregunta al borrar pasos de UI:**
+
+> **¿Algún paso que SOBREVIVE depende de dónde quedó la página?** Si el siguiente paso usa un
+> locator sin su propio `goto`, la navegación que lo dejaba ahí era parte del contrato — y hay que
+> conservarla o migrar ese paso también.
+
+⚠️ Acá la salida fue lo segundo: la categoría **también** pasó a API, que es más barato que
+reintroducir un `goto` para un solo clic. Pero la pregunta es la que decide, no la salida.
+
+---
+
+### 🔴 CRITERIO SIN NÚMERO · QUE LA CREACIÓN SE QUEDE POR UI NO OBLIGA A QUE LA LIMPIEZA TAMBIÉN
+
+*2026-09-24, migrando `extras.spec`. Es lo que permite migrar **la mitad cara de un archivo sin
+tocar su sujeto**.*
+
+Al clasificar los 28 andamios apareció la regla obvia: **si crear por la pantalla es el sujeto, ese
+caso no se mueve.** Cierto — y se estaba aplicando **al archivo entero**, que es de más.
+
+> **Son dos decisiones distintas, y sólo la primera es cobertura.** Crear por UI se queda porque
+> **eso es lo que el archivo prueba**. Limpiar por UI no prueba nada: es trabajo.
+
+**El caso.** `extras.spec` mide *«crear un extra simple en el catálogo»* — el sujeto es el modal. Sus
+extras siguen naciendo por la pantalla. **Su limpieza no**: pasó a desactivar por API, y como el
+andamio no tiene los ids de algo que crearon los casos, va **por nombre exacto**.
+
+📋 **Medido:** setup `4,4 → 2,0` · limpieza `6,2 → 2,7`, con el sujeto intacto.
+
+⚠️ **Y el «por nombre EXACTO» no es un detalle:** acá lo que se limpia **es de esta corrida**, así
+que barrer la familia del prefijo podría pisar lo que otro caso está midiendo. La regla del prefijo
+es para **el residuo que nadie reclama** (deuda 130); ésta es la situación contraria.
+
+---
+
+### ⚠️ CRITERIO SIN NÚMERO · UNA DISPERSIÓN RELATIVA CON n=3 NO MIDE NADA — Y APLICA A TODA CONCLUSIÓN QUE SALGA DE ESTAS TABLAS
+
+*2026-09-24. Se escribe aparte porque el error no es de un hallazgo: es de CÓMO SE LEEN las tablas de
+antes/después.*
+
+Midiendo la migración por API se tomaron **tres corridas por caso** antes y tres después. Con eso se
+puede afirmar que **la dispersión ABSOLUTA colapsa** —pasó en los cuatro casos, y de 34,1 s a 0,2 s
+en el peor—. Lo que **no** se puede afirmar es nada sobre la **relativa**:
+
+| | relativa antes | después |
+|---|---|---|
+| `extras-pos` limpieza | 3% | **24%** |
+| `inventario` limpieza | 145% | **4%** |
+
+🔴 **Dos casos con el mismo cambio y el mismo único paso de escritura, moviéndose en direcciones
+opuestas.** Eso no es un hallazgo con matices: es **ruido con dos muestras**.
+
+> **Un cociente entre dos números chicos y ruidosos es más ruidoso que cualquiera de los dos.** Con
+> n=3, el rango es prácticamente el máximo menos el mínimo de tres tiradas, y dividirlo por una
+> media de tres tiradas amplifica el ruido en vez de normalizarlo.
+
+⚠️ **Y por eso la advertencia es sobre las TABLAS, no sobre el jitter:** cualquier conclusión que
+salga de estas mediciones —«este caso quedó más estable», «aquél empeoró»— hereda el mismo límite.
+Lo único que las tres corridas sostienen es **el orden de magnitud y la dirección de la absoluta**.
+
+✅ **Lo accionable:** una afirmación sobre estabilidad necesita **su propia medición**, con más
+corridas y sin otro cambio en el medio — no se saca de paso de una migración. Y mientras no exista,
+la forma honesta de citar estas tablas es *«el tiempo y la dispersión absoluta bajaron»*, sin
+adjetivos sobre la varianza.
+
 ⚠️ **Y la cuenta de la familia, que conviene junta porque el síntoma es distinto
 cada vez:**
 

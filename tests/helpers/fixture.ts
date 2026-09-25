@@ -216,6 +216,9 @@ export async function crearReceta(
   ).toEqual(insumos.map((i) => `${i.insumoId}:${i.qty}`).sort())
 }
 
+/** Las tablas cuya fixture se retira desactivando — nunca borrando. */
+export type Desactivable = 'products' | 'categories' | 'extras' | 'suppliers' | 'customers'
+
 /**
  * Desactiva por NOMBRE EXACTO. Es para las limpiezas cuya fixture **la creó el
  * sujeto**, no el andamio.
@@ -229,10 +232,7 @@ export async function crearReceta(
  *    barrer la familia podría pisar lo que otro caso está midiendo. La regla del
  *    prefijo es para el residuo que nadie reclama (deuda 130), no para esto.
  */
-export async function desactivarPorNombre(
-  tabla: 'products' | 'categories' | 'extras',
-  nombres: string[],
-): Promise<void> {
+export async function desactivarPorNombre(tabla: Desactivable, nombres: string[]): Promise<void> {
   if (nombres.length === 0) return
   const c = await db()
   const { error } = await c.from(tabla).update({ is_active: false }).in('name', nombres)
@@ -245,8 +245,31 @@ export async function desactivarPorNombre(
   ).toBe('ninguno')
 }
 
+/**
+ * Crea un proveedor.
+ *
+ * ⚠️ LA PREGUNTA OBLIGATORIA —*¿qué hace el alta por UI que sea parte del
+ *    escenario?*— acá se contesta **«nada»**, y se verificó abriendo el
+ *    `createSupplier` que reemplaza: llenaba **sólo el nombre**. Las demás
+ *    columnas (`nit`, `contact`, `phone`, `notes`) son nullables y ninguna
+ *    compra las mira. Lo único que el escenario necesita es que el proveedor
+ *    exista y esté activo, para poder elegirlo al registrar la compra.
+ * 🔴 Y se declara porque en las dos tandas anteriores la respuesta NO fue
+ *    «nada» —era `adjust_stock` en una y la receta en otra—: escribirlo deja
+ *    dicho que **se preguntó**, no que no se le ocurrió a nadie.
+ */
+export async function crearProveedor(nombre: string): Promise<string> {
+  const c = await db()
+  const sede_id = await sedeDelOwner()
+  const { data, error } = await c.from('suppliers')
+    .insert({ sede_id, name: nombre, is_active: true }).select('id, is_active').single()
+  expect(error, `fixture: no se pudo crear el proveedor "${nombre}" — ${error?.message}`).toBeNull()
+  expect(data!.is_active, `fixture: el proveedor "${nombre}" nació inactivo`).toBe(true)
+  return data!.id as string
+}
+
 /** Desactiva por id. Para las limpiezas que hoy lo hacen clickeando. */
-export async function desactivar(tabla: 'products' | 'categories' | 'extras', ids: string[]): Promise<void> {
+export async function desactivar(tabla: Desactivable, ids: string[]): Promise<void> {
   if (ids.length === 0) return
   const c = await db()
   const { error } = await c.from(tabla).update({ is_active: false }).in('id', ids)
