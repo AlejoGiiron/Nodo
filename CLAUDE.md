@@ -2850,6 +2850,37 @@ que no se había medido: *«sin listas vuelve al Excel el primer día»*.
 afirmaciones sobre el futuro no se verifican mirando el esquema. Se verifican preguntando qué va a
 poder hacer alguien el día después de levantarlo.
 
+🔴 **Y LA PRIMERA DE ESTA FORMA DEL LADO DE QUIEN DECIDE EL ORDEN, NO DE QUIEN MIDE.** *2026-09-24,
+priorizando la deuda 129.*
+
+Este archivo tiene varias apariciones de *«se leyó una cosa por otra»* y **todas son del lado del que
+mide o del que escribe**: un conteo que decía presente sobre algo cerrado, una etiqueta leída como
+estado, una cita con el sujeto cambiado, un total correcto mal nombrado. Ésta es de otro lado:
+
+> **La deuda 129 promete que la limpieza CORRA cuando otro caso falla. Al priorizarla se leyó que
+> PASE** — y sobre esa lectura se decidió que desbloqueaba la condición 1.
+
+**Lo que lo desmintió fue una sonda de tres líneas:** `afterAll` tiene **el mismo tope de 30 s**, así
+que el rojo de hoy —un timeout— no se arregla mudando la limpieza de lugar. Cambia **quién** falla y
+garantiza que **corra**; no la hace entrar en el presupuesto.
+
+⚠️ **Por qué esta forma es más caro de detectar que las otras: no hay ningún dato falso que medir.**
+La deuda decía la verdad, la medición era correcta, y el error está **entre las dos** — en qué se
+entendió que la deuda habilitaba. Ninguna técnica de este archivo la toca: no hay número que
+recalcular, ni patrón que enumerar, ni comando que correr sobre la afirmación.
+
+🔴 **Y es el corolario de *«ante un X bloquea a Y, preguntá QUÉ HABILITA EXACTAMENTE QUITAR X»*,
+aplicado a quien ORDENA en vez de a quien propone.** Esa regla ya está escrita y se aplicó del lado
+del que enumera; del lado del que prioriza, la pregunta equivalente es:
+
+> **«¿Qué va a poder hacer la suite el día después de este arreglo?»** — y contestarla con el verbo
+> exacto de la deuda, no con el que uno espera. *«La limpieza correrá»* y *«la limpieza pasará»* se
+> escriben casi igual y ordenan distinto el trabajo de una semana.
+
+⚠️ Corolario para el que recibe la prioridad: **pedir el verbo.** Si el que ordena dice *«esto
+desbloquea X»*, la pregunta es *«¿por qué mecanismo?»* — y ahí aparece si el verbo de la deuda es el
+mismo que el de la expectativa. Acá apareció, y costó una sonda en vez de una tanda de 15 archivos.
+
 🔴 **Y SU HERMANA, LA MISMA FORMA CON LA FLECHA AL REVÉS: ASUMIR UNA CONSECUENCIA SIN VERIFICAR EL
 MECANISMO.** *2026-09-14, al fijar el orden para cerrar la transición de Muscle Pro.*
 
