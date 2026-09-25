@@ -1379,6 +1379,37 @@ que el modelo separa a propósito — acá la grilla junta «cómo me pagó» co
 enum, la tabla, el CHECK—, no en la pantalla. La pantalla agrupa para que se entienda; el modelo
 separa para que se pueda medir.
 
+🔴 **Y UN CUARTO MODO, MEDIDO EL 2026-09-24 SOBRE **LA MISMA PREGUNTA** CONTESTADA POR TRES
+INSTRUMENTOS: LOS TRES SE EQUIVOCAN, EN DIRECCIONES DISTINTAS, Y NINGUNO LO ANUNCIA.**
+
+La pregunta era una sola: *«qué andamio de la suite sigue sembrando fixture por la pantalla»*
+(deuda 131). Se contestó tres veces, con tres instrumentos, y cada uno dio un número distinto:
+
+| el instrumento | qué dijo | qué era | sesgo |
+|---|---|---|---|
+| por **NOMBRE DE CASO** — `test('setup\|limpieza…')` | no ve `fiado:269` | ese `createCustomer` vive en un caso llamado *«agrupación + KPIs»* | 🔴 **SUB-reporta** |
+| por **ESTRUCTURA** — ¿tiene limpieza? | **23 archivos** | **5** — los otros 18 no crean nada que limpiar | **SOBRE-reporta** |
+| por **IDIOMA** — ¿qué hace el código? | **4 archivos** | **2** — en `plazo-de-credito` y `listas-de-precios` abrir el formulario **ES EL SUJETO**, y dos de esos casos **ni siquiera guardan** | **SOBRE-reporta, menos** |
+
+> **Cuando un conteo depende de CÓMO SE LLAMAN las cosas, el conteo mide los nombres.** Un caso de
+> andamio no está obligado a llamarse «setup», y uno que se llama «agrupación + KPIs» puede tener
+> tres líneas de andamio adentro.
+
+⚠️ **Y el hallazgo que no estaba en la hipótesis: el IDIOMA acota mucho mejor que el nombre y
+TAMPOCO basta.** Dice *«este código crea un cliente por la pantalla»*, que es cierto — y **no dice
+si eso es el MEDIO o el SUJETO**, que es lo único que decide si se mueve. Esa distinción no vive en
+el código que uno grepea: vive en **lo que el caso asevera dos líneas más abajo**.
+
+✅ **LO ACCIONABLE, y es el mismo paso que la clasificación original de los 28 ya hacía bien:** el
+grep **encuentra los candidatos**; lo que **clasifica** es leer sus aserciones. Un conteo por nombre,
+por estructura o por idioma es una **cota**, y hay que decir de qué lado — *«cota superior»* o *«cota
+inferior»*— porque las tres se escriben igual: un número.
+
+⚠️ Corolario para el registro: **un número que sobrestima un problema se gasta igual que uno que lo
+subestima** — ya está escrito para el 23 de la enumeración por estructura— **y uno que lo subestima
+ademas lo esconde.** De los tres sesgos, el del nombre es el único que **cierra la pregunta** en vez
+de inflarla, y por eso es el que hay que desconfiar primero.
+
 ⚠️ Y el corolario que cierra el par: **un archivo cuya funcionalidad se retiró de una pantalla no
 queda huérfano por eso.** El strip salió del Mostrador el 2026-09-03; el componente siguió siendo
 las pestañas del Catálogo. La poda de una FUNCIONALIDAD y la muerte de un COMPONENTE son hechos
@@ -7746,10 +7777,33 @@ de laboratorio alcanza y sobra.
 
 ---
 
-### 🔴 CRITERIO SIN NÚMERO · AL MOVER UN ANDAMIO DE UI A API, LA PREGUNTA OBLIGATORIA ES «¿QUÉ HACE ESTE SETUP **DE PASO** QUE SEA PARTE DEL ESCENARIO?» — Y SE PAGÓ DOS VECES EN DOS TANDAS
+### 🔴 CRITERIO SIN NÚMERO · AL MOVER UN ANDAMIO DE UI A API, LA PREGUNTA OBLIGATORIA ES «¿QUÉ HACE ESTE SETUP **DE PASO** QUE SEA PARTE DEL ESCENARIO?» — SE PAGA 2 DE CADA 10, Y LO QUE LA VUELVE OBLIGATORIA NO ES LA FRECUENCIA SINO LA DIRECCIÓN DEL FALLO
 
-*2026-09-24, migrando la fixture por API (deuda 131). **Dos de dos**: en las dos primeras tandas la
-respuesta NO fue «nada», así que deja de ser una precaución y pasa a ser un paso del procedimiento.*
+*2026-09-24, migrando la fixture por API (deuda 131).*
+
+🔴 **EL CONTEO, DERIVADO DE LOS COMMITS DE LAS CUATRO TANDAS — y REEMPLAZA a lo que esta nota decía
+primero («dos de dos») y a una versión que circuló después (««nada» una sola vez, el proveedor»):**
+
+| la respuesta fue | unidades migradas |
+|---|---|
+| 🔴 **NO «nada»** | **2** — `inventario` (la receta) · `stock-bajo-pos` (`min_stock` **y** la existencia inicial) |
+| «nada» | **8** — `extras` · `compras` · `compras-unidad` · `ventas-historial` · `numeracion-fallo` · `categorias-scroll` · el **proveedor** · el **cliente** |
+
+⚠️ **Las dos versiones anteriores eran falsas en direcciones opuestas**, y ninguna se podía desmentir
+leyendo: *«dos de dos»* se escribió cuando sólo había dos tandas y **no se actualizó al crecer el
+denominador**; *««nada» una sola vez»* invertía la proporción entera. Lo que las separó fue
+`git log` sobre los cuatro commits — **el registro estaba escrito y nadie lo había contado.**
+
+🔴 **Y LA CORRECCIÓN IMPORTA PORQUE CAMBIA EL ARGUMENTO, NO SÓLO EL NÚMERO.** Con 2 de 10, la frase
+*«el setup por UI ES donde vive el escenario»* **es falsa**: en el 80% de los casos el setup era
+exactamente lo que parecía, un medio. Lo que vuelve obligatoria a la pregunta es la otra mitad:
+
+> **Las dos veces que se pagó, el atajo HABRÍA FUNCIONADO.** No hay error, no hay fila faltante, no
+> hay rojo — hay un escenario que se parece al pedido y no lo es, midiendo en verde.
+
+⚠️ Es *la urgencia la decide la dirección del fallo, no cuánto difiere* aplicado a un paso de
+procedimiento: **una pregunta que se paga 1 de cada 5 veces y falla en silencio se hace siempre**;
+una que se pagara 9 de cada 10 y fallara ruidosamente podría dejarse al rojo.
 
 Un setup por UI se lee como **un medio**: clickea para que las filas existan. Y en el camino hace
 cosas que **nadie escribió como escenario** y de las que el archivo depende.
@@ -7758,6 +7812,8 @@ cosas que **nadie escribió como escenario** y de las que el archivo depende.
 |---|---|---|
 | **1** · `extras-pos` | cargaba la existencia con `setStock`, o sea **`adjust_stock`** | insertar `stock_qty` por la tabla **habría funcionado** y habría sembrado **existencia sin movimiento** — la desalineación que este proyecto ya midió en **269 de 1.537 productos** |
 | **2** · `inventario` | armaba la **RECETA** (`product_components`) clickeando `recipe-add-*` | el archivo se llama *«Inventario por recetas»*: sin receta, **el compuesto no descuenta nada** y los casos medirían un producto sin receta con el nombre de uno con receta |
+| **3** · `stock-bajo-pos` | fijaba `min_stock` **y** cargaba la existencia inicial en 20 | el archivo mide UMBRALES: sin mínimo no hay umbral que cruzar, y sin el «holgado» los cinco casos que bajan a 5, a 0 y a −3 no tienen de dónde bajar |
+| **4** · el **cliente** | ✅ **nada** — y el candidato era real: la sede tiene `plazo_credito_default` y `fiado` mide KPIs de VENCIDO | **medido en `CustomerFormModal`**: para un cliente nuevo el estado arranca en `plazo = ''` y el submit hace `plazo === '' ? null : Number(...)`, o sea que **el default de la sede NO se aplica al crear**. La respuesta «nada» vale porque se leyó el formulario, no porque no se le ocurriera a nadie |
 
 🔴 **Y las dos fallan hacia el mismo lado, que es el que no levanta la mano: EL ATAJO FUNCIONA.** No
 hay error, no hay fila faltante, no hay rojo. Hay un escenario que se parece al pedido y no lo es —

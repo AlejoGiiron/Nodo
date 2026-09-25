@@ -2,7 +2,8 @@ import { test, expect, type Page } from '@playwright/test'
 import { loginAsOwner } from './helpers/auth'
 import { waitPosReady, addPosProduct, abrirCobro, cobrarCon } from './helpers/pos'
 import { openShiftIfClosed } from './helpers/shift'
-import { sacarDeCartera, desactivarClientes } from './helpers/cartera'
+import { sacarDeCartera, desactivarClientes } from './helpers/cartera'
+import { crearCliente } from './helpers/fixture'
 
 // ============================================================================
 // EL FILTRO DE MÉTODO DEL HISTORIAL ALCANZA A TODAS LAS VENTAS
@@ -43,15 +44,6 @@ test.afterAll(async () => {
   await sacarDeCartera(['E2E Credito'])
   await desactivarClientes(['E2E Credito'])
 })
-
-async function crearCliente(page: Page, nombre: string) {
-  await page.goto('/fiado')
-  await page.getByTestId('fiado-tab-customers').click()
-  await page.getByTestId('new-customer-btn').click()
-  await page.getByTestId('customer-name').fill(nombre)
-  await page.getByTestId('customer-save').click()
-  await expect(page.getByTestId('customer-form-modal')).toHaveCount(0)
-}
 
 /** Deja una venta A CRÉDITO y una DE CONTADO hechas hoy. Devuelve sus números. */
 async function dosVentas(page: Page): Promise<{ credito: number; contado: number }> {
@@ -103,7 +95,10 @@ async function filtrarPor(page: Page, valor: string) {
 
 test('🔴 el filtro alcanza las ventas a CRÉDITO — y sigue excluyéndolas de un método real', async ({ page }) => {
   await loginAsOwner(page)
-  await crearCliente(page, CLIENTE)
+  // POR API (deuda 131). Pregunta obligatoria: «nada» — el helper local llenaba
+  // solo el nombre. Y `dosVentas` arranca con su propio `goto('/ventas')`, asi
+  // que la navegacion que el andamio hacia de paso no le hacia falta a nadie.
+  await crearCliente(CLIENTE)
   const { credito, contado } = await dosVentas(page)
 
   await page.goto('/historial')

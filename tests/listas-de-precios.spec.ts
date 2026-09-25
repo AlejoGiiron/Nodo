@@ -221,6 +221,14 @@ test.describe('deuda 101 · una línea sin precio bloquea el cobro', () => {
 
 test.describe('deuda 101 · la lista por defecto del cliente', () => {
   test('sin lista no hay celda marcada, y dice a qué nivel se vende mientras tanto', async ({ page }) => {
+  // 🔴 NO SE MIGRA A API (deuda 131): acá abrir el formulario de cliente por
+  //    LA PANTALLA **ES EL SUJETO**, no el medio. Lo que el caso asevera son sus
+  //    CONTROLES, y eso sólo existe en la UI.
+  // ⚠️ La enumeración por IDIOMA contó este sitio como andamio —`new-customer-btn`
+  //    se ve igual en los dos casos— y la que discrimina es leer la aserción de
+  //    abajo. Un grep encuentra candidatos; clasifica lo que el caso afirma.
+  //    Los dos casos de este bloque abren el modal y NO guardan: no dejan
+  //    fixture, así que tampoco tienen limpieza que migrar.
     await loginAsOwner(page)
     // ⚠️ El recorrido sale de `plazo-de-credito.spec`, no se reescribe: el
     //    formulario vive en la pestaña CLIENTES y /fiado abre en Cartera.

@@ -268,6 +268,56 @@ export async function crearProveedor(nombre: string): Promise<string> {
   return data!.id as string
 }
 
+/**
+ * Un CLIENTE, por API. Devuelve su id.
+ *
+ * 🔴 EL PAYLOAD ES EL DE `CustomerFormModal.handleSave` PARA UN CLIENTE NUEVO,
+ *    campo por campo — así que es un lado más de ese contrato, igual que
+ *    `crearProducto` lo es de `ProductModal`. Si el formulario gana un campo,
+ *    este helper NO se entera solo.
+ *
+ * ✅ LA PREGUNTA OBLIGATORIA, contestada LEYENDO EL FORMULARIO y no suponiendo:
+ *    **«nada»** — y el candidato que la hacía valer la pena era `plazo_dias`,
+ *    porque la sede tiene un `plazo_credito_default` y `fiado` mide KPIs de
+ *    VENCIDO. Medido en `CustomerFormModal`: para un cliente nuevo el estado
+ *    arranca en `plazo = ''` y el submit hace `plazo === '' ? null : Number(...)`,
+ *    o sea que **el default de la sede NO se aplica al crear**. Lo mismo
+ *    `nivel_default`, que nace en `null` a propósito (§8.19: marcar L1 sería
+ *    escribir una suposición nuestra como dato de la clienta).
+ * ⚠️ Por eso los dos se ASEVERAN abajo leyendo la fila: si algún día el
+ *    formulario empieza a preseleccionar el plazo, este helper deja de sembrar
+ *    el mismo escenario y **el control se pone rojo** en vez de que cuatro
+ *    specs midan vencidos distintos en silencio.
+ */
+export async function crearCliente(nombre: string): Promise<string> {
+  const c = await db()
+  const sede_id = await sedeDelOwner()
+  const { data, error } = await c.from('customers').insert({
+    sede_id,
+    name: nombre.trim(),
+    phone: null,
+    document: null,
+    notes: null,
+    plazo_dias: null,
+    nivel_default: null,
+  }).select('id, is_active, plazo_dias, nivel_default').single()
+  expect(error, `fixture: no se pudo crear el cliente "${nombre}" — ${error?.message}`).toBeNull()
+  expect(data!.is_active, `fixture: el cliente "${nombre}" nació inactivo`).toBe(true)
+  // Controles: son LECTURAS DE LA BASE, el equivalente de «stock 0 y costo null»
+  // en `crearProducto`. Sin ellos, un helper roto siembra mal y los casos de
+  // fiado miden vencidos sobre un plazo que nadie eligió.
+  expect(
+    data!.plazo_dias,
+    `fixture: "${nombre}" nació con plazo ${data!.plazo_dias}; el formulario lo deja NULO y ` +
+    'los KPIs de vencido de `fiado` dependen de eso',
+  ).toBeNull()
+  expect(
+    data!.nivel_default,
+    `fixture: "${nombre}" nació con nivel_default; el formulario lo deja NULO a propósito (§8.19)`,
+  ).toBeNull()
+  return data!.id as string
+}
+
 /** Desactiva por id. Para las limpiezas que hoy lo hacen clickeando. */
 export async function desactivar(tabla: Desactivable, ids: string[]): Promise<void> {
   if (ids.length === 0) return

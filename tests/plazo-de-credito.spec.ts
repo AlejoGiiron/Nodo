@@ -135,6 +135,14 @@ test('🔴 la lista de plazos sale de la SEDE y es un desplegable, no un número
     config: { ...CONFIG_ORIGINAL, plazos_credito: [8, 15, 30], plazo_credito_default: 30 },
   }).eq('id', SEDE)
 
+  // 🔴 NO SE MIGRA A API (deuda 131): acá abrir el formulario de cliente por
+  //    LA PANTALLA **ES EL SUJETO**, no el medio. Lo que el caso asevera son sus
+  //    CONTROLES, y eso sólo existe en la UI.
+  // ⚠️ La enumeración por IDIOMA contó este sitio como andamio —`new-customer-btn`
+  //    se ve igual en los dos casos— y la que discrimina es leer la aserción de
+  //    abajo. Un grep encuentra candidatos; clasifica lo que el caso afirma.
+  //    Y este caso NI GUARDA: sólo abre el modal y mira el desplegable, así que
+  //    no deja fixture que limpiar.
   await loginAsOwner(page)
   await page.goto('/fiado')
   // El formulario de cliente vive en la pestaña CLIENTES; /fiado abre en

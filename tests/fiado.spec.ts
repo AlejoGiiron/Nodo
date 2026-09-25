@@ -3,6 +3,7 @@ import { loginAsOwner, loginAsCashier } from './helpers/auth'
 import { abrirCobro } from './helpers/pos'
 import { openShiftIfClosed, closeShiftIfOpen } from './helpers/shift'
 import { sacarDeCartera } from './helpers/cartera'
+import { crearCliente, desactivar } from './helpers/fixture'
 
 // Producto compuesto seeded (Lab Coctel = 18.000) que descuenta 1 "Lab Vaso"
 // (insumo con tracking) por venta. Permite verificar que el fiado SÍ baja stock.
@@ -13,6 +14,11 @@ const SUFFIX = Date.now().toString().slice(-6)
 const CLIENTE = `E2E Fiado ${SUFFIX}`
 const CLIENTE_G = `E2E Grupo ${SUFFIX}`
 
+// Ids de los clientes sembrados POR API (deuda 131). Los casos siguen
+// buscandolos por NOMBRE: lo que cambia es como nacen y como se apagan.
+let ID_CLIENTE = ''
+let ID_CLIENTE_G = ''
+
 // Órdenes del cliente-grupo (compartidas entre los tests de agrupación).
 let gN1 = 0
 let gN2 = 0
@@ -21,16 +27,6 @@ let gN2 = 0
 const parseCOP = (text: string): number => Number(text.replace(/[^\d]/g, ''))
 
 // ── Helpers ───────────────────────────────────────────────────────
-
-async function createCustomer(page: Page, name: string) {
-  await page.goto('/fiado')
-  await page.getByTestId('fiado-tab-customers').click()
-  await page.getByTestId('new-customer-btn').click()
-  await page.getByTestId('customer-name').fill(name)
-  await page.getByTestId('customer-save').click()
-  await expect(page.getByTestId('customer-form-modal')).toHaveCount(0)
-  await expect(page.getByTestId('customer-row').filter({ hasText: name })).toBeVisible()
-}
 
 // Vende 1 PRODUCT a fiado al cliente dado. Devuelve el número de venta.
 // Requiere turno abierto (la app exige turno para "Cobrar", aunque el fiado no
@@ -154,9 +150,17 @@ test.describe.serial('Fiado / Cartera', () => {
       .not.toBe(neutro)
   })
 
-  test('setup: crear cliente', async ({ page }) => {
-    await loginAsOwner(page)
-    await createCustomer(page, CLIENTE)
+  // 🔴 Sembrado POR API (deuda 131). Pregunta obligatoria: **«nada»**, y el
+  //    candidato era real — la sede tiene `plazo_credito_default` y este archivo
+  //    mide KPIs de VENCIDO, que dependen del plazo. Medido en
+  //    `CustomerFormModal`: para un cliente nuevo el estado arranca en
+  //    `plazo = ''` y el submit hace `plazo === '' ? null : Number(...)`, o sea
+  //    que el default de la sede NO se aplica al crear. `crearCliente` asevera
+  //    ese nulo leyendo la fila, asi que si el formulario empieza a
+  //    preseleccionarlo, el helper se pone rojo en vez de que este archivo mida
+  //    vencidos sobre un plazo que nadie eligio.
+  test('setup: crear cliente', async () => {
+    ID_CLIENTE = await crearCliente(CLIENTE)
   })
 
   test('vender a fiado: orden pending, sin pago, y el stock baja', async ({ page }) => {
@@ -266,7 +270,10 @@ test.describe.serial('Fiado / Cartera', () => {
 
   test('agrupación + KPIs: 2 fiados de un cliente = 1 fila con saldo sumado', async ({ page }) => {
     await loginAsOwner(page)
-    await createCustomer(page, CLIENTE_G)
+    // POR API (deuda 131). El `goto('/fiado')` de tres lineas abajo es el que
+    // deja la pagina donde el resto del caso la necesita — el andamio viejo
+    // navegaba de paso y eso no era de este paso.
+    ID_CLIENTE_G = await crearCliente(CLIENTE_G)
 
     // Baseline de KPIs ANTES de crear las deudas de este cliente nuevo.
     await page.goto('/fiado')
@@ -424,20 +431,22 @@ test.describe.serial('Fiado / Cartera', () => {
 test.afterAll(async () => { await sacarDeCartera(['E2E Fiado', 'E2E Grupo']) })
 
   test('limpieza: cerrar turno y desactivar clientes', async ({ page }) => {
-    page.on('dialog', (d) => d.accept())
     await loginAsOwner(page)
 
+    // 🔴 EL TURNO SE CIERRA POR LA PANTALLA Y NO SE MUEVE: es un RECURSO UNICO
+    //    de la sede —una jornada abierta por sede— y dejarlo abierto no ensucia,
+    //    IMPIDE QUE EL SPEC SIGUIENTE EXISTA.
     await page.goto('/ventas')
     await closeShiftIfOpen(page)
 
-    await page.goto('/fiado')
-    await page.getByTestId('fiado-tab-customers').click()
-    for (const name of [CLIENTE, CLIENTE_G]) {
-      const cust = page.getByTestId('customer-row').filter({ hasText: name })
-      if (await cust.count() > 0) {
-        await cust.getByTestId('customer-deactivate').click()
-        await expect(page.getByTestId('customer-row').filter({ hasText: name })).toHaveCount(0)
-      }
-    }
+    // 🔴 Los clientes se apagan POR API (deuda 131). El `page.on('dialog')` que
+    //    habia aca era para el `window.confirm` de `handleDeactivate`, que por
+    //    API no existe.
+    // ⚠️ Y lo que ESTE archivo dejo de cubrir al migrarlo esta cubierto A
+    //    PROPOSITO en `clientes.spec.ts`, donde crear y desactivar un cliente
+    //    POR LA PANTALLA es el SUJETO. Antes de esa migracion era la unica
+    //    cobertura de `customer-save` y `customer-deactivate`, y era INCIDENTAL:
+    //    moverla sin reponerla la habria borrado en verde.
+    await desactivar('customers', [ID_CLIENTE, ID_CLIENTE_G])
   })
 })
