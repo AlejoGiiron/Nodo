@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
-import { loginAsOwner } from './helpers/auth'
+import { loginAsOwner } from './helpers/auth'
+import { crearCategoria, crearProducto, desactivar, desactivarPorNombre } from './helpers/fixture'
 
 // Sufijo único por corrida → datos idempotentes y aislados.
 const SUFFIX = Date.now().toString().slice(-6)
@@ -8,24 +9,25 @@ const PROD = `E2E ExtProd ${SUFFIX}`
 const EXTRA_SIMPLE = `E2E Topping ${SUFFIX}`
 const EXTRA_LINKED = `E2E Adición ${SUFFIX}`
 
+// 🔴 Los ids de lo que siembra el ANDAMIO. Los EXTRAS no están acá a propósito:
+//    crearlos por la pantalla es el SUJETO de este archivo, así que nacen en los
+//    casos y la limpieza los desactiva por nombre.
+let ID_CAT = ''
+let ID_PROD = ''
+
 // Serie: cada test construye sobre el anterior (producto → extras → asignación
 // → desactivación → limpieza). workers:1 garantiza el orden.
 test.describe.serial('Extras', () => {
-  test('setup: crear categoría y producto base', async ({ page }) => {
-    await loginAsOwner(page)
-    await page.goto('/productos')
-
-    await page.getByRole('button', { name: 'Nueva categoría' }).click()
-    await page.getByTestId('categoria-nombre').fill(CAT)
-    await page.getByRole('button', { name: 'Crear categoría' }).click()
-    await expect(page.getByRole('button', { name: new RegExp(CAT) })).toBeVisible()
-
-    await page.getByRole('button', { name: 'Nuevo producto' }).click()
-    await page.getByTestId('producto-nombre').fill(PROD)
-    await page.getByTestId('producto-precio').fill('12000')
-    await page.getByTestId('product-category-select').selectOption({ label: CAT })
-    await page.getByRole('button', { name: 'Crear producto' }).click()
-    await expect(page.getByText(PROD)).toBeVisible()
+  // 🔴 Sembrado POR API (deuda 131). La categoría y el producto son MEDIO: lo que
+  //    este archivo mide es crear y vincular EXTRAS, y eso se sigue haciendo por
+  //    la pantalla en los casos de abajo.
+  // ⚠️ La pregunta obligatoria —*¿qué hace este setup de paso que sea parte del
+  //    escenario?*— acá se contesta «nada»: el producto base sólo tiene que
+  //    existir, con seguimiento de inventario y sin costo, y eso lo asevera el
+  //    helper al releer la fila.
+  test('setup: crear categoría y producto base', async () => {
+    ID_CAT = await crearCategoria(CAT)
+    ID_PROD = await crearProducto({ nombre: PROD, precio: 12000, categoria: ID_CAT })
   })
 
   test('crear un extra simple (sin stock) en el catálogo', async ({ page }) => {
@@ -101,24 +103,11 @@ test.describe.serial('Extras', () => {
     page.on('dialog', (dialog) => dialog.accept())
     await loginAsOwner(page)
 
-    // Desactivar el extra vinculado (el simple ya quedó inactivo).
-    await page.goto('/configuracion')
-    await page.getByRole('button', { name: 'Extras', exact: true }).click()
-    const linkedRow = page.getByTestId('extra-row').filter({ hasText: EXTRA_LINKED })
-    await linkedRow.getByTitle('Desactivar').click()
-    await expect(linkedRow).toContainText('Inactivo')
-
-    // Desactivar el producto.
-    await page.goto('/productos')
-    await page.getByPlaceholder('Buscar producto...').fill(PROD)
-    await page.getByTitle('Desactivar', { exact: true }).first().click()
-    await page.getByRole('button', { name: 'Sí, desactivar' }).click()
-    await expect(page.getByText(/Sin resultados/)).toBeVisible()
-
-    // Desactivar la categoría.
-    await page.getByRole('button', { name: new RegExp(CAT) }).getByTitle('Editar categoría').click()
-    await page.getByRole('switch').click()
-    await page.getByRole('button', { name: 'Guardar cambios' }).click()
-    await expect(page.getByRole('button', { name: new RegExp(CAT) })).toHaveCount(0)
+    // 🔴 POR API (deuda 131). Los extras van por NOMBRE porque los crearon los
+    //    casos —crearlos es el sujeto de este archivo— y el andamio no tiene sus
+    //    ids; lo que sembró el setup va por id.
+    await desactivarPorNombre('extras', [EXTRA_SIMPLE, EXTRA_LINKED])
+    await desactivar('products', [ID_PROD])
+    await desactivar('categories', [ID_CAT])
   })
 })

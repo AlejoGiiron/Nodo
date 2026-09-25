@@ -184,6 +184,67 @@ export async function asignarExtras(productoId: string, extraIds: string[]): Pro
   ).toEqual([...extraIds].sort())
 }
 
+/**
+ * Crea la RECETA de un compuesto: qué insumos consume y cuánto de cada uno.
+ *
+ * 🔴 NO ES UN PASO DE PASO — ES EL ESCENARIO. `inventario.spec` se llama
+ *    «Inventario por recetas»: lo que mide es que vender un compuesto descuente
+ *    su insumo. Su setup por UI armaba la receta clickeando `recipe-add-*`, y
+ *    esa parte **no se puede saltear**: sin `product_components` el compuesto no
+ *    descuenta nada y los casos medirían un producto sin receta con nombres de
+ *    producto con receta.
+ * ⚠️ Es la misma pregunta que destapó el `setStock` del piloto: *¿qué hace este
+ *    setup DE PASO que sea parte del escenario?* Acá la respuesta es la receta.
+ */
+export async function crearReceta(
+  compuestoId: string,
+  insumos: { insumoId: string; qty: number }[],
+): Promise<void> {
+  const c = await db()
+  const sede_id = await sedeDelOwner()
+  const { error } = await c.from('product_components').insert(
+    insumos.map((i) => ({ sede_id, parent_id: compuestoId, component_id: i.insumoId, qty: i.qty })),
+  )
+  expect(error, `fixture: no se pudo crear la receta — ${error?.message}`).toBeNull()
+  const { data, error: e2 } = await c.from('product_components')
+    .select('component_id, qty').eq('parent_id', compuestoId)
+  expect(e2, `fixture: no se pudo verificar la receta — ${e2?.message}`).toBeNull()
+  expect(
+    (data ?? []).map((r) => `${r.component_id}:${Number(r.qty)}`).sort(),
+    'fixture: la receta no quedó con los insumos pedidos — y de eso depende que vender ' +
+    'el compuesto descuente inventario',
+  ).toEqual(insumos.map((i) => `${i.insumoId}:${i.qty}`).sort())
+}
+
+/**
+ * Desactiva por NOMBRE EXACTO. Es para las limpiezas cuya fixture **la creó el
+ * sujeto**, no el andamio.
+ *
+ * 🔴 POR QUÉ HACE FALTA además de `desactivar` por id: en `extras.spec` crear un
+ *    extra por la pantalla **ES el sujeto** —«crear un extra simple en el
+ *    catálogo»—, así que esos extras nacen en los casos y el `afterAll` no tiene
+ *    sus ids. Que la creación se quede por UI **no obliga a que la limpieza
+ *    también**: son dos decisiones distintas y sólo la primera es cobertura.
+ * ⚠️ Por NOMBRE EXACTO y no por prefijo: acá el sujeto sí es de esta corrida, y
+ *    barrer la familia podría pisar lo que otro caso está midiendo. La regla del
+ *    prefijo es para el residuo que nadie reclama (deuda 130), no para esto.
+ */
+export async function desactivarPorNombre(
+  tabla: 'products' | 'categories' | 'extras',
+  nombres: string[],
+): Promise<void> {
+  if (nombres.length === 0) return
+  const c = await db()
+  const { error } = await c.from(tabla).update({ is_active: false }).in('name', nombres)
+  expect(error, `fixture: no se pudo desactivar en ${tabla} — ${error?.message}`).toBeNull()
+  const { data, error: e2 } = await c.from(tabla).select('name').in('name', nombres).eq('is_active', true)
+  expect(e2, `fixture: no se pudo verificar la desactivación — ${e2?.message}`).toBeNull()
+  expect(
+    (data ?? []).map((r) => r.name).join(' · ') || 'ninguno',
+    `QUEDÓ FIXTURE ACTIVA en ${tabla}: se cuela en el POS de specs que no hablan de ella (deuda 67)`,
+  ).toBe('ninguno')
+}
+
 /** Desactiva por id. Para las limpiezas que hoy lo hacen clickeando. */
 export async function desactivar(tabla: 'products' | 'categories' | 'extras', ids: string[]): Promise<void> {
   if (ids.length === 0) return

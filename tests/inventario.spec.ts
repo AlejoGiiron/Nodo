@@ -1,8 +1,8 @@
 import { test, expect, type Page } from '@playwright/test'
 import { loginAsOwner } from './helpers/auth'
+import { crearCategoria, crearProducto, crearReceta, desactivar } from './helpers/fixture'
 import { cobrarEnEfectivo } from './helpers/pos'
 import { openShiftIfClosed, closeShiftIfOpen } from './helpers/shift'
-import { saveProductAndClose } from './helpers/product'
 
 const SUFFIX = Date.now().toString().slice(-6)
 const CAT = `E2E Inv ${SUFFIX}`
@@ -16,34 +16,13 @@ const COCTEL_VENTA = `E2E CoctelVenta ${SUFFIX}`
 
 // ── Helpers ───────────────────────────────────────────────────────
 
-async function createSimpleTracked(page: Page, name: string, price: string) {
-  await page.goto('/productos')
-  await page.getByRole('button', { name: 'Nuevo producto' }).click()
-  await page.getByTestId('producto-nombre').fill(name)
-  await page.getByTestId('producto-precio').fill(price)
-  await page.getByTestId('product-category-select').selectOption({ label: CAT })
-  // kind 'simple' es el default, y desde el 2026-09-17 también el control de
-  // inventario: no se toca el interruptor.
-  await expect(page.getByTestId('product-stock-tracking')).toHaveAttribute('aria-checked', 'true')
-  await saveProductAndClose(page)
-  await expect(page.getByText(name)).toBeVisible()
-}
-
-async function createComposite(page: Page, name: string, price: string, insumo: string, qty: number) {
-  await page.goto('/productos')
-  await page.getByRole('button', { name: 'Nuevo producto' }).click()
-  await page.getByTestId('producto-nombre').fill(name)
-  await page.getByTestId('producto-precio').fill(price)
-  await page.getByTestId('product-category-select').selectOption({ label: CAT })
-  await page.getByTestId('product-kind-composite').click()
-  // Agregar el insumo a la receta.
-  await page.getByTestId('recipe-add-product').selectOption({ label: insumo })
-  await page.getByTestId('recipe-add-qty').fill(String(qty))
-  await page.getByTestId('recipe-add-confirm').click()
-  await expect(page.getByTestId('recipe-row').filter({ hasText: insumo })).toBeVisible()
-  await saveProductAndClose(page)
-  await expect(page.getByText(name)).toBeVisible()
-}
+// 🔴 Los ids del escenario, sembrado POR API (deuda 131). Los casos siguen
+//    buscando por NOMBRE en la pantalla: no cambió nada de lo que miden.
+let ID_CAT = ''
+let ID_INSUMO = ''
+let ID_COCTEL = ''
+let ID_INSUMO_VENTA = ''
+let ID_COCTEL_VENTA = ''
 
 // Lee el stock de un insumo desde la pestaña Niveles de Inventario.
 async function readStock(page: Page, name: string): Promise<number> {
@@ -85,19 +64,21 @@ async function sellCash(page: Page, name: string) {
 // ── Suite ─────────────────────────────────────────────────────────
 
 test.describe.serial('Inventario por recetas', () => {
+  // 🔴 Sembrado POR API (deuda 131). Lo que este setup hacía DE PASO y ES parte
+  //    del escenario es la RECETA: sin `product_components` el compuesto no
+  //    descuenta su insumo, y este archivo se llama «Inventario por recetas».
+  //    El helper la crea y la asevera.
+  // ⚠️ El control de que el insumo arranca en stock 0 no se pierde: vive dentro
+  //    de `crearProducto`, que relee la fila. Acá se conserva además la lectura
+  //    POR LA PANTALLA, porque `readStock` es el instrumento que usan los casos
+  //    siguientes y conviene que su primera lectura esté aseverada.
   test('setup: categoría, insumo y producto compuesto con receta', async ({ page }) => {
+    ID_CAT = await crearCategoria(CAT)
+    ID_INSUMO = await crearProducto({ nombre: INSUMO, precio: 1000, categoria: ID_CAT })
+    ID_COCTEL = await crearProducto({ nombre: COCTEL, precio: 15000, categoria: ID_CAT, kind: 'composite' })
+    await crearReceta(ID_COCTEL, [{ insumoId: ID_INSUMO, qty: 1 }])
+
     await loginAsOwner(page)
-
-    await page.goto('/productos')
-    await page.getByRole('button', { name: 'Nueva categoría' }).click()
-    await page.getByTestId('categoria-nombre').fill(CAT)
-    await page.getByRole('button', { name: 'Crear categoría' }).click()
-    await expect(page.getByRole('button', { name: new RegExp(CAT) })).toBeVisible()
-
-    await createSimpleTracked(page, INSUMO, '1000')
-    await createComposite(page, COCTEL, '15000', INSUMO, 1)
-
-    // El insumo aparece en Niveles con stock 0 (arranca en 0).
     expect(await readStock(page, INSUMO)).toBe(0)
   })
 
@@ -126,10 +107,18 @@ test.describe.serial('Inventario por recetas', () => {
     // Par FRESCO, aislado de los ajustes (+20/−5) que otros tests aplican sobre
     // INSUMO. Stock conocido vía UN único ajuste de entrada, y before capturado
     // justo antes de la venta (sin ajustes intermedios) → determinista.
-    await createSimpleTracked(page, INSUMO_VENTA, '1000')
-    await createComposite(page, COCTEL_VENTA, '15000', INSUMO_VENTA, 1)
+    // 🔴 El par se siembra POR API, y va MÁS ALLÁ de los 23 casos de andamio a
+    //    propósito: esta creación vive DENTRO de un caso cuyo sujeto es la venta,
+    //    no la creación — es medio, no escenario. Y es el caso exacto que falló
+    //    con el botón en «Guardando…» colgado, o sea el que más expuesto estaba
+    //    a la varianza de las escrituras por UI.
+    // ⚠️ La existencia inicial la carga `crearProducto` con `adjust_stock`, la
+    //    misma RPC que usaba `adjustStock` por la pantalla: el movimiento con
+    //    motivo se sigue escribiendo.
+    ID_INSUMO_VENTA = await crearProducto({ nombre: INSUMO_VENTA, precio: 1000, categoria: ID_CAT, stock: 10 })
+    ID_COCTEL_VENTA = await crearProducto({ nombre: COCTEL_VENTA, precio: 15000, categoria: ID_CAT, kind: 'composite' })
+    await crearReceta(ID_COCTEL_VENTA, [{ insumoId: ID_INSUMO_VENTA, qty: 1 }])
 
-    await adjustStock(page, INSUMO_VENTA, '+', 10, 'stock inicial para venta')
     const before = await readStock(page, INSUMO_VENTA)
     expect(before).toBe(10)
 
@@ -177,18 +166,11 @@ test.describe.serial('Inventario por recetas', () => {
     await page.goto('/ventas')
     await closeShiftIfOpen(page)
 
-    // Desactivar los compuestos primero (liberan la receta), luego los insumos.
-    for (const name of [COCTEL, COCTEL_VENTA, INSUMO, INSUMO_VENTA]) {
-      await page.goto('/productos')
-      await page.getByPlaceholder('Buscar producto...').fill(name)
-      await page.getByTitle('Desactivar', { exact: true }).first().click()
-      await page.getByRole('button', { name: 'Sí, desactivar' }).click()
-      await expect(page.getByText(/Sin resultados/)).toBeVisible()
-    }
-
-    await page.getByRole('button', { name: new RegExp(CAT) }).getByTitle('Editar categoría').click()
-    await page.getByRole('switch').click()
-    await page.getByRole('button', { name: 'Guardar cambios' }).click()
-    await expect(page.getByRole('button', { name: new RegExp(CAT) })).toHaveCount(0)
+    // 🔴 Desactivar POR API (deuda 131). Se CONSERVA el orden —compuestos antes
+    //    que insumos— aunque por API ya no haga falta: era una restricción de la
+    //    pantalla y quitarlo no ahorra nada, mientras dejarlo escrito conserva la
+    //    razón de por qué existía.
+    await desactivar('products', [ID_COCTEL, ID_COCTEL_VENTA, ID_INSUMO, ID_INSUMO_VENTA])
+    await desactivar('categories', [ID_CAT])
   })
 })
