@@ -2741,6 +2741,40 @@ expresión de búsqueda en vez de a un instrumento — y cuesta una línea.
 la salida. **Lo que se escribe en la migración es el UUID**, nunca el patrón — porque el patrón se
 vuelve a evaluar contra los datos del día que corra, y los datos crecen.
 
+✅ **Y LA PRIMERA VEZ QUE ESTA CORRECCIÓN SE APLICA *ANTES* DE TOCAR, EN VEZ DE DESPUÉS:
+«RLS ES LA GARANTÍA, NO EL PREFIJO».** *2026-09-24, antes de anular 63 filas.*
+
+Las tres apariciones de arriba son **post-mortem**: el patrón ya había seleccionado de más y el
+enunciado ya había salido. Ésta no — el objetivo era un `update` sobre 63 filas de LAB, y la
+pregunta *«¿son todas de LAB?»* se contestó **antes de la primera escritura**.
+
+⚠️ **Y lo cómodo habría sido leer el prefijo.** `E2E` dice *«esto lo creó el arnés»* y suena a
+garantía — pero es exactamente la clase de evidencia que este bloque viene desmintiendo: **el
+prefijo dice QUÉ LAS CREÓ, no DÓNDE ESTÁN.** Nada impide que un cargador nuestro escriba un `E2E`
+en otra sede; de hecho la orden fantasma de Muscle Pro **era residuo nuestro en el tenant de la
+clienta**.
+
+✅ **Lo que se midió, y son dos preguntas distintas:**
+
+```
+la organización del owner                  -> "LAB"
+sedes VISIBLES para esta sesión            -> 2, las dos de LAB   (RLS acota a la organización)
+las 63, SIN filtrar por sede               -> siguen siendo 63, todas en LAB Principal
+```
+
+🔴 **La tercera línea es la que vale, y es el control:** correr la consulta **sin** el filtro de sede
+y ver que el total no cambia. Con el filtro puesto, el `63` no distingue *«son todas de LAB»* de
+*«sólo miré LAB»* — es la tautología del corolario de R4, y el mismo error que produjo el `157` de
+dos sedes leído como una.
+
+> **RLS es lo que garantiza que esta sesión no pueda tocar el tenant de la clienta, y por eso la
+> verificación es sobre lo que la sesión VE, no sobre cómo se llaman las filas.** Un prefijo es una
+> convención nuestra; una policy es un mecanismo del motor.
+
+⚠️ Corolario, y es lo que hace la diferencia de costo: **aplicada antes, la verificación es un
+`select` de tres líneas; aplicada después, es un informe que hay que retirar** —o, en el peor caso
+medido, 63 filas anuladas en el tenant equivocado, que ninguna policy de DELETE deja deshacer.
+
 🔴 **LA OCTAVA ES LA PRIMERA SOBRE TRABAJO AJENO, Y SE INFIRIÓ DESDE UNA ETIQUETA.**
 *2026-09-07, al cerrar la primera tanda de la deuda 41.*
 
@@ -9341,6 +9375,54 @@ raros»: el dato raro era el punto.
 
 ⚠️ Corolario para escribir la sonda: preguntá **qué consulta va a devolver esta fila mañana**. Si la
 respuesta es «la de cualquiera que pida la última», la sonda necesita otra fecha o no debe existir.
+
+🔴 **Y LA FORMA OPUESTA, QUE NO ESTABA MEDIDA: UNA LIMPIEZA QUE SÓLO RECLAMA LO PROPIO DEJA
+HUÉRFANAS QUE NINGUNA CORRIDA FUTURA PUEDE RECLAMAR.** *2026-09-24, al arreglar la deuda 130.*
+
+Todo lo que este archivo mide sobre residuo tiene la misma causa: **nadie limpia**. Una limpieza que
+no corre, una que desactiva al cliente y no anula su venta, una sonda que escribe y se va. El
+arreglo siempre es el mismo — que alguien limpie lo suyo.
+
+> **Acá el residuo crecía justamente porque cada uno limpiaba SÓLO lo suyo.**
+
+**El caso.** El helper nuevo barría por el nombre **de su corrida** —`'E2E Total ' + SUFFIX`, con
+`SUFFIX = Date.now()`—, que es la forma prudente y la que uno escribe sin pensar: *no toco lo que no
+es mío*. Y tiene una consecuencia que el diseño no contemplaba:
+
+```
+corrida A muere a mitad  ->  deja 'E2E Total 818538' viva
+corrida B limpia          ->  busca 'E2E Total 924771'  ->  NO LA VE
+```
+
+🔴 **La huérfana no es de nadie, y por construcción nadie la va a reclamar.** Cada corrida futura
+nace con un sufijo distinto, así que la fila queda viva **para siempre** — y con la sonda adentro de
+la puerta, eso es un **rojo permanente por algo que nadie puede limpiar**. Es la trampa del tripwire
+que suena siempre, entrando por la puerta de atrás: el mecanismo correcto, aplicado con el alcance
+prudente, produce exactamente lo que vino a evitar.
+
+⚠️ **Y LO QUE LO CAZÓ FUE EL MUTANTE, NO LA ENUMERACIÓN.** La enumeración midió bien —63 vivas,
+cinco specs, la tasa— y **no podía ver esto**: enumera lo que HAY, y esto es una propiedad de lo que
+va a pasar cuando algo falle. El mutante, que existe para otra cosa —comprobar que el caso puede dar
+rojo—, **dejó una huérfana como efecto colateral** y ahí apareció el hueco.
+
+> **Un mutante no sólo prueba que la aserción discrimina: EJERCITA EL CAMINO DE FALLO, que es el que
+> el diseño no recorrió.** Es la tercera cosa que un mutante contesta, después de *«¿mide?»* y
+> *«¿sobre qué mide?»*.
+
+✅ **LO ACCIONABLE, y es una pregunta al escribir cualquier limpieza:**
+
+> **¿Quién va a limpiar esto si ESTA corrida no llega al final?** Si la respuesta es *«la siguiente»*,
+> el alcance tiene que ser **la familia** —el prefijo del spec— y no el nombre de la corrida. Una
+> limpieza que sólo se reclama a sí misma no converge.
+
+📋 **Verificado por ejecución, y el control es la convergencia:** la huérfana que dejó el mutante
+**desapareció en la corrida siguiente, que nunca supo su nombre.**
+
+⚠️ **Y su condición, dicha porque es lo que la vuelve segura hoy y no mañana:** barrer la familia
+entera sólo es seguro con **`workers: 1`** — no hay otra corrida con una venta en vuelo. 🔴 **El
+disparador:** el día que la suite se paralelice, esto se revisa, porque un worker podría pagar la
+venta que otro está midiendo. Está anotado también en el criterio de paralelizar la suite, que ya
+tiene medido que el 84% de los casos comparte estado del lab.
 
 ---
 
