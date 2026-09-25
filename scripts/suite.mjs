@@ -1,4 +1,4 @@
-import { spawnSync } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import { mkdtempSync, writeFileSync, appendFileSync, readFileSync, statSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -82,14 +82,27 @@ log('')
 //    intérprete de shell en el medio.
 const args = process.argv.slice(2)
 const CLI = 'node_modules/@playwright/test/cli.js'
-const r = spawnSync(
-  process.execPath,
-  [CLI, 'test', ...args, '--reporter=line,json'],
-  { encoding: 'utf8', env: { ...process.env, PLAYWRIGHT_JSON_OUTPUT_NAME: JSON_OUT }, maxBuffer: 1 << 28 },
-)
-appendFileSync(LOG, (r.stdout ?? '') + (r.stderr ?? ''))
-process.stdout.write(r.stdout ?? '')
-if (r.stderr) process.stderr.write(r.stderr)
+
+// 🔴 STREAMING Y NO `spawnSync`, y la razón es de USO y no de estilo: con
+//    `spawnSync` la salida se retiene hasta que el proceso termina, así que
+//    durante los ~26 minutos de una suite entera **el archivo tiene sólo la
+//    cabecera y la terminal no dice nada**. Medido al estrenar este script.
+// ⚠️ Y eso es PEOR que lo que había antes: si este comando es la puerta, tiene
+//    que dejar ver que algo pasa. Veintiséis minutos sin señal son
+//    indistinguibles de un proceso colgado — que es exactamente la confusión que
+//    este proyecto ya tiene medida con «la corrida no existió».
+const r = await new Promise((resolve) => {
+  const p = spawn(process.execPath, [CLI, 'test', ...args, '--reporter=line,json'], {
+    env: { ...process.env, PLAYWRIGHT_JSON_OUTPUT_NAME: JSON_OUT },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  })
+  // tee: a la terminal EN VIVO y al archivo, que es el que se lee después.
+  const tee = (flujo, salida) => flujo.on('data', (b) => { salida.write(b); appendFileSync(LOG, b) })
+  tee(p.stdout, process.stdout)
+  tee(p.stderr, process.stderr)
+  p.on('error', (error) => resolve({ status: null, error }))
+  p.on('close', (status) => resolve({ status, error: null }))
+})
 
 // 🔴 R9: el exit se escribe ADENTRO del archivo. No se lee de una tubería ni de
 //    la notificación de tarea — once veces dijo 0 sobre una suite roja.

@@ -3094,6 +3094,41 @@ comprobado que pasan.
 ⚠️ Y se cierra **sólo la que uno abrió**, nunca la que estaba. Cerrar una ajena deja el lab en un
 estado que nadie eligió, que es exactamente lo que el spec damnificado reclama cuando la encuentra.
 
+🔴 **Y LA MISMA DEUDA TIENE DOS COSTOS SEGÚN DÓNDE CAIGA EL ROJO — Y EL SEGUNDO ES INVISIBLE EN LOS
+CINCO NÚMEROS.** *2026-09-24, con la tercera y la cuarta instancia el mismo día.*
+
+Las tres primeras instancias costaron **casos sin medir**: un rojo temprano en un `describe.serial`
+saltea lo que sigue, y ahí el resumen lo dice — `did not run` aparece, se enumera aparte, se nombra
+*sin medir*. Es visible, es incómodo, y alguien lo mira.
+
+**La cuarta no costó ningún caso.** `inventario.spec.ts:173` es **el último** del serial, así que
+detrás no había nada que saltear: la suite cerró con **`did_not_run=0`**. Y aun así costó algo:
+
+> **Lo que falló era la limpieza, así que el costo fue la SUCIEDAD que no alcanzó a sacar** — 2
+> productos, 2 categorías y 1 cliente de fixture quedaron activos.
+
+📋 **Los dos costos, y son la misma deuda:**
+
+| dónde cae el rojo en el `describe.serial` | qué cuesta | ¿se ve en los cinco números? |
+|---|---|---|
+| **en medio** | los casos siguientes **no corren** | ✅ sí: `did not run` |
+| 🔴 **en la limpieza (el último)** | **el residuo que la limpieza iba a sacar** | ⛔ **no: `did_not_run=0`** |
+
+⚠️ **Y el segundo es el que se lee como menos grave y no lo es.** Un `did not run` es cobertura que
+falta esta corrida; **el residuo se ACUMULA** y pasa a la siguiente — que es exactamente cómo
+empezaron las deudas 128 y 130. Un resumen con `1 failed · 0 did not run` se lee como *«un caso
+suelto»*, y puede ser *«una limpieza no corrió y el lab arranca sucio mañana»*.
+
+✅ **LO ACCIONABLE, y es sobre cómo se LEE el resumen:** cuando el rojo sea **un caso de limpieza**,
+la pregunta no es cuántos casos se saltearon — es **qué quedó sin limpiar**, y eso lo contesta la
+sonda, no los cinco números. Por eso corre en la misma invocación: el número que falta en el resumen
+está en el bloque de abajo.
+
+⚠️ Corolario que refuerza el orden de la 129: mover la limpieza a `afterAll` arregla **los dos**
+costos a la vez. Como caso, falla y deja residuo; como `afterAll`, corre igual cuando los casos
+fallan — y si falla ella misma, Playwright la cuelga del último caso con su mensaje, que ya está
+escrito para defenderse solo.
+
 🔴 **EL MÉTODO QUE LO RESOLVIÓ VA CON EL CASO, PORQUE LA PRIMERA HIPÓTESIS ERA FALSA.** Supuse que
 había quedado una jornada viva de la corrida fallida; lo medí y dio **abiertas = 0**. La causa real
 se probó con un mutante — saltear el cierre — y ahí está lo que vale registrar:
