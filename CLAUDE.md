@@ -767,6 +767,46 @@ Decía que algo no andaba —o sea, que mi cambio arreglaba algo— y por eso **
 dudarla**. Una afirmación que te da la razón no la revisa nadie, empezando por vos. Las falsas que
 se atrapan son las que molestan.
 
+🔴 **Y SU INVERSA, QUE ES LA FORMA QUE FALTABA: UNA AFIRMACIÓN FALSA QUE SE ACUSA A SÍ MISMA
+TAMPOCO LA REVISA NADIE.** *2026-09-24. **Primera del proyecto que sobrevive por ser
+autocrítica.***
+
+La regla de arriba dice que *una afirmación que te da la razón no la revisa nadie*. Este archivo
+tiene medidas muchas falsas que sobrevivieron por ser **cómodas** —un margen del 100%, un sobrante
+en verde, «cero hexes»— y varias por ser **plausibles** —tienen clase, tienen precedente, se
+explican bien—. Faltaba la tercera puerta.
+
+**El caso.** Escribí que *«mi commit publicó el trabajo en vuelo de la otra sesión antes de que ella
+lo decidiera»*. **Falso:** el commit quedó local y el push lo hizo ella, autorizado, después de
+aplicar su migración y correr sus grupos. Lo que vi fue `develop == origin/develop` con mi commit
+adentro; lo que concluí fue que lo había empujado yo. **`git log` muestra el commit, no el push.**
+
+> **Y nadie la discutió, de los dos lados.** Yo la escribí como el costo más grave de mi propio
+> error, y del otro lado se aceptó sin pedir que verificara quién había empujado. **Desmentirla
+> parecía excusarse**, así que no había incentivo para mirar — ni para mí, ni para quien la leía.
+
+⚠️ **Las tres puertas, y por eso vale tenerlas juntas:**
+
+| por qué sobrevive una afirmación falsa | qué la protege |
+|---|---|
+| es **cómoda** — te da la razón | nadie tiene motivo para dudarla |
+| es **plausible** — encaja con un caso real del repo | se transmite con la autoridad de algo verificado |
+| 🔴 es **autocrítica** — se acusa a uno mismo | **discutirla se lee como excusarse** |
+
+🔴 **La tercera es la única que se defiende del ESCRUTINIO AJENO, no sólo del propio.** Una cómoda la
+puede desmentir cualquiera que no comparta el interés; una autocrítica **desactiva al revisor**,
+porque contradecirla parece estar haciéndole un favor al que se acusó. Acá la corrigió la única
+parte que tenía el dato, y no porque la dudara: porque le tocaba de cerca.
+
+✅ **LO ACCIONABLE, y es simétrico a la regla de arriba:** el rigor **no es una dirección**, es un
+método. Una afirmación que te deja mal **necesita la misma medición** que una que te deja bien —
+*un número sin comando es una opinión con dígitos* también cuando el número te condena.
+
+⚠️ Y la pregunta concreta que la habría atajado, del lado de quien recibe: **«¿cómo sabés que fuiste
+vos?»** suena a consuelo y es una exigencia de evidencia. Es la misma que este archivo ya prescribe
+para el otro lado —*pedí la salida del comando, no el razonamiento*— y hay que hacerla **aunque la
+afirmación sea contra el que la hace**.
+
 **Lo accionable, y es corto:** para preguntas sobre CSS, animaciones, variables, polyfills o
 cualquier cosa que un build pueda inyectar o podar, **la fuente de verdad es el artefacto
 compilado**, no el archivo. `pnpm build` y grepear `dist/` cuesta veinte segundos.
@@ -7096,6 +7136,68 @@ clase que esa regla describe, con producción del otro lado.
 ⚠️ **Y la 3 no es formalismo:** un árbol sucio significa que **lo que se probó no es lo que se publica**.
 La suite mide el árbol; el push publica los commits. Si hay cambios sin commitear, esos dos conjuntos
 son distintos y el verde no describe lo que va a correr el cliente.
+
+🔴 **LA 3 QUEDA DECLARADA INSUFICIENTE — «el árbol estaba limpio AL LANZAR» no dice nada sobre lo
+que pasó MIENTRAS corría.** *2026-09-24, con dos sesiones de Claude Code sobre el mismo worktree.*
+
+La 3 comprueba el árbol en **un instante**: antes de lanzar. Eso alcanzaba mientras el único que
+podía moverlo fuera el que lanzó, y ese supuesto se cayó.
+
+```
+la suite terminó de escribir su archivo   14:36:33
+la primera escritura de la otra sesión    14:36:45   (+12 s)
+```
+
+> **Doce segundos son lo único que hace válidos esos cinco números.** Solapadas, el resultado no
+> habría sido un falso rojo ni un falso verde: **un número sin sujeto** — ningún árbol lo tenía.
+
+📋 **Y los tres recursos compartidos NO fallan igual, que es lo que decide dónde poner un detector:**
+
+| recurso | qué produce si los dos lo usan | detector hoy |
+|---|---|---|
+| **puerto 5180** | la segunda corrida **aborta** | ✅ `puerto-libre`, y además dice el PID |
+| **worktree** | la suite mide un árbol que el otro muta | ⛔ **ninguno** |
+| **el lab** (sede LAB) | la purga o las limpiezas del otro **borran el estado que uno va a medir** | ⛔ **ninguno** |
+
+🔴 **La asimetría es la clave: sólo el que ABORTA tiene detector.** Los otros dos **no fallan —
+devuelven un número**, y un número no levanta la mano. Es la forma que este archivo mide desde el
+primer día, acá con un actor que no controlamos.
+
+⚠️ **Y «avisarnos antes de correr» NO es la respuesta**, por la razón que este archivo tiene medida
+hasta el cansancio: depende de que las dos partes se acuerden **en el momento correcto**, y eso es
+exactamente el mecanismo que viene fallando. Pedirlo otra vez es pedir lo mismo que ya falla.
+
+✅ **PROPUESTA, y las dos mitades están VERIFICADAS POR EJECUCIÓN hoy — no decididas:**
+
+**① UN TESTIGO DE ÁRBOL, y con archivo, no con marca de tiempo.** Se crea un archivo vacío al
+lanzar y al cerrar se pregunta qué se escribió después de él:
+
+```bash
+M=$(mktemp); : > "$M"                                   # al LANZAR
+find src tests supabase -type f -newer "$M"             # al CERRAR: tiene que dar vacío
+```
+
+✅ **Los dos controles, corridos:** recién creado el testigo devuelve **0**; tocando **un** archivo
+lo **nombra**. Y caza lo que la 3 no puede: el `touch` **dejó el árbol limpio** —`git status` vacío—
+y el testigo lo vio igual. O sea que detecta también **una escritura que el otro revirtió o
+commiteó**, que es justo el caso donde la 3 dice «limpio» y miente.
+
+⚠️ **Y va con archivo a propósito, porque la versión con fecha tiene una trampa medida:** en esta
+máquina `date` imprime **19:49** y `stat` **15:24** sobre el mismo instante —dos zonas—, así que un
+`-newermt '<texto>'` depende de cómo se interprete la cadena. `-newer <archivo>` **compara mtimes
+contra mtimes**: no hay formato que malinterpretar. Es la cuarta vez que un instrumento de este
+proyecto miente por un supuesto sobre su formato, atajada antes de estrenarla.
+
+**② LA SONDA DEL LAB CORRE EN LA MISMA INVOCACIÓN QUE LA SUITE**, pegada al final. El caso medido no
+fue una corrida solapada: la otra sesión corrió **después** de la mía y **antes** de mi sonda, y su
+`global-setup` purgó la fixture — así que medí un mundo que ya no era el que la pregunta suponía. Un
+hueco entre la suite y su medición es una ventana por donde entra otro escritor; **la única forma de
+cerrarla es que no haya hueco.**
+
+⚠️ **Y el límite, dicho porque no es un guard:** esto **no impide** que el otro escriba —no
+controlamos su sesión—; hace que la invalidez sea **visible** en vez de silenciosa. Es un detector,
+no una barrera, y por eso su lugar es **adentro del comando que corre la suite**, escrito junto a
+`suite_exit=` — lo que vive fuera de la puerta no verifica.
 
 🔴 **LA 4 ES LA QUE ATA LAS OTRAS TRES, y sin ella se cumplen las tres y el árbol publicado puede no
 ser el probado.** La suite tarda veinte minutos. En ese rato —y entre que termina y que alguien
