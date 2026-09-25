@@ -975,6 +975,56 @@ en la forma — y ése es el punto: **van ocho, y las ocho se habrían leído co
 que las separó del reporte falso fue abrir el archivo, que es lo que esta regla pide y lo único que
 sigue funcionando.
 
+🔴 **NOVENA VEZ, 2026-09-24 — Y ES LA PRIMERA ADENTRO DE UN INSTRUMENTO NUESTRO, CON UNA VUELTA QUE
+LA HACE PEOR QUE LAS OCHO: EL AGREGADO DESCARTÓ EL DATO QUE TENÍA AL LADO.**
+
+Las ocho anteriores tienen una coartada estructural: **el canal que miente no es nuestro.** La
+notificación reporta el exit del *shell* y eso es correcto para el shell; `tail` devuelve su propio
+exit y eso es correcto para `tail`. No hay nada que arreglar de nuestro lado — sólo no leerlos.
+
+**Acá no hay otro canal.** `scripts/medir-specs.mjs` corre N veces la suite de unos specs y arma una
+tabla de duraciones. Imprimió esto:
+
+```
+  corrida 1/3 exit=0
+  corrida 2/3 exit=0
+  corrida 3/3 exit=1          <- EL DETALLE DECÍA LA VERDAD
+
+archivo              casos  corridas (s)          media  rango  disp.rel
+fiado.spec.ts           13  100.9 · 98.1 · 99.4    99.4    2.8      3%
+medir_exit=0                <- EL AGREGADO LA TIRÓ
+```
+
+> **El mismo proceso tenía el dato, lo imprimió tres líneas arriba, y su resumen lo descartó.** Y la
+> columna que existía para eso —`fail`— salió **en blanco**, porque contaba `status === 'unexpected'`
+> sobre los specs del JSON y el fallo no estaba ahí.
+
+⚠️ **Por qué es peor que las ocho:** contra un canal ajeno la regla es *no lo leas*, y se puede
+cumplir. Contra el propio, la regla no aplica — **el informe es la única fuente que uno tiene**, y si
+su agregado pisa su detalle, leer con cuidado no alcanza: hay que **arreglar el instrumento**. Es la
+familia de *un verificador que no puede dar rojo*, en el último lugar donde uno lo busca: el que
+reporta.
+
+✅ **LOS CUATRO ARREGLOS, CON SU RAZÓN — y el tercero es el que no era obvio:**
+
+| # | qué se agregó | por qué |
+|---|---|---|
+| 1 | **`exits_por_corrida=`** en el informe | el exit de cada corrida deja de vivir sólo en la línea de progreso, que es lo que se pierde al leer el final |
+| 2 | los casos no-verdes **se nombran** | un conteo no dice QUÉ falló; y la condición se amplió de `unexpected` a **todo lo que no es `passed` ni `skipped`** — `timedOut` e `interrupted` no eran ninguno de los dos |
+| 3 | 🔴 **se lee `j.errors`** | **los fallos de `afterAll` y de WORKER no cuelgan de ningún spec**: viven en la raíz del JSON. Un informe que recorre `suites → specs → tests` los pierde ENTEROS, y produce exactamente lo que produjo: un exit 1 sin un solo caso rojo, o sea **sin explicación** |
+| 4 | el script **propaga** (`process.exit`) | un medidor que siempre sale 0 es un verificador que no puede dar rojo |
+
+🔴 **Y el tercero es el ESCENARIO DEL WORKER MUERTO, medido unas horas antes, visto desde el lado del
+que REPORTA.** Ahí se midió que cuando el worker muere **no corre ningún hook** —ni `afterAll`, ni
+`afterEach`— y de eso salió que la sonda de residuo tiene que vivir **afuera** de la corrida. Lo que
+no se había mirado es la otra mitad: **ese mismo fallo tampoco aparece en el recorrido de specs del
+JSON**, así que un informe hecho sobre los specs es ciego al peor caso. **El mismo hueco, en las dos
+puntas: no deja hook que lo limpie y no deja fila que lo nombre.**
+
+⚠️ Corolario para cualquier informe propio: **si el agregado y el detalle pueden contradecirse, el
+agregado tiene que REPETIR el detalle, no resumirlo.** Un resumen que puede ser más optimista que sus
+propias líneas es un canal que miente — y ése sí es nuestro.
+
 → **Evidencia:** repo de Vento, `docs/BITACORA.md` → *"Trampas de TERMINAL — el síntoma no señala
 la causa"*.
 
