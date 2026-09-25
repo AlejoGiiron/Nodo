@@ -7805,6 +7805,71 @@ intermitente** — y acá el número decía «tope de 30», no «se rompió algo
 ⚠️ Acá la salida fue lo segundo: la categoría **también** pasó a API, que es más barato que
 reintroducir un `goto` para un solo clic. Pero la pregunta es la que decide, no la salida.
 
+📋 **Y PARA LAS 14 QUE FALTAN, el paso concreto antes de borrar un bloque:** no mirar sólo **qué
+hace** — mirar **qué ESTADO DE NAVEGACIÓN deja**. Y si el paso siguiente sigue por UI, verificar
+**dónde cree que está parado**. Son dos preguntas y la segunda no sale sola, porque el locator del
+paso siguiente se lee autosuficiente: nombra su botón y no nombra su pantalla.
+
+---
+
+### 🔴 CRITERIO SIN NÚMERO · EL RESIDUO TIENE MÁS FAMILIAS QUE LAS QUE MEDIMOS — Y LA QUE FALTABA LA ENCONTRÓ OTRA TAREA
+
+*2026-09-24, tanda 2 de la deuda 131. **Hallazgo de rebote**: no lo buscaba nadie.*
+
+La deuda 130 enumeró el residuo con cuidado: **quién deja ventas a crédito vivas en Cartera**, cinco
+specs, la tasa medida y confirmada tres veces. Esa enumeración fue correcta **y su pregunta acotaba
+la respuesta**: preguntó por VENTAS.
+
+**Migrando `compras-unidad` apareció que ese archivo no tenía limpieza. Ninguna — ni caso ni hook.**
+Su categoría y sus productos quedaban activos **para siempre**, y la sonda los venía mostrando
+corridas después (`E2E UndCompra`) sin que nadie atara el cabo.
+
+> **La 130 no falló: contestó lo que se le preguntó.** Lo que no se preguntó es si había specs que
+> no limpian **nada**, y eso no aparece enumerando quién deja ventas — porque un spec de compras no
+> vende.
+
+⚠️ **Y por eso lo encontró una tarea que no lo buscaba.** La migración obliga a **abrir cada
+archivo**, y ahí la ausencia se ve sola: no hay `test('limpieza…')` ni `afterAll`. Ninguna sonda lo
+habría dicho, porque la sonda mide **el estado del lab**, no la estructura de los specs — y un lab
+sucio no dice cuál de diecisiete archivos lo ensució.
+
+✅ **LO ACCIONABLE, y es sobre cómo se enumera un residuo:**
+
+> **Una enumeración de residuo acota por el EFECTO que eligió mirar.** «Quién deja ventas» no cubre
+> «quién deja categorías», y ninguna de las dos cubre «quién no limpia nada». Si la pregunta nombra
+> un tipo de fila, la respuesta va a nombrar specs de ese tipo.
+
+📋 **La enumeración que sí es exhaustiva y cuesta un comando** — por ESTRUCTURA en vez de por efecto:
+
+```bash
+# specs SIN ninguna forma de limpieza: ni caso ni hook
+for f in tests/*.spec.ts; do
+  grep -qE "test\('limpieza|afterAll" "$f" || echo "SIN LIMPIEZA: $f"
+done
+```
+
+🔴 **Y EL COMANDO DE ARRIBA SOBRE-REPORTA — corrido el 2026-09-24 dio 23 archivos, y NO son 23
+problemas.** «Sin limpieza» no es «deja residuo»: la mayoría **no crea nada** y opera sobre el catálogo
+que el lab ya tiene. El cruce que discrimina es la segunda pregunta:
+
+```bash
+# de los que no limpian, ¿cuáles además CREAN filas?
+grep -lE "\.insert\(|Nuevo producto|Nueva categoría|new-[a-z]+-btn" <los que salieron arriba>
+```
+
+📋 **23 → 5**: `gastos-categoria` · `listas-de-precios` · `sedes-sin-delete` · `cierre-con-fecha` ·
+`roles`. **Ésos son los candidatos**; los otros 18 no tienen nada que limpiar y su ausencia de
+limpieza es correcta.
+
+⚠️ Y es *enumerar, no contar* otra vez: el 23 es cierto **sobre lo que el comando midió** —estructura—
+y falso sobre lo que la pregunta quería —residuo—. Un número que sobrestima un problema se gasta igual
+que uno que lo subestima: se deja de creer entero.
+
+⚠️ Corolario: **la sonda de residuo y esta enumeración son complementarias y ninguna reemplaza a la
+otra.** La sonda dice *qué quedó sucio hoy*; el comando dice *quién no tiene con qué limpiar*. Un
+spec sin limpieza puede no ensuciar nada hoy —si no crea fixture— y ensuciar el día que gane un
+caso.
+
 ---
 
 ### 🔴 CRITERIO SIN NÚMERO · QUE LA CREACIÓN SE QUEDE POR UI NO OBLIGA A QUE LA LIMPIEZA TAMBIÉN
