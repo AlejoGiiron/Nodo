@@ -6004,6 +6004,44 @@ Verificado el 2026-09-03: sigue enganchado en `playwright.config.ts`, no hay var
 **equivocadas**. No protege contra que alguien apunte a LAB con credenciales **correctas** el día que
 los datos de LAB ya no sean descartables.
 
+🔴 **Y UNA DECISIÓN CON RAZÓN ESCRITA SE REVISA CUANDO APARECE UN COSTO EN UN EJE QUE LA RAZÓN NO
+MENCIONA — no cuando la razón vieja se vuelve falsa.** *2026-09-25, con la cuota de Log Ingestion del
+proyecto al 148%.*
+
+La decisión de arriba —**un solo proyecto de Supabase**— está tomada, fechada y con su razón escrita:
+*«un segundo proyecto significaría mantener dos bases sincronizadas, duplicar el seed y volver a pagar
+el problema de los artefactos generados fuera de `migrations/` — no vale la complejidad para un
+cliente»*. **Esa razón sigue siendo verdadera hoy**, punto por punto.
+
+> **Y el costo nuevo es de otro eje: las PRUEBAS consumen la cuota del proyecto donde la clienta
+> opera**, y el límite es del proyecto entero. La premisa nunca contempló ese eje — no lo evaluó y lo
+> descartó: **no existía en la conversación.**
+
+🔴 **LO QUE ESTO DESTAPA NO ES LA DECISIÓN: ES EL DISPARADOR QUE FALTA.** Este archivo tiene escrito
+qué hacer con *una razón que caducó* —se marca como caduca, con su fecha y qué la mató— y ese
+mecanismo **se dispara cuando la razón vieja se vuelve FALSA**. Acá no se volvió falsa:
+
+| | qué pasó con la razón | ¿hay disparador hoy? |
+|---|---|---|
+| una razón que **caduca** | se vuelve **falsa** — el modo se eliminó, la pantalla se revirtió | ✅ sí: alguien la lee y no cierra |
+| 🔴 **un eje que la razón NO MENCIONA** | sigue **verdadera**, y aparece un costo que no pesaba | ⛔ **ninguno** |
+
+⚠️ **Por eso nadie la revisó, y no es descuido:** releer la decisión la **confirma**. Sus tres
+argumentos siguen en pie, así que cada lectura la deja igual de intacta y un poco más creíble — el
+corolario de R4 aplicado a una decisión en vez de a una nota. **Una decisión correcta se defiende de
+su propia revisión mejor que una equivocada.**
+
+✅ **LO ACCIONABLE, y es un disparador nuevo, no más atención:**
+
+> **Cuando aparezca un costo, preguntá en qué EJE está — y si la razón escrita de la decisión que lo
+> produce NO NOMBRA ese eje, la decisión se revisa aunque su razón siga siendo cierta.**
+
+⚠️ Y el corolario para escribir decisiones: **una razón enumera los ejes que se evaluaron**, y por lo
+tanto **declara en silencio los que no**. Al fijar una decisión conviene nombrar los ejes que se
+miraron —complejidad, reversibilidad, credenciales, datos, **cuota**— porque lo que no esté nombrado
+es exactamente por donde va a llegar el costo que la cambie, y sin la lista nadie va a poder notar
+que faltaba.
+
 > **Por eso, cuando Muscle Pro entre a operar, LAB SE RETIRA — no se borra.**
 
 Mismo criterio que el resto del proyecto: *la historia no se reescribe, se le agrega*. Retirar es
