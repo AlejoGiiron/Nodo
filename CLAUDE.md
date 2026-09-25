@@ -2000,6 +2000,7 @@ misma forma: un supuesto sobre CÓMO SE IMPRIME, que el texto del comando no men
 | 3 | en `awk`, `.` es un **carácter** — es un byte, y `§` ocupa dos |
 | 4 | `console.log` de Node entiende **anchos** tipo `printf` — no los tiene |
 | 4-bis 🔴 | **el mismo, otra vez el 2026-09-17**, en la sonda que midió el costo de la vista: `%-34s` salió literal. La lección estaba escrita **en esta misma tabla** |
+| 5 🟢 | **`-newermt '<texto>'` interpreta la cadena en UNA zona, y en esta máquina conviven DOS**: `date` imprime `19:49` y `stat` `15:24` sobre el mismo instante. El testigo de árbol habría dicho «nadie escribió» con **cuatro horas** de diferencia — y hacia *«no hay nada»*, que es la dirección que nadie investiga. 🔴 **ES LA PRIMERA DE LAS CINCO ATAJADA ANTES DE ESTRENARSE**: las otras cuatro mintieron y se corrigieron después. Lo cazó comparar `date` con `stat` sobre el mismo archivo al escribir el instrumento, no al usarlo. ✅ La versión que quedó usa `-newer <archivo>` —mtime contra mtime—, que **no tiene formato que malinterpretar** |
 
 ⚠️ **Y las cuatro fallan hacia el mismo lado: la salida SIGUE SALIENDO.** No hay excepción ni
 código de error — hay un informe que se ve casi bien, y en tres de los cuatro casos el número que
@@ -7114,6 +7115,7 @@ filas.)*
 | 3 | **el árbol limpio** | `git status --porcelain` vacío — **verificado, no recordado** |
 | 4 | 🔴 **lo probado ES lo que se publica** | `git diff --stat <commit que midió la suite> -- src/ tests/ supabase/` → **vacío**, salvo la excepción de abajo |
 | 5 | 🔴 **`pnpm test:unit` en verde** | `unit_exit=0` escrito ADENTRO del archivo. **Agregada el 2026-09-17, y no por prolijidad** |
+| 6 | 🔴 **nadie tocó el árbol MIENTRAS corría** | `testigo_arbol=nadie escribió mientras corría`, escrito ADENTRO del archivo por `pnpm suite`. **Agregada el 2026-09-24.** ⛔ **No reemplaza a la 3: mide otra cosa** |
 
 🔴 **POR QUÉ ENTRÓ LA 5, Y ES UNA CAUSA MEDIDA:** sin ella, el tripwire de `service_role`
 (`src/lib/arnes-service-role.test.ts`) estuvo **18 commits publicados en rojo**, dos días, sin que
@@ -7136,6 +7138,38 @@ clase que esa regla describe, con producción del otro lado.
 ⚠️ **Y la 3 no es formalismo:** un árbol sucio significa que **lo que se probó no es lo que se publica**.
 La suite mide el árbol; el push publica los commits. Si hay cambios sin commitear, esos dos conjuntos
 son distintos y el verde no describe lo que va a correr el cliente.
+
+🔴 **Y LA 6 NO ES LA 3 CON OTRO NOMBRE — MIDEN DOS COSAS DISTINTAS, y por eso van las dos:**
+
+| | qué contesta | cuándo miente |
+|---|---|---|
+| **3 · el árbol limpio** | ¿había cambios sin commitear **al lanzar**? | nunca — pero no dice nada de lo que pasó después |
+| **6 · el testigo de árbol** | ¿alguien escribió **mientras corría**? | nunca — y ve lo que la 3 no puede |
+
+✅ **LOS DOS CONTROLES, CORRIDOS AL ESTRENARLA — y el positivo es la demostración exacta de por qué** 
+**hacían falta las dos:**
+
+```
+negativo · corrida sin tocar nada   ->  testigo_arbol=nadie escribió mientras corría
+positivo · un `touch` a mitad       ->  testigo_arbol=🔴 1 ARCHIVO(S) ESCRITOS MIENTRAS LA SUITE CORRÍA
+                                          src/lib/formato.ts
+```
+
+🔴 **En el positivo, la suite dijo `suite_exit=0 · passed=4` y el árbol quedó LIMPIO** —`git status` 
+vacío, porque un `touch` no cambia contenido—. **La 3 habría dicho «limpio» y la 6 nombró el 
+archivo.** Ésa es, literal, la forma del caso real: otra sesión que escribe y después commitea o 
+revierte deja el árbol impecable y la corrida sin sujeto.
+
+⚠️ **Y la 6 NO es un guard, es un detector.** No impide que la otra sesión escriba —no controlamos 
+su sesión—: hace **visible** una invalidez que antes era silenciosa. Contra un actor que no es 
+nuestro es lo único que se puede construir, y por eso vive **adentro del comando que corre la 
+suite**: lo que vive fuera de la puerta no verifica.
+
+📋 **Y con ella entra la sonda del lab EN LA MISMA INVOCACIÓN**, por un caso medido que no es el de 
+la suite: la otra sesión corrió sus grupos **después** de mi suite y **antes** de mi sonda, y su 
+`global-setup` purgó la fixture — así que medí un mundo que ya no era el que la pregunta suponía. 
+**Un hueco entre la suite y su medición es una ventana por donde entra otro escritor**, y la única 
+forma de cerrarla es que no haya hueco. `pnpm suite` escribe `residuo_exit=` pegado a `suite_exit=`.
 
 🔴 **LA 3 QUEDA DECLARADA INSUFICIENTE — «el árbol estaba limpio AL LANZAR» no dice nada sobre lo
 que pasó MIENTRAS corría.** *2026-09-24, con dos sesiones de Claude Code sobre el mismo worktree.*
