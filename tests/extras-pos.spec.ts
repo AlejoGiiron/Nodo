@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test'
 import { loginAsOwner } from './helpers/auth'
 import { cobrarEnEfectivo } from './helpers/pos'
 import { openShiftIfClosed, closeShiftIfOpen } from './helpers/shift'
-import { saveProductAndClose } from './helpers/product'
+import { crearCategoria, crearProducto, crearExtra, asignarExtras, desactivar } from './helpers/fixture'
 
 // "$ 12.000" → 12000
 const parseCOP = (text: string): number => Number(text.replace(/[^\d]/g, ''))
@@ -15,38 +15,17 @@ const P_SIMPLE = `E2E Simple ${SUFFIX}`  // producto SIN extras
 const E_FREE = `E2E ExtraLibre ${SUFFIX}`    // extra sin vínculo de stock
 const E_LINKED = `E2E ExtraInsumo ${SUFFIX}` // extra vinculado a P_STOCK
 
+// 🔴 Los ids del escenario, que ahora se siembra POR API (deuda 131). Los casos
+//    siguen buscando por NOMBRE —no cambió nada de lo que miden—; los ids son
+//    para que la limpieza desactive por id en vez de clickeando fila por fila.
+let ID_CAT = ''
+let ID_STOCK = ''
+let ID_BASE = ''
+let ID_SIMPLE = ''
+let ID_FREE = ''
+let ID_LINKED = ''
+
 // ── Helpers ───────────────────────────────────────────────────────
-
-async function createProduct(page: Page, name: string, price: string, opts?: { stock?: string }) {
-  await page.goto('/productos')
-  await page.getByRole('button', { name: 'Nuevo producto' }).click()
-  await page.getByTestId('producto-nombre').fill(name)
-  await page.getByTestId('producto-precio').fill(price)
-  await page.getByTestId('product-category-select').selectOption({ label: CAT })
-  // El control de inventario nace PRENDIDO (2026-09-17): se apaga sólo cuando
-  // el caso pide un producto sin control.
-  if (!opts?.stock) {
-    await page.getByTestId('product-stock-tracking').click()
-  }
-  await saveProductAndClose(page)
-  await expect(page.getByText(name)).toBeVisible()
-  // El stock ya no se edita en la ficha: arranca en 0 y se carga por ajuste.
-  if (opts?.stock) await setStock(page, name, opts.stock)
-}
-
-async function createExtra(page: Page, name: string, price: string, linkedProduct?: string) {
-  await page.goto('/configuracion')
-  await page.getByRole('button', { name: 'Extras', exact: true }).click()
-  await page.getByTestId('extra-new').click()
-  await page.getByTestId('extra-name').fill(name)
-  await page.getByTestId('extra-price').fill(price)
-  if (linkedProduct) {
-    await page.getByTestId('extra-link-toggle').click()
-    await page.getByTestId('extra-link-product').selectOption({ label: linkedProduct })
-  }
-  await page.getByTestId('extra-save').click()
-  await expect(page.getByTestId('extra-row').filter({ hasText: name })).toBeVisible()
-}
 
 // Lee el stock de un insumo desde la pestaña Niveles de Inventario.
 async function readStock(page: Page, productName: string): Promise<number> {
@@ -100,33 +79,24 @@ async function sellBaseWithExtra(page: Page, extraName: string, extraQty: number
 // ── Suite ─────────────────────────────────────────────────────────
 
 test.describe.serial('Extras en POS', () => {
-  test('setup: categoría, productos y extras', async ({ page }) => {
-    await loginAsOwner(page)
-
-    // Categoría.
-    await page.goto('/productos')
-    await page.getByRole('button', { name: 'Nueva categoría' }).click()
-    await page.getByTestId('categoria-nombre').fill(CAT)
-    await page.getByRole('button', { name: 'Crear categoría' }).click()
-    await expect(page.getByRole('button', { name: new RegExp(CAT) })).toBeVisible()
-
-    // Productos (antes que los extras).
-    await createProduct(page, P_STOCK, '5000', { stock: '50' })
-    await createProduct(page, P_BASE, '10000')
-    await createProduct(page, P_SIMPLE, '8000')
-
-    // Extras: uno libre y uno vinculado al insumo con stock.
-    await createExtra(page, E_FREE, '2000')
-    await createExtra(page, E_LINKED, '3000', P_STOCK)
-
-    // Asignar ambos extras a P_BASE.
-    await page.goto('/productos')
-    await page.getByPlaceholder('Buscar producto...').fill(P_BASE)
-    await page.getByTitle('Editar', { exact: true }).first().click()
-    await page.getByTestId('product-extra-option').filter({ hasText: E_FREE }).click()
-    await page.getByTestId('product-extra-option').filter({ hasText: E_LINKED }).click()
-    await saveProductAndClose(page)
-    await expect(page.getByTestId('catalogo-row').filter({ hasText: P_BASE })).toBeVisible()
+  // 🔴 SEMBRADO POR API, no por los modales (deuda 131). La razón NO es que tarde
+  //    menos: es la VARIANZA. Este mismo setup, por UI y sin tocar nada entre
+  //    corridas, dio **25,4 · 23,2 · 19,5 s** —y 30,4 en otra— contra un tope de
+  //    30 s por caso. La limpieza del mismo archivo, también por UI, dio 15,2 ·
+  //    15,6 · 15,3: o sea que la varianza la tiene el que ESCRIBE, no el que
+  //    navega.
+  // ⚠️ Los casos de abajo NO cambian: siguen buscando por NOMBRE en la pantalla.
+  //    Lo que cambia es cómo llegan las filas, y los controles de que llegaron
+  //    bien —precio, seguimiento, stock inicial, costo nulo, vínculo del extra—
+  //    viven ahora dentro del helper, que se asevera a sí mismo.
+  test('setup: categoría, productos y extras', async () => {
+    ID_CAT = await crearCategoria(CAT)
+    ID_STOCK = await crearProducto({ nombre: P_STOCK, precio: 5000, categoria: ID_CAT, stock: 50 })
+    ID_BASE = await crearProducto({ nombre: P_BASE, precio: 10000, categoria: ID_CAT, tracking: false })
+    ID_SIMPLE = await crearProducto({ nombre: P_SIMPLE, precio: 8000, categoria: ID_CAT, tracking: false })
+    ID_FREE = await crearExtra(E_FREE, 2000)
+    ID_LINKED = await crearExtra(E_LINKED, 3000, ID_STOCK)
+    await asignarExtras(ID_BASE, [ID_FREE, ID_LINKED])
   })
 
   test('agregar producto con extra → el total incluye el extra', async ({ page }) => {
@@ -220,28 +190,13 @@ test.describe.serial('Extras en POS', () => {
     await page.goto('/ventas')
     await closeShiftIfOpen(page)
 
-    // Desactivar extras.
-    await page.goto('/configuracion')
-    await page.getByRole('button', { name: 'Extras', exact: true }).click()
-    for (const name of [E_FREE, E_LINKED]) {
-      const row = page.getByTestId('extra-row').filter({ hasText: name })
-      await row.getByTitle('Desactivar').click()
-      await expect(row).toContainText('Inactivo')
-    }
+    // 🔴 Desactivar POR API (deuda 131). Cerrar el turno se queda por la UI: es
+    //    el único paso que necesita la pantalla, y su duración es estable.
+    //    El helper asevera que no quedó nada activo — la limpieza verifica su
+    //    EFECTO, no la operación.
+    await desactivar('extras', [ID_FREE, ID_LINKED])
+    await desactivar('products', [ID_STOCK, ID_BASE, ID_SIMPLE])
 
-    // Desactivar productos.
-    for (const name of [P_STOCK, P_BASE, P_SIMPLE]) {
-      await page.goto('/productos')
-      await page.getByPlaceholder('Buscar producto...').fill(name)
-      await page.getByTitle('Desactivar', { exact: true }).first().click()
-      await page.getByRole('button', { name: 'Sí, desactivar' }).click()
-      await expect(page.getByText(/Sin resultados/)).toBeVisible()
-    }
-
-    // Desactivar categoría.
-    await page.getByRole('button', { name: new RegExp(CAT) }).getByTitle('Editar categoría').click()
-    await page.getByRole('switch').click()
-    await page.getByRole('button', { name: 'Guardar cambios' }).click()
-    await expect(page.getByRole('button', { name: new RegExp(CAT) })).toHaveCount(0)
+    await desactivar('categories', [ID_CAT])
   })
 })
