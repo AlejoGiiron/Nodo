@@ -74,7 +74,7 @@ test.afterAll(async () => {
   //    no en un caso: un caso es lo primero que se saltea cuando otro falla (deuda
   //    129) y `afterAll` corre igual. Desactivar al cliente NO alcanza — Cartera
   //    filtra ORDENES, no clientes (deuda 130).
-  await sacarDeCartera(['E2E Plazo ' + SUFFIX, 'E2E Plazo Pantalla ' + SUFFIX])
+  await sacarDeCartera(['E2E Plazo'])
 
   if (!db) return
   if (CLIENTE) await db.from('customers').update({ is_active: false }).eq('id', CLIENTE)

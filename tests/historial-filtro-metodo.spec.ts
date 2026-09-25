@@ -40,8 +40,8 @@ const CLIENTE = `E2E Credito ${Date.now()}`
 //    129) y `afterAll` corre igual. Desactivar al cliente NO alcanza — Cartera
 //    filtra ORDENES, no clientes (deuda 130).
 test.afterAll(async () => {
-  await sacarDeCartera([CLIENTE])
-  await desactivarClientes([CLIENTE])
+  await sacarDeCartera(['E2E Credito'])
+  await desactivarClientes(['E2E Credito'])
 })
 
 async function crearCliente(page: Page, nombre: string) {

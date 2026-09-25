@@ -98,8 +98,18 @@ export async function desactivarClientes(nombres: string[]): Promise<void> {
  *    operación puede haber sido innecesaria (otra corrida ya la pagó) y eso no
  *    es un fallo. Es la misma forma que las limpiezas de sede.
  *
- * @param nombres nombres o prefijos EXACTOS del spec (p. ej. `['E2E Fiado 7529']`).
- *                Se le agrega `%` a cada uno.
+ * @param nombres el PREFIJO del spec SIN su sufijo aleatorio — `'E2E Total'`, no
+ *                `'E2E Total ' + SUFFIX`. Se le agrega `%` a cada uno.
+ *
+ * 🔴 EL PREFIJO Y NO EL NOMBRE DE ESTA CORRIDA, y es lo que hace que el
+ *    mecanismo CONVERJA: con el sufijo, una corrida que muere a mitad deja su
+ *    venta viva **para siempre** —la corrida siguiente tiene otro sufijo y no la
+ *    matchea—, y la sonda queda en rojo permanente por algo que nadie va a
+ *    limpiar. Medido al estrenar este helper: un mutante dejó una huérfana y el
+ *    `afterAll` de la corrida siguiente no la veía.
+ * ⚠️ Y limpiar la familia entera es seguro acá porque `workers: 1`: no hay otra
+ *    corrida con una venta en vuelo. Con paralelismo esto habría que revisarlo,
+ *    y está anotado en el criterio de paralelizar la suite.
  */
 export async function sacarDeCartera(nombres: string[]): Promise<number> {
   const db = createClient(

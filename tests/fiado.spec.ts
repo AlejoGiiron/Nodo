@@ -421,7 +421,7 @@ test.describe.serial('Fiado / Cartera', () => {
 //    no en un caso: un caso es lo primero que se saltea cuando otro falla (deuda
 //    129) y `afterAll` corre igual. Desactivar al cliente NO alcanza — Cartera
 //    filtra ORDENES, no clientes (deuda 130).
-test.afterAll(async () => { await sacarDeCartera([CLIENTE, CLIENTE_G]) })
+test.afterAll(async () => { await sacarDeCartera(['E2E Fiado', 'E2E Grupo']) })
 
   test('limpieza: cerrar turno y desactivar clientes', async ({ page }) => {
     page.on('dialog', (d) => d.accept())
