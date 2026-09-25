@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { ownerCreds } from './helpers/auth'
+import { sacarDeCartera } from './helpers/cartera'
 
 // ============================================================================
 // `orders.total` SE DERIVA EN EL SERVIDOR — deuda 80
@@ -106,6 +107,12 @@ test.beforeAll(async () => {
 })
 
 test.afterAll(async () => {
+  // 🔴 Las ventas a credito de este spec SE SACAN DE CARTERA, y va en `afterAll` y
+  //    no en un caso: un caso es lo primero que se saltea cuando otro falla (deuda
+  //    129) y `afterAll` corre igual. Desactivar al cliente NO alcanza — Cartera
+  //    filtra ORDENES, no clientes (deuda 130).
+  await sacarDeCartera(['E2E Total ' + SUFFIX])
+
   if (!db) return
   await db.from('products').update({ is_active: false }).in('id', [PRODUCTO, BARATO])
   await db.from('extras').update({ is_active: false }).eq('id', EXTRA)

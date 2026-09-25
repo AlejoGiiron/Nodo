@@ -4,6 +4,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { loginAsOwner, ownerCreds } from './helpers/auth'
 import { openShiftIfClosed } from './helpers/shift'
 import { waitPosReady, addPosProduct, abrirCobro, POS_PRODUCTO } from './helpers/pos'
+import { sacarDeCartera, desactivarClientes } from './helpers/cartera'
 
 // ============================================================================
 // EL COBRO — en MODAL. §8.15, revertida el 2026-09-03.
@@ -100,6 +101,14 @@ async function ordenDelFlujo(page: Page): Promise<string> {
 const CLIENTE_EQ = 'E2E Cobro Equivalencia'
 /** El del caso del plazo congelado: su plazo se muta DENTRO del caso. */
 const CLIENTE_PLAZO = 'E2E Cobro Plazo'
+// 🔴 Las ventas a credito de este spec SE SACAN DE CARTERA, y va en `afterAll` y
+//    no en un caso: un caso es lo primero que se saltea cuando otro falla (deuda
+//    129) y `afterAll` corre igual. Desactivar al cliente NO alcanza — Cartera
+//    filtra ORDENES, no clientes (deuda 130).
+test.afterAll(async () => {
+  await sacarDeCartera([CLIENTE_EQ, CLIENTE_PLAZO])
+  await desactivarClientes([CLIENTE_EQ, CLIENTE_PLAZO])
+})
 let CLIENTE_PLAZO_ID: string
 
 /**

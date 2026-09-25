@@ -2,6 +2,7 @@ import { test, expect, type Page } from '@playwright/test'
 import { loginAsOwner, loginAsCashier } from './helpers/auth'
 import { abrirCobro } from './helpers/pos'
 import { openShiftIfClosed, closeShiftIfOpen } from './helpers/shift'
+import { sacarDeCartera } from './helpers/cartera'
 
 // Producto compuesto seeded (Lab Coctel = 18.000) que descuenta 1 "Lab Vaso"
 // (insumo con tracking) por venta. Permite verificar que el fiado SÍ baja stock.
@@ -414,6 +415,13 @@ test.describe.serial('Fiado / Cartera', () => {
     await openAbono(page, nSin)
     await expect(page.getByTestId('abono-requiere-conciliacion').first()).toBeVisible()
   })
+
+
+// 🔴 Las ventas a credito de este spec SE SACAN DE CARTERA, y va en `afterAll` y
+//    no en un caso: un caso es lo primero que se saltea cuando otro falla (deuda
+//    129) y `afterAll` corre igual. Desactivar al cliente NO alcanza — Cartera
+//    filtra ORDENES, no clientes (deuda 130).
+test.afterAll(async () => { await sacarDeCartera([CLIENTE, CLIENTE_G]) })
 
   test('limpieza: cerrar turno y desactivar clientes', async ({ page }) => {
     page.on('dialog', (d) => d.accept())

@@ -6,6 +6,7 @@ import { loginAsOwner, ownerCreds } from './helpers/auth'
 //    escenario tiene que discriminar, y quién decide eso es la misma función
 //    que la pantalla usa. Reescribirla haría que el caso mida su propia copia.
 import { diasVencidos } from '../src/lib/cartera'
+import { sacarDeCartera } from './helpers/cartera'
 
 // ============================================================================
 // PLAZO DE CRÉDITO — deuda 46
@@ -69,6 +70,12 @@ test.beforeAll(async () => {
 })
 
 test.afterAll(async () => {
+  // 🔴 Las ventas a credito de este spec SE SACAN DE CARTERA, y va en `afterAll` y
+  //    no en un caso: un caso es lo primero que se saltea cuando otro falla (deuda
+  //    129) y `afterAll` corre igual. Desactivar al cliente NO alcanza — Cartera
+  //    filtra ORDENES, no clientes (deuda 130).
+  await sacarDeCartera(['E2E Plazo ' + SUFFIX, 'E2E Plazo Pantalla ' + SUFFIX])
+
   if (!db) return
   if (CLIENTE) await db.from('customers').update({ is_active: false }).eq('id', CLIENTE)
   if (CLIENTE_PANTALLA) await db.from('customers').update({ is_active: false }).eq('id', CLIENTE_PANTALLA)

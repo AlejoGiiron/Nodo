@@ -2,6 +2,7 @@ import { test, expect, type Page } from '@playwright/test'
 import { loginAsOwner } from './helpers/auth'
 import { waitPosReady, addPosProduct, abrirCobro, cobrarCon } from './helpers/pos'
 import { openShiftIfClosed } from './helpers/shift'
+import { sacarDeCartera, desactivarClientes } from './helpers/cartera'
 
 // ============================================================================
 // EL FILTRO DE MÉTODO DEL HISTORIAL ALCANZA A TODAS LAS VENTAS
@@ -34,6 +35,14 @@ import { openShiftIfClosed } from './helpers/shift'
 // ============================================================================
 
 const CLIENTE = `E2E Credito ${Date.now()}`
+// 🔴 Las ventas a credito de este spec SE SACAN DE CARTERA, y va en `afterAll` y
+//    no en un caso: un caso es lo primero que se saltea cuando otro falla (deuda
+//    129) y `afterAll` corre igual. Desactivar al cliente NO alcanza — Cartera
+//    filtra ORDENES, no clientes (deuda 130).
+test.afterAll(async () => {
+  await sacarDeCartera([CLIENTE])
+  await desactivarClientes([CLIENTE])
+})
 
 async function crearCliente(page: Page, nombre: string) {
   await page.goto('/fiado')
