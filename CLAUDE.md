@@ -3124,6 +3124,32 @@ la pregunta no es cuántos casos se saltearon — es **qué quedó sin limpiar**
 sonda, no los cinco números. Por eso corre en la misma invocación: el número que falta en el resumen
 está en el bloque de abajo.
 
+✅ **Y ESO CONVIERTE A LA SONDA EN UN COMPLEMENTO DEL RESUMEN, NO EN UNA VERIFICACIÓN APARTE.** Los
+cinco números describen **la cobertura**: cuántos casos midieron algo. No tienen ninguna columna para
+*«qué quedó escrito en el lab»*, y no la pueden tener — el resumen habla de casos, no de filas.
+
+> **Cuando el rojo es una limpieza, el número que falta arriba está en el bloque de abajo.** Por eso
+> `pnpm suite` corre la sonda en la MISMA invocación y escribe `residuo_exit=` pegado a
+> `suite_exit=`: no son dos verificaciones, son las dos mitades de un solo informe.
+
+🔴 **Y HAY UN ESCENARIO EN QUE LA SONDA ES LA ÚNICA RED QUE QUEDA, medido el 2026-09-24 con tres
+sondas sobre `afterAll`:**
+
+| escenario | ¿corre `afterAll`? | qué lo cubre |
+|---|---|---|
+| un caso **falla** | ✅ **sí** (marca escrita) | el `afterAll` mismo |
+| `afterAll` tarda **más de 30 s** | ⛔ falla: **tiene el mismo tope** | nada — y mudar la limpieza de lugar no lo cambia |
+| 🔴 el **worker MUERE** (`process.exit`) | ⛔ **NO corre** — `worker process exited unexpectedly` | **sólo la sonda**, porque es externa a la corrida |
+
+⚠️ **La tercera fila es la que justifica que la sonda viva afuera del proceso de Playwright.** No hay
+hook que corra cuando el worker muere: ni `afterAll`, ni `afterEach`, ni un `globalTeardown` que
+dependa del worker. Lo único que puede decir qué quedó escrito es algo que se ejecute **después y por
+fuera** — y que mida el estado, no la operación.
+
+⚠️ Y el corolario sobre cómo se lee un resumen a partir de esto: **`1 failed · 0 did not run` no es
+«un caso suelto» si el caso era una limpieza.** Puede ser *«el lab arranca sucio mañana»*, y eso no
+está en ninguno de los cinco números.
+
 ⚠️ Corolario que refuerza el orden de la 129: mover la limpieza a `afterAll` arregla **los dos**
 costos a la vez. Como caso, falla y deja residuo; como `afterAll`, corre igual cuando los casos
 fallan — y si falla ella misma, Playwright la cuelga del último caso con su mensaje, que ya está
