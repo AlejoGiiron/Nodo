@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
-import { loginAsOwner } from './helpers/auth'
+import { loginAsOwner } from './helpers/auth'
+import { crearCategoria as sembrarCategoria, desactivar } from './helpers/fixture'
 
 // Sufijo único por corrida → datos idempotentes y aislados.
 const SUFFIX = Date.now().toString().slice(-6)
@@ -9,6 +10,9 @@ const CATS = [1, 2, 3, 4].map((n) => `E2E Categoria Larga ${n} ${SUFFIX}`)
 
 const TABS = 'category-tabs-scroll'
 
+// Ids de lo sembrado por API (deuda 131).
+const IDS: string[] = []
+
 // Medir el strip antes de que lleguen las categorías da un falso negativo: con
 // solo "Todos" no hay desborde. Esperar a que el tab de la última categoría esté
 // en el DOM es la señal de que el fetch ya pintó.
@@ -16,19 +20,12 @@ async function esperarCategorias(page: Page) {
   await expect(page.getByRole('button', { name: new RegExp(CATS[CATS.length - 1]) })).toBeVisible()
 }
 
-async function crearCategoria(page: Page, nombre: string) {
-  await page.getByRole('button', { name: 'Nueva categoría' }).click()
-  await page.getByTestId('categoria-nombre').fill(nombre)
-  await page.getByRole('button', { name: 'Crear categoría' }).click()
-  await expect(page.getByRole('button', { name: new RegExp(nombre) })).toBeVisible()
-}
-
 test.describe.serial('Scroll de categorías en Productos', () => {
-  test('preparación: crear categorías hasta desbordar el strip', async ({ page }) => {
-    await loginAsOwner(page)
-    await page.goto('/productos')
-
-    for (const cat of CATS) await crearCategoria(page, cat)
+  // 🔴 Sembrado POR API (deuda 131). Pregunta obligatoria: nada de paso — lo que
+  //    este archivo mide es que el STRIP no desborde, no que crear una categoría
+  //    funcione. Las cuatro sólo tienen que existir y estar activas.
+  test('preparación: crear categorías hasta desbordar el strip', async () => {
+    for (const cat of CATS) IDS.push(await sembrarCategoria(cat))
   })
 
   test('el strip de tabs NO desborda su contenedor y es scrolleable', async ({ page }) => {
@@ -83,19 +80,10 @@ test.describe.serial('Scroll de categorías en Productos', () => {
     await expect(fade).toHaveCount(0)
   })
 
-  test('limpieza: desactivar las categorías creadas', async ({ page }) => {
-    await loginAsOwner(page)
-    await page.goto('/productos')
-
-    for (const cat of CATS) {
-      const tab = page.getByRole('button', { name: new RegExp(cat) })
-      // El tab puede haber quedado fuera de vista tras el scroll de los tests
-      // anteriores; scrollIntoView antes de tocar el lápiz.
-      await tab.scrollIntoViewIfNeeded()
-      await tab.getByTitle('Editar categoría').click()
-      await page.getByRole('switch').click()
-      await page.getByRole('button', { name: 'Guardar cambios' }).click()
-      await expect(tab).toHaveCount(0)
-    }
+  // 🔴 POR API (deuda 131). El `scrollIntoViewIfNeeded` de acá era una
+  //    dependencia del estado de la pantalla —el tab podía quedar fuera de vista
+  //    tras el scroll de los casos anteriores— y por API deja de existir.
+  test('limpieza: desactivar las categorías creadas', async () => {
+    await desactivar('categories', IDS)
   })
 })

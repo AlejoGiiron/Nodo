@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { loginAsOwner } from './helpers/auth'
-import { saveProductAndClose } from './helpers/product'
+import { crearCategoria, crearProducto, desactivar } from './helpers/fixture'
 
 // Stock bajo en el POS. Antes el indicador solo conocía "≤ 0" (sin stock /
 // sobreventa): `min_stock` existía, se editaba en la ficha y lo usaba Inventario,
@@ -14,6 +14,10 @@ const SUFFIX = Date.now().toString().slice(-6)
 const CAT = `E2E Bajo ${SUFFIX}`
 const PROD = `E2E Insumo Bajo ${SUFFIX}`
 const MIN_STOCK = 5
+
+// Ids de lo sembrado por API (deuda 131). Los casos siguen buscando por NOMBRE.
+let ID_CAT = ''
+let ID_PROD = ''
 
 async function irAlProductoEnPOS(page: Page) {
   await page.goto('/ventas')
@@ -35,26 +39,21 @@ async function ajustar(page: Page, sign: '+' | '-', amount: number) {
 }
 
 test.describe.serial('Stock bajo en el POS', () => {
-  test('preparación: categoría + insumo con mínimo 5 y stock 20', async ({ page }) => {
-    await loginAsOwner(page)
-    await page.goto('/productos')
-
-    await page.getByRole('button', { name: 'Nueva categoría' }).click()
-    await page.getByTestId('categoria-nombre').fill(CAT)
-    await page.getByRole('button', { name: 'Crear categoría' }).click()
-    await expect(page.getByRole('button', { name: new RegExp(CAT) })).toBeVisible()
-
-    await page.getByRole('button', { name: 'Nuevo producto' }).click()
-    await page.getByTestId('producto-nombre').fill(PROD)
-    await page.getByTestId('producto-precio').fill('4000')
-    await page.getByTestId('product-category-select').selectOption({ label: CAT })
-    // Nace controlando existencia (2026-09-17): no se toca el interruptor.
-    await expect(page.getByTestId('product-stock-tracking')).toHaveAttribute('aria-checked', 'true')
-    await page.getByTestId('product-min-stock').fill(String(MIN_STOCK))
-    await saveProductAndClose(page)
-    await expect(page.getByText(PROD)).toBeVisible()
-
-    await ajustar(page, '+', 20)
+  // 🔴 Sembrado POR API (deuda 131). La pregunta obligatoria acá tiene DOS
+  //    respuestas que NO son «nada», y las dos son el escenario:
+  //      · `min_stock = 5` — este archivo mide UMBRALES de stock bajo; sin el
+  //        mínimo no hay umbral que cruzar;
+  //      · la existencia inicial de 20 — es el «holgado» contra el que los casos
+  //        siguientes bajan a 5, a 0 y a −3.
+  //    Las dos van al helper: `minStock` y `stock`, y la existencia la carga por
+  //    `adjust_stock`, igual que `ajustar` por la pantalla.
+  // ⚠️ `ajustar` NO se borra: los cinco casos siguientes lo usan para mover el
+  //    stock a través de los umbrales, y ESO sí es el sujeto.
+  test('preparación: categoría + insumo con mínimo 5 y stock 20', async () => {
+    ID_CAT = await crearCategoria(CAT)
+    ID_PROD = await crearProducto({
+      nombre: PROD, precio: 4000, categoria: ID_CAT, minStock: MIN_STOCK, stock: 20,
+    })
   })
 
   test('stock holgado (20 > mínimo 5): SIN indicador', async ({ page }) => {
@@ -113,20 +112,12 @@ test.describe.serial('Stock bajo en el POS', () => {
     await expect(badge(card)).toHaveText(/Stock bajo/)
   })
 
-  test('limpieza: desactivar producto y categoría', async ({ page }) => {
-    await loginAsOwner(page)
-    await page.goto('/productos')
-    await page.getByPlaceholder('Buscar producto...').fill(PROD)
-    await page.getByTitle('Desactivar', { exact: true }).first().click()
-    await page.getByRole('button', { name: 'Sí, desactivar' }).click()
-    await expect(page.getByText(/Sin resultados/)).toBeVisible()
-
-    await page.getByPlaceholder('Buscar producto...').fill('')
-    const tab = page.getByRole('button', { name: new RegExp(CAT) })
-    await tab.scrollIntoViewIfNeeded()
-    await tab.getByTitle('Editar categoría').click()
-    await page.getByRole('switch').click()
-    await page.getByRole('button', { name: 'Guardar cambios' }).click()
-    await expect(tab).toHaveCount(0)
+  // 🔴 POR API (deuda 131). El `scrollIntoViewIfNeeded` que había acá existía
+  //    porque el tab podía quedar fuera de vista tras el scroll de los casos
+  //    anteriores — una dependencia del ESTADO DE LA PANTALLA que por API
+  //    desaparece.
+  test('limpieza: desactivar producto y categoría', async () => {
+    await desactivar('products', [ID_PROD])
+    await desactivar('categories', [ID_CAT])
   })
 })

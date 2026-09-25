@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test'
 import { loginAsOwner } from './helpers/auth'
 import { cobrarEnEfectivo } from './helpers/pos'
 import { openShiftIfClosed, closeShiftIfOpen } from './helpers/shift'
-import { saveProductAndClose } from './helpers/product'
+import { crearCategoria, crearProducto, desactivar } from './helpers/fixture'
 
 /**
  * ⚠️  Suite para el LABORATORIO. NO correr contra producción.
@@ -26,6 +26,10 @@ import { saveProductAndClose } from './helpers/product'
 const SUFFIX = Date.now().toString().slice(-6)
 const CAT = `E2E NumFail ${SUFFIX}`
 const PROD = `E2E NumFailProd ${SUFFIX}`
+
+// Ids de lo sembrado por API (deuda 131). Los casos siguen buscando por NOMBRE.
+let ID_CAT = ''
+let ID_PROD = ''
 
 const RPC_NEXT = '**/rest/v1/rpc/next_order_number'
 const PATCH_ORDERS = '**/rest/v1/orders?id=eq.*'
@@ -67,20 +71,12 @@ async function cobrar(page: Page) {
 }
 
 test.describe.serial('Numeración: fallo visible + reintento', () => {
-  test('setup: categoría y producto', async ({ page }) => {
-    await loginAsOwner(page)
-    await page.goto('/productos')
-    await page.getByRole('button', { name: 'Nueva categoría' }).click()
-    await page.getByTestId('categoria-nombre').fill(CAT)
-    await page.getByRole('button', { name: 'Crear categoría' }).click()
-    await expect(page.getByRole('button', { name: new RegExp(CAT) })).toBeVisible()
-
-    await page.getByRole('button', { name: 'Nuevo producto' }).click()
-    await page.getByTestId('producto-nombre').fill(PROD)
-    await page.getByTestId('producto-precio').fill('10000')
-    await page.getByTestId('product-category-select').selectOption({ label: CAT })
-    await saveProductAndClose(page)
-    await expect(page.getByText(PROD)).toBeVisible()
+  // 🔴 Sembrado POR API (deuda 131). Pregunta obligatoria: nada de paso — nombre,
+  //    precio y categoría, y el seguimiento que nace prendido lo verifica el
+  //    helper releyendo la fila.
+  test('setup: categoría y producto', async () => {
+    ID_CAT = await crearCategoria(CAT)
+    ID_PROD = await crearProducto({ nombre: PROD, precio: 10000, categoria: ID_CAT })
   })
 
   test('si falla next_order_number: la venta se cobra y el cajero VE el aviso', async ({ page }) => {
@@ -169,21 +165,33 @@ test.describe.serial('Numeración: fallo visible + reintento', () => {
     // venta-espera) por residuo que no era de ellos.
     // Por eso cada paso ahora TERMINA EN UNA ASERCIÓN: una limpieza que no
     // verifica es indistinguible de una que no corre.
+    //
+    // ⚠️ LO DE ARRIBA ES HISTÓRICO y se conserva a propósito: describe cómo se
+    //    veía este bloque cuando limpiaba por la pantalla, y es el origen de la
+    //    deuda 67. Los dos defectos que nombra son **de la UI**, así que por API
+    //    no pueden ocurrir — pero la lección que dejaron sí sigue viva, y es la
+    //    que `desactivar` cumple: **cada paso termina en una aserción.**
+    //
+    // 🔴 CORRECCIÓN DE CLASIFICACIÓN (deuda 131): este bloque se había anotado como
+    //    uno de los que NO se mueven, por su `expect(sw).toHaveAttribute
+    //    ('aria-checked', 'true')`. Esa aserción **es un CONTROL** —comprueba que
+    //    el interruptor está encendido ANTES de apagarlo, para que el clic no lo
+    //    prenda— y no el sujeto de este archivo, que es el fallo de numeración.
+    //    Un control del andamio se va con el andamio; un sujeto no. **Confundir
+    //    las dos cosas deja por UI un bloque que no prueba nada de lo que el
+    //    archivo dice probar.**
     await loginAsOwner(page)
+    // 🔴 EL TURNO SE CIERRA POR LA PANTALLA Y NO SE MUEVE: es un RECURSO ÚNICO de
+    //    la sede —hay una sola jornada abierta— y dejarlo abierto no ensucia,
+    //    **impide que el spec siguiente exista**. Y no necesita `goto`: el
+    //    encabezado del turno es global, así que opera sobre donde deje el login.
     await closeShiftIfOpen(page)
 
-    await page.goto('/productos')
-    await page.getByPlaceholder('Buscar producto...').fill(PROD)
-    await page.getByTitle('Desactivar', { exact: true }).first().click()
-    await page.getByRole('button', { name: 'Sí, desactivar' }).click()
-    await expect(page.getByText(/Sin resultados/)).toBeVisible()
-
-    const tab = page.getByRole('button', { name: new RegExp(CAT) })
-    await tab.getByTitle('Editar categoría').click()
-    const sw = page.getByRole('switch')
-    await expect(sw).toHaveAttribute('aria-checked', 'true')
-    await sw.click()
-    await page.getByRole('button', { name: 'Guardar cambios' }).click()
-    await expect(tab).toHaveCount(0)
+    // 🔴 POR API (deuda 131). El orden importa y por eso son dos llamadas y no
+    //    una: la app RECHAZA desactivar una categoría con productos activos, y
+    //    aunque por API no pase por esa validación, dejar el producto activo en
+    //    una categoría apagada es un estado que nadie eligió.
+    await desactivar('products', [ID_PROD])
+    await desactivar('categories', [ID_CAT])
   })
 })
